@@ -1,0 +1,3 @@
+misc - for example small scripts investigating a property in nest
+script_"project_name" - scripts associated with a specific project
+toolbox - toolbox with classes for simulation and data analysis. This can be seen as the model core.
