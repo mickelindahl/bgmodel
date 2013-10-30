@@ -68,7 +68,7 @@ network  - define layers and populations
 
 from copy import deepcopy
 from toolbox import misc
-from toolbox.network_connectivity import  Units_input, Units_neuron
+from toolbox.network_connectivity import Units, Units_input, Units_neuron
 import nest # Has to after misc. 
 
 MODULE_PATH=  '/afs/nada.kth.se/home/w/u1yxbcfw/tools/NEST/dist/install-nest-2.2.2/lib/nest/ml_module'
@@ -145,7 +145,10 @@ class Par(object):
         # ========================
         
         dic['netw']={} 
+        
+        # @TODO defining input in par. Make network_construction use this information.
         dic['netw']['input']={'constant':{'node_names':['C1', 'C2', 'CF', 'CS', 'EA', 'EI', 'ES']}}
+        
         dic['netw']['size']=10000.0 
         dic['netw']['tata_dop']  = 0
         dic['netw']['tata_dop0'] = 0.8
@@ -783,38 +786,43 @@ class Par(object):
     
         # Network        
         conns.update(
-               {'M1_SN_gaba':{ 'syn':'M1_SN_gaba', 'sets':1, 'rule':'set-set' },
-                'M2_GI_gaba':{ 'syn':'M2_GI_gaba', 'sets':1, 'rule':'set-set' },
+               {'M1_SN_gaba':{ 'syn':'M1_SN_gaba', 'sets':[1,1], 'rule':'set-set' },
+                'M2_GI_gaba':{ 'syn':'M2_GI_gaba', 'sets':[1,1], 'rule':'set-set' },
                        
-                'M1_M1_gaba':{ 'syn':'M1_M1_gaba', 'sets':1, 'rule':'set-not_set' },
-                'M1_M2_gaba':{ 'syn':'M1_M2_gaba', 'sets':1, 'rule':'set-not_set' },                     
-                'M2_M1_gaba':{ 'syn':'M2_M1_gaba', 'sets':1, 'rule':'set-not_set' },
-                'M2_M2_gaba':{ 'syn':'M2_M2_gaba', 'sets':1, 'rule':'set-not_set' },                     
+                'M1_M1_gaba':{ 'syn':'M1_M1_gaba', 'sets':[1,1], 'rule':'set-not_set' },
+                'M1_M2_gaba':{ 'syn':'M1_M2_gaba', 'sets':[1,1], 'rule':'set-not_set' },                     
+                'M2_M1_gaba':{ 'syn':'M2_M1_gaba', 'sets':[1,1], 'rule':'set-not_set' },
+                'M2_M2_gaba':{ 'syn':'M2_M2_gaba', 'sets':[1,1], 'rule':'set-not_set' },                     
                
-                'FS_M1_gaba':{ 'syn':'FS_M1_gaba', 'sets':1, 'rule':'all' },
-                'FS_M2_gaba':{ 'syn':'FS_M2_gaba', 'sets':1, 'rule':'all', 'beta_fan_in':0.8},                       
-                'FS_FS_gaba':{ 'syn':'FS_FS_gaba', 'sets':1, 'rule':'all' },
+                'FS_M1_gaba':{ 'syn':'FS_M1_gaba', 'sets':[1,1], 'rule':'all' },
+                'FS_M2_gaba':{ 'syn':'FS_M2_gaba', 'sets':[1,1], 'rule':'all', 'beta_fan_in':0.8},                       
+                'FS_FS_gaba':{ 'syn':'FS_FS_gaba', 'sets':[1,1], 'rule':'all' },
               
-                'ST_GA_ampa':{ 'syn':'ST_GA_ampa', 'sets':1, 'rule':'all' },
-                'ST_GI_ampa':{ 'syn':'ST_GI_ampa', 'sets':1, 'rule':'all' },
-                'ST_SN_ampa':{ 'syn':'ST_SN_ampa', 'sets':1, 'rule':'all' },
+                'ST_GA_ampa':{ 'syn':'ST_GA_ampa', 'sets':[1,1], 'rule':'all' },
+                'ST_GI_ampa':{ 'syn':'ST_GI_ampa', 'sets':[1,1], 'rule':'all' },
+                'ST_SN_ampa':{ 'syn':'ST_SN_ampa', 'sets':[1,1], 'rule':'all' },
                
-                'GA_FS_gaba':{ 'syn':'GA_FS_gaba', 'sets':1, 'rule':'all' },
-                'GA_M1_gaba':{ 'syn':'GA_M1_gaba', 'sets':1, 'rule':'all' },
-                'GA_M2_gaba':{ 'syn':'GA_M2_gaba', 'sets':1, 'rule':'all' },
-                'GA_GA_gaba':{ 'syn':'GA_GA_gaba', 'sets':1, 'rule':'all' }, 
-                'GA_GI_gaba':{ 'syn':'GA_GI_gaba', 'sets':1, 'rule':'all' },
-                'GI_GI_gaba':{ 'syn':'GI_GI_gaba', 'sets':1, 'rule':'all' },
-                'GI_GA_gaba':{ 'syn':'GI_GA_gaba', 'sets':1, 'rule':'all' },
+                'GA_FS_gaba':{ 'syn':'GA_FS_gaba', 'sets':[1,1], 'rule':'all' },
+                'GA_M1_gaba':{ 'syn':'GA_M1_gaba', 'sets':[1,1], 'rule':'all' },
+                'GA_M2_gaba':{ 'syn':'GA_M2_gaba', 'sets':[1,1], 'rule':'all' },
+                'GA_GA_gaba':{ 'syn':'GA_GA_gaba', 'sets':[1,1], 'rule':'all' }, 
+                'GA_GI_gaba':{ 'syn':'GA_GI_gaba', 'sets':[1,1], 'rule':'all' },
+                'GI_GI_gaba':{ 'syn':'GI_GI_gaba', 'sets':[1,1], 'rule':'all' },
+                'GI_GA_gaba':{ 'syn':'GI_GA_gaba', 'sets':[1,1], 'rule':'all' },
                 
-                'GI_ST_gaba':{ 'syn':'GI_ST_gaba', 'sets':1, 'rule':'all' },
-                'GI_SN_gaba':{ 'syn':'GI_SN_gaba', 'sets':1, 'rule':'all' }})
+                'GI_ST_gaba':{ 'syn':'GI_ST_gaba', 'sets':[1,1], 'rule':'all' },
+                'GI_SN_gaba':{ 'syn':'GI_SN_gaba', 'sets':[1,1], 'rule':'all' }})
         
         
         #conns={'MSN_D1_bg-MSN_D1':{'fan_in':fan_in_D1_bg_DX,'syn':'MSN_SNR_gaba_s_min', 'sets':1,  'rule':'all'}}
         # Add extend to conn
         for k in sorted(conns.keys()): 
             
+            if k=='FS_M2_gaba':
+                conns[k]['beta_fan_in']=0.8
+            else:
+                conns[k]['beta_fan_in']=0.0
+            conns[k]['data_path_learned_conn']='' #No     
             # Cortical input do not randomally change CTX input
             if k[0] in ['C', 'E']:
                 delay_setup  = {'constant':None}
@@ -1070,6 +1078,8 @@ class Par(object):
 
 
 class Par_slow_wave(Par):
+    
+    # @TODO defining input in par
     def __init__(self, dic_rep={}, perturbations=None ):
         super( Par_slow_wave, self ).__init__( dic_rep, perturbations )       
         self.dic['netw']['input']={'oscillations':{'cycles':10.0,
@@ -1173,16 +1183,16 @@ class Par_bcpnn(Par):
         dic['nest']['CO']['template'] = 'izhik_cond_exp'
     
         dic['nest']['CO']['a']      =  0.03      # (E.M. Izhikevich 2007)
-        dic['nest']['CO']['b_1']    = -2.       # (E.M. Izhikevich 2007)
-        dic['nest']['CO']['b_2']    = -2.       # (E.M. Izhikevich 2007)
+        dic['nest']['CO']['b_1']    = -2.        # (E.M. Izhikevich 2007)
+        dic['nest']['CO']['b_2']    = -2.        # (E.M. Izhikevich 2007)
         dic['nest']['CO']['c']      = -50.       # (E.M. Izhikevich 2007)
-        dic['nest']['CO']['C_m']    =  100.     # (E.M. Izhikevich 2007)
+        dic['nest']['CO']['C_m']    =  100.      # (E.M. Izhikevich 2007)
         dic['nest']['CO']['d']      =  100.      # (E.M. Izhikevich 2007)
-        dic['nest']['CO']['E_L']    = -60.0     # (E.M. Izhikevich 2007)
-        dic['nest']['CO']['k']      =   0.7       # (E.M. Izhikevich 2007)
+        dic['nest']['CO']['E_L']    = -60.0      # (E.M. Izhikevich 2007)
+        dic['nest']['CO']['k']      =   0.7      # (E.M. Izhikevich 2007)
         dic['nest']['CO']['V_peak'] =  35.       # (E.M. Izhikevich 2007)
         dic['nest']['CO']['V_b']    = dic['nest']['CO']['E_L']    # (E.M. Izhikevich 2007)
-        dic['nest']['CO']['V_th']   = -40       # (E.M. Izhikevich 2007)
+        dic['nest']['CO']['V_th']   = -40        # (E.M. Izhikevich 2007)
         dic['nest']['CO']['V_m']    =  -50.    
     
         dic['nest']['CO']['AMPA_1_Tau_decay'] = 12.  # Same as MSN
@@ -1242,15 +1252,14 @@ class Par_bcpnn(Par):
         dic['conn']['CO_ST_nmda']={'fan_in': 10} 
         
         
-        conns.update({'CO_M1_ampa':{ 'syn':'CO_M1_ampa', 'sets':1, 'rule':'learned'},
-                      'CO_M1_nmda':{ 'syn':'CO_M1_nmda', 'sets':1, 'rule':'learned' },
-                      'CO_M2_ampa':{ 'syn':'CO_M2_ampa', 'sets':1, 'rule':'learned' },
-                      'CO_M2_nmda':{ 'syn':'CO_M2_nmda', 'sets':1, 'rule':'learned' },
-                      'CO_FS_ampa':{ 'syn':'CO_FS_ampa', 'sets':1, 'rule':'learned' },
-                      'CO_ST_ampa':{ 'syn':'CO_ST_ampa', 'sets':1, 'rule':'all' },
-                      'CO_ST_nmda':{ 'syn':'CO_ST_nmda', 'sets':1, 'rule':'all' },
-                      'FS_M1_gaba':{ 'syn':'FS_M1_gaba', 'sets':1, 'rule':'learned' },
-                      'FS_M2_gaba':{  'rule':'learned' }})  
+        conns.update({'CO_M1_ampa':{ 'syn':'CO_M1_ampa', 'sets':[10,5], 'rule':'set-all_to_all'},
+                      'CO_M1_nmda':{ 'syn':'CO_M1_nmda', 'sets':[10,5], 'rule':'set-all_to_all' },
+                      'CO_M2_ampa':{ 'syn':'CO_M2_ampa', 'sets':[10,5], 'rule':'set-all_to_all' },
+                      'CO_M2_nmda':{ 'syn':'CO_M2_nmda', 'sets':[10,5], 'rule':'set-all_to_all' },
+                      'CO_FS_ampa':{ 'syn':'CO_FS_ampa', 'sets':[1,1], 'rule':'all' },
+                      'CO_ST_ampa':{ 'syn':'CO_ST_ampa', 'sets':[1,1], 'rule':'all' },
+                      'CO_ST_nmda':{ 'syn':'CO_ST_nmda', 'sets':[1,1], 'rule':'all' }})  
+        
         # Add extend to conn
         for k in sorted(conns.keys()): 
             conns[k].update({'lesion':False, 'connection_type':'divergent'})

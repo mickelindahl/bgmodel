@@ -12,6 +12,8 @@ import os
 import random
 import time
 from toolbox import data_to_disk
+from toolbox.default_params import Par, Par_bcpnn
+import unittest
 
 class Units(object):
     '''
@@ -21,22 +23,21 @@ class Units(object):
     '''
     def __init__(self, name, dic):
         
+        par=dic['par']
+        
         self.collected_spikes=False
         self.collected_votage_traces=False
         self.name=name
-        self.n=dic['n']
-        self.model=dic['model']
-        self.lesion=dic['lesion']
-        self.extent=dic['extent']
-        self.edge_wrap=dic['edge_wrap']
+        self.n=par['node'][name]['n']
+        self.model=par['node'][name]['model']
+        self.lesion=par['node'][name]['lesion']
+        self.extent=par['node'][name]['extent']
+        self.edge_wrap=par['node'][name]['edge_wrap']
         self.population=None # Empty container to put a group or input from population module
-        self.type=dic['type']
-        
-        if 'I_e' in dic.keys(): self.I_e=dic['I_e']
-        else: self.I_e=0
+        self.type=par['node'][name]['type']
 
-        if 'prop' in dic.keys(): self.proportion_of_network=dic['prop']
-        else: self.proportion_of_network=0
+        self.proportion_of_network=par['node'][name]['prop']
+
     
     @property
     def idx(self): 
@@ -180,52 +181,55 @@ class Structure(object):
         self.source=dic['source'] # As units
         self.target=dic['target']
         
+        par=dic['par']
         
-        self.connection_type=dic['connection_type']
+        self.connection_type=par['conn'][name]['connection_type']
         self.conn_pre=[]
         self.conn_post=[]
-        self.delay_val=dic['delay_val']
-        self.delay_setup=dic['delay_setup']
-        self.lesion=dic['lesion']
+        self.delay_val=par['conn'][name]['delay_val']
+        self.delay_setup=par['conn'][name]['delay_setup']
+        self.lesion=par['conn'][name]['lesion']
         
-        if 'beta_fan_in' in dic.keys(): 
-            self.fan_in=int(dic['fan_in']*(1-(dic['tata_dop']-dic['tata_dop0'])*dic['beta_fan_in']))
-            self.beta_fan_in=dic['beta_fan_in']
+        
+        self.fan_in=int(par['conn'][name]['fan_in']*(1-(par['netw']['tata_dop']-par['netw']['tata_dop0'])*par['conn'][name]['beta_fan_in']))
+        self.beta_fan_in=par['conn'][name]['beta_fan_in']
                                  
-            # So that the fan always is less or equal to number of targets
-            if self.fan_in >self.target.n:
-                self.source.n=self.fan_in
-                
-        else:
-            self.fan_in=dic['fan_in']
-            self.beta_fan_in=0  
+        # So that the fan always is less or equal to number of targets
+        if self.fan_in >self.target.n:
+            self.source.n=self.fan_in
             
         self.name=name
         self.n_conn=0
-        self.network_size=dic['network_size']
+        self.network_size=par['netw']['size']
         
         
         #Defines which pool nodes are considered as potential targets based on distance
-        self.mask=dic['mask'] 
+        self.mask=par['conn'][name]['mask'] 
         
         # Defines which pool nodes are considered based on hierarchy 
-        self.rule=dic['rule']
-        if self.rule=='set-not_set' and dic['sets']==1: # If we only have one set
+        self.rule=par['conn'][name]['rule']
+        if self.rule=='set-not_set' and par['conn'][name]['sets'][0]==1: # If we only have one set
             self.rule='set-set' 
         
-        if self.rule=='learned':
-            self.data_path_conn=dic['data_path_conn']
+        self.data_path_learned_conn=par['conn'][name]['data_path_learned_conn']
         
         self.save_at=dic['save_at']
         
         # Source and target are unit objects
-        self.sets=dic['sets']
+        self.sets=par['conn'][name]['sets']
         
+        self.sets_mapping_pre={}
+        self.sets_mapping_post={}
+        
+        
+        self.sets_mapping_driver={}
+        self.sets_mapping_pool={}
         self.sets_driver=[]
         self.sets_pool=[]
         
-        sets_source=[slice(s, self.source.n, self.sets) for s in range(self.sets)]
-        sets_target=[slice(s, self.target.n, self.sets) for s in range(self.sets)]
+        
+        sets_source=[slice(s, self.source.n, self.sets[0]) for s in range(self.sets[0])]
+        sets_target=[slice(s, self.target.n, self.sets[1]) for s in range(self.sets[1])]
         
         
         # When creating a divergent connection, each node in the source units 
@@ -257,10 +261,10 @@ class Structure(object):
         self.sets_source=sets_source
         self.sets_target=sets_target
      
-        self.syn=dic['syn']     
-        self.tata_dop=dic['tata_dop']
-        self.weight_val=dic['weight_val']
-        self.weight_setup=dic['weight_setup']
+        self.syn=par['conn'][name]['syn']     
+        self.tata_dop=par['netw']['tata_dop']
+        self.weight_val=par['conn'][name]['weight_val']
+        self.weight_setup=par['conn'][name]['weight_setup']
         
     def __str__(self):
         return self.name
@@ -305,7 +309,8 @@ class Structure(object):
                 if self.source.n!=self.target.n: 
                     raise Exception('number of pre nodes needs to equal number of post')
                 driver_out, pool_out= self.driver.idx, self.pool.idx
-                
+                self.sets_mapping_driver=None
+                self.sets_mapping_pool=None
             # Connects all presynaptic neurons randomally with connection
             # probability k_source to the pool of postsynaptic neurons 
             # defined by edge_wrap and mask_dist 
@@ -315,18 +320,25 @@ class Structure(object):
                 dr=self.driver.idx
                 po=self.pool.idx
                 self._add_connections(driver_out, pool_out, dr, po)
-        
+                self.sets_mapping_driver=None
+                self.sets_mapping_pool=None
                 
             # Randomly connects presynaptic neurons of set i with postsynaptic 
             # neurons of set i. Constrained by k_source, mask_dist and the sets. 
             elif self.rule in 'set-set':
-                         
+                i=0
                 for se_dr, se_po in zip(self.sets_driver, self.sets_pool):        
                   
                     dr=self.driver.idx[se_dr]
                     po=self.pool.idx[se_po]
+                    
+                    n_pre=len(driver_out)
                     self._add_connections(driver_out, pool_out, dr, po)
+                    n_post=len(driver_out)
                 
+                    self.sets_mapping_driver={i: slice(n_post,n_post, 1)}
+                    self.sets_mapping_pool={i: slice(n_post,n_post, 1)}
+                    i+=1
             # Randomly connects presynaptic neurons from set i to all postsynaptic sets except
             # to set i.     
             elif self.rule=='set-not_set':
@@ -339,34 +351,23 @@ class Structure(object):
                     self._add_connections(driver_out, pool_out, dr, po)
       
             # Load learned connections     
-            elif self.rule=='learned':
+            elif self.rule=='set-all_to_all':
                 if self.connection_type=='divergent':
-                    weights=data_to_disk.pickle_load(self.data_path_conn)
-                    n_set_driver, n__set_pool=w.shape
-                    
+                    pass
+       
                 elif self.connection_type=='convergent':
-                    raise Exception('Learned connections need to be divergent')  
+                    raise Exception('set-all_to_all connections need to be divergent')  
                 
-                n_driver=self.driver.n 
-                n_pool=self.pool.n    
                 
-                step=n_driver/n_set_driver
-                sub_pop_driver=numpy.array([[step*i,step*(i+1)]  for i in range(n_set_driver)])
-                
-                step=n_driver/n_set_driver
-                sub_pop_pool=[[step*i,step*(i+1)]  for i in range(n_set_pool)]
-                
-                           
-                for w, i in enumerate(weights):
-                    sets_driver=sub_pop_driver[w>0]
-                    se_po= sub_pop_pool[i]
-                    
-                    dr=[self.driver.idx[se_dr] for se_dr in sets_driver]
-                    po=self.pool.idx[se_po]*len(sets_driver) 
-                    
-                self._add_connections(driver_out, pool_out, dr, po)
-            
-              
+                for i, se_pre in enumerate(self.sets_driver):
+                    for j, se_post in enumerate(self.sets_pool):
+                        pre =self.pre.idx[se_pre]
+                        post=self.pool.idx[se_post]
+                        
+                        self._add_connections(driver_out, pool_out, pre, post)
+                        self.sets_mapping_driver={i+j: slice(n_post,n_post, 1)}
+                        self.sets_mapping_pool={i+j: slice(n_post,n_post, 1)}
+  
             if self.connection_type=='divergent':
                 self.conn_pre, self.conn_post= driver_out, pool_out
                 
@@ -399,8 +400,34 @@ class Structure(object):
         if 'uniform' in x.keys():
             return list(numpy.random.uniform(low=x['uniform']['min'], 
                                              high=x['uniform']['max'], 
-                                             size=self.n_conn))         
-    
+                                             size=self.n_conn))    
+        if 'learned' in x.keys():
+            weights=data_to_disk.pickle_load(self.data_path_learned_conn)
+                 
+            n_set_pre, n_set_post=weights.shape # Driver is pre
+            n_pre=self.soruce.n 
+            n_post=self.target.n    
+                
+            # Get range of sets of presynaptic subpoulations
+            step=n_pre/n_set_pre
+            sub_pops_pre=numpy.array([[step*i,step*(i+1)]  for i in range(n_set_pre)])
+                
+            # Get range of sets of postsynaptic subpoulations
+            step=n_post/n_set_post
+            sub_pop_pool=[[step*i, step*(i+1)]  for i in range(n_set_post)]
+            
+            conns=numpy.zeros(self.n_conn)
+            for i in range(n_set_pre):
+                se_pre=sub_pops_pre[i]
+                for j in range(n_set_post):
+                    se_post=sub_pop_pool[j]
+                    
+                    # For each weight pick out the specific pre and post connections
+                    idx_conn_bool=(self.conn_pre>se_pre[0])*(self.conn_pre<se_pre[1])
+                    idx_conn_bool*=(self.conn_post>se_post[0])*(self.conn_post<se_post[1])
+                    conns[idx_conn_bool]= weights[i]
+                    
+            
     def plot_hist(self, ax):
         if self.n_conn==0:
             self.set_connections()
@@ -484,3 +511,28 @@ class Structure_list(object):
         self.list=sorted(self.list,key=lambda x:x.name)   
         
         
+
+
+class TestStructure(unittest.TestCase):
+    
+    def setUp(self):
+        
+        self.par_bcpnn=Par_bcpnn(par_rep={'netw':2000.0})
+        
+        self.u1=Units('CO', {'par':self.par_bcpnn })   
+        self.u1=Units('M1', {'par':self.par_bcpnn }) 
+        
+        self.s1=Structure('CO_M1_ampa', {'source':self.u1, 'target':self.u2, 'par':self.par_bcpnn})
+        
+        
+                
+    def test_set_all_to_all(self):
+        self.s1.set_connections(False)
+        
+        
+            
+    
+
+        
+if __name__ == '__main__':
+    unittest.main() 

@@ -30,8 +30,6 @@ class Inhibition_base(object):
         self.connected=False
         self.threads=threads
         
-        
-        
         self.name=self.__class__.__name__
         
         self.kwargs=kwargs
@@ -123,14 +121,17 @@ class Inhibition_base(object):
         my_nest.ResetKernel(threads=self.threads, print_time=False)  
         
         # Create input units
+        dic={}
         for k,v in self.par['node'].iteritems(): 
-            if not v['lesion']:          
-                self.units_list.append(v['unit_class'](k,v))
+            if not v['lesion']:     
+                dic['par']=self.par
+                self.units_list.append(v['unit_class'](k,dic))
                 self.units_dic[k]=self.units_list[-1]
                 # Set input units
         
 
         setup_structure_list=[]
+        dic={}
         for k, v in self.par['conn'].iteritems(): 
    
             if not v['lesion']:
@@ -139,13 +140,11 @@ class Inhibition_base(object):
                 keys=self.units_dic.keys()
                 if (s[0] in keys) and (s[1] in keys):
                     # Add units to dictionary
-                    v['source']=self.units_dic[s[0]]
-                    v['target']=self.units_dic[s[1]]
-                    v['save_at']='/'.join(self.path_data.split('/')[0:-2])+'/'
-                    v['network_size']=self.par['netw']['size']
-                    v['tata_dop']=self.par['netw']['tata_dop']
-                    v['tata_dop0']=self.par['netw']['tata_dop0']
-                    setup_structure_list.append((k,v))
+                    dic['source']=self.units_dic[s[0]]
+                    dic['target']=self.units_dic[s[1]]
+                    dic['save_at']='/'.join(self.path_data.split('/')[0:-2])+'/'
+                    dic['par']=self.par
+                    setup_structure_list.append((k,dic))
 
         self.structures=Structure_list(setup_structure_list)
     
