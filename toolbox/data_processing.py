@@ -24,10 +24,13 @@ class Data_unit(object):
         self.isis=None
         self.isis_ids=None
         self.name=name
+        self.sets=None
         self.pds=None
         self.rasters=None
         self.raster_ids=None #Ids starting at 0
         self.firing_rate=None
+        self.rasters_sets=[]
+        self.rasters_sets_ids=[]
         self.start=None
         self.stop=None
         self.times=None
@@ -74,27 +77,38 @@ class Data_unit(object):
         else: 
             return []
 
-    def set_times(self, times):
-        self.times=times      
+    def set_firing_rate(self, d):
+        self.firing_rate_time=d[0]
+        self.firing_rate=d[1]   
 
-    def set_firing_rate(self, rates_data):
-        self.firing_rate_time=rates_data[0]
-        self.firing_rate=rates_data[1]   
+    def set_firing_rate_sets(self, d):
+        self.firing_rate_sets_time=d[0]
+        self.firing_rate_sets=d[1]  
+        
+    def set_isis(self, d):
+        self.isis_ids=d[0]
+        self.isis=d[1]   
 
-    def set_isis(self, isis_data):
-        self.isis_ids=isis_data[0]
-        self.isis=isis_data[1]   
-    
-    def set_mean_rates(self, rates_data):
-        self.mean_rates_ids=rates_data[0]
-        self.mean_rates=rates_data[1]   
-    
-    def set_rasters(self, rasters_data):
-        self.rasters=rasters_data[0]
-        self.raster_ids=rasters_data[1]
-    
     def set_ids(self,ids):
         self.ids=ids
+    
+    def set_mean_rates(self, d):
+        self.mean_rates_ids=d[0]
+        self.mean_rates=d[1]   
+    
+    def set_rasters(self, d):
+        self.rasters=d[0]
+        self.raster_ids=d[1]
+        
+    def set_rasters_sets(self, d):
+        
+        for dd in d:
+            self.rasters_sets.append(dd[0])
+            self.rasters_sets_ids.append(dd[1])
+        
+
+    def set_times(self, times):
+        self.times=times     
     
     def convert2bin(self, start, stop, n_sample, seed=1):
         sample=self.sample(n_sample, seed)
@@ -213,26 +227,34 @@ class Data_units_dic(object):
         if not model in self.model_list:
             self.model_list.append(model)
         
-    def set_firing_rate(self, rates_dic):
-        for model, val in rates_dic.iteritems():
-            self.dic[model].set_firing_rate(val)        
-
-    def set_ids(self, ids_dic):
-        for model, val in ids_dic.iteritems():
+    def set_firing_rate(self, d):
+        for model, val in d.iteritems():
+            self.dic[model].set_firing_rate(val)     
+               
+    def set_firing_rate_sets(self, d):
+        for model, val in d.iteritems():
+            self.dic[model].set_firing_rate_sets(val)     
+            
+    def set_ids(self, d):
+        for model, val in d.iteritems():
             self.dic[model].set_ids(val)
 
-    def set_isis(self, isis_dic):
-        for model, val in isis_dic.iteritems():
+    def set_isis(self, d):
+        for model, val in d.iteritems():
             self.dic[model].set_isis(val)        
 
-    def set_mean_rates(self, rates_dic):
-        for model, val in rates_dic.iteritems():
+    def set_mean_rates(self, d):
+        for model, val in d.iteritems():
             self.dic[model].set_mean_rates(val)
 
-    def set_rasters(self, rasters_dic):
-        for model, val in rasters_dic.iteritems():
+    def set_rasters(self, d):
+        for model, val in d.iteritems():
             self.dic[model].set_rasters(val)        
-            
+
+    def set_rasters_sets(self, d):
+        for model, val in d.iteritems():
+            self.dic[model].set_rasters_sets(val)          
+                
 class Data_units_relation(object):
     '''
     classdocs

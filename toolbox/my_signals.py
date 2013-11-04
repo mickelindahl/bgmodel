@@ -808,7 +808,7 @@ class MySpikeList(SpikeList):
         timeAxis, histograms = self.spike_histogram_n_rep( bin, id_list, 
                                                             n_rep, normalized )
               
-        ax.bar(left=t_vec, height=data, width=0.8, 
+        ax.bar(left=timeAxis, height=histograms, width=0.8, 
                bottom=None, hold=None, **kwargs)
               
     def my_firing_rate(self, bin=200, display=True, id_list=[], n_rep=1, kwargs={}):          
@@ -877,11 +877,11 @@ class MySpikeList(SpikeList):
 
         ids, spike_times = spk.convert(format="[ids, times]")
         
-        new_id_list=numpy.arange(len(id_list))
+        new_id_list=numpy.arange(1, len(id_list)+1)
         ids_map = dict(zip(id_list, new_id_list))
         new_ids=[ids_map[id] for id in ids]
         
-        return spike_times[::subsampling], new_ids[::subsampling], new_id_list
+        return numpy.array(spike_times[::subsampling]), numpy.array(new_ids[::subsampling]), new_id_list
     
     def my_raster_plot(self, id_list=None, t_start=None, t_stop=None, display=True, kwargs={}, subsampling=1):       
         subplot = get_display(display)
@@ -1014,7 +1014,7 @@ def my_load(userFileName, dataType):
     elif dataType == 'g':
         return signals.load_conductancelist(userFile,t_start=None)
     else:
-        raise Exception("The datatype %s is not handled ! Should be 's','g','c' or 'v'" %datatype)
+        raise Exception("The datatype %s is not handled ! Should be 's','g','c' or 'v'" %dataType)
     
 
     

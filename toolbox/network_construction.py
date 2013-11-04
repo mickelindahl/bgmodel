@@ -4,28 +4,28 @@ Created on Jun 18, 2013
 @author: lindahlm
 '''
 from toolbox.network_connectivity import Units_input, Units_neuron, Structure_list
-from toolbox import my_nest, data_to_disk 
+from toolbox import my_nest, data_to_disk, misc 
 from toolbox.my_population import MyGroup, MyPoissonInput, MyInput
 
 from copy import deepcopy
-from toolbox.default_params import Par
+from toolbox.default_params import Par, Par_bcpnn
 import nest # Can not be first then I get segmentation Fault
 import numpy
 import pylab
 import time
-MAIN_DATA_PATH='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition-branch'
-PICTURE_PATH= '/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/inhibition/pictures'
+import unittest
 
 class Inhibition_base(object):
     '''
     Base model
     '''
     
-    def __init__(self, threads=1, start_rec=1, sim_time=1000,  **kwargs):
+    def __init__(self, threads=1, start_rec=1., sim_time=1000.,  **kwargs):
         '''
         Constructor
         '''
         self.calibrated=False
+        self.inputed=False
         self.built=False
         self.connected=False
         self.threads=threads
@@ -39,18 +39,20 @@ class Inhibition_base(object):
         self.units_list=[]
         self.units_dic={}
         
-        self.path_data=MAIN_DATA_PATH+'/'+self.name +'/'
-        self.path_pictures=PICTURE_PATH+'/'+self.name +'-'
+        self.path_data='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition'+'/'+self.name +'/'
+        self.path_pictures='/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/inhibition/pictures'+'/'+self.name +'-'
+        
         
         if 'par_rep' in kwargs.keys(): 
             self.par_rep=kwargs['par_rep']
-        else: self.par_rep={}
-        
+        else:
+            self.par_rep={}
+                 
         if 'perturbation' in kwargs.keys(): 
             self.perturbation=kwargs['perturbation']
         else: self.perturbation=None
         
-        self.par=Par(self.par_rep, self.perturbation)
+        self.par=Par( self.par_rep, self.perturbation)
         
         if 'save_conn' in kwargs.keys():
             self.save_conn= kwargs['save_conn']
@@ -62,10 +64,14 @@ class Inhibition_base(object):
         self.structures=Structure_list()
     
         self.time_calibrated=None
+        self.time_inputed=None
         self.time_built=None
         self.time_connected=None
         self.time_run=None
     
+    @property
+    def path_nest(self):
+        return self.path_data+'nest'
           
         
     def save(self, save_at):
@@ -89,20 +95,29 @@ class Inhibition_base(object):
         Compute all dependent variables.
         '''
         t=time.time()
+        print '\nCalibrating...'
         self.calibrated=True
         self.time_calibrated=int(time.time()-t)
         print 'Calibrated', self.time_calibrated  
         
     def inputs(self):
+        
+        if self.inputed:
+            return
         if not self.calibrated: self.calibrate()
         
+        t=time.time()
+        print 'Creating inputs...'
+        self.inputed=True
         
         for key, val in self.par['node'].iteritems():
             if val['type'] =='input':
-                print key, val['rate']
                 self.input_params[key]=[{'rates':[val['rate']], 
                                          'times':[1.],
                                          'idx':range(val['n'])}]
+                self.time_calibrated=int(time.time()-t)
+        self.time_calibrated=int(time.time()-t)
+        print 'Inputed', self.time_inputed  
        
     def build(self):
         '''
@@ -114,7 +129,7 @@ class Inhibition_base(object):
         '''
         
         if self.built: return
-        if not self.calibrated: self.calibrate() 
+        if not self.inputed: self.inputs() 
         print 'Building...'
         t=time.time()
 
@@ -124,8 +139,8 @@ class Inhibition_base(object):
         dic={}
         for k,v in self.par['node'].iteritems(): 
             if not v['lesion']:     
-                dic['par']=self.par
-                self.units_list.append(v['unit_class'](k,dic))
+                dic={}
+                self.units_list.append(v['unit_class'](k, dic, self.par))
                 self.units_dic[k]=self.units_list[-1]
                 # Set input units
         
@@ -140,11 +155,11 @@ class Inhibition_base(object):
                 keys=self.units_dic.keys()
                 if (s[0] in keys) and (s[1] in keys):
                     # Add units to dictionary
+                    dic={}
                     dic['source']=self.units_dic[s[0]]
                     dic['target']=self.units_dic[s[1]]
                     dic['save_at']='/'.join(self.path_data.split('/')[0:-2])+'/'
-                    dic['par']=self.par
-                    setup_structure_list.append((k,dic))
+                    setup_structure_list.append([k, dic, self.par])
 
         self.structures=Structure_list(setup_structure_list)
     
@@ -154,7 +169,6 @@ class Inhibition_base(object):
         #! Create input nodes
         for u in self.units_list:
             # Load model
-            print u.model
             my_nest.MyLoadModels( self.par.get_nest_setup(u.model), [u.model] )
             
             if u.type == 'input':
@@ -224,17 +238,17 @@ class Inhibition_base(object):
 
     def run(self, print_time=False):
         if not self.connected: self.connect()
-        path_nest=self.path_data+'nest'
+
         import os
-        if not os.path.isdir(path_nest):
-            data_to_disk.mkdir(path_nest)
+        if not os.path.isdir(self.path_nest):
+            data_to_disk.mkdir(self.path_nest)
         
-        my_nest.SetKernelStatus({'print_time':print_time, 'data_path':path_nest, 'overwrite_files': True})
+        my_nest.SetKernelStatus({'print_time':print_time, 'data_path':self.path_nest, 'overwrite_files': True})
         
-        for filename in os.listdir(path_nest):
+        for filename in os.listdir(self.path_nest):
             if filename.endswith(".gdf"):
-                print 'Deleting: ' +path_nest+'/'+filename
-                os.remove(path_nest+'/'+filename)
+                print 'Deleting: ' +self.path_nest+'/'+filename
+                os.remove(self.path_nest+'/'+filename)
         
         t=time.time()
         my_nest.Simulate(self.sim_time)
@@ -278,11 +292,33 @@ class Inhibition_base(object):
             
         return dic_rates
 
+    def get_firing_rate_sets(self, models):
+        if isinstance(models,str):
+            models=[models]
+        dic_rates={}
+        
+        
+        for model in models:
+            u=self.units_dic[model]
+            self.get_spikes(model)
+            
+            pop=self.units_dic[model].population
+            ids=numpy.array(self.units_dic[model].population.ids)
+            fr=[]
+            for se in u.sets: 
+                
+                fr.append(pop.signals['spikes'].id_slice(ids[se]).firing_rate(1, average=True))
+            fr=numpy.array(fr)
+            dic_rates[model]=[numpy.arange(self.start_rec, fr.shape[1]+self.start_rec, 1 ),fr ]
+            
+        return dic_rates
+
     def get_mean_rates(self, models):
         if isinstance(models,str):
             models=[models]
         dic_rates={}
         for model in models:
+            
             self.get_spikes(model)
             pop=self.units_dic[model].population
             mrs=pop.signals['spikes'].mean_rates()
@@ -290,6 +326,7 @@ class Inhibition_base(object):
             dic_rates[model]=[pop.ids, mrs]
             
         return dic_rates
+    
     
     def get_rasters(self, models):
         
@@ -300,6 +337,27 @@ class Inhibition_base(object):
             spk_times, spk_ids, ids= numpy.array(pop.signals['spikes'].my_raster())        
             dic_rasters[model]=[numpy.array([spk_times, spk_ids]), ids]
         return dic_rasters
+        
+    def get_rasters_sets(self, models):
+        
+        dic_rasters={}
+        for model in models:
+            u=self.units_dic[model]
+            self.get_spikes(model)
+            pop=self.units_dic[model].population
+            ids0=numpy.array(self.units_dic[model].population.ids)
+            n_ids_cum=0
+            d=[]
+            for se in u.sets: 
+                spk_times, spk_ids, ids=numpy.array(pop.signals['spikes'].id_slice(ids0[se]).my_raster()) 
+                n_ids=len(ids)
+                d.append([numpy.array([spk_times, spk_ids+n_ids_cum]), ids+n_ids_cum])
+                n_ids_cum+=n_ids
+                      
+            dic_rasters[model]=d
+        return dic_rasters
+
+
     
     def get_simtime_data(self):
         t_total=self.time_calibrated+self.time_built+self.time_connected+self.time_run
@@ -403,6 +461,7 @@ class Slow_wave(Inhibition_base):
                 self.input_params[name]=[{'rates':rates, 
                                           'times':times,
                                           'idx':range(self.par['node'][name]['n'])}]
+
     
 class Single_units_activity(Inhibition_base):    
     
@@ -699,8 +758,157 @@ class Single_units_in_vitro(Inhibition_base):
         return times, voltages
 
                 
+class Bcpnn(Inhibition_base):    
+    
+    def __init__(self, threads=1, start_rec=1., sim_time=1000., **kwargs):
+        super( Bcpnn, self ).__init__(threads, start_rec, sim_time, **kwargs)       
+        # In order to be able to convert super class object to subclass object   
+        self.par=Par_bcpnn(self.par_rep, self.perturbation)        
+        self.path_data='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn'+'/'+self.name +'/'
+        self.path_pictures='/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/bcpnnbg/pictures'+'/'+self.name +'-'
+        
+    def calibrate(self):
+        '''
+        Compute all dependent variables.
+        '''
+        t=time.time()
+        print '\nCalibrating...'
+
+
+        self.calibrated=True
+        self.time_calibrated=int(time.time()-t)
+        print 'Calibrated', self.time_calibrated  
+        
         
     
+    def inputs(self):
+        if self.inputed:
+            return
+        if not self.calibrated: self.calibrate()
+        t=time.time()    
+        print 'Creating inputs...'
+        self.inputed=True
+        
+        for key, val in self.par['netw']['input'].items():
+            if key=='constant':
+                
+                for model in val['nodes']:
+                    self.input_params[model]=[{'rates':[ self.par['node'][model]['rate']], 
+                                             'times':[1.],
+                                             'idx':range(self.par['node'][model]['n'])}]    
+                
+            if key=='bcpnn': 
+                for i in range(val['n_set_pre']):
+                    tt=val['time']
+                    p=val['p_amplitude']
+                    for model in val['nodes']:
+                        if i==0:
+                            self.input_params[model]=[]
+                        idx=list(range(i, self.par['node'][model]['n'], val['n_set_pre']))
+                        
+                        self.input_params[model]+=[{'rates':[ self.par['node'][model]['rate'],
+                                                             self.par['node'][model]['rate']*p,
+                                                             self.par['node'][model]['rate']], 
+                                                   'times':[1., self.start_rec+i*tt, self.start_rec+(i+1)*tt],
+                                                   'idx':idx}] 
+            
+
+        self.time_inputed=int(time.time()-t)
+        print 'Inputed', self.time_inputed    
+        
+        
+class TestStructure(unittest.TestCase):
     
-    
+    def setUp(self):     
+        self.sim_time=500.0
+        self.network=Bcpnn(sim_time=self.sim_time, **{'save_conn':False,
+                                                      'sd_params':{'to_file':True, 'to_memory':False}})
+        self.network.path_data=self.network.path_data+'unit_testing/'
+        self.fileName=self.network.path_data+'network'
+        self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
+            
+    def test_inputs(self):
+        self.network.inputs()
+        nodes=[]
+        for val in self.network.par['netw']['input'].values():
+            nodes+=val['nodes']
+            
+        self.assertListEqual(sorted(nodes), sorted(self.network.input_params.keys()))
+    '''
+    def test_build_connect(self):
+                
+        self.network.par.dic_rep.update({'netw':{'size':500.0, 'sub_sampling':{'M1':10.0,'M2':10.0, 'CO':20.0} }})
+        self.network.build()    
+        
+        for s in self.network.structures:
+            fan_in=float(s.n_conn)/s.target.n   
+            fan_in0=self.network.par['conn'][s.name]['fan_in']
+            print s.name, s.n_conn, fan_in/100.,fan_in0/100.
+            self.assertAlmostEqual(fan_in/100.,fan_in0/100., 1)  
+        
+        self.network.connect()
+        self.network.run()
+        data_to_disk.pickle_save(self.network, self.fileName)
+    '''
+    def test_get_firing_rate(self):
+        
+        network=data_to_disk.pickle_load(self.fileName)
+        my_nest.SetKernelStatus({'data_path':network.path_nest})
+        fr=network.get_firing_rate(self.model_list)
+        
+        for k in self.model_list:
+            self.assertEqual(len(fr[k][0]), self.sim_time-1)
+            self.assertEqual(len(fr[k][1]), self.sim_time-1)
+
+    def test_get_firing_rate_sets(self):
+        
+        network=data_to_disk.pickle_load(self.fileName)
+        my_nest.SetKernelStatus({'data_path':network.path_nest})
+        d=network.get_firing_rate_sets(self.model_list)
+        
+        for k in self.model_list:
+            self.assertEqual(len(d[k][0]), self.sim_time-1)
+            self.assertEqual(d[k][1].shape[1], self.sim_time-1)
+            self.assertEqual(d[k][1].shape[0], network.par['node'][k]['n_sets'])
+
+    def test_get_raster(self):
+        
+        network=data_to_disk.pickle_load(self.fileName)
+        my_nest.SetKernelStatus({'data_path':network.path_nest})
+        d=network.get_rasters(self.model_list)
+        
+        for k in self.model_list:
+            self.assertIsInstance(d[k][0], numpy.ndarray)
+            self.assertEqual(d[k][0].shape[0], 2)
+            self.assertListEqual(list(d[k][1]), range(network.par['node'][k]['n']))
+
+    def test_get_raster_sets(self):
+        
+        network=data_to_disk.pickle_load(self.fileName)
+        my_nest.SetKernelStatus({'data_path':network.path_nest})
+        d=network.get_rasters_sets(self.model_list)
+        
+        for k in self.model_list:
+            n_sets=network.par['node'][k]['n_sets']
+            n=network.par['node'][k]['n']
+            self.assertEqual(len(d[k]), n_sets)
+            step=int(numpy.ceil(float(n)/n_sets))
+            i=0
+            for l in d[k]:
+                self.assertIsInstance(l[0], numpy.ndarray)
+                self.assertEqual(l[0].shape[0], 2)
+                self.assertEqual(len(l[0][0]),len(l[0][1]))
+                self.assertListEqual(list(l[1]), range(i,min(i+step, n)))
+                i+=step
+                
+    #def test_run(self):
+    #    self.network.run(print_time=True)
+    #    data_to_disk.pickle_save(self.network, self.fileName)
+        
+
+            
+
+          
+if __name__ == '__main__':
+    unittest.main()             
         

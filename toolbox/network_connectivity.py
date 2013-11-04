@@ -12,7 +12,6 @@ import os
 import random
 import time
 from toolbox import data_to_disk
-from toolbox.default_params import Par, Par_bcpnn
 import unittest
 
 class Units(object):
@@ -21,22 +20,28 @@ class Units(object):
     or background nodes. It has different properties that define
     it, such as extent, edge_wrap, neuron model, number of neurons. 
     '''
-    def __init__(self, name, dic):
+    def __init__(self, name, dic, par):
         
-        par=dic['par']
+        par=par['node'][name]
         
         self.collected_spikes=False
         self.collected_votage_traces=False
         self.name=name
-        self.n=par['node'][name]['n']
-        self.model=par['node'][name]['model']
-        self.lesion=par['node'][name]['lesion']
-        self.extent=par['node'][name]['extent']
-        self.edge_wrap=par['node'][name]['edge_wrap']
+        self.n=par['n']
+        self.n_sets=par['n_sets']
+        print name, self.n
+        self.model=par['model']
+        self.lesion=par['lesion']
+        self.extent=par['extent']
+        self.edge_wrap=par['edge_wrap']
         self.population=None # Empty container to put a group or input from population module
-        self.type=par['node'][name]['type']
+        self.sets=[slice(s, self.n, self.n_sets) for s in range(self.n_sets)]
+        self.type=par['type']
 
-        self.proportion_of_network=par['node'][name]['prop']
+        if 'prop' in par.keys():
+            self.proportion_of_network=par['prop']
+        else: 
+            self.proportion_of_network=0.0
 
     
     @property
@@ -61,6 +66,9 @@ class Units(object):
         return pos_edge_wrap    
     def __str__(self):
         return self.name
+
+    def __repr__(self):
+        return self.__class__.__name__+':'+self.name
 
     def apply_mask(self, p0, mask_dist=None, allowed=None):
         '''
@@ -94,6 +102,8 @@ class Units(object):
      
     def apply_kernel(self, idx, fan):
         n=len(idx)
+        
+        
         p=float(fan)/n
         rb=numpy.random.binomial
         rs=random.sample
@@ -127,38 +137,29 @@ class Units(object):
 
 
 class Units_input(Units):
-    def __init__(self, name, dic):
-        super( Units_input, self ).__init__(name, dic)
-        self._init_extra_attributes(dic)
+    def __init__(self, name, dic, par):
+        super( Units_input, self ).__init__(name, dic, par)
+        self._init_extra_attributes(par)
            
-    def _init_extra_attributes(self, dic):
+    def _init_extra_attributes(self, par):
         # Add new attribute
-        self.rate=dic['rate']
+        self.rate=par['node'][self.name]['rate']
 
-class Units_background(Units):
-    
-    def __init__(self, name, dic):
-        super( Units_background, self ).__init__(name, dic)
-        self._init_extra_attributes(dic)
-           
-    def _init_extra_attributes(self, dic):
-        # Add new attribute
-        self.proportion_of_network=dic['prop']
-        self.rate=dic['rate']
         
 class Units_neuron(Units):
     
-    def __init__(self, name, dic):
-        super( Units_neuron, self ).__init__(name, dic)
-        self._init_extra_attributes(dic)
+    def __init__(self, name, dic, par):
+        super( Units_neuron, self ).__init__(name, dic, par)
+        self._init_extra_attributes(par)
                  
-    def _init_extra_attributes(self, dic):
+    def _init_extra_attributes(self, par):
         # Add new attribute
-        self.proportion_of_network=dic['prop']
-        self.I_vitro=dic['I_vitro']
-        self.I_vivo=dic['I_vivo']
-        self.randomization=dic['randomization']
-        self.target_rate=dic['target_rate']
+        par=par['node'][self.name]
+        self.proportion_of_network=par['prop']
+        self.I_vitro=par['I_vitro']
+        self.I_vivo=par['I_vivo']
+        self.randomization=par['randomization']
+        self.target_rate=par['target_rate']
        
     def randomize_params(self, params):
         setup={}
@@ -175,13 +176,11 @@ class Structure(object):
     and a group of target units. 
     '''
     
-    def __init__(self, name, dic):
+    def __init__(self, name, dic, par):
         
         # Need to set them first
         self.source=dic['source'] # As units
         self.target=dic['target']
-        
-        par=dic['par']
         
         self.connection_type=par['conn'][name]['connection_type']
         self.conn_pre=[]
@@ -191,12 +190,12 @@ class Structure(object):
         self.lesion=par['conn'][name]['lesion']
         
         
-        self.fan_in=int(par['conn'][name]['fan_in']*(1-(par['netw']['tata_dop']-par['netw']['tata_dop0'])*par['conn'][name]['beta_fan_in']))
+        self.fan_in=int(par['conn'][name]['fan_in'])
         self.beta_fan_in=par['conn'][name]['beta_fan_in']
                                  
         # So that the fan always is less or equal to number of targets
-        if self.fan_in >self.target.n:
-            self.source.n=self.fan_in
+        #if self.fan_in >self.target.n:
+        #    self.source.n=self.fan_in
             
         self.name=name
         self.n_conn=0
@@ -208,30 +207,17 @@ class Structure(object):
         
         # Defines which pool nodes are considered based on hierarchy 
         self.rule=par['conn'][name]['rule']
-        if self.rule=='set-not_set' and par['conn'][name]['sets'][0]==1: # If we only have one set
+        
+        if self.rule=='set-not_set' and self.source.n_sets==1: # If we only have one set
             self.rule='set-set' 
         
         self.data_path_learned_conn=par['conn'][name]['data_path_learned_conn']
         
         self.save_at=dic['save_at']
         
-        # Source and target are unit objects
-        self.sets=par['conn'][name]['sets']
+        self.sets_conn=[]
         
-        self.sets_mapping_pre={}
-        self.sets_mapping_post={}
-        
-        
-        self.sets_mapping_driver={}
-        self.sets_mapping_pool={}
-        self.sets_driver=[]
-        self.sets_pool=[]
-        
-        
-        sets_source=[slice(s, self.source.n, self.sets[0]) for s in range(self.sets[0])]
-        sets_target=[slice(s, self.target.n, self.sets[1]) for s in range(self.sets[1])]
-        
-        
+           
         # When creating a divergent connection, each node in the source units 
         # is visited in turn and selects target nodes from the target units. Masks, kernels,
         # and boundary conditions are applied in the target units
@@ -239,8 +225,7 @@ class Structure(object):
             self.driver=self.source
             self.pool=self.target
             self.fan_pool=self.fan_in
-            self.sets_driver=sets_source
-            self.sets_pool=sets_target
+
                 
         # When creating a convergent connection between units, each node in the 
         # target units are visited in turn and sources are selected for it in the
@@ -251,15 +236,12 @@ class Structure(object):
             self.driver=self.target
             self.pool=self.source 
             self.fan_pool=int(round(self.fan_in*self.target.n/float(self.source.n)))
-            self.sets_driver=sets_target
-            self.sets_pool=sets_source
+
         
         # The sets are mixed up. With three sets then every third
         # node starting from 0 will be from the first set, every
         # third node starting from 1 will be from the second set 
         # and the rest will be from the third set.
-        self.sets_source=sets_source
-        self.sets_target=sets_target
      
         self.syn=par['conn'][name]['syn']     
         self.tata_dop=par['netw']['tata_dop']
@@ -278,7 +260,14 @@ class Structure(object):
         am=self.driver.apply_mask
         ak=self.driver.apply_kernel
         fan=self.fan_pool
+        
+        if self.rule=='set-all_to_all':
+            fan=fan/self.driver.n_sets
+            if fan<1:
+                raise Exception('For rule "set-all_to_all" the fan in has to be bigger than number driver sets')
 
+        if self.rule=='set-not_set':
+            fan=fan/(self.driver.n_sets-1)
         # Get connections
         nodes=[ak(am(self.pool.pos[v], self.mask, dr), fan) for v in po]
         n_bp=map(len, nodes)
@@ -292,14 +281,15 @@ class Structure(object):
         if self.beta_fan_in:
             s='-dop-'+str(self.tata_dop)
            
-        save_path=self.save_at+'conn-'+str(int(self.network_size))+'/'+self.name+s
+        save_path=self.save_at+'conn-'+str(int(self.network_size))+'/'+self.name+s+str(self.source.n+self.target.n)
         t=time.time()
         if os.path.isfile(save_path+'.pkl') and save_mode: 
-            self.n_conn, self.conn_pre, self.conn_post=data_to_disk.pickle_load(save_path)
+            self.n_conn, self.conn_pre, self.conn_post, self.sets_conn=data_to_disk.pickle_load(save_path)
         
         else:
         
-            
+            if self.name=='CO_M1_ampa':
+                print self
             driver_out=[]
             pool_out=[]
             # Each presynaptic node connects to only one postsynaptic
@@ -326,8 +316,8 @@ class Structure(object):
             # Randomly connects presynaptic neurons of set i with postsynaptic 
             # neurons of set i. Constrained by k_source, mask_dist and the sets. 
             elif self.rule in 'set-set':
-                i=0
-                for se_dr, se_po in zip(self.sets_driver, self.sets_pool):        
+
+                for se_dr, se_po in zip(self.driver.sets, self.pool.sets):        
                   
                     dr=self.driver.idx[se_dr]
                     po=self.pool.idx[se_po]
@@ -336,37 +326,35 @@ class Structure(object):
                     self._add_connections(driver_out, pool_out, dr, po)
                     n_post=len(driver_out)
                 
-                    self.sets_mapping_driver={i: slice(n_post,n_post, 1)}
-                    self.sets_mapping_pool={i: slice(n_post,n_post, 1)}
-                    i+=1
+                    self.sets_conn.append(slice(n_pre, n_post, 1))
+
+
             # Randomly connects presynaptic neurons from set i to all postsynaptic sets except
             # to set i.     
             elif self.rule=='set-not_set':
                                      
-                for se_dr, se_po in zip(self.sets_driver, self.sets_pool):       
+                for se_dr, se_po in zip(self.driver.sets, self.pool.sets):       
                   
                     dr=self.driver.idx[se_dr]
                     po=set(self.pool.idx).difference(self.pool.idx[se_po])    
-                    
+                    n_pre=len(driver_out)
                     self._add_connections(driver_out, pool_out, dr, po)
-      
+                    n_post=len(driver_out)
+                    
+                    self.sets_conn.append(slice(n_pre, n_post, 1))
             # Load learned connections     
             elif self.rule=='set-all_to_all':
-                if self.connection_type=='divergent':
-                    pass
-       
-                elif self.connection_type=='convergent':
-                    raise Exception('set-all_to_all connections need to be divergent')  
                 
-                
-                for i, se_pre in enumerate(self.sets_driver):
-                    for j, se_post in enumerate(self.sets_pool):
-                        pre =self.pre.idx[se_pre]
-                        post=self.pool.idx[se_post]
+                for se_driver in self.driver.sets:
+                    for se_pool in self.pool.sets:
+                        driver =self.driver.idx[se_driver]
+                        pool=self.pool.idx[se_pool]
                         
-                        self._add_connections(driver_out, pool_out, pre, post)
-                        self.sets_mapping_driver={i+j: slice(n_post,n_post, 1)}
-                        self.sets_mapping_pool={i+j: slice(n_post,n_post, 1)}
+                        n_before=len(driver_out)
+                        self._add_connections(driver_out, pool_out, driver, pool)
+                        n_after=len(driver_out)
+                        
+                        self.sets_conn.append(slice(n_before, n_after, 1))
   
             if self.connection_type=='divergent':
                 self.conn_pre, self.conn_post= driver_out, pool_out
@@ -377,7 +365,7 @@ class Structure(object):
             self.n_conn=len(pool_out)
             
             if save_mode:
-                data_to_disk.pickle_save([self.n_conn, self.conn_pre, self.conn_post], save_path) 
+                data_to_disk.pickle_save([self.n_conn, self.conn_pre, self.conn_post, self.sets_conn], save_path) 
         
         t=time.time()-t
         print 'Structure: {0:18} Connections: {1:8} Fan pool:{2:6} Time:{3:5} sec'.format(self.name, len(self.conn_pre), 
@@ -386,47 +374,28 @@ class Structure(object):
            
     def get_delays(self):
         x=self.delay_setup
-        if 'constant' in x.keys():
-            return numpy.ones(self.n_conn)*x['constant']
-        elif 'uniform' in x.keys():
-            return list(numpy.random.uniform(low=x['uniform']['min'], 
-                                             high=x['uniform']['max'], 
+        if 'constant' == x['type']:
+            return numpy.ones(self.n_conn)*x['params']
+        elif 'uniform' == x['type']:
+            return list(numpy.random.uniform(low=x['params']['min'], 
+                                             high=x['params']['max'], 
                                              size=self.n_conn))      
     
     def get_weights(self):
         x=self.weight_setup
-        if 'constant' in x.keys():
-            return numpy.ones(self.n_conn)*x['constant']
-        if 'uniform' in x.keys():
-            return list(numpy.random.uniform(low=x['uniform']['min'], 
-                                             high=x['uniform']['max'], 
+        if 'constant' == x['type']:
+            return numpy.ones(self.n_conn)*x['params']
+        if 'uniform' == x['type']:
+            return list(numpy.random.uniform(low=x['params']['min'], 
+                                             high=x['params']['max'], 
                                              size=self.n_conn))    
-        if 'learned' in x.keys():
+        if 'learned' == x['type']:
             weights=data_to_disk.pickle_load(self.data_path_learned_conn)
-                 
-            n_set_pre, n_set_post=weights.shape # Driver is pre
-            n_pre=self.soruce.n 
-            n_post=self.target.n    
-                
-            # Get range of sets of presynaptic subpoulations
-            step=n_pre/n_set_pre
-            sub_pops_pre=numpy.array([[step*i,step*(i+1)]  for i in range(n_set_pre)])
-                
-            # Get range of sets of postsynaptic subpoulations
-            step=n_post/n_set_post
-            sub_pop_pool=[[step*i, step*(i+1)]  for i in range(n_set_post)]
             
             conns=numpy.zeros(self.n_conn)
-            for i in range(n_set_pre):
-                se_pre=sub_pops_pre[i]
-                for j in range(n_set_post):
-                    se_post=sub_pop_pool[j]
-                    
-                    # For each weight pick out the specific pre and post connections
-                    idx_conn_bool=(self.conn_pre>se_pre[0])*(self.conn_pre<se_pre[1])
-                    idx_conn_bool*=(self.conn_post>se_post[0])*(self.conn_post<se_post[1])
-                    conns[idx_conn_bool]= weights[i]
-                    
+            for i, sl in enumerate(self.sets_conn):
+                conns[sl]=weights[i]
+            return list(conns*x['params'])    
             
     def plot_hist(self, ax):
         if self.n_conn==0:
@@ -462,8 +431,8 @@ class Structure_list(object):
         
         self.list=[]        
         if setup:
-            for name, params in setup: 
-                self.append(name, params) 
+            for k, dic, par in setup: 
+                self.append(k, dic, par) 
     
     def __getitem__(self,a):
         return self.list[a]
@@ -474,11 +443,11 @@ class Structure_list(object):
     def __str__(self):
         return str(['conn_obj:'+str(i) for i in self.list])
         
-    def append(self,k,v):
-        self.list.append(Structure( k,v ))
+    def append(self,k,v, p):
+        self.list.append(Structure( k, v, p ))
         
-    def extend(self,k,v):
-        self.list.extend(Structure( k,v))
+    def extend(self,k,v,p):
+        self.list.extend(Structure( k,v,p))
     
     def pprint(self):
         pos='{0:20}{1:10}{2:9}{3:6}{4:21}{5:8}{6:5}{7:14}{8:6}'
@@ -511,28 +480,108 @@ class Structure_list(object):
         self.list=sorted(self.list,key=lambda x:x.name)   
         
         
+class TestUnits(unittest.TestCase):
+    
+    def setUp(self):
+        from toolbox.default_params import Par
+        self.par=Par()
 
+    def test_units_create(self):
+        units=[]
+        for k, val in self.par['node'].items():
+            dic={}
+            units.append(val['unit_class'](k, dic, self.par))
 
+class TestUnitsBcpnn(TestUnits):
+    
+    def setUp(self):
+        from toolbox.default_params import Par_bcpnn
+        self.par=Par_bcpnn()
+        
 class TestStructure(unittest.TestCase):
     
     def setUp(self):
         
-        self.par_bcpnn=Par_bcpnn(par_rep={'netw':2000.0})
+        #To avoid circular dependency
+        from toolbox.default_params import Par_bcpnn
         
-        self.u1=Units('CO', {'par':self.par_bcpnn })   
-        self.u1=Units('M1', {'par':self.par_bcpnn }) 
+        self.units_dic={}
+        self.par=Par_bcpnn(dic_rep={'netw':{'size':2000.0}})
+        for k, v in self.par['node'].items():
+            self.units_dic[k]=(v['unit_class'](k, {}, self.par))
         
-        self.s1=Structure('CO_M1_ampa', {'source':self.u1, 'target':self.u2, 'par':self.par_bcpnn})
         
+        dplc='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-CO_M1.pkl'
         
-                
+        self.par_bcpnn=Par_bcpnn(dic_rep={'netw':{'size':2000.0}, 
+                                          'node':{'CO':{'n':150},'M1':{'n':150}, 'SN':{'n':100}},
+                                          'conn':{'CO_M1_ampa':{'sets':[10,5],
+                                                                'fan_in':15.,
+                                                                'rule':'set-all_to_all',
+                                                                'data_path_learned_conn':dplc},
+                                                  'M1_SN_gaba':{'sets':[2,2],
+                                                                'fan_in':10.,
+                                                                'rule':'set-set'}}})
+        
+        self.u1=Units('CO', {}, self.par_bcpnn )   
+        self.u2=Units('M1', {}, self.par_bcpnn ) 
+        self.u3=Units('SN', {}, self.par_bcpnn ) 
+        
+        self.s1=Structure('CO_M1_ampa', {'source':self.u1, 'target':self.u2, 'save_at':''}, 
+                                         self.par_bcpnn)
+        self.s2=Structure('M1_SN_gaba', {'source':self.u2, 'target':self.u3, 'save_at':''}, 
+                                         self.par_bcpnn)        
+        
+               
     def test_set_all_to_all(self):
         self.s1.set_connections(False)
+        set_source=self.par_bcpnn['conn']['CO_M1_ampa']['sets'][0]
+        n_target=self.par_bcpnn['node']['M1']['n']
+        self.assertAlmostEqual(set_source*n_target/float(self.s1.n_conn),1.0,1)
         
-        
-            
+    def test_set_set(self):
+        self.s2.set_connections(False)
+        fan_in=self.par_bcpnn['conn']['M1_SN_gaba']['fan_in']
+        n_target=self.par_bcpnn['node']['SN']['n']
+        self.assertAlmostEqual(fan_in*n_target/self.s2.n_conn,1.0,1)        
     
+    def test_get_weights_learned(self):
+        self.s1.set_connections(False)
+        w=self.s1.get_weights()
+        weights=data_to_disk.pickle_load(self.s1.data_path_learned_conn)*self.s1.weight_setup['params']
+        self.assertSetEqual(set(w), set(weights))
+    
+    def test_get_weights_learned2(self):
 
+        for k, v in self.par['conn'].items():
+            if v['weight_setup']['type']=='learned':
+                dic={}
+                soruce, target=k.split('_')[0:2]
+                dic['source']=self.units_dic[soruce]
+                dic['target']=self.units_dic[target]
+                dic['save_at']=''
+                s=Structure(k, dic, self.par)
+                s.set_connections(False)
+                w1=s.get_weights()
+                w2=data_to_disk.pickle_load(s.data_path_learned_conn)*s.weight_setup['params']
+                self.assertSetEqual(set(w1), set(w2))
+      
+            
+    def test_get_weights_uniform(self):
+        self.s2.set_connections(False)
+        w=self.s2.get_weights()
+        mw=numpy.mean(w)
+        self.assertAlmostEqual(.1, self.s2.weight_val/mw/10.0,1)    
         
+    
+        
+        
+    def test_save_conn_change_sub_sampling(self):    
+        self.par_bcpnn
+        
+        pass
+        
+        
+             
 if __name__ == '__main__':
     unittest.main() 

@@ -68,7 +68,7 @@ network  - define layers and populations
 
 from copy import deepcopy
 from toolbox import misc
-from toolbox.network_connectivity import Units, Units_input, Units_neuron
+from toolbox.network_connectivity import Units_input, Units_neuron
 import nest # Has to after misc. 
 
 MODULE_PATH=  '/afs/nada.kth.se/home/w/u1yxbcfw/tools/NEST/dist/install-nest-2.2.2/lib/nest/ml_module'
@@ -88,7 +88,7 @@ class Pertubation_list(object):
     
     def __init__(self, iterator):
         self.list=[]
-        
+        self.applied=False
         if not isinstance(iterator[0], list):
             iterator=[iterator]
         
@@ -102,6 +102,7 @@ class Pertubation_list(object):
         return self.list[val]
     
     def update(self, dic, display=False):
+        
         dic0=deepcopy(dic)
         for p in self.list:
             dic=misc.dict_recursive_update(dic, p.keys, p.val, p.op)
@@ -115,7 +116,9 @@ class Pertubation_list(object):
             if val!=dic_red[key]:
                 s+= key+':'+str(val) + ' -> ' + str(dic_red[key])+' '
         if display:
-            print 'pertubations OK '+s         
+            print 'pertubations OK '+s 
+        
+        self.applied=True            
         return dic
 
     
@@ -127,6 +130,7 @@ class Par(object):
         self._dic_con = {} #non dependable parameters
         self._dic_dep = {}
         self._dic_rep = dic_rep # parameters to change
+        self.dic_set = False
         self.dic_con_set=dic_rep=={}
         self.dic_dep_set=False
         self.dic_rep_set=dic_rep=={}
@@ -147,10 +151,10 @@ class Par(object):
         dic['netw']={} 
         
         # @TODO defining input in par. Make network_construction use this information.
-        dic['netw']['input']={'constant':{'node_names':['C1', 'C2', 'CF', 'CS', 'EA', 'EI', 'ES']}}
+        dic['netw']['input']={'constant' :{'nodes':['C1', 'C2', 'CF', 'CS', 'EA', 'EI', 'ES']}}
         
         dic['netw']['size']=10000.0 
-        dic['netw']['tata_dop']  = 0
+        dic['netw']['tata_dop']  = 0.8
         dic['netw']['tata_dop0'] = 0.8
     
         dic['netw']['prop_GPE_A'] = 0.2
@@ -160,16 +164,19 @@ class Par(object):
     
         dic['netw']['V_th_sigma']=1.0
         
+        dic['netw']['sub_sampling']={'MS':1.0} 
+
+        dic['netw']['n_nuclei']={'M1':2791000/2.,
+                                 'M2':2791000/2.,
+                                 'FS': 0.02*2791000, # 2 % if MSN population
+                                 'ST': 13560.,
+                                 'GP': 45960.,
+                                 'SN': 26320.}
         
-        dic['netw']['n_stp_model']={'M1':2791000/2.,
-                                    'M2':2791000/2.,
-                                    'FS': 0.02*2791000, # 2 % if MSN population
-                                    'ST': 13560.,
-                                    'GP': 45960.,
-                                    'SN': 26320.}
+        
         
         '''
-        n_stp_model={'M1':15000,
+        n_nuclei={'M1':15000,
                'M2':15000,
                'FS': 0.02*30000, # 2 % if MSN population
                'ST': 100,
@@ -177,10 +184,12 @@ class Par(object):
                'SN': 300}   
         '''
         
-        prop=dic['netw']['n_stp_model'].copy()
+        prop=dic['netw']['n_nuclei'].copy()
         dic['netw']['prop']={}
+        dic['netw']['n_nuclei_sub_sampling']={}
         for k in prop.keys(): 
-            dic['netw']['prop'].update({k:prop[k]/sum(prop.values())})  
+            dic['netw']['prop'].update({k:None})  
+            dic['netw']['n_nuclei_sub_sampling'].update({k:None})  
         
         
         
@@ -219,7 +228,7 @@ class Par(object):
         dic['nest']['GA_FS_gaba']['receptor_type'] = self.rec['izhik_cond_exp'][ 'GABAA_2' ]
         
         
-        # CTX-MSN D2
+        # CTX-MSN D1
         dic['nest']['C1_M1_ampa']={}
         dic['nest']['C1_M1_ampa']['weight']   = .5     # constrained by Ellender 2011
         dic['nest']['C1_M1_ampa']['delay']    = 12.    # Mallet 2005
@@ -705,20 +714,23 @@ class Par(object):
         
         for key in inputs.keys():       
             inputs[key].update({'extent':[-0.5, 0.5],'edge_wrap':True, 'n':None,
-                                'lesion':False, 'type':'input',
+                                'lesion':False, 'type':'input', 'n_sets':1,
                                 'unit_class':Units_input })
                 
         dic['node']=misc.dict_merge(dic['node'], inputs)
         
            
-        network={'M1':{'model':'M1_low', 'I_vitro':0.0, 'I_vivo':0.0,  'target_rate':0.1},
-                 'M2':{'model':'M2_low', 'I_vitro':0.0, 'I_vivo':0.0,  'target_rate':0.1},
-                 'FS':{'model':'FS_low', 'I_vitro':0.0, 'I_vivo':0.0,  'target_rate':20.0},
-                 'ST':{'model':'ST',     'I_vitro':6.0, 'I_vivo':6.0,  'target_rate':10.0},
-                 'GA':{'model':'GA',     'I_vitro':5.0, 'I_vivo':-3.6, 'target_rate':None}, #23, -8
-                 'GI':{'model':'GI',     'I_vitro':5.0, 'I_vivo':4.5,  'target_rate':None}, #51, 56
-                 'SN':{'model':'SN',     'I_vitro':15.0,'I_vivo':19.2, 'target_rate':30.0}}
+        network={'M1':{'model':'M1_low', 'n_sets':1, 'I_vitro':0.0, 'I_vivo':0.0,  'target_rate':0.1},
+                 'M2':{'model':'M2_low', 'n_sets':1, 'I_vitro':0.0, 'I_vivo':0.0,  'target_rate':0.1},
+                 'FS':{'model':'FS_low', 'n_sets':1, 'I_vitro':0.0, 'I_vivo':0.0,  'target_rate':20.0},
+                 'ST':{'model':'ST',     'n_sets':1, 'I_vitro':6.0, 'I_vivo':6.0,  'target_rate':10.0},
+                 'GA':{'model':'GA',     'n_sets':1, 'I_vitro':5.0, 'I_vivo':-3.6, 'target_rate':None}, #23, -8
+                 'GI':{'model':'GI',     'n_sets':1, 'I_vitro':5.0, 'I_vivo':4.5,  'target_rate':None}, #51, 56
+                 'SN':{'model':'SN',     'n_sets':1, 'I_vitro':15.0,'I_vivo':19.2, 'target_rate':30.0}}
         
+        network['M1'].update({'target_rate_in_vitro':0.0})
+        network['M2'].update({'target_rate_in_vitro':0.0})
+        network['FS'].update({'target_rate_in_vitro':0.0})
         network['ST'].update({'target_rate_in_vitro':10.0})
         network['GA'].update({'target_rate_in_vitro':4.0})
         network['GI'].update({'target_rate_in_vitro':15.0})
@@ -758,87 +770,88 @@ class Par(object):
                'EI_GI_ampa':{ 'syn':'EI_GI_ampa' },
                'ES_SN_ampa':{ 'syn':'ES_SN_ampa' }}
         for key in conns.keys():
-            conns[key].update({'fan_in':1,  'sets':1, 'rule':'1-1' })
+            conns[key].update({'fan_in0':1,  'rule':'1-1' })
         
         dic['conn']={}
         # Number of incomming connections from a nucleus to another nucleus.
-        dic['conn']['M1_SN_gaba']={'fan_in': 500}
-        dic['conn']['M2_GI_gaba']={'fan_in': 500}
-        dic['conn']['M1_M1_gaba']={'fan_in': int(round(2800*0.1/2.0))}
-        dic['conn']['M1_M2_gaba']={'fan_in': dic['conn']['M1_M1_gaba']['fan_in']}
-        dic['conn']['M2_M1_gaba']={'fan_in': dic['conn']['M1_M1_gaba']['fan_in']}
-        dic['conn']['M2_M2_gaba']={'fan_in': dic['conn']['M1_M1_gaba']['fan_in']}
-        dic['conn']['FS_M1_gaba']={'fan_in': 10}
-        dic['conn']['FS_M2_gaba']={'fan_in': dic['conn']['FS_M1_gaba']['fan_in'] }
-        dic['conn']['FS_FS_gaba']={'fan_in': 10}
-        dic['conn']['ST_GA_ampa']={'fan_in': 30}
-        dic['conn']['ST_GI_ampa']={'fan_in': 30}
-        dic['conn']['ST_SN_ampa']={'fan_in': 30}
-        dic['conn']['GA_FS_gaba']={'fan_in': 10}
-        dic['conn']['GA_M1_gaba']={'fan_in': 10}
-        dic['conn']['GA_M2_gaba']={'fan_in': 10}
-        dic['conn']['GA_GA_gaba']={'fan_in': None}
-        dic['conn']['GA_GI_gaba']={'fan_in': None}
-        dic['conn']['GI_GA_gaba']={'fan_in': None}
-        dic['conn']['GI_GI_gaba']={'fan_in': None}
-        dic['conn']['GI_ST_gaba']={'fan_in': 30}
-        dic['conn']['GI_SN_gaba']={'fan_in': 32}
+        dic['conn']['M1_SN_gaba']={'fan_in0': 500}
+        dic['conn']['M2_GI_gaba']={'fan_in0': 500}
+        dic['conn']['M1_M1_gaba']={'fan_in0': int(round(2800*0.1/2.0))}
+        dic['conn']['M1_M2_gaba']={'fan_in0': dic['conn']['M1_M1_gaba']['fan_in0']}
+        dic['conn']['M2_M1_gaba']={'fan_in0': dic['conn']['M1_M1_gaba']['fan_in0']}
+        dic['conn']['M2_M2_gaba']={'fan_in0': dic['conn']['M1_M1_gaba']['fan_in0']}
+        dic['conn']['FS_M1_gaba']={'fan_in0': 10}
+        dic['conn']['FS_M2_gaba']={'fan_in0': dic['conn']['FS_M1_gaba']['fan_in0'] }
+        dic['conn']['FS_FS_gaba']={'fan_in0': 10}
+        dic['conn']['ST_GA_ampa']={'fan_in0': 30}
+        dic['conn']['ST_GI_ampa']={'fan_in0': 30}
+        dic['conn']['ST_SN_ampa']={'fan_in0': 30}
+        dic['conn']['GA_FS_gaba']={'fan_in0': 10}
+        dic['conn']['GA_M1_gaba']={'fan_in0': 10}
+        dic['conn']['GA_M2_gaba']={'fan_in0': 10}
+        dic['conn']['GA_GA_gaba']={'fan_in0': None}
+        dic['conn']['GA_GI_gaba']={'fan_in0': None}
+        dic['conn']['GI_GA_gaba']={'fan_in0': None}
+        dic['conn']['GI_GI_gaba']={'fan_in0': None}
+        dic['conn']['GI_ST_gaba']={'fan_in0': 30}
+        dic['conn']['GI_SN_gaba']={'fan_in0': 32}
     
         # Network        
         conns.update(
-               {'M1_SN_gaba':{ 'syn':'M1_SN_gaba', 'sets':[1,1], 'rule':'set-set' },
-                'M2_GI_gaba':{ 'syn':'M2_GI_gaba', 'sets':[1,1], 'rule':'set-set' },
+               {'M1_SN_gaba':{ 'syn':'M1_SN_gaba', 'rule':'set-set' },
+                'M2_GI_gaba':{ 'syn':'M2_GI_gaba', 'rule':'set-set' },
                        
-                'M1_M1_gaba':{ 'syn':'M1_M1_gaba', 'sets':[1,1], 'rule':'set-not_set' },
-                'M1_M2_gaba':{ 'syn':'M1_M2_gaba', 'sets':[1,1], 'rule':'set-not_set' },                     
-                'M2_M1_gaba':{ 'syn':'M2_M1_gaba', 'sets':[1,1], 'rule':'set-not_set' },
-                'M2_M2_gaba':{ 'syn':'M2_M2_gaba', 'sets':[1,1], 'rule':'set-not_set' },                     
+                'M1_M1_gaba':{ 'syn':'M1_M1_gaba', 'rule':'set-not_set' },
+                'M1_M2_gaba':{ 'syn':'M1_M2_gaba', 'rule':'set-not_set' },                     
+                'M2_M1_gaba':{ 'syn':'M2_M1_gaba', 'rule':'set-not_set' },
+                'M2_M2_gaba':{ 'syn':'M2_M2_gaba', 'rule':'set-not_set' },                     
                
-                'FS_M1_gaba':{ 'syn':'FS_M1_gaba', 'sets':[1,1], 'rule':'all' },
-                'FS_M2_gaba':{ 'syn':'FS_M2_gaba', 'sets':[1,1], 'rule':'all', 'beta_fan_in':0.8},                       
-                'FS_FS_gaba':{ 'syn':'FS_FS_gaba', 'sets':[1,1], 'rule':'all' },
+                'FS_M1_gaba':{ 'syn':'FS_M1_gaba', 'rule':'all' },
+                'FS_M2_gaba':{ 'syn':'FS_M2_gaba', 'rule':'all', 'beta_fan_in':0.8},                       
+                'FS_FS_gaba':{ 'syn':'FS_FS_gaba', 'rule':'all' },
               
-                'ST_GA_ampa':{ 'syn':'ST_GA_ampa', 'sets':[1,1], 'rule':'all' },
-                'ST_GI_ampa':{ 'syn':'ST_GI_ampa', 'sets':[1,1], 'rule':'all' },
-                'ST_SN_ampa':{ 'syn':'ST_SN_ampa', 'sets':[1,1], 'rule':'all' },
+                'ST_GA_ampa':{ 'syn':'ST_GA_ampa', 'rule':'all' },
+                'ST_GI_ampa':{ 'syn':'ST_GI_ampa', 'rule':'all' },
+                'ST_SN_ampa':{ 'syn':'ST_SN_ampa', 'rule':'all' },
                
-                'GA_FS_gaba':{ 'syn':'GA_FS_gaba', 'sets':[1,1], 'rule':'all' },
-                'GA_M1_gaba':{ 'syn':'GA_M1_gaba', 'sets':[1,1], 'rule':'all' },
-                'GA_M2_gaba':{ 'syn':'GA_M2_gaba', 'sets':[1,1], 'rule':'all' },
-                'GA_GA_gaba':{ 'syn':'GA_GA_gaba', 'sets':[1,1], 'rule':'all' }, 
-                'GA_GI_gaba':{ 'syn':'GA_GI_gaba', 'sets':[1,1], 'rule':'all' },
-                'GI_GI_gaba':{ 'syn':'GI_GI_gaba', 'sets':[1,1], 'rule':'all' },
-                'GI_GA_gaba':{ 'syn':'GI_GA_gaba', 'sets':[1,1], 'rule':'all' },
+                'GA_FS_gaba':{ 'syn':'GA_FS_gaba', 'rule':'all' },
+                'GA_M1_gaba':{ 'syn':'GA_M1_gaba', 'rule':'all' },
+                'GA_M2_gaba':{ 'syn':'GA_M2_gaba', 'rule':'all' },
+                'GA_GA_gaba':{ 'syn':'GA_GA_gaba', 'rule':'all' }, 
+                'GA_GI_gaba':{ 'syn':'GA_GI_gaba', 'rule':'all' },
+                'GI_GI_gaba':{ 'syn':'GI_GI_gaba', 'rule':'all' },
+                'GI_GA_gaba':{ 'syn':'GI_GA_gaba', 'rule':'all' },
                 
-                'GI_ST_gaba':{ 'syn':'GI_ST_gaba', 'sets':[1,1], 'rule':'all' },
-                'GI_SN_gaba':{ 'syn':'GI_SN_gaba', 'sets':[1,1], 'rule':'all' }})
+                'GI_ST_gaba':{ 'syn':'GI_ST_gaba', 'rule':'all' },
+                'GI_SN_gaba':{ 'syn':'GI_SN_gaba', 'rule':'all' }})
         
         
         #conns={'MSN_D1_bg-MSN_D1':{'fan_in':fan_in_D1_bg_DX,'syn':'MSN_SNR_gaba_s_min', 'sets':1,  'rule':'all'}}
         # Add extend to conn
         for k in sorted(conns.keys()): 
-            
+            source=k.split('_')[0]
             if k=='FS_M2_gaba':
                 conns[k]['beta_fan_in']=0.8
             else:
                 conns[k]['beta_fan_in']=0.0
             conns[k]['data_path_learned_conn']='' #No     
             # Cortical input do not randomally change CTX input
-            if k[0] in ['C', 'E']:
-                delay_setup  = {'constant':None}
-                weight_setup = {'constant':None}
+            if dic['node'][source]['type']=='input':
+                delay_setup  = {'type':'constant', 'params':None}
+                weight_setup = {'type':'constant', 'params':None}
             
             else:
                 pr=0.5
-                delay_setup =  {'uniform':{'min':None,  'max':None}}
-                weight_setup = {'uniform':{'min':None, 'max':None}}
+                delay_setup =  {'type':'uniform', 'params':{'min':None,  'max':None}}
+                weight_setup = {'type':'uniform', 'params':{'min':None, 'max':None}}
             
             conns[k].update({'lesion':False, 'connection_type':'divergent',
                              'delay_val':None,
                              'delay_setup':delay_setup, 
                              'weight_val':None,
                              'weight_setup':weight_setup,
-                             'mask':None})
+                             'mask':None,
+                             'fan_in':None})
             
             pre, post=k.split('_')[0:2]
             if pre[0:2] in ['M1', 'M2'] and post[0:2] in ['M1', 'M2']:
@@ -855,20 +868,28 @@ class Par(object):
                                
         self._dic_con=dic
         
+    def __repr__(self):
+        return  self.__class__.__name__
     
     @property
     def dic(self):
         
-        # Test if dic and dic dependable are correct. That is
-        # the values in dic_dep should be None values in dic
-        dic=deepcopy(self.dic_con)
-        dic_dep=deepcopy(self.dic_dep)
+        if self.dic_set and (not self.per or self.per.applied):
+            pass        
+        else:
+            # Test if dic and dic dependable are correct. That is
+            # the values in dic_dep should be None values in dic
+            dic=deepcopy(self.dic_con)
+            dic_dep=deepcopy(self.dic_dep)
         
-        dic=misc.dict_merge(dic, dic_dep)
-        if not self.per==None:
-            dic=self.per.update(dic)
+            dic=misc.dict_merge(dic, dic_dep)
+            if not self.per==None:
+                dic=self.per.update(dic)
+        
 
-        return dic
+            self._dic=dic
+            self.dic_set=True
+        return self._dic   
    
     @property 
     def dic_con(self): 
@@ -894,12 +915,14 @@ class Par(object):
     
     @property
     def dic_rep(self):
+        self.dic_set=False
         self.dic_con_set=False
         self.dic_dep_set=False
         return self._dic_rep
     
     @dic_rep.setter
     def dic_rep(self, value):
+        self.dic_set=False
         self.dic_con_set=False
         self.dic_dep_set=False
         self._dic_rep=value
@@ -942,6 +965,22 @@ class Par(object):
                 keys.append(key)
         return keys
     
+    def get_node_input_keys(self):
+        keys=[]
+        for key in self.dic_con['node'].keys():
+            if self.dic_con['node'][key]['type']=='input':
+                keys.append(key)
+        return keys
+    
+    def get_nest_neurons_keys(self):
+        k=[]
+        for key, val in self._dic_con['nest'].items():
+            if val['template'] in self.rec.keys():
+                k.append(key)
+            
+        return k
+    
+    
     def get_dependable_par(self):
         dc=self._dic_con
         ddep={}
@@ -949,9 +988,21 @@ class Par(object):
         # ===========================
         # Dependables nest parameters 
         # ===========================    
+        ddep['netw']={}
+        ddep['netw']['n_nuclei_sub_sampling']={}
+        for k in dc['netw']['n_nuclei']:
+            p=1
+            if k in dc['netw']['sub_sampling'].keys():
+                p= dc['netw']['sub_sampling'][k]
+            ddep['netw']['n_nuclei_sub_sampling'][k]=dc['netw']['n_nuclei'][k]/p
+            
+        n_nuclei=ddep['netw']['n_nuclei_sub_sampling'].copy()
         
-        for model in ['MS', 'M1','M1_low','M1_high', 'M2', 'M2_low','M2_high',
-                      'FS', 'FS_low', 'FS_high', 'ST', 'GP', 'GI', 'GA', 'SN']:
+        ddep['netw']['prop']={}
+        for k in n_nuclei.keys(): 
+            ddep['netw']['prop'].update({k:n_nuclei[k]/sum(n_nuclei.values())}) 
+        
+        for model in self.get_nest_neurons_keys():
             dra(ddep, ['nest', model,'tata_dop'], dc['netw']['tata_dop']-dc['netw']['tata_dop0'])       
         
             
@@ -973,7 +1024,7 @@ class Par(object):
             C_m=dc['nest'][key]['C_m']
             V_th=dc['nest'][key]['V_th']
             
-            dra(ddep,['node', key ,'prop'], dc['node'][key]['prop'])
+            
             dra(ddep,['node', key ,'randomization' ,'C_m' ,'gaussian','my'],C_m)
             dra(ddep,['node', key ,'randomization' ,'C_m' ,'gaussian','sigma'],0.1*C_m)
             dra(ddep,['node', key ,'randomization' ,'V_th','gaussian','my'], dc['netw']['V_th_sigma'])
@@ -989,22 +1040,23 @@ class Par(object):
         for key in dc['netw']['prop'].keys():
             
             if key=='GP':
-                p1=dc['netw']['prop']['GP']*dc['netw']['prop_GPE_A']
-                p2=dc['netw']['prop']['GP']*(1-dc['netw']['prop_GPE_A'])
+                p1=ddep['netw']['prop']['GP']*dc['netw']['prop_GPE_A']
+                p2=ddep['netw']['prop']['GP']*(1-dc['netw']['prop_GPE_A'])
                 dra(ddep,['node','GA','prop'],p1 )
                 dra(ddep,['node','GI','prop'],p2 )
             else:
-                dra(ddep, ['node', key, 'prop'], dc['netw']['prop'][key]) 
+                dra(ddep, ['node', key, 'prop'], ddep['netw']['prop'][key]) 
         
-        # Population sizes
-        for key in ['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']:
+        # Population sizes and proportions
+        for key in self.get_node_network_keys(): 
+                 
             n=int(ddep['node'][key]['prop']*dc['netw']['size'])
             dra(ddep, ['node', key ,'n'], n)                 
             
-        
-        for m1, m2 in zip(['C1','C2', 'CF', 'CS', 'EA', 'EI', 'ES'],
-                          ['M1','M2', 'FS', 'ST', 'GA', 'GI', 'SN']):
-            dra(ddep, ['node', m1, 'n'], ddep['node'][m2]['n'])
+        for k in sorted(self.get_conns_keys()):
+            source, target = k.split('_')[0:2]
+            if self._dic_con['node'][source]['type']=='input':
+                dra(ddep, ['node', source, 'n'], ddep['node'][target]['n'])
 
 
         # ===========================
@@ -1019,10 +1071,10 @@ class Par(object):
         dra(ddep,['node','GI','target_rate'], GPE_I_target_rate) #51, 56
   
         GA_GA_fan_in=int(round(30*dc['netw']['prop_fan_in_GPE_A']))
-        dra(ddep,['conn','GA_GA_gaba','fan_in'], GA_GA_fan_in)
-        dra(ddep,['conn','GA_GI_gaba','fan_in'], GA_GA_fan_in)
-        dra(ddep,['conn','GI_GA_gaba','fan_in'], 30-GA_GA_fan_in)
-        dra(ddep,['conn','GI_GI_gaba','fan_in'], 30-GA_GA_fan_in)
+        dra(ddep,['conn','GA_GA_gaba','fan_in0'], GA_GA_fan_in)
+        dra(ddep,['conn','GA_GI_gaba','fan_in0'], GA_GA_fan_in)
+        dra(ddep,['conn','GI_GA_gaba','fan_in0'], 30-GA_GA_fan_in)
+        dra(ddep,['conn','GI_GI_gaba','fan_in0'], 30-GA_GA_fan_in)
         
 
         
@@ -1030,16 +1082,28 @@ class Par(object):
             
             syn=self._dic_con['conn'][k]['syn']
             nest_params=self._dic_con['nest'][syn]
+            
+            source=syn.split('_')[0]
              
             # Cortical input do not randomally change CTX input
-            if k[0] in ['C', 'E']:
-                delay_setup  = {'constant':nest_params['delay']}
-                weight_setup = {'constant':nest_params['weight']}
-            
-            else:
+            delay_setup={}
+            weight_setup={}
+            if self._dic_con['conn'][k]['delay_setup']['type']=='constant':
+                delay_setup  = {'params':nest_params['delay']}
+            if self._dic_con['conn'][k]['weight_setup']['type'] in ['constant', 'learned']:
+                weight_setup = {'params':nest_params['weight']}
+                
+            if self._dic_con['conn'][k]['delay_setup']['type']=='uniform':
                 pr=0.5
-                delay_setup =  {'uniform':{'min':(1-pr)*nest_params['delay'],  'max':(1+pr)*nest_params['delay']}}
-                weight_setup = {'uniform':{'min':(1-pr)*nest_params['weight'], 'max':(1+pr)*nest_params['weight']}}
+                delay_setup =  {'params':{'min':(1-pr)*nest_params['delay'],  
+                                          'max':(1+pr)*nest_params['delay']}}
+                
+            
+            if self._dic_con['conn'][k]['weight_setup']['type']=='uniform':
+                pr=0.5
+                weight_setup = {'params':{'min':(1-pr)*nest_params['weight'], 
+                                          'max':(1+pr)*nest_params['weight']}}
+                
                 
             dra(ddep,['conn', k,'delay_val'],    nest_params['delay'])
             dra(ddep,['conn', k,'delay_setup'],  delay_setup) 
@@ -1058,9 +1122,15 @@ class Par(object):
                 e=min(560./(n_MSN)/2, 0.5)
             if e:
                 dra(ddep,['conn', k,'mask'], [ -e, e])   
+            
+            if k in ddep['conn'].keys() and 'fan_in0' in ddep['conn'][k].keys():
+                fan_in0= ddep['conn'][k]['fan_in0']
+            else:
+                fan_in0= dc['conn'][k]['fan_in0']
+            dra(ddep, ['conn',k,'fan_in'],fan_in0*(1-(dc['netw']['tata_dop']-dc['netw']['tata_dop0'])*dc['conn'][k]['beta_fan_in']))
         
         return ddep
-        
+
     
         
     def update(self, dic):   
@@ -1090,32 +1160,28 @@ class Par_bcpnn(Par):
     def __init__(self, dic_rep={}, perturbations=None ):
         super( Par_bcpnn, self ).__init__( dic_rep, perturbations )     
         
-        dic=self.dic
+        dic={}
+        
+        dic['netw']={}
+
+        dic['netw']['sub_sampling']={'M1':10.0,'M2':10.0, 'CO':20.0}
         
         dic['netw']['n_states']=10
-        dic['netw']['n_state_pop']=50
-        
         dic['netw']['n_actions']=5
-        dic['netw']['MS_sub_sampling']=10.0 
-        dic['netw']['CO_sub_sampling']=10.0    
         
-        dic['netw']['n_stp_model']['CO']=17000000
+        dic['netw']['n_nuclei']={'CO':17000000}
+        dic['netw']['n_nuclei_sub_sampling']={'CO':None}
+        dic['netw']['prop']={'CO':None}
         
+        dic['netw']['input']={'constant' : {'nodes':['EA', 'EI', 'ES']}}
+        dic['netw']['input'].update({'bcpnn': {'nodes':['EC'], 'time':250.0, 'n_set_pre':10, 'p_amplitude':3}})
         # ========================
         # Default nest parameters 
         # ========================
         # Defining default parameters
         
-        nest_models_rem=['CF_FS_ampa',
-                         'C1_M1_ampa',
-                         'C1_M1_nmda',
-                         'C2_M2_ampa',
-                         'C2_M2_nmda',
-                         'CS_ST_ampa',
-                         'CS_ST_nmda']
-        for model in nest_models_rem: del dic['nest'][model]
-        
         # EXT-CTX 
+        dic['nest']={}
         dic['nest']['EC_CO_ampa']={}
         dic['nest']['EC_CO_ampa']['weight']   = 0.25    # n.d. set as for CTX to MSN   
         dic['nest']['EC_CO_ampa']['delay']    = 12.    # n.d. set as for CTX to MSN   
@@ -1125,7 +1191,7 @@ class Par_bcpnn(Par):
         
         # CTX-FSN 
         dic['nest']['CO_FS_ampa']={}
-        dic['nest']['CO_FS_ampa']['weight']   = 0.25    # n.d. set as for CTX to MSN   
+        dic['nest']['CO_FS_ampa']['weight']   = None    # n.d. set as for CTX to MSN   
         dic['nest']['CO_FS_ampa']['delay']    = 12.    # n.d. set as for CTX to MSN   
         dic['nest']['CO_FS_ampa']['template'] = 'static_synapse'   
         dic['nest']['CO_FS_ampa']['receptor_type'] = self.rec['izhik_cond_exp'][ 'AMPA_1' ]     # n.d. set as for CTX to MSN   
@@ -1133,33 +1199,33 @@ class Par_bcpnn(Par):
         
         # CTX-MSN D1
         dic['nest']['CO_M1_ampa']={}
-        dic['nest']['CO_M1_ampa']['weight']   = .5     # constrained by Ellender 2011
+        dic['nest']['CO_M1_ampa']['weight']   = None     # constrained by Ellender 2011
         dic['nest']['CO_M1_ampa']['delay']    = 12.    # Mallet 2005
         dic['nest']['CO_M1_ampa']['template'] = 'static_synapse'
         dic['nest']['CO_M1_ampa']['receptor_type'] = self.rec['my_aeif_cond_exp'] [ 'AMPA_1' ]
         
         dic['nest']['CO_M1_nmda'] = deepcopy(dic['nest']['CO_M1_ampa'])
-        dic['nest']['CO_M1_nmda']['weight'] =  0.11   # (Humphries, Wood, and Gurney 2009)
+        dic['nest']['CO_M1_nmda']['weight'] =  None   # (Humphries, Wood, and Gurney 2009)
         dic['nest']['CO_M1_nmda']['receptor_type'] = self.rec['my_aeif_cond_exp'] [ 'NMDA_1' ]
         
         
         # CTX-MSN D2
         dic['nest']['CO_M2_ampa'] = deepcopy(dic['nest']['CO_M1_ampa'])
-        dic['nest']['CO_M2_ampa']['weight'] =  .41     # constrained by Ellender 2011
+        dic['nest']['CO_M2_ampa']['weight'] =  None     # constrained by Ellender 2011
         
         dic['nest']['CO_M2_nmda'] = deepcopy(dic['nest']['CO_M1_nmda'])
-        dic['nest']['CO_M2_nmda']['weight'] =  0.019   # (Humphries, Wood, and Gurney 2009) 
+        dic['nest']['CO_M2_nmda']['weight'] =  None  # (Humphries, Wood, and Gurney 2009) 
     
 
         # CTX-STN
         dic['nest']['CO_ST_ampa']={}
-        dic['nest']['CO_ST_ampa']['weight']   = 0.25
+        dic['nest']['CO_ST_ampa']['weight']   = None
         dic['nest']['CO_ST_ampa']['delay']       = 2.5  # Fujimoto and Kita 1993
         dic['nest']['CO_ST_ampa']['template'] = 'static_synapse'  
         dic['nest']['CO_ST_ampa']['receptor_type'] = self.rec['my_aeif_cond_exp'] [ 'AMPA_1' ]  
         
         dic['nest']['CO_ST_nmda'] = deepcopy(dic['nest']['CO_ST_ampa'])
-        dic['nest']['CO_ST_nmda']['weight'] = 0.00625   # n.d.; same ratio ampa/nmda as MSN
+        dic['nest']['CO_ST_nmda']['weight'] = None   # n.d.; same ratio ampa/nmda as MSN
         dic['nest']['CO_ST_nmda']['receptor_type'] = self.rec['my_aeif_cond_exp'] [ 'NMDA_1' ]  
         
         # ============        
@@ -1192,7 +1258,7 @@ class Par_bcpnn(Par):
         dic['nest']['CO']['k']      =   0.7      # (E.M. Izhikevich 2007)
         dic['nest']['CO']['V_peak'] =  35.       # (E.M. Izhikevich 2007)
         dic['nest']['CO']['V_b']    = dic['nest']['CO']['E_L']    # (E.M. Izhikevich 2007)
-        dic['nest']['CO']['V_th']   = -40        # (E.M. Izhikevich 2007)
+        dic['nest']['CO']['V_th']   = -40.        # (E.M. Izhikevich 2007)
         dic['nest']['CO']['V_m']    =  -50.    
     
         dic['nest']['CO']['AMPA_1_Tau_decay'] = 12.  # Same as MSN
@@ -1203,77 +1269,174 @@ class Par_bcpnn(Par):
         dic['nest']['CO']['NMDA_1_Vact']      = -20.0
         dic['nest']['CO']['NMDA_1_Sact']      =  16.0
         
+        dic['nest']['CO']['tata_dop']      =  None
+        
         
         # ========================
         # Default node parameters 
         # ========================
-        
-        node_rem=['CF', 'C1', 'C2', 'CS']
-        for model in node_rem: del dic['node'][model]    
+   
 
+        dic['node']={}
+        inputs={'EC': {'model':'EC',  'rate':300., 'n_sets':1}} 
         
-        inputs={'CO': {'model':'CO',  'rate':0.},
-                'EC': {'model':'EC',  'rate':0.}} 
         
+
         for key in inputs.keys():       
-            inputs[key].update({'extent':[-0.5, 0.5],'edge_wrap':True, 
+            inputs[key].update({'extent':[-0.5, 0.5],'edge_wrap':True, 'n':None,
                                 'lesion':False, 'type':'input',
                                 'unit_class':Units_input })
         dic['node']=misc.dict_merge(dic['node'], inputs) 
-        
-        network={'CO':{'model':'M1_low', 'I_vitro':0.0, 'I_vivo':0.0,  'target_rate':0.5}}
+
+        network={'CO':{'model':'CO', 'I_vitro':0.0, 'I_vivo':0.0,  'target_rate':0.5, 'target_rate_in_vitro':0.0}}
         for key in network.keys():     
             network[key].update({'type':'network', 'extent':[-0.5, 0.5],
                                  'edge_wrap':True, 'lesion':False,
-                                 'unit_class': Units_neuron})           
+                                 'unit_class': Units_neuron,  
+                                 'prop':None, 
+                                 'n':None,
+                                 'n_sets':None,
+                                 'randomization':{ 'C_m': {'gaussian':{'sigma':None, 'my':None}},
+                                                   'V_th':{'gaussian':{'sigma':None, 'my':None, 
+                                                                       'cut':True, 'cut_at':3.}},
+                                                   'V_m': {'uniform': {'min': None,  'max':None }}
+                                                   }})  
+                
+        network.update({'M1':{'n_sets':None},
+                        'M2':{'n_sets':None},
+                        'GI':{'n_sets':None},
+                        'SN':{'n_sets':None}})  
+        
         dic['node']=misc.dict_merge(dic['node'], network) 
                  
         # ========================
         # Default conn parameters 
         # ========================
         
+
+        conns={'EC_CO_ampa':{ 'syn':'EC_CO_ampa' }}
+        for key in conns.keys():
+            conns[key].update({'fan_in0':1,  'rule':'1-1' })
+        dic['conn']={}    
+        dic['conn']['CO_M1_ampa']={'fan_in0': 20}   
+        dic['conn']['CO_M1_nmda']={'fan_in0': 20}   
+        dic['conn']['CO_M2_ampa']={'fan_in0': 20}
+        dic['conn']['CO_M2_nmda']={'fan_in0': 20}   
+        dic['conn']['CO_FS_ampa']={'fan_in0': 20}  
+        dic['conn']['CO_ST_ampa']={'fan_in0': 20}
+        dic['conn']['CO_ST_nmda']={'fan_in0': 20} 
+        
+        
+        conns.update({'CO_M1_ampa':{ 'syn':'CO_M1_ampa', 'rule':'set-all_to_all'},
+                      'CO_M1_nmda':{ 'syn':'CO_M1_nmda', 'rule':'set-all_to_all' },
+                      'CO_M2_ampa':{ 'syn':'CO_M2_ampa', 'rule':'set-all_to_all' },
+                      'CO_M2_nmda':{ 'syn':'CO_M2_nmda', 'rule':'set-all_to_all' },
+                      'CO_FS_ampa':{ 'syn':'CO_FS_ampa', 'rule':'all' },
+                      'CO_ST_ampa':{ 'syn':'CO_ST_ampa', 'rule':'all' },
+                      'CO_ST_nmda':{ 'syn':'CO_ST_nmda', 'rule':'all' },
+                      'GI_SN_gaba':{ 'syn':'GI_SN_gaba', 'rule':'set-set'}})  
+        
+
+        # Add extend to conn
+        data_path_learned_conn={'M1':'~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-h0/CO_M1.pkl'}
+        data_path_learned_conn['M2']='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-h0/CO_M2.pkl'
+        for k in sorted(conns.keys()): 
+
+
+            source, target=k.split('_')[0:2]
+            if source=='CO' and target in ['M1', 'M2']:
+                conns[k]['data_path_learned_conn']=data_path_learned_conn[target]
+            else:    
+                conns[k]['data_path_learned_conn']='' #No    
+            conns[k]['beta_fan_in']=0.0 
+            # Cortical input do not randomally change CTX input
+            if k[0] in ['E']:
+                delay_setup  = {'type':'constant', 'params':None}
+                weight_setup = {'type':'constant', 'params':None}
+
+            else:
+                delay_setup =  {'type':'uniform', 'params':{'min':None,  'max':None}}
+                if k in ['CO_M1_ampa', 'CO_M1_nmda','CO_M2_ampa','CO_M2_nmda']:
+                    weight_setup =  {'type':'learned', 'params':None}
+                else:
+                    weight_setup = {'type':'uniform', 'params':{'min':None, 'max':None}}
+            
+            conns[k].update({'lesion':False, 'connection_type':'divergent',
+                             'delay_val':None,
+                             'delay_setup':delay_setup, 
+                             'weight_val':None,
+                             'weight_setup':weight_setup,
+                             'mask':None,
+                             'fan_in':None})
+    
+            conns[k].update({'mask':[-0.5, 0.5]})  
+            
+        dic['conn']=misc.dict_merge(dic['conn'], conns)  
+
+        # Remove models
+        
+        dic=misc.dict_merge(self._dic_con, dic)
         conn_rem=['C1_M1_ampa', 'C1_M1_nmda',
                   'C2_M2_ampa', 'C2_M2_nmda',
                   'CF_FS_ampa', 'CS_ST_ampa',
                   'CS_ST_nmda']
         for model in conn_rem: del dic['conn'][model]
+        nest_models_rem=['CF_FS_ampa',
+                         'C1_M1_ampa',
+                         'C1_M1_nmda',
+                         'C2_M2_ampa',
+                         'C2_M2_nmda',
+                         'CS_ST_ampa',
+                         'CS_ST_nmda']
         
-        conns={'EC_CO_ampa':{ 'syn':'EC_CO_ampa' },
-               'EC_CO_nmda':{ 'syn':'EC_CO_nmda' }}
-        for key in conns.keys():
-            conns[key].update({'fan_in':1,  'sets':1, 'rule':'1-1' })
-            
-        dic['conn']['CO_M1_ampa']={'fan_in': 10}   
-        dic['conn']['CO_M1_nmda']={'fan_in': 10}   
-        dic['conn']['CO_M2_ampa']={'fan_in': 10}
-        dic['conn']['CO_M2_nmda']={'fan_in': 10}   
-        dic['conn']['CO_FS_ampa']={'fan_in': 10}  
-        dic['conn']['CO_ST_ampa']={'fan_in': 10}
-        dic['conn']['CO_ST_nmda']={'fan_in': 10} 
+    
+        for model in nest_models_rem: del dic['nest'][model]
+        node_rem=['CF', 'C1', 'C2', 'CS']
+        for model in node_rem: del dic['node'][model] 
+        
+        self._dic_con=dic
+
+    def get_dependable_par(self):
         
         
-        conns.update({'CO_M1_ampa':{ 'syn':'CO_M1_ampa', 'sets':[10,5], 'rule':'set-all_to_all'},
-                      'CO_M1_nmda':{ 'syn':'CO_M1_nmda', 'sets':[10,5], 'rule':'set-all_to_all' },
-                      'CO_M2_ampa':{ 'syn':'CO_M2_ampa', 'sets':[10,5], 'rule':'set-all_to_all' },
-                      'CO_M2_nmda':{ 'syn':'CO_M2_nmda', 'sets':[10,5], 'rule':'set-all_to_all' },
-                      'CO_FS_ampa':{ 'syn':'CO_FS_ampa', 'sets':[1,1], 'rule':'all' },
-                      'CO_ST_ampa':{ 'syn':'CO_ST_ampa', 'sets':[1,1], 'rule':'all' },
-                      'CO_ST_nmda':{ 'syn':'CO_ST_nmda', 'sets':[1,1], 'rule':'all' }})  
         
-        # Add extend to conn
-        for k in sorted(conns.keys()): 
-            conns[k].update({'lesion':False, 'connection_type':'divergent'})
-            
-        dic['conn']=misc.dict_merge(dic['conn'], conns)  
+        dc=self._dic_con
+        dra=misc.dict_recursive_add
+        
+        ddep={}
+        mr_ctx=2.0
+        f_M1=1.5
+        f_M2=2.5
+        dra(ddep,['nest', 'CO_FS_ampa','weight'], 0.25*1010.0/dc['conn']['CO_FS_ampa']['fan_in0']/mr_ctx*2.)
+        dra(ddep,['nest', 'CO_M1_ampa','weight'], 0.5*530.0/dc['conn']['CO_M1_ampa']['fan_in0']/mr_ctx*0.8*f_M1)
+        dra(ddep,['nest', 'CO_M1_nmda','weight'], 0.019*530.0/dc['conn']['CO_M1_nmda']['fan_in0']/mr_ctx*0.8*f_M1)
+        dra(ddep,['nest', 'CO_M2_ampa','weight'], 0.41*690.0/dc['conn']['CO_M2_ampa']['fan_in0']/mr_ctx*.7*0.8*f_M2)
+        dra(ddep,['nest', 'CO_M2_nmda','weight'], 0.11*690.0/dc['conn']['CO_M2_nmda']['fan_in0']/mr_ctx*.7*0.8*f_M2)        
+        dra(ddep,['nest', 'CO_ST_ampa','weight'], 0.25*160.0/dc['conn']['CO_ST_ampa']['fan_in0']/mr_ctx*1.1)
+        dra(ddep,['nest', 'CO_ST_nmda','weight'], 0.00625*160.0/dc['conn']['CO_ST_nmda']['fan_in0']/mr_ctx*1.1)  
+        
+        dra(ddep,['node', 'CO','n_sets'], dc['netw']['n_states'])    
+        dra(ddep,['node', 'M1','n_sets'], dc['netw']['n_actions'])  
+        dra(ddep,['node', 'M2','n_sets'], dc['netw']['n_actions'])  
+        dra(ddep,['node', 'GI','n_sets'], dc['netw']['n_actions'])         
+        dra(ddep,['node', 'SN','n_sets'], dc['netw']['n_actions'])
+        
+        dic_con=deepcopy(self._dic_con)
+        self._dic_con=misc.dict_merge(self._dic_con, ddep)
+        ddep2=Par.get_dependable_par(self)
+        self._dic_con=dic_con
+        ddep=misc.dict_merge(ddep2, ddep)
+        return ddep
 
 import unittest
 
 class TestPar(unittest.TestCase):
     
     def setUp(self):
+        import my_nest
+        self.MyLoadModels= my_nest.MyLoadModels
         self.par = Par({})
         self.par_test_par_rep= Par( {'netw': {'size': self.par.dic['netw']['size']*2}},  None)
-        self.network=['M1', 'M2', 'FS', 'ST', 'GA', 'GI','SN']
 
     def test_dic_integrity(self):
         '''
@@ -1335,6 +1498,7 @@ class TestPar(unittest.TestCase):
         self.par.dic_rep=dic_rep
         v2=self.par.dic['node']['M1']['n']
         self.assertEqual(v1,v2)
+        
 
     def test_change_con_effect_dep_initiation(self):
         
@@ -1373,15 +1537,59 @@ class TestPar(unittest.TestCase):
    
     def test_proportion_sum_to_one(self):
         s=0.0
-        for name in self.network:
+        for name in self.par.get_node_network_keys():
             s+=self.par.dic['node'][name]['prop']
-        self.assertEqual(s, 1.0)
+        self.assertAlmostEqual(s, 1.0,7)
+    
+    def test_conn_keys_integrity(self):
+        keys=[]
+        for val in self.par.dic['conn'].values():
+            keys.extend(val.keys())
+        unique_keys=set(keys)
+        counts=[]
+        for key in unique_keys:
+            counts.append(keys.count(key))
+    
+    def test_node_keys_integrity(self):
+        keys1=[]
+        keys2=[]
+        for key, val in self.par.dic['node'].items():
+            if val['type']=='input': 
+                keys1.extend(val.keys())
+            if val['type']=='network': 
+                keys2.extend(val.keys())
+                
+        unique_keys1=set(keys1)
+        unique_keys2=set(keys2)
+        counts1=[]
+        counts2=[]
+        for key in unique_keys1: counts1.append(keys1.count(key))            
+        for key in unique_keys2: counts2.append(keys2.count(key))    
+          
+        self.assertEqual(counts1[0], float(sum(counts1))/len(counts1))
+        self.assertEqual(counts2[0], float(sum(counts2))/len(counts2))
         
+    def test_1_1_rule_integrity(self):   
+        for key in self.par.dic['conn'].keys():
+            source, target=key.split('_')[0:2]
+            if self.par.dic['conn'][key]['rule']=='1-1' :
+                self.assertEqual(self.par.dic['node'][source]['n'], self.par.dic['node'][target]['n'])
+            
+    def test_model_copy(self):
+        for model in self.par['nest'].keys():
+            params=self.par.get_nest_setup(model)
+            self.MyLoadModels( params, [model] )
+        for model in self.par['conn'].keys():
+            params=self.par.get_nest_setup(model)
+            self.MyLoadModels( params, [model] )
+        
+     
 class TestPar_bcpnn(TestPar):     
     def setUp(self):
+        import my_nest
         self.par = Par_bcpnn({})
-        self.par_test_par_rep= Par( {'netw': {'size': 20000.0}})
-        self.network=['M1', 'M2', 'FS', 'ST', 'GA', 'GI','SN']
+        self.MyLoadModels= my_nest.MyLoadModels
+        self.par_test_par_rep= Par_bcpnn( {'netw': {'size': 20000.0}})
         
         
         

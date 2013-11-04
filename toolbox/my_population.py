@@ -422,12 +422,12 @@ class MyGroup(object):
         return conn_par        
     
     def get_model_par(self, type='C_m'): 
-         '''
-         Retrieve one or several parameter values from all nodes
-         '''
-         model_par=[my_nest.GetStatus([node],type)[0] for node in self.ids]
+        '''
+        Retrieve one or several parameter values from all nodes
+        '''
+        model_par=[my_nest.GetStatus([node],type)[0] for node in self.ids]
 
-         return model_par
+        return model_par
                    
     def get_signal(self, dataType, recordable='spikes', start=None, stop=None ):
         '''
@@ -448,43 +448,6 @@ class MyGroup(object):
         self.signals[recordable]=list
         self.signaled[recordable]=True
            
-    def load_signal(self, dataType, recordable='spikes'):
-        '''
-        load_signals(self, dataType, recordable)
-        Loads simulation data. Needs data type and name of recordable to load.
-        
-        Arguments
-        dataType        type of data. 's' or 'spikes' for spike data, 
-                        'g' for conductance data, 'c' for current data and 
-                        'v' for voltage data
-        recordable      Need to be supplied for conductance, current and 
-                        voltage data. It is the name of my_nest recorded data with
-                        multimeter, e.g. V_m, I_GABAA_1, g_NMDA. 
-        ''' 
-        # Short cuts
-        spath=self.spath
-        sname=self.sname
-            
-        fileNames = misc.read_f_name( spath, 
-                                      contain_string=sname + recordable )
-                            
-        # First load first spike list
-        list  = my_signals.my_load(spath+'/'+fileNames[0], dataType)
-        
-        # Then load the rest of spike list and merge. ( happens 
-        # only with data from mpi run)
-        for name in fileNames[1:]:
-            if dataType in ['s', 'spikes']: 
-                list.merge(my_signals.my_load(spath+'/'+name, dataType))
-            else:
-                # Since each processor has its own ids (local ids) append can
-                # be used here.
-                list2=my_signals.my_load(spath+'/'+name, dataType)
-                for id, signal in list2.analog_signals.iteritems():
-                    list.append(id, signal)
-                
-        # Add to signals    
-        self.signals[recordable] = list
     
     def IF( self, I_vec, id = None, tStim = None ):    
         '''
@@ -852,29 +815,7 @@ class MyGroup(object):
         
         return data_dic 
 
-     
-    def save_group(self):
-        '''
-        Not complete
-        '''
-                  
-        group = {}
     
-        group["connections"] = self.connections
-        group["models"] = self.models
-        group["ids"] = self.ids
-        group["recordables"] = self.recordables
-        group["receptor_types"] = self.receptor_types
-        group["sname"] = self.sname
-        group["GID"] = str(my_nest.GetStatus(self.sd)[0]['global_id'])
-        group["mm_dt"] = self.mm_dt
-        
-        output = open(self.spath + '/' +self.sname + '-' +  str(my_nest.Rank()) + '.' + 'pickle', 'w')
-
-        # Pickle dictionary 
-        pickle.dump(group, output)
-
-        output.close() 
        
     def save_signal(self, dataType, recordable='spikes', start=None, stop=None):  
         '''

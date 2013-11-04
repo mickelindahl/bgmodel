@@ -25,9 +25,11 @@ plot_settings        - contains functions setting nice plot settings
 
 """
 
+import misc
+import data_to_disk
 import network_connectivity
 import network_construction
-import misc
+import network_handling
 import my_axes
 import my_nest
 import my_population

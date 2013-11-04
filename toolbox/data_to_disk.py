@@ -14,13 +14,23 @@ def nest_sd_load(file_names):
     data=[]
 
     for name in file_names: 
-        
-        with open(name, 'rb') as csvfile:
-            csvreader = csv.reader(csvfile, delimiter='\t')
-            for row in csvreader:
-                data.append([float(row[0]), float(row[1])])
+        c=0
+        while c<2:
+            try:
+                with open(name, 'rb') as csvfile:
+                    csvreader = csv.reader(csvfile, delimiter='\t')
+                    for row in csvreader:
+                        data.append([float(row[0]), float(row[1])])
+                c=2
+            except:
+                name_split=name.split('-')
+                name=name_split[0]+'-0'+name_split[1]+'-'+name_split[2]
+                c+=1
     data=numpy.array(data)
-    return data[:,0], data[:,1]
+    if len(data):
+        return data[:,0], data[:,1]
+    else:
+        return numpy.array([]), numpy.array([])
 
              
         
@@ -157,9 +167,9 @@ def pickle_load(fileName):
     Arguments:
         fileName    - full path or just file name
     '''
-    if 4<len(fileName) or fileName[-4:]!='.pkl':
+    if 4<len(fileName) and fileName[-4:]!='.pkl':
         fileName=fileName+'.pkl'
-    
+    fileName=os.path.expanduser(fileName)
     f=open(fileName, 'rb') # make sure file are read in binary mode
     #data=pickle.load(f)
     data=cPickle.load(f) 
