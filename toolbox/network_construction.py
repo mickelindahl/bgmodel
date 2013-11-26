@@ -8,7 +8,7 @@ from toolbox import my_nest, data_to_disk, misc
 from toolbox.my_population import MyGroup, MyPoissonInput, MyInput
 
 from copy import deepcopy
-from toolbox.default_params import Par, Par_bcpnn
+from toolbox.default_params import Par, Par_bcpnn, Par_bcpnn_h1
 import nest # Can not be first then I get segmentation Fault
 import numpy
 import pylab
@@ -804,18 +804,27 @@ class Bcpnn(Inhibition_base):
                     for model in val['nodes']:
                         if i==0:
                             self.input_params[model]=[]
-                        idx=list(range(i, self.par['node'][model]['n'], val['n_set_pre']))
-                        
+                            
+                        idx1=list(range(i, self.par['node'][model]['n'] , val['n_set_pre']))
+
                         self.input_params[model]+=[{'rates':[ self.par['node'][model]['rate'],
                                                              self.par['node'][model]['rate']*p,
                                                              self.par['node'][model]['rate']], 
                                                    'times':[1., self.start_rec+i*tt, self.start_rec+(i+1)*tt],
-                                                   'idx':idx}] 
-            
+                                                   'idx':idx1}] 
 
         self.time_inputed=int(time.time()-t)
         print 'Inputed', self.time_inputed    
         
+
+class Bcpnn_h1(Bcpnn):    
+    
+    def __init__(self, threads=1, start_rec=1., sim_time=1000., **kwargs):
+        super( Bcpnn_h1, self ).__init__(threads, start_rec, sim_time, **kwargs)       
+        # In order to be able to convert super class object to subclass object   
+        self.par=Par_bcpnn_h1(self.par_rep, self.perturbation)        
+        self.path_data='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn_h1'+'/'+self.name +'/'
+        self.path_pictures='/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/bcpnnbg_h1/pictures'+'/'+self.name +'-'
         
 class TestStructure(unittest.TestCase):
     
@@ -834,7 +843,7 @@ class TestStructure(unittest.TestCase):
             nodes+=val['nodes']
             
         self.assertListEqual(sorted(nodes), sorted(self.network.input_params.keys()))
-    '''
+    
     def test_build_connect(self):
                 
         self.network.par.dic_rep.update({'netw':{'size':500.0, 'sub_sampling':{'M1':10.0,'M2':10.0, 'CO':20.0} }})
@@ -849,7 +858,7 @@ class TestStructure(unittest.TestCase):
         self.network.connect()
         self.network.run()
         data_to_disk.pickle_save(self.network, self.fileName)
-    '''
+    
     def test_get_firing_rate(self):
         
         network=data_to_disk.pickle_load(self.fileName)

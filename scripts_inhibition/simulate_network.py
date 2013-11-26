@@ -32,7 +32,7 @@ def main():
     kwargs_simulation={'sd_params':{'to_file':False, 'to_memory':True}}
     
     nms=Network_models_dic(4, setup_list, Network_model)
-    nms.simulate_example([0]*2, labels, record_from_models, **kwargs_simulation)
+    nms.simulate([0]*2, labels, record_from_models, **kwargs_simulation)
     nms.signal_pds([0]*2, labels, pds_models, pds_setup)
     nms.signal_coherence([0]*2, labels, cohere_relations, cohere_setup)
     

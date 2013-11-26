@@ -877,7 +877,7 @@ class MySpikeList(SpikeList):
 
         ids, spike_times = spk.convert(format="[ids, times]")
         
-        new_id_list=numpy.arange(1, len(id_list)+1)
+        new_id_list=numpy.arange(0, len(id_list)+0)
         ids_map = dict(zip(id_list, new_id_list))
         new_ids=[ids_map[id] for id in ids]
         

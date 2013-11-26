@@ -104,8 +104,7 @@ class MyAxes(Axes):
     def _init_extra_attributes(self, fig=None):  
         if fig: fig.add_axes(self)  
     
-
-       
+      
     def my_push_axis(self, xaxis=True, yaxis=True ):
         '''
         Push x and/or y axis  out from plot 10 points. 
@@ -154,7 +153,7 @@ class MyAxes(Axes):
         # Remove upper and right axes frames and move the bottom and left 
         for loc, spine in self.spines.iteritems():
             if loc in remove: spine.set_color( 'none' )          # don't draw spine
-            else: raise ValueError( 'unknown spine location: %s'%loc )
+            #else: raise ValueError( 'unknown spine location: %s'%loc )
     
     def my_remove_axis(self, xaxis=False, yaxis=False ):
         '''
@@ -186,7 +185,7 @@ class MyAxes(Axes):
         if xticks: self.xaxis.set_major_locator( MaxNLocator( xticks ) )  
         if yticks: self.yaxis.set_major_locator( MaxNLocator( yticks ) )                    
     
-    def my_twinx(self):
+    def twinx(self):
         """
         call signature::
 
@@ -202,7 +201,7 @@ class MyAxes(Axes):
         ax=convert_super_to_sub_class(ax)
         
         return ax
-        
+     
 def convert_super_to_sub_class(superClass):
         ''' Convert a super class object into a sub class object'''
         subClass = superClass

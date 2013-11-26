@@ -164,7 +164,7 @@ class Network_model(object):
 
         nm=self
         for j, model in enumerate(models):
-            ax=ax_list[j]
+            ax=ax_list[j].twinx()
             du=nm.dud[model]
             hist=du.firing_rate_sets
             times=du.firing_rate_sets_time
@@ -176,57 +176,79 @@ class Network_model(object):
             SNR=0
             n=len(du.firing_rate)
             for i, h in enumerate(hist):
-                time=numpy.arange(1,len(h)+1)
-                ax.plot(times, h, color=colors[i])
-                m+=numpy.mean(h)/n
-                std+=numpy.std(h)/n
-                if m>0:
-                    SNR+=std/m/n
+                if not model in ['SN', 'GI']:
+                    time=numpy.arange(1,len(h)+1)
+                    ax.plot(times, h, color='w', linewidth=3.)
+                    ax.plot(times, h, color=colors[i])
+                    
+                    m+=numpy.mean(h)/n
+                    std+=numpy.std(h)/n
+                    if m>0:
+                        SNR+=std/m/n
             
-                ax.text( coords[i][0], coords[i][1], 'Set '+str(i), transform=ax.transAxes, 
-                          fontsize=pylab.rcParams['font.size'], 
-                          backgroundcolor = 'w', **{'color': colors[i]})
+                #ax.text( coords[i][0], coords[i][1], 'Set '+str(i), transform=ax.transAxes, 
+                #          fontsize=pylab.rcParams['font.size'], 
+                #          backgroundcolor = 'w', **{'color': colors[i]})
             
             ax.set_xlim(xlim)
-            ax.set_title(model+' '+label+' m='+str(round(m,3))+' SNR='+str(round(SNR,1)))
+            #ax.set_title(model+' '+label+' m='+str(round(m,3))+' SNR='+str(round(SNR,1)))
             ax.set_ylabel('  Rate') 
             ax.my_set_no_ticks( yticks=3, xticks = 4 )      
-            if ((j+1) % len(models)==0):
-                ax.set_xlabel('Time (ms)')   
+            #if ((j+1) % len(models)==0):
+                #ax.set_xlabel('Time (ms)')   
 
-             
-    def plot_rasters_bcpnn(self, ax_list, label, models, colors, coords, xlim=[5000., 6000.]):
+            if (j+1) % len(models)==0:
+                pass
+            else:
+                ax.my_remove_axis(xaxis=True, yaxis=False )  
+    def plot_rasters_bcpnn(self, ax_list, label, models, colors, coords, xlim=[5000., 6000.], plot_label='', plot_label_prefix=''):
         k=0
   
         nm=self
         for model in models:
             ax=ax_list[k]
-            k+=1
+            
             du=nm.dud[model]
             ids=[]
             for i, rasters in enumerate(du.rasters_sets):
-                if len(rasters[1]) > 0:               
-                    ax.plot(rasters[0], rasters[1], ',', color=colors[i])
+                if len(rasters[1]) > 0:             
+                    rasters[1]  
+                    if model in ['M1','M2']:
+                        mod=1
+                    elif model in ['F1','F2', 'FS']:
+                        mod=10
+                    else:
+                        mod=5
+                    ax.plot(rasters[0][numpy.mod(rasters[1],mod)==0], rasters[1][numpy.mod(rasters[1],mod)==0], ',', color=colors[i])
                 ids+=list(du.rasters_sets_ids[i])
-                    
-                ax.text( coords[i][0], coords[i][1], 'Set '+str(i), transform=ax.transAxes, 
+                if not plot_label_prefix: pl='Set'
+                else: pl=plot_label_prefix[k]  
+                ax.text( coords[i][0], coords[i][1], pl+' '+str(i+1), transform=ax.transAxes, 
                           fontsize=pylab.rcParams['font.size'], 
                           backgroundcolor = 'w', **{'color': colors[i]})    
-            ids=numpy.array(ids)    
+            if not plot_label: pl=plot_label
+            else: pl=plot_label[k]
+            ax.text( 0.8, 0.1, pl, transform=ax.transAxes, 
+                        fontsize=pylab.rcParams['font.size'], 
+                        backgroundcolor = 'w',
+                         **{'color': 'k'})    
+            ids=numpy.array(ids)  
+              
             ax.set_xlim(xlim)
             ax.set_ylim([min(ids)-1, max(ids)+1])
             ax.set_ylabel('Neuron') 
             ax.my_set_no_ticks( yticks=3, xticks = 4 )    
-            
+            k+=1
             
             
         #ax.set_xlim([5000,6000])
-        #if not i==0:
-        #    ax.my_remove_axis(xaxis=True, yaxis=False )
+
+                
             if k % len(models)==0:
                 ax.set_xlabel('Time (ms)')
-
-
+            else:
+                ax.my_remove_axis(xaxis=True, yaxis=False )
+                
     def update_parms(self):
         
         if self.type_dopamine=='dop': 
@@ -630,11 +652,22 @@ class Network_models_dic():
             ax.text( coord[0], coord[1], label, transform=ax.transAxes, 
                  fontsize=pylab.rcParams['text.fontsize'], 
                  **{'color': color})
+    
+    '''
+    def plot_bcpnn_contrast(labels, odel=['SN']):
+        
+        for i in range(len(labels)):
+            self[labels[i]].get_bcpnn_contras()
+            
+    '''    
+        
+        
+        
                             
-    def simulate(self, loads, labels, models, **kwargs_simulation):
+    def simulate(self, loads, labels, rec_models, **kwargs_simulation):
         
         
-        for load, label in zip(loads, labels):
+        for load, label, rec_from in zip(loads, labels, rec_models):
  
             nm=self.dic[label]  
             save_txt_at= nm.path_data+'simulate_log' 
@@ -642,7 +675,8 @@ class Network_models_dic():
 
             if load==0 or ((load==2) and os.path.exists(save_at)):       
                 
-                nm.simulate(models, **kwargs_simulation)  
+                
+                nm.simulate(rec_from, **kwargs_simulation)  
                 data_to_disk.txt_save_to_label(nm.simulation_info, label, save_txt_at)
                 nm.data_save(save_at)                     
                               
@@ -650,7 +684,7 @@ class Network_models_dic():
                 nm.data_load(save_at)
                 #ids_dic,rates_dic, raster_dic=data_to_disk.pickle_load(save_at)
             
-            nm.get_data_unit_dic(models)
+            nm.get_data_unit_dic(rec_from)
   
     def signal_coherence(self, loads, labels, relations, setup):
         
@@ -756,22 +790,31 @@ class Network_models_dic():
         self.plot_coherence(ax_list[5*n_models:], labels, relations, colors, coords)        
         return fig           
 
-    def show_bcpnn(self, labels, models, xlim=[0, 250*10]):
+    def show_bcpnn(self, labels, models, xlim=[0, 250*10], plot_lables_models=[], plot_lables_prefix_models=[]):
         
         n_models=len(models)
-        colors=['g','b','r','m','c','g','b','r','m','c']
+        colors=['g','b','r','m','c',(0.5,0,0),(0.0,0.5,0),(0.0,0.0,0.5),'k',(0.5,0.5,0.5),]
         coords=[[0.05+0.1*(i/5), 0.1+i%5*0.15] for i in range(len(colors))]
         figs=[]
+        i=0
+        n_models=max([len(rec_models) for rec_models in models] )
+        
         for label in labels:
-            fig, ax_list=plot_settings.get_figure( n_rows=n_models, n_cols=2, w=1400.0, h=800.0, fontsize=8,  order='row')
+            fig, ax_list=plot_settings.get_figure( n_rows=n_models, n_cols=1, w=500.0, h=800.0, fontsize=16,  order='row')
             figs.append(fig)                    
+            
+            if len(plot_lables_models): plot_label=plot_lables_models[i]
+            else:  plot_label=''
+            if len(plot_lables_models): plot_label_prefix=plot_lables_prefix_models[i]
+            else:  plot_label_prefix=''
+            self[label].plot_rasters_bcpnn(ax_list[:n_models], label, models[i], colors, 
+                                    coords, xlim=[self[label].start, self[label].stop], plot_label=plot_label, plot_label_prefix=plot_label_prefix)            
+            self[label].plot_firing_rate_bcpnn(ax_list[:n_models], label, models[i], colors, 
+                                    coords, xlim=[self[label].start, self[label].stop])   
+            i+=1          
 
-            self[label].plot_rasters_bcpnn(ax_list[:n_models], label, models, colors, 
-                                    coords, xlim=[self[label].start, self[label].stop])            
-            self[label].plot_firing_rate_bcpnn(ax_list[n_models:], label, models, colors, 
-                                    coords, xlim=[self[label].start, self[label].stop])             
-
-     
+        #self.plot_bcpnn_contrast()
+        
         return figs
     
     def show_compact(self, networks, models, relations, band=[15,25]):
@@ -802,18 +845,9 @@ class TestNetwork_model(unittest.TestCase):
         flag='dop'
         self.label='unittest'
         network_class=Bcpnn
-        threads=1
+        threads=4
         kwargs={'save_conn':False, 'sd_params':{'to_file':True, 'to_memory':False}}
         
-        '''
-        data_path_learned_conn={'M1':'~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-fake/CO_M1.pkl'}
-        data_path_learned_conn['M2']='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-fake/CO_M2.pkl'
-        
-        self.par_rep={'conn':{}}
-        for model in ['M1', 'M2']:
-            self.par_rep['conn']['CO_'+model+'_ampa']={'data_path_learned_conn':data_path_learned_conn[model]}
-            self.par_rep['conn']['CO_'+model+'_nmda']={'data_path_learned_conn':data_path_learned_conn[model]}
-        '''
         self.nm=Network_model(self.label, flag, size, self.start, self.stop, network_class, threads, **kwargs)
         
         self.model_list=['CO','M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
@@ -823,7 +857,7 @@ class TestNetwork_model(unittest.TestCase):
         self.colors=['g','b','r','m','c','g','b','r','m','c']
         self.coords=[[0.05+0.1*(i/5), 0.1+i%5*0.15] for i in range(len(self.colors))]
         
-    ''' 
+    '''
     def test_simulate(self):
         #self.nm.par_rep.update(self.par_rep)
         self.nm.simulate(self.model_list, print_time=False)            
@@ -845,7 +879,7 @@ class TestNetwork_model(unittest.TestCase):
                                     self.coords, xlim=[self.start, self.stop])
         
     def test_plot_rasters_bcpnn(self):
-        fig, ax_list=plot_settings.get_figure( n_rows=len(self.model_list), n_cols=1, w=500.0, h=800.0, fontsize=8,  order='row')
+        fig, ax_list=plot_settings.get_figure( n_rows=len(self.model_list), n_cols=1, w=500.0, h=900.0, fontsize=8,  order='row')
         
         self.nm.data_load(self.path_data)
         self.nm.get_data_unit_dic(self.model_list)
@@ -853,36 +887,67 @@ class TestNetwork_model(unittest.TestCase):
                                     self.coords, xlim=[self.start, self.stop])
       
         #pylab.show()      
-       
+        
+        
+class TestNetwork_model_h1(TestNetwork_model):
+    
+    def setUp(self):     
+        from toolbox.network_construction import Bcpnn_h1
+        
+        
+        size=500.0
+        self.start=500.0
+        self.stop=250.*10.+self.start
+        flag='dop'
+        self.label='unittest_h1'
+        network_class=Bcpnn_h1
+        threads=4
+        kwargs={'save_conn':False, 'sd_params':{'to_file':True, 'to_memory':False}}
+        
+        self.nm=Network_model(self.label, flag, size, self.start, self.stop, network_class, threads, **kwargs)
+        
+        self.model_list=['CO','M1','M2', 'F1', 'F2', 'GA', 'GI', 'ST', 'SN']
+        self.path_data=self.nm.path_data+'unittest-h0'
+        #self.path_data_h0=self.nm.path_data+'unittest-h0'
+           
+        self.colors=['g','b','r','m','c','g','b','r','m','c']
+        self.coords=[[0.05+0.1*(i/5), 0.1+i%5*0.15] for i in range(len(self.colors))]
+
+
+
 class TestNetwork_mode_dic(unittest.TestCase):
     
     def setUp(self):     
-        from toolbox.network_construction import Bcpnn     
+        from toolbox.network_construction import Bcpnn, Bcpnn_h1     
         # @TODO test run several models and show functions for bcpnn 
         self.size=500.0
         self.start=1.0
         self.stop=500.
-        network_class=Bcpnn
+        network_class=[Bcpnn, Bcpnn_h1]
         threads=1 
         setup_list=[['unittest1',     'dop'],
-                    ['unittest2',     'no_dop']]  
+                    ['unittest2',     'dop']]  
         #Inhibition_no_parrot
         #for setup in setup_list: setup.extend([10000., 1000.0, 11000.0, Inhibition_no_parrot, {}])
-        for setup in setup_list: setup.extend([self.size, self.start, self.stop, network_class, {}])
+        i=0
+        for setup in setup_list: 
+            setup.extend([self.size, self.start, self.stop, network_class[i], {}])
+            i+=1
         self.labels=[sl[0] for sl in setup_list]
-        self.model_list=['CO','M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']        
+        self.model_lists=[['CO','M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN'],
+                          ['CO','M1','M2', 'F1','F2', 'GA', 'GI', 'ST', 'SN']   ]        
         self.kwargs={'sd_params':{'to_file':True, 'to_memory':False}}
         
         self.nms=Network_models_dic(threads, setup_list, Network_model)
         
     def test_simulate(self):    
-        self.nms.simulate([1]*len(self.labels), self.labels, self.model_list, **self.kwargs)
+        self.nms.simulate([1]*len(self.labels), self.labels, self.model_lists, **self.kwargs)
         
     def test_show_bcpnn(self):
-        self.nms.simulate([0]*len(self.labels), self.labels, self.model_list, **self.kwargs)
-        self.nms.show_bcpnn(self.labels, self.model_list, xlim=[self.start, self.stop])    
+        self.nms.simulate([1]*len(self.labels), self.labels, self.model_lists, **self.kwargs)
+        self.nms.show_bcpnn(self.labels, self.model_lists, xlim=[self.start, self.stop])    
         pylab.show()
-        
+      
 if __name__ == '__main__':
     unittest.main()    
            

@@ -975,6 +975,7 @@ class Par(object):
     def get_nest_neurons_keys(self):
         k=[]
         for key, val in self._dic_con['nest'].items():
+            val=deepcopy(val)
             if val['template'] in self.rec.keys():
                 k.append(key)
             
@@ -983,6 +984,7 @@ class Par(object):
     
     def get_dependable_par(self):
         dc=self._dic_con
+        
         ddep={}
         dra=misc.dict_recursive_add
         # ===========================
@@ -1003,6 +1005,7 @@ class Par(object):
             ddep['netw']['prop'].update({k:n_nuclei[k]/sum(n_nuclei.values())}) 
         
         for model in self.get_nest_neurons_keys():
+ 
             dra(ddep, ['nest', model,'tata_dop'], dc['netw']['tata_dop']-dc['netw']['tata_dop0'])       
         
             
@@ -1021,8 +1024,10 @@ class Par(object):
         # ===========================    
         
         for key in self.get_node_network_keys():     
-            C_m=dc['nest'][key]['C_m']
-            V_th=dc['nest'][key]['V_th']
+            
+            
+            C_m=dc['nest'][dc['node'][key]['model']]['C_m']
+            V_th=dc['nest'][dc['node'][key]['model']]['V_th']
             
             
             dra(ddep,['node', key ,'randomization' ,'C_m' ,'gaussian','my'],C_m)
@@ -1036,7 +1041,6 @@ class Par(object):
         # Model inputs
         
         # Create and adjust dependable ratio
-        
         for key in dc['netw']['prop'].keys():
             
             if key=='GP':
@@ -1113,12 +1117,12 @@ class Par(object):
             pre, post = k.split('_')[0:2]
             
             n_MSN=ddep['node']['M1']['n']+ddep['node']['M2']['n']
-            
+            n_MSN*=dc['netw']['sub_sampling']['MS']
             # Set mask, set distance specific mask for MSN and FSN
             e=False
             if pre[0:2] in ['M1', 'M2'] and post[0:2] in ['M1', 'M2']:
                 e=min(2800./(n_MSN)/2, 0.5)
-            elif pre[0:2] =='FS' and post[0:2] in ['M1', 'M2', 'FS']:
+            elif pre[0:2] in ['FS', 'F1', 'F2'] and post[0:2] in ['M1', 'M2', 'F1', 'F2', 'FS']:
                 e=min(560./(n_MSN)/2, 0.5)
             if e:
                 dra(ddep,['conn', k,'mask'], [ -e, e])   
@@ -1163,8 +1167,8 @@ class Par_bcpnn(Par):
         dic={}
         
         dic['netw']={}
-
-        dic['netw']['sub_sampling']={'M1':10.0,'M2':10.0, 'CO':20.0}
+        
+        dic['netw']['sub_sampling']={'M1':50.0*4,'M2':50.0*4, 'CO':300.0}
         
         dic['netw']['n_states']=10
         dic['netw']['n_actions']=5
@@ -1174,7 +1178,7 @@ class Par_bcpnn(Par):
         dic['netw']['prop']={'CO':None}
         
         dic['netw']['input']={'constant' : {'nodes':['EA', 'EI', 'ES']}}
-        dic['netw']['input'].update({'bcpnn': {'nodes':['EC'], 'time':250.0, 'n_set_pre':10, 'p_amplitude':3}})
+        dic['netw']['input'].update({'bcpnn': {'nodes':['EC'], 'time':100.0, 'n_set_pre':10, 'p_amplitude':3, 'n_MSN_stim':20}})
         # ========================
         # Default nest parameters 
         # ========================
@@ -1366,10 +1370,10 @@ class Par_bcpnn(Par):
                              'delay_setup':delay_setup, 
                              'weight_val':None,
                              'weight_setup':weight_setup,
-                             'mask':None,
+                             'mask':[-0.5, 0.5],
                              'fan_in':None})
     
-            conns[k].update({'mask':[-0.5, 0.5]})  
+       
             
         dic['conn']=misc.dict_merge(dic['conn'], conns)  
 
@@ -1398,16 +1402,15 @@ class Par_bcpnn(Par):
 
     def get_dependable_par(self):
         
-        
-        
         dc=self._dic_con
         dra=misc.dict_recursive_add
         
         ddep={}
         mr_ctx=2.0
         f_M1=1.5
-        f_M2=2.5
-        dra(ddep,['nest', 'CO_FS_ampa','weight'], 0.25*1010.0/dc['conn']['CO_FS_ampa']['fan_in0']/mr_ctx*2.)
+        f_M2=3.0
+        if 'CO_FS_ampa' in dc['conn'].keys():
+            dra(ddep,['nest', 'CO_FS_ampa','weight'], 0.25*1010.0/dc['conn']['CO_FS_ampa']['fan_in0']/mr_ctx*2.)
         dra(ddep,['nest', 'CO_M1_ampa','weight'], 0.5*530.0/dc['conn']['CO_M1_ampa']['fan_in0']/mr_ctx*0.8*f_M1)
         dra(ddep,['nest', 'CO_M1_nmda','weight'], 0.019*530.0/dc['conn']['CO_M1_nmda']['fan_in0']/mr_ctx*0.8*f_M1)
         dra(ddep,['nest', 'CO_M2_ampa','weight'], 0.41*690.0/dc['conn']['CO_M2_ampa']['fan_in0']/mr_ctx*.7*0.8*f_M2)
@@ -1428,6 +1431,94 @@ class Par_bcpnn(Par):
         ddep=misc.dict_merge(ddep2, ddep)
         return ddep
 
+class Par_bcpnn_h1(Par_bcpnn):
+    
+    def __init__(self, dic_rep={}, perturbations=None ):
+        super( Par_bcpnn_h1, self ).__init__( dic_rep, perturbations )    
+        dic=self._dic_con
+        
+        dic['netw']['n_nuclei'].update({'F1':dic['netw']['n_nuclei']['FS']/2})
+        dic['netw']['n_nuclei'].update({'F2':dic['netw']['n_nuclei']['FS']/2})
+        
+        dic['netw']['prop'].update({'F1':dic['netw']['n_nuclei']['FS']/2})
+        dic['netw']['prop'].update({'F2':dic['netw']['n_nuclei']['FS']/2})
+
+        for k in ['F1','F2']: 
+            dic['netw']['prop'].update({k:None})  
+            dic['netw']['n_nuclei_sub_sampling'].update({k:None})  
+        
+        dic['node']['F1'] = deepcopy(dic['node']['FS'])
+        dic['node']['F1']['n_sets']=None
+
+        dic['node']['F2'] = deepcopy(dic['node']['FS'])
+        dic['node']['F2']['n_sets']=None
+
+
+        
+        dic['conn']['CO_F1_ampa'] = deepcopy(dic['conn']['CO_FS_ampa'])
+        dic['conn']['CO_F1_ampa'].update( {'rule':'set-all_to_all'})
+        
+        dic['conn']['CO_F2_ampa'] = deepcopy(dic['conn']['CO_FS_ampa'])
+        dic['conn']['CO_F2_ampa'].update( {'rule':'set-all_to_all'})
+
+        dic['conn']['F1_M1_gaba'] = deepcopy(dic['conn']['FS_M1_gaba'])
+        dic['conn']['F2_M2_gaba'] = deepcopy(dic['conn']['FS_M2_gaba'])        
+        dic['conn']['GA_F1_gaba'] = deepcopy(dic['conn']['GA_FS_gaba'])
+        dic['conn']['GA_F2_gaba'] = deepcopy(dic['conn']['GA_FS_gaba'])
+        dic['conn']['F1_F1_gaba'] = deepcopy(dic['conn']['FS_FS_gaba'])
+        dic['conn']['F1_F2_gaba'] = deepcopy(dic['conn']['FS_FS_gaba'])
+        dic['conn']['F2_F1_gaba'] = deepcopy(dic['conn']['FS_FS_gaba'])
+        dic['conn']['F2_F2_gaba'] = deepcopy(dic['conn']['FS_FS_gaba'])
+        
+        data_path_learned_conn={'CO_M1_ampa':'~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-h1/CO_M1.pkl'}
+        data_path_learned_conn['CO_M1_nmda']='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-h1/CO_M1.pkl'
+        data_path_learned_conn['CO_M2_ampa']='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-h1/CO_M2.pkl'
+        data_path_learned_conn['CO_M2_nmda']='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-h1/CO_M2.pkl'
+        data_path_learned_conn['CO_F1_ampa']='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-h1/CO_F1.pkl'
+        data_path_learned_conn['CO_F2_ampa']='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-h1/CO_F2.pkl'
+
+        for node in data_path_learned_conn:
+            dic['conn'][node]['data_path_learned_conn']=data_path_learned_conn[node]
+        
+        dic['conn']['CO_F1_ampa']['weight_setup'].update({'type':'learned', 'params':None})
+        dic['conn']['CO_F2_ampa']['weight_setup'].update({'type':'learned', 'params':None})
+        
+        node_rem=['FS']
+        for model in node_rem: del dic['node'][model]
+  
+        del dic['netw']['n_nuclei']['FS']
+        del dic['netw']['prop']['FS']
+        del dic['netw']['n_nuclei_sub_sampling']['FS']
+        
+        rem=['CO_FS_ampa','FS_M1_gaba', 'FS_M2_gaba', 'GA_FS_gaba', 'FS_FS_gaba']
+        for model in rem:  
+            del dic['conn'][model]  
+            
+    def get_dependable_par(self):
+         
+        dc=self._dic_con
+        dra=misc.dict_recursive_add
+        
+        ddep={}
+        
+
+        
+        
+        dra(ddep,['node', 'F1','n_sets'], dc['netw']['n_actions'])  
+        dra(ddep,['node', 'F2','n_sets'], dc['netw']['n_actions']) 
+     
+        mr_ctx=2
+        dra(ddep,['nest', 'CO_FS_ampa','weight'], 0.25*1010.0/dc['conn']['CO_F1_ampa']['fan_in0']/mr_ctx*2.)
+        
+        dic_con=deepcopy(self._dic_con)
+        self._dic_con=misc.dict_merge(self._dic_con, ddep)
+        ddep2=Par_bcpnn.get_dependable_par(self)
+        self._dic_con=dic_con
+        ddep=misc.dict_merge(ddep2, ddep)
+        
+
+        
+        return ddep
 import unittest
 
 class TestPar(unittest.TestCase):
@@ -1563,8 +1654,10 @@ class TestPar(unittest.TestCase):
         unique_keys2=set(keys2)
         counts1=[]
         counts2=[]
-        for key in unique_keys1: counts1.append(keys1.count(key))            
-        for key in unique_keys2: counts2.append(keys2.count(key))    
+        for key in unique_keys1: 
+            counts1.append(keys1.count(key))            
+        for key in unique_keys2: 
+            counts2.append(keys2.count(key))    
           
         self.assertEqual(counts1[0], float(sum(counts1))/len(counts1))
         self.assertEqual(counts2[0], float(sum(counts2))/len(counts2))
@@ -1579,7 +1672,12 @@ class TestPar(unittest.TestCase):
         for model in self.par['nest'].keys():
             params=self.par.get_nest_setup(model)
             self.MyLoadModels( params, [model] )
-        for model in self.par['conn'].keys():
+        for val in self.par['node'].values():    
+            model=val['model']        
+            params=self.par.get_nest_setup(model)
+            self.MyLoadModels( params, [model] )
+        for val in self.par['conn'].values():    
+            model=val['syn']        
             params=self.par.get_nest_setup(model)
             self.MyLoadModels( params, [model] )
         
@@ -1591,7 +1689,12 @@ class TestPar_bcpnn(TestPar):
         self.MyLoadModels= my_nest.MyLoadModels
         self.par_test_par_rep= Par_bcpnn( {'netw': {'size': 20000.0}})
         
-        
+class TestPar_bcpnn_h1(TestPar):     
+    def setUp(self):
+        import my_nest
+        self.par = Par_bcpnn_h1({})
+        self.MyLoadModels= my_nest.MyLoadModels
+        self.par_test_par_rep= Par_bcpnn( {'netw': {'size': 20000.0}})        
         
     
 if __name__ == '__main__':
