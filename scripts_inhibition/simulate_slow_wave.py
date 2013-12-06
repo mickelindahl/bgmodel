@@ -3,79 +3,30 @@ Created on Aug 12, 2013
 
 @author: lindahlm
 '''
-
-from simulate_network import Network_model, Network_models_dic
-from network_classes import Slow_wave
-from toolbox import plot_settings 
-from toolbox.my_axes import MyAxes 
+from copy import deepcopy
 import numpy
 import pylab
+import simulate_network_investigate as sni
+from toolbox import plot_settings 
+from toolbox.default_params import Perturbation_list as pl
+from toolbox.default_params import Par_slow_wave
+from toolbox.network_construction import Slow_wave
+from toolbox.network_handling import Network_model, Network_models_dic
+from toolbox.my_axes import MyAxes 
 
-from simulate_network_investigate import  check_setup, get_setup
 
-class Network_model_slow_wave(Network_model):
-    
-    def __init__(self,  label, flag, size, start, stop, Use_class, threads, **kwargs):
-        
-        super( Network_model_slow_wave, self ).__init__( label, flag, size, start, stop, Use_class, threads,  **kwargs) 
-        
-        self.cycles=1
-        self.rate_up=None
-        self.rate_down=None
-        
-        if 'cycles' in kwargs.keys(): self.cycles=kwargs['cycles']
-        if 'p_mod_rates' in kwargs.keys(): self.p_mod_rates=kwargs['p_mod_rates']
-        
-        rates={}
-        self.rates_up={}
-        self.rates_down={}
-        for key, val in Slow_wave().par['node'].iteritems():
-            if val['type']=='input': 
-                if key[0]=='C':
-                
-                    rates[key]=val['rate'] 
-        
-                    self.rates_up[key]=val['rate']*(2-self.p_mod_rates) 
-                    self.rates_down[key]=val['rate']*(self.p_mod_rates)           
-                else:
-                    self.rates_up[key]=val['rate']
-                    self.rates_down[key]=val['rate']
-        self.stop=self.cycles*1000.0
-    
-    def simulate(self, model_list, **kwargs):
-    
-        print '\n*******************\nSimulatation setup\n*******************\n'
-        self.update_parms()
-        kwargs.update({'par_in':self.params_in, 'perturbation':self.perturbation })
-        inh=self.use_class(self.threads, self.start, self.stop, **kwargs)
-        
-        if self.perturbation: inh.par.apply_perturbations()
-        inh.par.update_dependable_par()
-        inh.calibrate()
-        inh.inputs(self.rates_down, self.rates_up, self.cycles)
-        inh.build()
-        inh.randomize_params(['V_m', 'C_m'])
-        inh.connect()
-        inh.run(print_time=True)
-        
-        s=inh.get_simtime_data()
-        s+=' Network size='+str(inh.par['netw']['size'])
-        s+=' '+self.type_dopamine
-        
-        fr_dic=inh.get_firing_rate(model_list)   
-        ids_dic=inh.get_ids(model_list)      
-        isis_dic=inh.get_isis(model_list)          
-        mrs_dic=inh.get_mean_rates(model_list)       
-        raster_dic=inh.get_rasters(model_list)
-                                  
-        return s, fr_dic, ids_dic, isis_dic, mrs_dic, raster_dic
-    
 
-class Network_model_dic_slow_wave(Network_models_dic):
+def perturbations():
+    
+    l=sni.perturbations()
+    l+=[pl('p_mod-'+str(val), ['netw.input.oscillation.p_amplitude_mod',  val, '*']) for val in [0.8, 0.85, 0.9, 0.95]] 
+    return l
+
+class Network_models_dic_slow_wave(Network_models_dic):
     
     def __init__(self,  threads, lesion_setup, setup_list_models, Network_model_class):
         
-        super( Network_model_dic_slow_wave, self ).__init__( threads, lesion_setup, setup_list_models, Network_model_class) 
+        super( Network_models_dic_slow_wave, self ).__init__( threads, lesion_setup, setup_list_models, Network_model_class) 
     
     
     def show_phase_processing_example(self):
@@ -113,8 +64,6 @@ class Network_model_dic_slow_wave(Network_models_dic):
 
 def main():
 
-    p_mode_rates=[0.8, 0.8, 0.95, 0.95]
-    cycles=40
     pds_setup=[1024*4, 10., 'gaussian',{'std_ms':5, 'fs':1000.0}]
     cohere_setup=[1024*4, 10., 'gaussian',{'std_ms':5, 'fs':1000.0}, 40]
     pds_models=['GP', 'GA', 'GI', 'ST', 'SN']
@@ -123,30 +72,36 @@ def main():
     record_from_models=['M1', 'M2', 'FS', 'GA', 'GI', 'ST', 'SN']
     plot_models=pds_models
     plot_relations=cohere_relations
-    setup_list=[]
+    
+    stop=41000.0 
     size=40000.0
-    start=1000.0
-    stop=41000.0
-    use_class=Slow_wave
+    sub_sampling=10.0
+    kwargs = {'class_network_construction':Slow_wave, 
+              'kwargs_network':{'save_conn':False, 'verbose':True}, 
+              'par_rep':{'simu':{'threads':2, 'sd_params':{'to_file':True, 'to_memory':False},
+                                 'print_time':True, 'start_rec':1000.0, 
+                                 'stop_rec':stop, 'sim_time':stop},
+                         'netw':{'size':size/sub_sampling, 'sub_sampling':{'M1':sub_sampling, 'M2':sub_sampling}}}}   
 
-    check_setup()
 
-    setup=get_setup()
-    for s in setup:
-        kwargs={}
-        kwargs['perturbation']=s[1]
-        kwargs.update({'cycles':cycles, 'p_mod_rates':0.9})
-        setup_list.append([s[0]+'-dop', 'dop', size, start, stop, use_class, kwargs])
-        setup_list.append([s[0]+'-no_dop', 'no_dop', size, start, stop, use_class, kwargs])
-        
+    pert0= sni.pert_MS_subsampling(sub_sampling)
+    setup_list=[]
+    #check_perturbations()
+    for s in perturbations():
+        s.append(pert0)
+        sni.check_perturbations([s], Par_slow_wave())
+        kwargs['perturbation']=s
+        kwargs['par_rep']['netw'].update({'tata_dop':0.8})      
+        setup_list.append([s.name+'-dop',   deepcopy(kwargs)])
+        kwargs['par_rep']['netw'].update({'tata_dop':0.0})
+        setup_list.append([s.name+'-no_dop', deepcopy(kwargs)])
+    
     labels=[sl[0] for sl in setup_list]
-    kwargs_simulation={'sd_params':{'to_file':True, 'to_memory':False}}#, 'record_to': ['file']}}
-    #, 'record_to': ['file']}}
-    #'flush_records': True,
-    nms=Network_models_dic(8, setup_list, Network_model_slow_wave)
-    nms.simulate_example([1]*len(labels), labels, record_from_models, **kwargs_simulation)
-    nms.signal_pds([1]*len(labels), labels, pds_models, pds_setup)
-    nms.signal_coherence([1]*len(labels), labels, cohere_relations, cohere_setup)
+
+    nms=Network_models_dic(setup_list, Network_model)
+    nms.simulate([0]*len(labels), labels, record_from_models)
+    nms.signal_pds([0]*len(labels), labels, pds_models, pds_setup)
+    nms.signal_coherence([0]*len(labels), labels, cohere_relations, cohere_setup)
     #nms.signal_phase([0]*2, [labels[3]], plot_models[5:8], phase_setup)
     
     fig=nms.show_compact(labels, plot_models, plot_relations, band=[0.5,1.5])

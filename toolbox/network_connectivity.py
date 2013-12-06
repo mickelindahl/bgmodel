@@ -11,7 +11,8 @@ import numpy
 import os
 import random
 import time
-from toolbox import data_to_disk
+
+from toolbox import data_to_disk, my_nest
 import unittest
 
 class Units(object):
@@ -29,7 +30,6 @@ class Units(object):
         self.name=name
         self.n=par['n']
         self.n_sets=par['n_sets']
-        print name, self.n
         self.model=par['model']
         self.lesion=par['lesion']
         self.extent=par['extent']
@@ -103,8 +103,9 @@ class Units(object):
     def apply_kernel(self, idx, fan):
         n=len(idx)
         
-        
-        p=float(fan)/n
+        #p=float(fan)/n
+        if n>=1: p=float(fan)/n
+        else: return []
         rb=numpy.random.binomial
         rs=random.sample
       
@@ -247,9 +248,12 @@ class Structure(object):
         self.tata_dop=par['netw']['tata_dop']
         self.weight_val=par['conn'][name]['weight_val']
         self.weight_setup=par['conn'][name]['weight_setup']
-        
+    
+    def __repr__(self):
+        return self.__class__.__name__+':'+self.name    
+    
     def __str__(self):
-        return self.name
+        return self.name+':'+str(len(self.conn_pre))
     
     def _add_connections(self, d_out, p_out, dr, po):
         '''
@@ -275,7 +279,7 @@ class Structure(object):
         d_out.extend(reduce(lambda x,y: list(x)+list(y), nodes))
         p_out.extend(reduce(lambda x,y: list(x)+list(y), [(v,)*n_bp[i] for i, v in enumerate(po) ]))
 
-    def set_connections(self, save_mode=True):
+    def set_connections(self, save_mode=True, display_print=True):
         
         s=''
         if self.beta_fan_in:
@@ -288,8 +292,6 @@ class Structure(object):
         
         else:
         
-            if self.name=='CO_M1_ampa':
-                print self
             driver_out=[]
             pool_out=[]
             # Each presynaptic node connects to only one postsynaptic
@@ -336,7 +338,7 @@ class Structure(object):
                 for se_dr, se_po in zip(self.driver.sets, self.pool.sets):       
                   
                     dr=self.driver.idx[se_dr]
-                    po=set(self.pool.idx).difference(self.pool.idx[se_po])    
+                    po=list(set(self.pool.idx).difference(self.pool.idx[se_po]) )   
                     n_pre=len(driver_out)
                     self._add_connections(driver_out, pool_out, dr, po)
                     n_post=len(driver_out)
@@ -364,13 +366,17 @@ class Structure(object):
             
             self.n_conn=len(pool_out)
             
+            assert isinstance(self.conn_pre, list)
+            
             if save_mode:
                 data_to_disk.pickle_save([self.n_conn, self.conn_pre, self.conn_post, self.sets_conn], save_path) 
-        
+            
+            
         t=time.time()-t
-        print 'Structure: {0:18} Connections: {1:8} Fan pool:{2:6} Time:{3:5} sec'.format(self.name, len(self.conn_pre), 
-                                                                                            round(float(len(self.conn_pre))/self.pool.n,0), 
-                                                                                            round(t,2))
+        if display_print:
+            print 'Structure: {0:18} Connections: {1:8} Fan pool:{2:6} Time:{3:5} sec'.format(self.name, len(self.conn_pre), 
+                                                                                              round(float(len(self.conn_pre))/self.pool.n,0), 
+                                                                                              round(t,2))
            
     def get_delays(self):
         x=self.delay_setup
@@ -434,14 +440,39 @@ class Structure_list(object):
             for k, dic, par in setup: 
                 self.append(k, dic, par) 
     
+    @property
+    def size(self):
+        size=0
+        for s in self.list:
+            size+=len(s.conn_pre)
+        return size
+    
     def __getitem__(self,a):
         return self.list[a]
     
     def __len__(self):
         return len(self.list)    
+
+    def __repr__(self):
+        return self.__class__.__name__+':'+self.name
     
     def __str__(self):
-        return str(['conn_obj:'+str(i) for i in self.list])
+        s='\n****************\nConnection info\n****************'
+        s+='\n{0:14}{1}'.format('Total number:', self.size)
+        s+='\n{0:14}'.format('By connection:')
+        
+        text_lists=[]
+        for struc in sorted(self.list, key=lambda x:x.name):
+            text_lists.append('{0:>5}:{1:<8}'.format(struc.name, len(struc.conn_pre)))
+        
+        text_lists=[text_lists[i:-1:6] for i in range(6)] 
+
+        for i, text_list in enumerate(text_lists):
+            if i==0: pass
+            else:s+='\n{0:14}'.format('')
+            s+=''.join(text_list)
+        
+        return s
         
     def append(self,k,v, p):
         self.list.append(Structure( k, v, p ))
@@ -480,7 +511,7 @@ class Structure_list(object):
         self.list=sorted(self.list,key=lambda x:x.name)   
         
         
-class TestUnits(unittest.TestCase):
+class TestUnitsPar(unittest.TestCase):
     
     def setUp(self):
         from toolbox.default_params import Par
@@ -492,28 +523,29 @@ class TestUnits(unittest.TestCase):
             dic={}
             units.append(val['unit_class'](k, dic, self.par))
 
-class TestUnitsBcpnn(TestUnits):
+class TestUnitsPar_bcpnn_h0(TestUnitsPar):
     
     def setUp(self):
-        from toolbox.default_params import Par_bcpnn
-        self.par=Par_bcpnn()
+        from toolbox.default_params import Par_bcpnn_h0
+        self.par=Par_bcpnn_h0()
         
-class TestStructure(unittest.TestCase):
+class TestStructurePar_bcpnn(unittest.TestCase):
     
     def setUp(self):
         
         #To avoid circular dependency
-        from toolbox.default_params import Par_bcpnn
+        from toolbox.default_params import Par_bcpnn_h0
         
         self.units_dic={}
-        self.par=Par_bcpnn(dic_rep={'netw':{'size':2000.0}})
+        self.par=Par_bcpnn_h0(dic_rep={'netw':{'size':2000.0}})
         for k, v in self.par['node'].items():
+            self.par['node'][k]['n']=10
             self.units_dic[k]=(v['unit_class'](k, {}, self.par))
         
         
-        dplc='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-CO_M1.pkl'
+        dplc='~/git/bgmodel/scripts_bcpnnbg/data_conns/conn-fake/CO_M1.pkl'
         
-        self.par_bcpnn=Par_bcpnn(dic_rep={'netw':{'size':2000.0}, 
+        self.par_bcpnn=Par_bcpnn_h0(dic_rep={'netw':{'size':2000.0}, 
                                           'node':{'CO':{'n':150},'M1':{'n':150}, 'SN':{'n':100}},
                                           'conn':{'CO_M1_ampa':{'sets':[10,5],
                                                                 'fan_in':15.,
@@ -534,19 +566,19 @@ class TestStructure(unittest.TestCase):
         
                
     def test_set_all_to_all(self):
-        self.s1.set_connections(False)
+        self.s1.set_connections(False, display_print=False)
         set_source=self.par_bcpnn['conn']['CO_M1_ampa']['sets'][0]
         n_target=self.par_bcpnn['node']['M1']['n']
         self.assertAlmostEqual(set_source*n_target/float(self.s1.n_conn),1.0,1)
         
     def test_set_set(self):
-        self.s2.set_connections(False)
+        self.s2.set_connections(False, display_print=False)
         fan_in=self.par_bcpnn['conn']['M1_SN_gaba']['fan_in']
         n_target=self.par_bcpnn['node']['SN']['n']
         self.assertAlmostEqual(fan_in*n_target/self.s2.n_conn,1.0,1)        
     
     def test_get_weights_learned(self):
-        self.s1.set_connections(False)
+        self.s1.set_connections(False, display_print=False)
         w=self.s1.get_weights()
         weights=data_to_disk.pickle_load(self.s1.data_path_learned_conn)*self.s1.weight_setup['params']
         self.assertSetEqual(set(w), set(weights))
@@ -561,14 +593,15 @@ class TestStructure(unittest.TestCase):
                 dic['target']=self.units_dic[target]
                 dic['save_at']=''
                 s=Structure(k, dic, self.par)
-                s.set_connections(False)
+                s.set_connections(False, display_print=False)
                 w1=s.get_weights()
                 w2=data_to_disk.pickle_load(s.data_path_learned_conn)*s.weight_setup['params']
+                
                 self.assertSetEqual(set(w1), set(w2))
       
-            
+          
     def test_get_weights_uniform(self):
-        self.s2.set_connections(False)
+        self.s2.set_connections(False, display_print=False)
         w=self.s2.get_weights()
         mw=numpy.mean(w)
         self.assertAlmostEqual(.1, self.s2.weight_val/mw/10.0,1)    
@@ -580,8 +613,77 @@ class TestStructure(unittest.TestCase):
         self.par_bcpnn
         
         pass
+
+
+class TestStructuresPar(unittest.TestCase):
+    
+    def build(self):
+        # Create input units
+        self.units_dic={}
+        for k,v in self.par['node'].iteritems():   
+            dic={}
+            
+            # Change neuron numbers for speed 
+            #self.par['node'][k]['n']=10
+            self.units_dic[k]=v['unit_class'](k, dic, self.par)
+
         
+        setup_structure_list=[]
+        for k, v in self.par['conn'].iteritems(): 
+            s=k.split('_')
+            keys=self.units_dic.keys()
+            if (s[0] in keys) and (s[1] in keys):
+                # Add units to dictionary
+                dic={}
+                dic['source']=self.units_dic[s[0]]
+                dic['target']=self.units_dic[s[1]]
+                dic['save_at']=''
+                setup_structure_list.append([k, dic, self.par])
+    
+        self.structures=Structure_list(setup_structure_list)
+        for s in sorted(self.structures,key=lambda x:x.name):
+            s.set_connections(save_mode=False, display_print=False)
+
+    
+    def setUp(self):
+        #To avoid circular dependency
+        from toolbox.default_params import Par   
+        self.par=Par(dic_rep={'netw':{'size':500.0}})
+        self.build()   
+                         
+    def test_str_method(self):
+        s=str(self.structures)
+        self.assertTrue(isinstance(s, str))     
         
-             
+    def test_sets(self):
+    
+        for key, u in self.units_dic.items():
+            n=0
+            max_idx=0
+            for se in u.sets:
+                n+=len(u.idx[se])
+                max_idx=max([max_idx, max(u.idx[se])])
+            self.assertEqual(n, self.par['node'][key]['n'])
+            self.assertEqual(max_idx, self.par['node'][key]['n']-1)     
+
+class TestStructuresPar_slow_wave(TestStructuresPar): 
+    def setUp(self):
+        #To avoid circular dependency
+        from toolbox.default_params import Par_slow_wave   
+        self.par=Par_slow_wave(dic_rep={'netw':{'size':500.0}})
+        self.build()   
+                      
+class TestStructuresPar_bcpnn_h0(TestStructuresPar): 
+    def setUp(self):
+        #To avoid circular dependency
+        from toolbox.default_params import Par_bcpnn_h0   
+        self.par=Par_bcpnn_h0(dic_rep={'netw':{'size':1500.0},
+                                       'sub_sampling':{'M1':500.0}}) 
+        #When sub sampling apply_mask can return zero nodes. This is now handled.
+        self.build()          
+        
 if __name__ == '__main__':
+    #suite = unittest.TestLoader().loadTestsFromTestCase(TestStructuresPar_bcpnn_h0)
+    #unittest.TextTestRunner(verbosity=2).run(suite)
+    
     unittest.main() 

@@ -230,6 +230,9 @@ def cohere(x, y, NFFT=256, Fs=2, detrend=detrend_none,
     
     #print 'Pxy'
     Cxy = divide(absolute(Pxy)**2, Pxx*Pyy)
+    
+    #Null nans
+    Cxy[numpy.isnan(Cxy)]=0
     return Cxy, f
 
 def corrcoef(*args):

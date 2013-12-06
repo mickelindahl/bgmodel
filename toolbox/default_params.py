@@ -76,30 +76,41 @@ MODULE_PATH=  '/afs/nada.kth.se/home/w/u1yxbcfw/tools/NEST/dist/install-nest-2.2
 class Perturbation(object):   
      
     def __init__(self, keys, val, op):
-        self.op=op
+        if isinstance(keys, str):
+            keys=keys.split('.')
+        
+        self.op=op 
         self.keys=keys
         self.val=val
         
     def __repr__(self):
         return  '.'.join(self.keys)+self.op+str(self.val)  
-     
-     
-class Pertubation_list(object):
     
-    def __init__(self, iterator):
+     
+class Perturbation_list(object):
+    
+    def __init__(self, name, iterator):
+        self.name=name
         self.list=[]
         self.applied=False
         if not isinstance(iterator[0], list):
             iterator=[iterator]
         
         for keys, val, op in iterator:
-            self.list.append(Perturbation(keys.split('.'), val, op))
+            self.list.append(Perturbation(keys, val, op))
+
+    def __str__(self):
+        return self.name
 
     def __repr__(self):
-        return  'pl_obj:'+str(self.list)
+        return  self.name+':'+str(self.list)
     
     def __getitem__(self, val):
         return self.list[val]
+    
+    def append(self, p):
+        assert type(p) is Perturbation_list,  "Not Perturbation_list object"
+        self.list+=p.list
     
     def update(self, dic, display=False):
         
@@ -144,6 +155,18 @@ class Par(object):
         self.rec['izhik_cond_exp']   = nest.GetDefaults('izhik_cond_exp')['receptor_types']     # get receptor types
     
         dic={}
+        
+        # ========================
+        # Default simu parameters 
+        # ========================
+        
+        dic['simu']={}
+        dic['simu']['print_time']=True
+        dic['simu']['sd_params']={'to_file':True, 'to_memory':False}
+        dic['simu']['sim_time']=2000.0
+        dic['simu']['stop_rec']=2000.0
+        dic['simu']['start_rec']=1000.0
+        dic['simu']['threads']=1
         # ========================
         # Default netw parameters 
         # ========================
@@ -164,7 +187,7 @@ class Par(object):
     
         dic['netw']['V_th_sigma']=1.0
         
-        dic['netw']['sub_sampling']={'MS':1.0} 
+        dic['netw']['sub_sampling']={'M1':1.0,'M2':1.0} 
 
         dic['netw']['n_nuclei']={'M1':2791000/2.,
                                  'M2':2791000/2.,
@@ -203,15 +226,15 @@ class Par(object):
         # CTX-FSN 
         dic['nest']['CF_FS_ampa']={}
         dic['nest']['CF_FS_ampa']['weight']   = 0.25    # n.d. set as for CTX to MSN   
-        dic['nest']['CF_FS_ampa']['delay']    = 0.12    # n.d. set as for CTX to MSN   
+        dic['nest']['CF_FS_ampa']['delay']    = 12.0    # n.d. set as for CTX to MSN   
         dic['nest']['CF_FS_ampa']['template'] = 'static_synapse'   
         dic['nest']['CF_FS_ampa']['receptor_type'] = self.rec['izhik_cond_exp'][ 'AMPA_1' ]     # n.d. set as for CTX to MSN   
     
     
         # FSN-FSN
         dic['nest']['FS_FS_gaba']={}
-        dic['nest']['FS_FS_gaba']['weight']  = 1.    # five times weaker than FSN-MSN, Gittis 2010
-        dic['nest']['FS_FS_gaba']['delay']   = 1.7/0.29    # n.d.same asfor FSN to MSN    
+        dic['nest']['FS_FS_gaba']['weight']  = 1./0.29     # five times weaker than FSN-MSN, Gittis 2010
+        dic['nest']['FS_FS_gaba']['delay']   = 1.7   # n.d.same asfor FSN to MSN    
         dic['nest']['FS_FS_gaba']['U']       = 0.29
         dic['nest']['FS_FS_gaba']['tau_fac'] = 53.   
         dic['nest']['FS_FS_gaba']['tau_rec'] = 902.   
@@ -870,7 +893,29 @@ class Par(object):
         
     def __repr__(self):
         return  self.__class__.__name__
-    
+
+    def __str__(self):
+        
+        nodes=sorted(self.dic['node'].keys())
+        s='\n****************\nSimulation info\n****************'
+        s+='\n{0:13}{1}'.format('Network size:', str(self.dic['netw']['size']))
+        s+='\n{0:13}'.format('Nuclei sizes:')
+       
+        text_lists=[]
+        for name in nodes:
+            text_lists.append('{0:>5}:{1:<6}'.format(name, self.dic['node'][name]['n']))
+        
+        text_lists=[text_lists[i:-1:5] for i in range(5)] 
+
+        for i, text_list in enumerate(text_lists):
+            if i==0: pass
+            else:s+='\n{0:13}'.format('')
+            s+=''.join(text_list)
+        
+        return s         
+
+        
+             
     @property
     def dic(self):
         
@@ -1102,7 +1147,7 @@ class Par(object):
                 delay_setup =  {'params':{'min':(1-pr)*nest_params['delay'],  
                                           'max':(1+pr)*nest_params['delay']}}
                 
-            
+                
             if self._dic_con['conn'][k]['weight_setup']['type']=='uniform':
                 pr=0.5
                 weight_setup = {'params':{'min':(1-pr)*nest_params['weight'], 
@@ -1116,8 +1161,8 @@ class Par(object):
             
             pre, post = k.split('_')[0:2]
             
-            n_MSN=ddep['node']['M1']['n']+ddep['node']['M2']['n']
-            n_MSN*=dc['netw']['sub_sampling']['MS']
+            n_MSN=(ddep['node']['M1']['n']*dc['netw']['sub_sampling']['M1']+
+                   ddep['node']['M2']['n']*dc['netw']['sub_sampling']['M2'])
             # Set mask, set distance specific mask for MSN and FSN
             e=False
             if pre[0:2] in ['M1', 'M2'] and post[0:2] in ['M1', 'M2']:
@@ -1156,13 +1201,15 @@ class Par_slow_wave(Par):
     # @TODO defining input in par
     def __init__(self, dic_rep={}, perturbations=None ):
         super( Par_slow_wave, self ).__init__( dic_rep, perturbations )       
-        self.dic['netw']['input']={'oscillations':{'cycles':10.0,
-                                                   'p_amplitude_mod':0.9,
-                                                   'freq': 1.}}
-class Par_bcpnn(Par):
+        self.dic['netw']['input']={'constant':{'nodes': ['EA', 'EI', 'ES']},
+                                   'oscillation':{'p_amplitude_mod':0.9,
+                                                  'freq': 1., 
+                                                  'nodes':['C1', 'C2', 'CF', 'CS']}}
+        #self.dic['node']['C1']
+class Par_bcpnn_h0(Par):
     
     def __init__(self, dic_rep={}, perturbations=None ):
-        super( Par_bcpnn, self ).__init__( dic_rep, perturbations )     
+        super( Par_bcpnn_h0, self ).__init__( dic_rep, perturbations )     
         
         dic={}
         
@@ -1431,7 +1478,7 @@ class Par_bcpnn(Par):
         ddep=misc.dict_merge(ddep2, ddep)
         return ddep
 
-class Par_bcpnn_h1(Par_bcpnn):
+class Par_bcpnn_h1(Par_bcpnn_h0):
     
     def __init__(self, dic_rep={}, perturbations=None ):
         super( Par_bcpnn_h1, self ).__init__( dic_rep, perturbations )    
@@ -1512,13 +1559,14 @@ class Par_bcpnn_h1(Par_bcpnn):
         
         dic_con=deepcopy(self._dic_con)
         self._dic_con=misc.dict_merge(self._dic_con, ddep)
-        ddep2=Par_bcpnn.get_dependable_par(self)
+        ddep2=Par_bcpnn_h0.get_dependable_par(self)
         self._dic_con=dic_con
         ddep=misc.dict_merge(ddep2, ddep)
         
 
         
         return ddep
+
 import unittest
 
 class TestPar(unittest.TestCase):
@@ -1567,8 +1615,8 @@ class TestPar(unittest.TestCase):
     
     def test_pertubations(self):
         l=[]
-        l+=[ Pertubation_list(['netw.size', 0.5 , '*'])]
-        l+=[ Pertubation_list(['node.GA.target_rate', 0.5, '*'])]
+        l+=[ Perturbation_list('label1', ['netw.size', 0.5 , '*'])]
+        l+=[ Perturbation_list('label1', ['node.GA.target_rate', 0.5, '*'])]
         
         l1=[]
         l2=[]
@@ -1580,7 +1628,21 @@ class TestPar(unittest.TestCase):
                 l2.append(misc.dict_recursive_get(self.par.dic, p.keys))
  
         self.assertListEqual(l1, l2)    
+
+    def test_pertubations_append(self):
     
+        p1=Perturbation_list('label1', ['netw.size', 0.5 , '*'])
+        p2=Perturbation_list('label1', ['node.GA.target_rate', 0.5, '*'])
+        p1.append(p2)
+        l1=[]
+        l2=[]
+        for p in p1:
+            l1.append(misc.dict_recursive_get(self.par.dic, p.keys)*p.val)   
+        self.par.per=p1
+        for p in p1:
+            l2.append(misc.dict_recursive_get(self.par.dic, p.keys))
+        self.assertListEqual(l1, l2)      
+        
     def test_change_con_effect_dep(self):
         
         dic=deepcopy(self.par.dic)
@@ -1590,7 +1652,7 @@ class TestPar(unittest.TestCase):
         v2=self.par.dic['node']['M1']['n']
         self.assertEqual(v1,v2)
         
-
+        
     def test_change_con_effect_dep_initiation(self):
         
         dic=deepcopy(self.par_test_par_rep.dic)
@@ -1680,21 +1742,31 @@ class TestPar(unittest.TestCase):
             model=val['syn']        
             params=self.par.get_nest_setup(model)
             self.MyLoadModels( params, [model] )
-        
-     
-class TestPar_bcpnn(TestPar):     
+    
+    def test_str_method(self):
+        s=str(self.par)
+        self.assertTrue(isinstance(s, str))
+
+class TestPar_slow_wave(TestPar):     
     def setUp(self):
         import my_nest
-        self.par = Par_bcpnn({})
+        self.par = Par_slow_wave({})
         self.MyLoadModels= my_nest.MyLoadModels
-        self.par_test_par_rep= Par_bcpnn( {'netw': {'size': 20000.0}})
+        self.par_test_par_rep= Par_slow_wave( {'netw': {'size': 20000.0}})        
+        
+class TestPar_bcpnn_h0(TestPar):     
+    def setUp(self):
+        import my_nest
+        self.par = Par_bcpnn_h0({})
+        self.MyLoadModels= my_nest.MyLoadModels
+        self.par_test_par_rep= Par_bcpnn_h0( {'netw': {'size': 20000.0}})
         
 class TestPar_bcpnn_h1(TestPar):     
     def setUp(self):
         import my_nest
         self.par = Par_bcpnn_h1({})
         self.MyLoadModels= my_nest.MyLoadModels
-        self.par_test_par_rep= Par_bcpnn( {'netw': {'size': 20000.0}})        
+        self.par_test_par_rep= Par_bcpnn_h1( {'netw': {'size': 20000.0}})        
         
     
 if __name__ == '__main__':

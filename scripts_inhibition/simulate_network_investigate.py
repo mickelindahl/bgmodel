@@ -7,37 +7,41 @@ Created on Aug 9, 2013
 from toolbox.network_construction import Inhibition_base
 import pylab
 from toolbox.network_handling import Network_models_dic, Network_model 
-from toolbox.default_params import Pertubation_list as pl
+from toolbox.default_params import Perturbation_list as pl
 
 from toolbox.default_params import Par
 from copy import deepcopy
 
 
-
-
-def get_setup():
+def perturbations():
     
     l=[]
-    l+=[['size-'+str(val), pl(['netw.size', val , '*'])] for val in [0.5, 1.0, 1.5]] 
-    l+=[['MSNr-'+str(val), pl(['node.C2.rate', val, '*'])] for val in [1.3, 1.2, 1.1, 0.9, 0.8]] 
-    l+=[['GAr-'+str(val), pl(['node.EA.rate', val, '*'])]  for val in [0.8, 0.6, 0.4, 0.2]] 
-    l+=[['GISTd-'+str(0.5), pl(['nest.GI_ST_gaba.delay', 0.5, '*'])]]    # from GPe type I to STN  
-    l+=[['STGId-'+str(0.5), pl(['nest.ST_GA_ampa.delay', 0.5, '*'])]]     # from STN to GPe type I and A  
-    l+=[['Bothd-'+str(0.5), pl([['nest.GI_ST_gaba.delay',0.5, '*'], ['nest.ST_GA_ampa.delay',0.5, '*']])]]
-    l+=[['V_th-'+str(0.5),pl(['netw.V_th_sigma',0.5, '*'])]]
-    l+=[['GAfan-'+str(val),pl(['netw.prop_fan_in_GPE_A', val, '*' ])] for val in [2, 4, 6]]
-    l+=[['GArV-'+str(0.5),pl([['netw.V_th_sigma',0.5, '*'], ['nest.GI_ST_gaba.delay', 0.5, '*']])]]
-    
+    l+=[pl('Size-'+str(val), ['netw.size',  val, '*']) for val in [0.5, 1.0, 1.5]] 
+    l+=[pl('M2r-' +str(val), ['node.C2.rate', val, '*']) for val in [1.3, 1.2, 1.1, 0.9, 0.8]] 
+    l+=[pl('GAr-' +str(val), ['node.EA.rate', val, '*']) for val in [0.8, 0.6, 0.4, 0.2]] 
+    l+=[pl('GISTd-0.5', ['nest.GI_ST_gaba.delay', 0.5, '*'])]    # from GPe type I to STN  
+    l+=[pl('STGId-0.5', ['nest.ST_GA_ampa.delay', 0.5, '*'])]     # from STN to GPe type I and A  
+    l+=[pl('Bothd-0.5', [['nest.GI_ST_gaba.delay',0.5, '*'], ['nest.ST_GA_ampa.delay',0.5, '*']])]
+    l+=[pl('V_th-0.5', ['netw.V_th_sigma',0.5, '*'])]
+    l+=[pl('GAfan-'+str(val), ['netw.prop_fan_in_GPE_A', val, '*' ]) for val in [2, 4, 6]]
+    l+=[pl('GArV-0.5', [['netw.V_th_sigma',0.5, '*'], ['nest.GI_ST_gaba.delay', 0.5, '*']])]
         
     return l
 
-def check_setup():
-    par=Par()
-    setup=get_setup()
+def pert_MS_subsampling(sub_sampling):
+    p=pl('MS-sub-samp', [['nest.M1_SN_gaba.weight',  sub_sampling, '*'],
+                             ['nest.M2_GI_gaba.weight',   sub_sampling, '*'],
+                             ['nest.M1_M1_gaba.weight',   sub_sampling, '*'],
+                             ['nest.M1_M2_gaba.weight',   sub_sampling, '*'],
+                             ['nest.M2_M1_gaba.weight',   sub_sampling, '*'],
+                             ['nest.M2_M2_gaba.weight',   sub_sampling, '*']])  
+    return p
+def check_perturbations(setup, par):
+
 
     for s in setup:
         dic=deepcopy(par.dic)
-        s[1].update(dic, display=True)
+        s.update(dic, display=True)
 
 def main():
     pds_setup=[256, 10., 'gaussian',{'std_ms':5, 'fs':1000.0}]
@@ -48,25 +52,31 @@ def main():
     plot_relations=cohere_relations
         
     record_from_models=['M1', 'M2', 'FS', 'GA', 'GI', 'ST', 'SN']
-    start, stop=1000.0, 21000.0
-        
+    stop=31000.0 
+    sub_sampling=10.0
+    kwargs = {'class_network_construction':Inhibition_base, 
+              'kwargs_network':{'save_conn':False, 'verbose':True}, 
+              'par_rep':{'simu':{'threads':6, 'sd_params':{'to_file':True, 'to_memory':False},
+                                 'print_time':True, 'start_rec':1000.0, 
+                                 'stop_rec':stop, 'sim_time':stop},
+                         'netw':{'size':20000.0/sub_sampling, 'sub_sampling':{'M1':sub_sampling, 'M2':sub_sampling}}}}        
+
+    pert0= pert_MS_subsampling(sub_sampling)
     setup_list=[]
-    size=40000.0
-    start=1000.0
-    stop=41000.0
-    use_class=Inhibition_base
+    #check_perturbations()
+    for s in perturbations():
+        s.append(pert0)
+        check_perturbations([s],Par())
+        kwargs['perturbation']=s
+        kwargs['par_rep']['netw'].update({'tata_dop':0.8})      
+        setup_list.append([s.name+'-dop',   deepcopy(kwargs)])
+        kwargs['par_rep']['netw'].update({'tata_dop':0.0})
+        setup_list.append([s.name+'-no_dop', deepcopy(kwargs)])
     
-    check_setup()
-    for s in get_setup():
-        kwargs={}
-        kwargs['perturbation']=s[1]
-        setup_list.append([s[0]+'-dop', 'dop', size, start, stop, use_class, kwargs])
-        setup_list.append([s[0]+'-no_dop', 'no_dop', size, start, stop, use_class, kwargs])
     labels=[sl[0] for sl in setup_list]
     
-    lesion_setup={}
-    nms=Network_models_dic(16,  setup_list, Network_model)
-    nms.simulate_example([0]*len(labels), labels, record_from_models)
+    nms=Network_models_dic(setup_list, Network_model)
+    nms.simulate([0]*len(labels), labels, record_from_models)
     nms.signal_pds([0]*len(labels), labels, pds_models, pds_setup)
     nms.signal_coherence([0]*len(labels), labels, cohere_relations, cohere_setup)
     

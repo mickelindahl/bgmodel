@@ -991,6 +991,7 @@ class MyPoissonInput(MyGroup):
             
             target_nodes = numpy.array([[id_]*len(rates) for id_ in ids])      
             target_nodes = list(numpy.reshape(target_nodes, len(rates)*len(ids), order='C'))    
+            
             my_nest.Connect(source_nodes, target_nodes)         
 
             self.local_ids=list(self.ids) # Nedd to put on locals also

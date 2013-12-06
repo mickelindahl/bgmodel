@@ -8,19 +8,20 @@ from toolbox import my_nest, data_to_disk, misc
 from toolbox.my_population import MyGroup, MyPoissonInput, MyInput
 
 from copy import deepcopy
-from toolbox.default_params import Par, Par_bcpnn, Par_bcpnn_h1
+from toolbox.default_params import Par, Par_slow_wave, Par_bcpnn_h0, Par_bcpnn_h1
 import nest # Can not be first then I get segmentation Fault
 import numpy
 import pylab
 import time
 import unittest
+import os, sys
 
 class Inhibition_base(object):
     '''
     Base model
     '''
     
-    def __init__(self, threads=1, start_rec=1., sim_time=1000.,  **kwargs):
+    def __init__(self, par_rep={}, perturbation=None,  **kwargs):
         '''
         Constructor
         '''
@@ -28,52 +29,86 @@ class Inhibition_base(object):
         self.inputed=False
         self.built=False
         self.connected=False
-        self.threads=threads
         
-        self.name=self.__class__.__name__
+        self.class_default_params=Par
         
-        self.kwargs=kwargs
+        self.name=self.__class__.__name__ 
         self.input_class=MyPoissonInput
         self.input_params={} #set in inputs       
+              
+        self.stdout=None
+        self.par_rep=par_rep
+        self.perturbation=perturbation
+        self._par=None
         
-        self.units_list=[]
-        self.units_dic={}
-        
-        self.path_data='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition'+'/'+self.name +'/'
-        self.path_pictures='/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/inhibition/pictures'+'/'+self.name +'-'
-        
-        
-        if 'par_rep' in kwargs.keys(): 
-            self.par_rep=kwargs['par_rep']
-        else:
-            self.par_rep={}
-                 
-        if 'perturbation' in kwargs.keys(): 
-            self.perturbation=kwargs['perturbation']
-        else: self.perturbation=None
-        
-        self.par=Par( self.par_rep, self.perturbation)
-        
-        if 'save_conn' in kwargs.keys():
-            self.save_conn= kwargs['save_conn']
-        else:
-            self.save_conn=True
-            
-        self.sim_time=sim_time
-        self.start_rec=start_rec
+           
+        self.save_conn= kwargs.get('save_conn', True)
         self.structures=Structure_list()
+        self.sub_folder=kwargs.get('sub_folder', '')
     
         self.time_calibrated=None
         self.time_inputed=None
         self.time_built=None
         self.time_connected=None
         self.time_run=None
+        
+        self.units_list=[]
+        self.units_dic={}
+        
+        self.verbose=kwargs.get('verbose', 'True')
+        
+    @property
+    def par(self):
+        if self._par==None:
+            self._par=self.class_default_params( self.par_rep, self.perturbation)  
+        return self._par
+    
+    @property
+    def path_data(self):
+        if self.sub_folder:
+            sub_folder=self.sub_folder+'/'
+        else:
+            sub_folder=''
+        return '/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition'+'/'+self.name +'/'+sub_folder
+    
+    @property
+    def path_pictures(self):
+        if self.sub_folder:
+            sub_folder=self.sub_folder+'-'
+        else:
+            sub_folder=''
+        return '/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/inhibition/pictures'+'/'+self.name +'-'+sub_folder
     
     @property
     def path_nest(self):
         return self.path_data+'nest'
-          
+    
+    @property
+    def threads(self):
+        return self.par['simu']['threads']  
         
+    @property
+    def sim_time(self):      
+        return self.par['simu']['sim_time']    
+       
+    @property
+    def start_rec(self):
+        return self.par['simu']['start_rec']       
+    
+    @property
+    def stop_rec(self):
+        return self.par['simu']['stop_rec']       
+
+    def stop_stdout(self, switch):
+        if switch:
+            f = open(os.devnull, 'w')
+            self.stdout=sys.stdout
+            sys.stdout = f
+        else:
+            sys.stdout.close()
+            sys.stdout=self.stdout
+    
+    
     def save(self, save_at):
         ''' 
         Have to keep in mind to put pointer to unit objects in 
@@ -94,31 +129,63 @@ class Inhibition_base(object):
         '''
         Compute all dependent variables.
         '''
+        if not self.verbose: self.stop_stdout(True)
         t=time.time()
         print '\nCalibrating...'
         self.calibrated=True
         self.time_calibrated=int(time.time()-t)
         print 'Calibrated', self.time_calibrated  
         
+        if not self.verbose: self.stop_stdout(False)
+        
     def inputs(self):
         
         if self.inputed:
             return
         if not self.calibrated: self.calibrate()
-        
+        if not self.verbose: self.stop_stdout(True)
         t=time.time()
         print 'Creating inputs...'
         self.inputed=True
         
-        for key, val in self.par['node'].iteritems():
-            if val['type'] =='input':
-                self.input_params[key]=[{'rates':[val['rate']], 
-                                         'times':[1.],
-                                         'idx':range(val['n'])}]
-                self.time_calibrated=int(time.time()-t)
-        self.time_calibrated=int(time.time()-t)
+
+        for key, val in self.par['netw']['input'].items():
+            for model in val['nodes']:
+                if key=='constant':           
+                
+                    self.input_params[model]=[{'rates':[ self.par['node'][model]['rate']], 
+                                               'times':[1.],
+                                               'idx':range(self.par['node'][model]['n'])}]    
+
+                if key=='oscillation':
+                    ru=self.par['node'][model]['rate']*(2-val['p_amplitude_mod']) 
+                    rd=self.par['node'][model]['rate']*val['p_amplitude_mod']
+         
+                    step=1000/2/val['freq']
+                    cycles=int(self.par['simu']['sim_time']/(2*step)+1)
+                    rates=[rd, ru]*cycles
+                    times=numpy.arange(0, 2.*cycles*step, step)
+                    self.input_params[model]=[{'rates':rates, 
+                                               'times':times,
+                                               'idx':range(self.par['node'][model]['n'])}]
+                
+                if key=='bcpnn': 
+                    tt=val['time']
+                    p=val['p_amplitude']
+                    for i in range(val['n_set_pre']):
+                        if i==0: self.input_params[model]=[]
+                            
+                        idx1=list(range(i, self.par['node'][model]['n'] , val['n_set_pre']))
+
+                        self.input_params[model]+=[{'rates':[ self.par['node'][model]['rate'],
+                                                              self.par['node'][model]['rate']*p,
+                                                              self.par['node'][model]['rate']], 
+                                                   'times':[1., self.start_rec+i*tt, self.start_rec+(i+1)*tt],
+                                                   'idx':idx1}] 
+
+        self.time_inputed=int(time.time()-t)
         print 'Inputed', self.time_inputed  
-       
+        if not self.verbose: self.stop_stdout(False)       
     def build(self):
         '''
         Creates units representing populations and their spread and stuctures
@@ -128,25 +195,31 @@ class Inhibition_base(object):
         Then create all nodes, used in the model
         '''
         
+        
+        
         if self.built: return
         if not self.inputed: self.inputs() 
+        if not self.verbose: self.stop_stdout(True)
+        
         print 'Building...'
         t=time.time()
 
         my_nest.ResetKernel(threads=self.threads, print_time=False)  
+        #my_nest.SetKernelStatus({'resolution':0.05})
         
         # Create input units
-        dic={}
         for k,v in self.par['node'].iteritems(): 
             if not v['lesion']:     
                 dic={}
                 self.units_list.append(v['unit_class'](k, dic, self.par))
                 self.units_dic[k]=self.units_list[-1]
+                
+                print self.units_dic[k].n, k
+                assert self.units_dic[k].n>=1.0, "Unit %s needs to have atleast one node"%(k)
                 # Set input units
         
 
         setup_structure_list=[]
-        dic={}
         for k, v in self.par['conn'].iteritems(): 
    
             if not v['lesion']:
@@ -183,19 +256,20 @@ class Inhibition_base(object):
                 self.units_dic[u.name].set_population(inp) 
                                     
             elif u.type == 'network':          
-                sd_params={'start':self.start_rec,  'stop':self.sim_time}
+                sd_params={'start':self.start_rec,  'stop':self.stop_rec}
+                sd_params.update(self.par['simu']['sd_params'])
                 
-                if 'sd_params' in self.kwargs.keys():
-                    sd_params.update(self.kwargs['sd_params'])
                 group=MyGroup(model = u.model, n=u.n, params = {'I_e':u.I_vivo}, sd=True, 
                               sd_params=sd_params)          
             
                 self.units_dic[u.name].set_population(group)
 
-
+        
         self.built=True
         self.time_built=int(time.time()-t)
         print 'Built', self.time_built
+        
+        if not self.verbose: self.stop_stdout(False)
         
     def randomize_params(self, params):
         if not self.built: self.build()
@@ -209,9 +283,10 @@ class Inhibition_base(object):
         if self.connected: return
         if not self.calibrated: self.calibrate()
         if not self.built: self.build()
+        if not self.verbose: self.stop_stdout(True)
         t=time.time()
 
-        for s in self.structures:
+        for s in sorted(self.structures, key=lambda x:x.name):
             # Load model
 
             print 'Connecting '+str(s)
@@ -228,22 +303,23 @@ class Inhibition_base(object):
 
             my_nest.Connect(pre, post , weights, delays, model=s.syn)
       
-            #Clear connection in structure to lower mem consumption
-            s.conn_pre=None
-            s.conn_post=None
+            #Clear connection in structure to lower mem consumption. Probably non necessary
+            #s.conn_pre=None
+            #s.conn_post=None
             
         self.connected=True
         self.time_connected=int(time.time()-t)
         print 'Connected', self.time_connected
-
+        if not self.verbose: self.stop_stdout(False)
     def run(self, print_time=False):
+        
         if not self.connected: self.connect()
+        if not self.verbose: self.stop_stdout(True)
 
-        import os
         if not os.path.isdir(self.path_nest):
             data_to_disk.mkdir(self.path_nest)
         
-        my_nest.SetKernelStatus({'print_time':print_time, 'data_path':self.path_nest, 'overwrite_files': True})
+        my_nest.SetKernelStatus({'print_time':self.par['simu']['print_time'], 'data_path':self.path_nest, 'overwrite_files': True})
         
         for filename in os.listdir(self.path_nest):
             if filename.endswith(".gdf"):
@@ -251,11 +327,16 @@ class Inhibition_base(object):
                 os.remove(self.path_nest+'/'+filename)
         
         t=time.time()
-        my_nest.Simulate(self.sim_time)
-                
+        
+        #my_nest.Simulate(self.sim_time)
+        print my_nest.GetKernelStatus()
+        print self.par
+        print self.structures
+        my_nest.Simulate(self.sim_time)       
         self.time_run=int(time.time()-t)
         print '{0:10} {1}'.format('Simulated', self.time_run)
-
+        
+        if not self.verbose: self.stop_stdout(False)
         
     def get_ids(self, models):
         
@@ -446,23 +527,14 @@ class Inhibition_no_parrot(Inhibition_base):
         # In order to be able to convert super class object to subclass object        
         
         self.input_class=MyInput
-        
+              
 class Slow_wave(Inhibition_base):  
-    
-    def inputs(self, rates_down, rates_up, cycels):
-        if not self.calibrated: self.calibrate()
-        
-        self.input_params={}
-        for name in ['C1', 'C2', 'CF', 'CS' , 'EI', 'EA', 'ES']:
+    def __init__(self, par_rep={}, perturbation=None, **kwargs):
+        super( Slow_wave, self ).__init__(par_rep, perturbation, **kwargs)       
+        # In order to be able to convert super class object to subclass object   
+        self.class_default_params=Par_slow_wave
 
-
-                rates=[rates_down[name], rates_up[name]]*cycels
-                times=numpy.arange(0, 2.*cycels*500., 500)
-                self.input_params[name]=[{'rates':rates, 
-                                          'times':times,
-                                          'idx':range(self.par['node'][name]['n'])}]
-
-    
+   
 class Single_units_activity(Inhibition_base):    
     
     def __init__(self, threads=1, start_rec=1, sim_time=1000, **kwargs):
@@ -551,6 +623,7 @@ class Single_units_activity(Inhibition_base):
                 self.input_params[key]=[{'rates':[val['rate']], 
                                          'times':[1.],
                                          'idx':[]}]    
+                
     def record_voltage(self, p):
         if not self.built: self.build()
         if not self.calibrated: self.calibrate()
@@ -756,108 +829,73 @@ class Single_units_in_vitro(Inhibition_base):
         times=data[:,0][idx]
         voltages=data[:,1][idx]  
         return times, voltages
-
-                
-class Bcpnn(Inhibition_base):    
+           
+class Bcpnn_h0(Inhibition_base):    
     
-    def __init__(self, threads=1, start_rec=1., sim_time=1000., **kwargs):
-        super( Bcpnn, self ).__init__(threads, start_rec, sim_time, **kwargs)       
+    def __init__(self,  par_rep={}, perturbation=None, **kwargs):
+        super( Bcpnn_h0, self ).__init__(par_rep, perturbation, **kwargs)       
         # In order to be able to convert super class object to subclass object   
-        self.par=Par_bcpnn(self.par_rep, self.perturbation)        
-        self.path_data='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn'+'/'+self.name +'/'
-        self.path_pictures='/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/bcpnnbg/pictures'+'/'+self.name +'-'
+        self.class_default_params=Par_bcpnn_h0
         
-    def calibrate(self):
-        '''
-        Compute all dependent variables.
-        '''
-        t=time.time()
-        print '\nCalibrating...'
-
-
-        self.calibrated=True
-        self.time_calibrated=int(time.time()-t)
-        print 'Calibrated', self.time_calibrated  
-        
-        
+    @property
+    def path_data(self):        
+        return '/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn'+'/'+self.name +'/'
     
-    def inputs(self):
-        if self.inputed:
-            return
-        if not self.calibrated: self.calibrate()
-        t=time.time()    
-        print 'Creating inputs...'
-        self.inputed=True
+    @property
+    def path_pictures(self):
+        return '/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/bcpnnbg/pictures'+'/'+self.name +'-'
         
-        for key, val in self.par['netw']['input'].items():
-            if key=='constant':
-                
-                for model in val['nodes']:
-                    self.input_params[model]=[{'rates':[ self.par['node'][model]['rate']], 
-                                             'times':[1.],
-                                             'idx':range(self.par['node'][model]['n'])}]    
-                
-            if key=='bcpnn': 
-                for i in range(val['n_set_pre']):
-                    tt=val['time']
-                    p=val['p_amplitude']
-                    for model in val['nodes']:
-                        if i==0:
-                            self.input_params[model]=[]
-                            
-                        idx1=list(range(i, self.par['node'][model]['n'] , val['n_set_pre']))
-
-                        self.input_params[model]+=[{'rates':[ self.par['node'][model]['rate'],
-                                                             self.par['node'][model]['rate']*p,
-                                                             self.par['node'][model]['rate']], 
-                                                   'times':[1., self.start_rec+i*tt, self.start_rec+(i+1)*tt],
-                                                   'idx':idx1}] 
-
-        self.time_inputed=int(time.time()-t)
-        print 'Inputed', self.time_inputed    
-        
-
-class Bcpnn_h1(Bcpnn):    
+class Bcpnn_h1(Bcpnn_h0):    
     
-    def __init__(self, threads=1, start_rec=1., sim_time=1000., **kwargs):
-        super( Bcpnn_h1, self ).__init__(threads, start_rec, sim_time, **kwargs)       
+    def __init__(self,  par_rep={}, perturbation=None, **kwargs):
+        super( Bcpnn_h1, self ).__init__(par_rep, perturbation, **kwargs)       
         # In order to be able to convert super class object to subclass object   
-        self.par=Par_bcpnn_h1(self.par_rep, self.perturbation)        
-        self.path_data='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn_h1'+'/'+self.name +'/'
-        self.path_pictures='/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/bcpnnbg_h1/pictures'+'/'+self.name +'-'
-        
-class TestStructure(unittest.TestCase):
+        self.class_default_params=Par_bcpnn_h1
     
-    def setUp(self):     
-        self.sim_time=500.0
-        self.network=Bcpnn(sim_time=self.sim_time, **{'save_conn':False,
-                                                      'sd_params':{'to_file':True, 'to_memory':False}})
-        self.network.path_data=self.network.path_data+'unit_testing/'
-        self.fileName=self.network.path_data+'network'
+class TestStructureInhibition_base(unittest.TestCase):
+    
+    kwargs={'save_conn':False, 'sub_folder':'unit_testing', 'verbose':False}
+    par_rec={'simu':{'start_rec':1.0, 'stop':100.0,'sim_time':100., 
+                     'sd_params':{'to_file':True, 'to_memory':False},
+                     'threads':4, 'print_time':False},
+             'netw':{'size':500.0}}
+    
+    nest.sr("M_WARNING setverbosity") #silence nest output
+    
+    def setUp(self):
+        
+        self.class_network_construction=Inhibition_base
+        self.fileName=self.class_network_construction().path_data+'network'
         self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
             
     def test_inputs(self):
-        self.network.inputs()
+        network=self.class_network_construction(self.par_rec, **self.kwargs)
+        network.inputs()
         nodes=[]
-        for val in self.network.par['netw']['input'].values():
+        for val in network.par['netw']['input'].values():
             nodes+=val['nodes']
             
-        self.assertListEqual(sorted(nodes), sorted(self.network.input_params.keys()))
+        self.assertListEqual(sorted(nodes), sorted(network.input_params.keys()))
     
-    def test_build_connect(self):
-                
-        self.network.par.dic_rep.update({'netw':{'size':500.0, 'sub_sampling':{'M1':10.0,'M2':10.0, 'CO':20.0} }})
-        self.network.build()    
+    def test_build_connect_run(self):     
+        network=self.class_network_construction(self.par_rec, **self.kwargs)
         
-        for s in self.network.structures:
+        for val in network.par['conn'].values():
+            if val['delay_setup']['type']=='uniform':
+                val['delay_setup']['type']='constant'
+                val['delay_setup']['params']=(val['delay_setup']['params']['max']+val['delay_setup']['params']['min'])/2.
+        
+        network.build()    
+        
+        for s in network.structures:
             fan_in=float(s.n_conn)/s.target.n   
-            fan_in0=self.network.par['conn'][s.name]['fan_in']
-            print s.name, s.n_conn, fan_in/100.,fan_in0/100.
+            fan_in0=network.par['conn'][s.name]['fan_in']
+            #print s.name, s.n_conn, fan_in/100.,fan_in0/100.
             self.assertAlmostEqual(fan_in/100.,fan_in0/100., 1)  
         
-        self.network.connect()
-        self.network.run()
-        data_to_disk.pickle_save(self.network, self.fileName)
+        network.connect()
+        network.run()
+        data_to_disk.pickle_save(network, self.fileName)
     
     def test_get_firing_rate(self):
         
@@ -866,8 +904,8 @@ class TestStructure(unittest.TestCase):
         fr=network.get_firing_rate(self.model_list)
         
         for k in self.model_list:
-            self.assertEqual(len(fr[k][0]), self.sim_time-1)
-            self.assertEqual(len(fr[k][1]), self.sim_time-1)
+            self.assertEqual(len(fr[k][0]), network.par['simu']['sim_time']-1)
+            self.assertEqual(len(fr[k][1]), network.par['simu']['sim_time']-1)
 
     def test_get_firing_rate_sets(self):
         
@@ -876,8 +914,8 @@ class TestStructure(unittest.TestCase):
         d=network.get_firing_rate_sets(self.model_list)
         
         for k in self.model_list:
-            self.assertEqual(len(d[k][0]), self.sim_time-1)
-            self.assertEqual(d[k][1].shape[1], self.sim_time-1)
+            self.assertEqual(len(d[k][0]), network.par['simu']['sim_time']-1)
+            self.assertEqual(d[k][1].shape[1], network.par['simu']['sim_time']-1)
             self.assertEqual(d[k][1].shape[0], network.par['node'][k]['n_sets'])
 
     def test_get_raster(self):
@@ -891,7 +929,7 @@ class TestStructure(unittest.TestCase):
             self.assertEqual(d[k][0].shape[0], 2)
             self.assertListEqual(list(d[k][1]), range(network.par['node'][k]['n']))
 
-    def test_get_raster_sets(self):
+    def test_get_rasters_sets(self):
         
         network=data_to_disk.pickle_load(self.fileName)
         my_nest.SetKernelStatus({'data_path':network.path_nest})
@@ -901,23 +939,48 @@ class TestStructure(unittest.TestCase):
             n_sets=network.par['node'][k]['n_sets']
             n=network.par['node'][k]['n']
             self.assertEqual(len(d[k]), n_sets)
-            step=int(numpy.ceil(float(n)/n_sets))
             i=0
+            acum=0
             for l in d[k]:
                 self.assertIsInstance(l[0], numpy.ndarray)
                 self.assertEqual(l[0].shape[0], 2)
                 self.assertEqual(len(l[0][0]),len(l[0][1]))
-                self.assertListEqual(list(l[1]), range(i,min(i+step, n)))
-                i+=step
                 
-    #def test_run(self):
-    #    self.network.run(print_time=True)
-    #    data_to_disk.pickle_save(self.network, self.fileName)
+                
+                m=len(list(range(i, n, n_sets)))
+                self.assertListEqual(list(l[1]), range(acum, acum+m))
+                i+=1
+                acum+=m
+                
+
+class TestStructureSlow_wave(TestStructureInhibition_base):
+    
+    def setUp(self):
+        self.par_rec['netw'].update({'sub_sampling':{'M1':10.0,'M2':10.0}})     
+        self.class_network_construction=Slow_wave
         
-
+        self.fileName=self.class_network_construction().path_data+'network'
+        self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
+        
+class TestStructureBcpnn_h0(TestStructureInhibition_base):
+    
+    def setUp(self):
+        
+        self.par_rec['netw'].update({'sub_sampling':{'M1':20.0,'M2':20.0, 'CO':20.0}})     
+        self.class_network_construction=Bcpnn_h0
+        
+        self.fileName=self.class_network_construction().path_data+'network'
+        self.model_list=['CO', 'M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
             
+class TestStructureBcpnn_h1(TestStructureBcpnn_h0):
 
+    def setUp(self):
+        self.class_network_construction=Bcpnn_h1        
+        self.fileName=self.class_network_construction().path_data+'network'
+        self.model_list=['CO', 'M1','M2', 'F1', 'F2', 'GA', 'GI', 'ST', 'SN']
           
 if __name__ == '__main__':
-    unittest.main()             
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestStructureSlow_wave)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+    #unittest.main()             
         

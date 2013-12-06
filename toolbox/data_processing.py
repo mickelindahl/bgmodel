@@ -282,13 +282,17 @@ class Data_units_relation(object):
                 conv_data2=misc.convolve(binned_data2, kernel_extent, kernel_type, params=kernel_params)
 
                 f, mean_Cxy =signal_processing.get_coherence(conv_data1, conv_data2, fs, NFFT, noverlap=NFFT/2)
+
             else:
                 f, mean_Cxy =numpy.array([[0],[0]])   
             if not len(binned_data1):
                 binned_data1=[[]]
             
             L=len(binned_data1[0])/NFFT
-            p_conf95=numpy.ones(len(f))*(1-0.05**(1/(L-1)))    
+            if L!=1: 
+                p_conf95=numpy.ones(len(f))*(1-0.05**(1/(L-1)))    
+            else:
+                p_conf95=1.0
             data_to_disk.pickle_save([f, mean_Cxy, p_conf95], save_at)
         else:
             f, mean_Cxy, p_conf95=data_to_disk.pickle_load(save_at)

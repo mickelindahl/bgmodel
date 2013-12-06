@@ -5,19 +5,37 @@ Created on Jun 27, 2013
 '''
 from toolbox.network_construction import Inhibition_base
 from toolbox.network_handling import Network_models_dic, Network_model 
-
+from copy import deepcopy
+from toolbox.default_params import Perturbation_list as pl
 import pylab  
 
 def main():
-
-    record_from_models=['M1', 'M2', 'FS', 'GA', 'GI', 'ST', 'SN']
-    setup_list=[['Control',     'dop'],
-                ['No_dopamine', 'no_dop']]
+    stop=11000.0
+    sub_sampling=10.0
+    kwargs = {'class_network_construction':Inhibition_base, 
+              'kwargs_network':{'save_conn':False, 'verbose':True}, 
+              'par_rep':{'simu':{'threads':4, 'sd_params':{'to_file':True, 'to_memory':False},
+                                 'print_time':True, 'start_rec':1000.0, 
+                                 'stop_rec':stop, 'sim_time':stop},
+                             'netw':{'size':10000.0/sub_sampling, 'sub_sampling':{'M1':sub_sampling, 
+                                                                                  'M2':sub_sampling}}}}          
     
-    #Inhibition_no_parrot
-    #for setup in setup_list: setup.extend([10000., 1000.0, 11000.0, Inhibition_no_parrot, {}])
-    for setup in setup_list: setup.extend([20000., 1000.0, 21000.0, Inhibition_base, {}])
-    labels=[sl[0] for sl in setup_list]
+    pert=pl('MS-sub-samp', [['nest.M1_GI_gaba.weight',  sub_sampling, '*'],
+                            ['nest.M2_SN_gaba.weight',  sub_sampling, '*'],
+                            ['nest.M1_M1_gaba.weight',  sub_sampling, '*'],
+                            ['nest.M1_M2_gaba.weight',  sub_sampling, '*'],
+                            ['nest.M2_M1_gaba.weight',  sub_sampling, '*'],
+                            ['nest.M2_M2_gaba.weight',  sub_sampling, '*']])
+    
+    record_from_models=['M1', 'M2', 'FS', 'GA', 'GI', 'ST', 'SN']
+    labels=['Control', 'No_dopamine']
+    dopamine=[0.8, 0.0]
+    
+    setup_list=[]
+    for l, d in zip(*[labels, dopamine]): 
+        kwargs['par_rep']['netw'].update({'tata_dop':d})      
+        kwargs['perturbations']=pert
+        setup_list.append([l, deepcopy(kwargs)])
     
     
     pds_setup    =[256, 10., 'gaussian',{'std_ms':5, 'fs':1000.0}]
@@ -28,11 +46,8 @@ def main():
     plot_models=pds_models[0:5]
     plot_relations=cohere_relations[0:5]
     
-    #kwargs_simulation={'sd_params':{'to_file':True, 'to_memory':False}}
-    kwargs_simulation={'sd_params':{'to_file':False, 'to_memory':True}}
-    
-    nms=Network_models_dic(4, setup_list, Network_model)
-    nms.simulate([0]*2, labels, record_from_models, **kwargs_simulation)
+    nms=Network_models_dic(setup_list, Network_model)
+    nms.simulate([1]*2, labels, record_from_models)
     nms.signal_pds([0]*2, labels, pds_models, pds_setup)
     nms.signal_coherence([0]*2, labels, cohere_relations, cohere_setup)
     

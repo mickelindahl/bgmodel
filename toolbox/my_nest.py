@@ -346,7 +346,9 @@ def MyLoadModels( model_setup, models ):
                 CopyModel( setup[ 0 ], setup[ 1 ], setup[ 2 ] )   # Create model
               
         
-def MySimulate( duration ):
+def MySimulate(duration):
+
+    
     start = time.time() 
     Simulate( duration )
     stop = time.time() 
@@ -359,6 +361,7 @@ def MySimulate( duration ):
 def ResetKernel(threads=1, print_time=False):
     print 'Reseting kernel'
     nest.ResetKernel()
-    nest.SetKernelStatus({"resolution": .1, "print_time": print_time})
+    #nest.SetKernelStatus({"resolution": .1, "print_time": print_time})
+    nest.SetKernelStatus({ "print_time": print_time})
     nest.SetKernelStatus({"local_num_threads":  threads})
             

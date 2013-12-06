@@ -8,6 +8,7 @@ Classes for running models, collect and process data and plot result.
 
 from toolbox import data_to_disk, plot_settings, misc
 from toolbox import signal_processing
+from toolbox.network_construction import Inhibition_base
 from toolbox.data_processing import Data_unit, Data_units_dic, Data_units_relation_dic
 
 import copy
@@ -27,10 +28,8 @@ class Network_model(object):
     network_classes for building the model. Uses classes from data_processing
     for processing data.
     '''
-    def __init__(self, label, flag, size, start, stop, network_class, threads, **kwargs):
+    def __init__(self, label, **kwargs):
 
-        type_dopamine=flag.split('-')
-        if isinstance(type_dopamine, list):type_dopamine=type_dopamine[0]
 
         self.data={'firing_rate':None, 
                    'firing_rate_sets':None,
@@ -41,32 +40,42 @@ class Network_model(object):
                    'rasters_sets':None}
           
         self.dud=None
-        self.dudr=None
+        self.durd=None
         self.label=label    
-        self.network_class=network_class    
-        self.par_rep={}
-        self.size=size
-        self.start=start
-        self.stop=stop
-        self.simulation_info=''
-        self.threads=threads
-        self.type_dopamine=type_dopamine
+              
+        self.simulation_info=''        
+
+        class_network_construction=kwargs.get('class_network_construction', Inhibition_base)  
+        par_rep=kwargs.get('par_rep',{})
+        perturbation=kwargs.get('perturbation', None)
+        kwargs_network=kwargs.get('kwargs_network', None)
         
-        self.par_rep={}
-        self.par_rep['netw']={'size':size}
-             
-        if 'perturbation' in kwargs.keys():
-            self.perturbation=kwargs['perturbation']
-        else:
-            self.perturbation=None 
-        
+        self.network=class_network_construction( par_rep, perturbation, **kwargs_network) 
+  
+    @property
+    def path_data(self):
         path=sys.argv[0].split('/')[-1].split('.')[0]
-        path=path+'/size-'+str(int(size))+'/'
-            
-        self.path_data=self.network_class().path_data+path
-            
-        #ax.my_remove_axis(xaxis=False, yaxis=False )
-        
+        path=path+'/size-'+str(int(self.network.par['netw']['size']))+'/'
+        return self.network.path_data+path
+    
+    @property
+    def type_dopamine(self):
+        if self.network.par['netw']['tata_dop']==0.0:
+            return 'no_dop'
+        if self.network.par['netw']['tata_dop']==0.8:
+            return 'dop'        
+        else:
+            return 'interm'  
+    
+    @property
+    def start(self):
+        return self.network.par['simu']['start_rec']
+
+    @property
+    def stop(self):
+        return self.network.par['simu']['stop_rec']
+    
+    
     def data_load(self, filename):
         self.data=data_to_disk.pickle_load(filename)    
         
@@ -248,59 +257,77 @@ class Network_model(object):
                 ax.set_xlabel('Time (ms)')
             else:
                 ax.my_remove_axis(xaxis=True, yaxis=False )
-                
-    def update_parms(self):
-        
-        if self.type_dopamine=='dop': 
-            misc.dict_recursive_add(self.par_rep, ['netw', 'tata_dop'], 0.8)
-        elif self.type_dopamine=='no_dop': 
-            misc.dict_recursive_add(self.par_rep, ['netw', 'tata_dop'], 0.0)
-     
+            
      
     def simulate(self, model_list, print_time=True, **kwargs): 
 
-        print '\n*******************\nSimulatation setup\n*******************\n'
-        self.update_parms()
-        kwargs.update({'par_rep':self.par_rep, 'perturbation':self.perturbation })
-        inh=self.network_class(self.threads, self.start, self.stop, **kwargs)
+        #print '\n*******************\nSimulatation setup\n*******************\n'
         
-        inh.calibrate()
-        inh.inputs()
-        inh.build()
-        inh.randomize_params(['V_m', 'C_m'])
-        inh.connect()
-        inh.run(print_time=print_time)
+        network=self.network
+        
+        network.calibrate()
+        network.inputs()
+        network.build()
+        network.randomize_params(['V_m', 'C_m'])
+        network.connect()
+        network.run(print_time=print_time)
 
-        s=inh.get_simtime_data()
-        s+=' Network size='+str(inh.par['netw']['size'])
+        s=network.get_simtime_data()
+        s+=' Network size='+str(network.par['netw']['size'])
         s+=' '+self.type_dopamine
         
-        self.data['firing_rate']=inh.get_firing_rate(model_list)   
-        self.data['firing_rate_sets']=inh.get_firing_rate_sets(model_list) 
-        self.data['ids']=inh.get_ids(model_list)      
-        self.data['isis']=inh.get_isis(model_list)          
-        self.data['mean_rates']=inh.get_mean_rates(model_list)       
-        self.data['rasters']=inh.get_rasters(model_list)
-        self.data['rasters_sets']=inh.get_rasters_sets(model_list)
+        self.data['firing_rate']=network.get_firing_rate(model_list)   
+        self.data['firing_rate_sets']=network.get_firing_rate_sets(model_list) 
+        self.data['ids']=network.get_ids(model_list)      
+        self.data['isis']=network.get_isis(model_list)          
+        self.data['mean_rates']=network.get_mean_rates(model_list)       
+        self.data['rasters']=network.get_rasters(model_list)
+        self.data['rasters_sets']=network.get_rasters_sets(model_list)
         self.simulation_info=s                          
 
     
                    
 class Network_models_dic():
 
-    def __init__(self, threads, setup_list_models, Network_model_class):
+    def __init__(self, setup_list_models, class_network_handling):
          
         self.dic={}
-        self.network_model_list=[]
         for setup in setup_list_models:
             if len(setup)==6: setup.append({})
-            label, flag, size, start, stop, network_class, kwargs=setup
-            args=[label, flag, size, start, stop, network_class, threads]
-            assert issubclass(Network_model_class, Network_model), '%d class not a subclass of Network_model'%Network_model_class
-            self.network_model_list.append(label)
-            self.dic[label]=Network_model_class(*args, **kwargs)
+            label, kwargs=setup
+            args=[label]
+            assert issubclass(class_network_handling, Network_model), '%d class not a subclass of Network_model'%class_network_handling
+            self.dic[label]=class_network_handling(*args, **kwargs)
+    
+    @property
+    def network_model_list(self):
+        return sorted(self.dic.keys())
+    
+    @property
+    def path_pictures(self):
+        label=self.network_model_list[0]
+        self.path_pictures=self.dic[label].network_class().path_pictures+sys.argv[0].split('/')[-1].split('.')[0]
 
-        self.path_pictures=network_class().path_pictures+sys.argv[0].split('/')[-1].split('.')[0]
+    
+    @property
+    def stop(self):   
+        stop=None
+        for label in self.network_model_list:
+            if stop==None:
+                stop=self.dic[label].stop
+            else:
+                if self.dic[label].stop > stop:
+                    stop=self.dic[label].stop 
+
+    @property
+    def start(self):   
+        start=None
+        for label in self.network_model_list:
+            if start==None: 
+                start=self.dic[label].start
+            else:
+                if self.dic[label].start < start:
+                    start=self.dic[label].start 
 
     def __getitem__(self, key):
         if key in self.network_model_list:
@@ -312,6 +339,7 @@ class Network_models_dic():
         assert isinstance(val, Data_unit), "An Network_models_dic object can only contain Network_model objects"
         self.dic[key] = val    
 
+    
 
     def get_mean_cohere(self, networks, relations, band):
         xticklabels=networks
@@ -349,7 +377,10 @@ class Network_models_dic():
     def get_mean_cohere_change(self, networks1, networks2, relations, band):
         y1=self.get_mean_cohere(networks1, relations, band)
         y2=self.get_mean_cohere(networks2, relations, band)        
-        return (y2-y1)/y1
+        r=(y2-y1)/y1
+        r[numpy.isnan(r)]=0
+        r[numpy.isinf(r)]=0
+        return r
                 
     def get_mean_rate(self, networks, models):
         N, M=len(networks), len(models)
@@ -362,7 +393,7 @@ class Network_models_dic():
                 mrs=du.mean_rates
                 y[i,j]=numpy.mean(mrs)
         return y
-    
+    numpy.isinf
     def get_mean_rate_std(self, networks, models):
         N, M=len(networks), len(models)
         y_std=numpy.zeros([N,M])
@@ -378,7 +409,10 @@ class Network_models_dic():
     def get_mean_rate_change(self, networks1, networks2, models):
         y1=self.get_mean_rate(networks1, models)
         y2=self.get_mean_rate(networks2, models)        
-        return (y2-y1)/y1
+        r=(y2-y1)/y1
+        r[numpy.isnan(r)]=0
+        r[numpy.isinf(r)]=0
+        return r
         
     def plot_coherence(self, ax_list, labels, relations, colors, coords, xlim_coher=[0,80]):
         for i, label in enumerate(labels):
@@ -664,8 +698,11 @@ class Network_models_dic():
         
         
                             
-    def simulate(self, loads, labels, rec_models, **kwargs_simulation):
+    def simulate(self, loads, labels, rec_models):
         
+        
+        if not isinstance(rec_models[0], list):
+            rec_models=[rec_models]*len(loads)
         
         for load, label, rec_from in zip(loads, labels, rec_models):
  
@@ -676,7 +713,7 @@ class Network_models_dic():
             if load==0 or ((load==2) and os.path.exists(save_at)):       
                 
                 
-                nm.simulate(rec_from, **kwargs_simulation)  
+                nm.simulate(rec_from)  
                 data_to_disk.txt_save_to_label(nm.simulation_info, label, save_txt_at)
                 nm.data_save(save_at)                     
                               
@@ -833,121 +870,175 @@ class Network_models_dic():
 
 
 import unittest
+
 class TestNetwork_model(unittest.TestCase):
+    stop=500.0
+    kwargs = {'kwargs_network':{'save_conn':False, 'verbose':False},
+              'par_rep':{'simu':{'threads':4, 'sd_params':{'to_file':True, 'to_memory':False},
+                                 'print_time':False, 'start_rec':1.0, 'stop_rec':stop, 
+                                 'sim_time':stop,},
+                                 'netw':{'size':500.0, 'tata_dop':0.8}}}
+    colors=['g','b','r','m','c','g','b','r','m','c']
+    coords=[[0.05+0.1*(i/5), 0.1+i%5*0.15] for i in range(len(colors))]
     
     def setUp(self):     
-        from toolbox.network_construction import Bcpnn
-        
-        
-        size=500.0
-        self.start=500.0
-        self.stop=250.*10.+self.start
-        flag='dop'
-        self.label='unittest'
-        network_class=Bcpnn
-        threads=4
-        kwargs={'save_conn':False, 'sd_params':{'to_file':True, 'to_memory':False}}
-        
-        self.nm=Network_model(self.label, flag, size, self.start, self.stop, network_class, threads, **kwargs)
-        
-        self.model_list=['CO','M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
-        self.path_data=self.nm.path_data+'unittest-h0'
-        #self.path_data_h0=self.nm.path_data+'unittest-h0'
-           
-        self.colors=['g','b','r','m','c','g','b','r','m','c']
-        self.coords=[[0.05+0.1*(i/5), 0.1+i%5*0.15] for i in range(len(self.colors))]
-        
-    '''
-    def test_simulate(self):
+                
+        self.label='unittest-inh_base'
+        self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
+        nm=Network_model(self.label, **self.kwargs)
+        self.path_data=nm.path_data + self.label
+
+    def test_a_simulate(self):
         #self.nm.par_rep.update(self.par_rep)
-        self.nm.simulate(self.model_list, print_time=False)            
-        self.assertEqual(len(self.nm.data.keys()), 7)
-        self.nm.data_save(self.path_data)
-    ''' 
+        nm=Network_model(self.label, **self.kwargs)
+        nm.simulate(self.model_list, print_time=False)            
+        self.assertEqual(len(nm.data.keys()), 7)
+        nm.data_save(self.path_data)      
+
     def test_get_data_unit_dic(self):       
-        self.nm.data_load(self.path_data)
-        self.nm.get_data_unit_dic(self.model_list)
-        self.assertEqual(len(self.nm.data.keys()), 7)      
-        
-            
+        nm=Network_model(self.label, **self.kwargs)
+        nm.data_load(self.path_data)
+        nm.get_data_unit_dic(self.model_list)
+        self.assertEqual(len(nm.data.keys()), 7)    
+
+class TestNetwork_model_slow_wave(TestNetwork_model):
+    
+    def setUp(self):     
+        from toolbox.network_construction import Slow_wave
+           
+        self.label='unittest-slow_wave'
+        self.kwargs.update({'class_network_construction':Slow_wave })
+        self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
+        nm=Network_model(self.label, **self.kwargs)
+        self.path_data=nm.path_data + self.label      
+             
+class TestNetwork_model_h0(TestNetwork_model):
+    
+    def setUp(self):     
+        from toolbox.network_construction import Bcpnn_h0
+           
+        self.label='unittest-h0'
+        self.kwargs.update({'class_network_construction':Bcpnn_h0 })
+        self.model_list=['CO','M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
+        nm=Network_model(self.label, **self.kwargs)
+        self.path_data=nm.path_data + self.label
+                
+                 
     def test_plot_firing_rate_bcpnn(self):
         fig, ax_list=plot_settings.get_figure( n_rows=len(self.model_list), n_cols=1, w=500.0, h=800.0, fontsize=8,  order='row')
-        
-        self.nm.data_load(self.path_data)
-        self.nm.get_data_unit_dic(self.model_list)
-        self.nm.plot_firing_rate_bcpnn(ax_list, self.label, self.model_list, self.colors, 
-                                    self.coords, xlim=[self.start, self.stop])
+        nm=Network_model(self.label, **self.kwargs)
+        nm.data_load(self.path_data)
+        nm.get_data_unit_dic(self.model_list)
+        nm.plot_firing_rate_bcpnn(ax_list, self.label, self.model_list, self.colors, 
+                                  self.coords, xlim=[nm.start, nm.stop])
         
     def test_plot_rasters_bcpnn(self):
         fig, ax_list=plot_settings.get_figure( n_rows=len(self.model_list), n_cols=1, w=500.0, h=900.0, fontsize=8,  order='row')
-        
-        self.nm.data_load(self.path_data)
-        self.nm.get_data_unit_dic(self.model_list)
-        self.nm.plot_rasters_bcpnn(ax_list, self.label, self.model_list, self.colors, 
-                                    self.coords, xlim=[self.start, self.stop])
+        nm=Network_model(self.label, **self.kwargs)
+        nm.data_load(self.path_data)
+        nm.get_data_unit_dic(self.model_list)
+        nm.plot_rasters_bcpnn(ax_list, self.label, self.model_list, self.colors, 
+                              self.coords, xlim=[nm.start, nm.stop])
       
         #pylab.show()      
         
         
-class TestNetwork_model_h1(TestNetwork_model):
+class TestNetwork_model_h1(TestNetwork_model_h0):
     
     def setUp(self):     
         from toolbox.network_construction import Bcpnn_h1
         
-        
-        size=500.0
-        self.start=500.0
-        self.stop=250.*10.+self.start
-        flag='dop'
-        self.label='unittest_h1'
-        network_class=Bcpnn_h1
-        threads=4
-        kwargs={'save_conn':False, 'sd_params':{'to_file':True, 'to_memory':False}}
-        
-        self.nm=Network_model(self.label, flag, size, self.start, self.stop, network_class, threads, **kwargs)
-        
-        self.model_list=['CO','M1','M2', 'F1', 'F2', 'GA', 'GI', 'ST', 'SN']
-        self.path_data=self.nm.path_data+'unittest-h0'
-        #self.path_data_h0=self.nm.path_data+'unittest-h0'
            
-        self.colors=['g','b','r','m','c','g','b','r','m','c']
-        self.coords=[[0.05+0.1*(i/5), 0.1+i%5*0.15] for i in range(len(self.colors))]
+        self.label='unittest-h1'
+        self.kwargs.update({'class_network_construction':Bcpnn_h1 })
+        self.model_list=['CO', 'M1','M2', 'F1', 'F2', 'GA', 'GI', 'ST', 'SN']
+        nm=Network_model(self.label, **self.kwargs)
+        self.path_data=nm.path_data + self.label
 
 
 
 class TestNetwork_mode_dic(unittest.TestCase):
     
     def setUp(self):     
-        from toolbox.network_construction import Bcpnn, Bcpnn_h1     
+        from toolbox.network_construction import Bcpnn_h0, Bcpnn_h1, Slow_wave     
         # @TODO test run several models and show functions for bcpnn 
-        self.size=500.0
-        self.start=1.0
-        self.stop=500.
-        network_class=[Bcpnn, Bcpnn_h1]
-        threads=1 
-        setup_list=[['unittest1',     'dop'],
-                    ['unittest2',     'dop']]  
-        #Inhibition_no_parrot
-        #for setup in setup_list: setup.extend([10000., 1000.0, 11000.0, Inhibition_no_parrot, {}])
-        i=0
-        for setup in setup_list: 
-            setup.extend([self.size, self.start, self.stop, network_class[i], {}])
-            i+=1
-        self.labels=[sl[0] for sl in setup_list]
-        self.model_lists=[['CO','M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN'],
-                          ['CO','M1','M2', 'F1','F2', 'GA', 'GI', 'ST', 'SN']   ]        
-        self.kwargs={'sd_params':{'to_file':True, 'to_memory':False}}
+        network_class=[Inhibition_base, Slow_wave,  Bcpnn_h0, Bcpnn_h1]
+        self.setup_list=[['unittest1'],
+                         ['unittest2'],
+                         ['unittest3'], 
+                         ['unittest4']] 
+        stop=500.0
+        for i, setup in enumerate(self.setup_list): 
+            kwargs = {'class_network_construction':network_class[i],   
+                      'kwargs_network':{'save_conn':False, 'verbose':False}, 
+                      'par_rep':{'simu':{'threads':4, 'sd_params':{'to_file':True, 'to_memory':False},
+                                 'print_time':False, 'start_rec':1.0, 'stop_rec':stop,'sim_time':stop},
+                                 'netw':{'size':500.0, 
+                                         'tata_dop':0.8}}}
+            setup.append(kwargs)
+
+        self.labels=[sl[0] for sl in self.setup_list]
+        self.model_lists=[['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN'],
+                          ['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN'],
+                          ['CO','M1', 'M2', 'FS', 'GA', 'GI', 'ST', 'SN'],
+                          ['CO','M1', 'M2', 'F1', 'F2', 'GA', 'GI', 'ST', 'SN']   ]        
         
-        self.nms=Network_models_dic(threads, setup_list, Network_model)
         
-    def test_simulate(self):    
-        self.nms.simulate([1]*len(self.labels), self.labels, self.model_lists, **self.kwargs)
+    def test_a_simulate(self):    
+        nms=Network_models_dic(self.setup_list, Network_model)
+        nms.simulate([0]*len(self.labels), self.labels, self.model_lists)
         
     def test_show_bcpnn(self):
-        self.nms.simulate([1]*len(self.labels), self.labels, self.model_lists, **self.kwargs)
-        self.nms.show_bcpnn(self.labels, self.model_lists, xlim=[self.start, self.stop])    
-        pylab.show()
-      
+        nms=Network_models_dic(self.setup_list, Network_model)
+        nms.simulate([1]*len(self.labels), self.labels, self.model_lists)
+        nms.show_bcpnn(self.labels, self.model_lists, xlim=[nms.start, nms.stop])    
+        # pylab.show()
+        
+    def test_signal_pds(self):
+        nms=Network_models_dic(self.setup_list, Network_model)
+        nms.simulate([1]*len(self.labels), self.labels, self.model_lists)
+        pds_setup    =[256, 10., 'gaussian',{ 'std_ms':5, 'fs':1000.0}]
+        pds_models=['M1', 'M2', 'GA', 'GI', 'ST', 'SN']
+        nms.signal_pds([0]*len(self.labels), self.labels, pds_models, pds_setup)
+        
+        for nm in nms.dic.values():
+            for model in pds_models:
+                du=nm.dud.dic[model]
+                self.assertFalse(numpy.isnan(du.pds[0]).any())
+                self.assertFalse(numpy.isnan(du.pds[1]).any())
+        print nms 
+        
+    def test_signal_coherence(self):
+        nms=Network_models_dic(self.setup_list, Network_model)
+        nms.simulate([1]*len(self.labels), self.labels, self.model_lists)
+        cohere_setup=[256, 10., 'gaussian',{'std_ms':5, 'fs':1000.0}, 40]
+        cohere_relations=['GA_GA', 'GI_GI', 'GA_GI','ST_GA', 'ST_GA']
+        nms.signal_coherence([0]*len(self.labels), self.labels, cohere_relations, cohere_setup)
+        
+        for nm in nms.dic.values():
+            for dur in nm.durd.dic.values():
+                self.assertFalse(numpy.isnan(dur.cohere[0]).any())
+                self.assertFalse(numpy.isnan(dur.cohere[1]).any())
+        print nms
+
+def load_tests(tests, loader):
+    suite = unittest.TestSuite()
+    for test_class in test_cases:
+        tests = loader.loadTestsFromTestCase(test_class)
+        suite.addTests(tests)
+    return suite
+     
 if __name__ == '__main__':
-    unittest.main()    
+    #test_cases = (TestNetwork_model, TestNetwork_model_slow_wave, TestNetwork_model_h0, TestNetwork_model_h1, TestNetwork_mode_dic)
+    test_cases = [TestNetwork_mode_dic]
+    loader=unittest.TestLoader()
+    suite=load_tests(test_cases, loader)
+    
+    #suite = unittest.TestSuite()
+    #suite.addTest(TestNetwork_mode_dic('test_signal_pds'))
+    #suite.addTest(TestNetwork_mode_dic('test_signal_coherence'))
+    
+    #TestNetwork_model_h1
+    unittest.TextTestRunner(verbosity=2).run(suite)
+    #unittest.main()    
            
