@@ -8,9 +8,9 @@ Created on Aug 14, 2013
 #! Imports
 import numpy
 import pylab
-from network_classes import Single_units_in_vitro 
+from toolbox.network_construction import Single_units_in_vitro 
 from in_vitro_base import In_vitro
-from toolbox import plot_settings, data_handling
+from toolbox import plot_settings, data_to_disk
 
 class In_vitro_GPE(In_vitro):      
 
@@ -19,24 +19,7 @@ class In_vitro_GPE(In_vitro):
         
         if 'p_model' in kwargs.keys():
             self.p_model=dict(zip(self.labels, kwargs['p_model']))
-    
-    def simulate_IF_GPE(self, load, currents, labels, tStim):
-        save_at=self.path_data+self.sname+'/'+'IF'
-        if not load:
-            for label in labels:
-                variable={'p_model':self.p_model[label]}
-                self.kwargs[label]['model_params_in'].update({'variable': variable})
-                suiv=self.Use_class(1,  0., float('inf'), **self.kwargs[label])
-                I_vec, fIsi, mIsi, lIsi = suiv.IF_curve(currents, tStim)   
-                self.data_IF[label]=[I_vec, lIsi]
-            data_handling.pickle_save(self.data_IF, save_at)
-        else:
-            self.data_IF=data_handling.pickle_load(save_at)
-            
-    def update_p_model(self, p_model):
-        for label in labels:
-            variable={'p_model':p_model}
-            self.kwargs[label]['model_params_in'].update({'variable': variable})
+        
 
     def show_GPE(self, labels):
         colors=['g','b', 'r','m','c','k']
@@ -56,8 +39,7 @@ class In_vitro_GPE(In_vitro):
         coords=[[0.05, 0.9-i*0.1] for i in range(len(colors))] 
         linestyles=['-', '-', '-', '--']
 
-        fig, ax_list=plot_settings.get_figure( n_rows=2, n_cols=2, 
-                                                  w=1000.0, h=800.0, fontsize=12)
+        fig, ax_list=plot_settings.get_figure( n_rows=2, n_cols=2, w=1000.0, h=800.0, fontsize=12)
                 
         self.plot_IV(ax_list[0], labels[0:2], colors, coords, linestyles)
         self.plot_IF(ax_list[1], labels[0:2], colors, coords, linestyles)
@@ -80,9 +62,9 @@ class In_vitro_GPE(In_vitro):
 #inv.simulate_IF(0, numpy.arange(-50, 50,10), labels, 5000.0)   
 
 
-labels=['GPE_A-dop','GPE_A-no_dop', 
-        'GPE_A-dop-C_m', 'GPE_A-dop-V_t',
-         'GPE_A-dop-C_m_V_t']
+labels=['GA-dop','GA-no_dop', 
+        'GA-dop-C_m', 'GA-dop-V_t',
+        'GA-dop-C_m_V_t']
 tata_dop=[0.8,0.0, 
           0.8,0.8, 0.8]
 
@@ -90,10 +72,10 @@ inv=In_vitro_GPE(Single_units_in_vitro, labels, tata_dop)
 
 
 inv.simulate_IV(1, numpy.arange(-200, 0,30), labels[0:2], 5000.0)
-inv.simulate_IF(0, numpy.arange(-10, 10,0.5), labels[0:2], 5000.0)   
-inv.simulate_IF_variation(1, numpy.arange(-50, 300,30), [labels[2]], 1000.0, 20, ['C_m'])
-inv.simulate_IF_variation(1, numpy.arange(-50, 300,30), [labels[3]], 1000.0, 20, ['V_th'])
-inv.simulate_IF_variation(1, numpy.arange(-50, 300,30), [labels[4]], 1000.0, 20, ['C_m', 'V_th'])
+inv.simulate_IF(1, numpy.arange(-10, 10,0.5), labels[0:2], 5000.0)   
+inv.simulate_IF_variation(1, numpy.arange(-50, 300,30), [labels[2]], 500.0, 10, ['C_m'])
+inv.simulate_IF_variation(1, numpy.arange(-50, 300,30), [labels[3]], 500.0, 10, ['V_th'])
+inv.simulate_IF_variation(1, numpy.arange(-50, 300,30), [labels[4]], 500.0, 10, ['C_m', 'V_th'])
 inv.show(labels)
 pylab.show()
 
