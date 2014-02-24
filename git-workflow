@@ -1,0 +1,56 @@
+Git can be used for version control locally on the computer but also remotely sync it to a server. To synch it locally you do a commit and to synch it remote you to a push. Now, git can manage different brances of code devlopment, and then merge these branches when the user wants. One idea is to have a main branch, named master, where the latest stable code resides. Then one can create a branch for the master, named develope, where new ideas are tested. Only when these ideas are fully working then master and develope are merged. Thus the work flow I will try out is this. Having two branches:
+
+* master
+* "new idea", e.g. develope-bcpnn 
+
+
+Git work on a folder with code. First the code are copied to the folder. Then git is initialized in the folder. Now, git can be used to create branches and switch between these. The code in the folder will then presumably change to the code associated with the current branch. 
+
+
+Once all the files are in your git workspace, you need to tell git that you want to use your current directory as a git environment.
+user@host ~/git/testing $ git init
+
+Once your have initialized your new empty repository, you can add your files. The following will add all files and directories to your newly created repository:
+user@host ~/git/testing $ git add .
+
+To create a new branch, named develop, type the following:
+git checkout -b develop
+
+Initial commit to create master i think. Continuing with our example, we are going to create the message for our initial commit:
+user@host ~/git/testing $ git commit -m "Initial Commit" -a
+Well git have a few commands:
+
+To create a branch "new-ideas" from "master".
+git checkout master 
+git checkout -b "new-idea"
+
+Then view them type:
+git branch 	- see locally tracking branches
+git branch -r	- see remote tracking branches
+git branch -a 	- sel all tracking branches
+
+
+If a new file is created it needs to be added to git. Then it needs to be commited to a branch.
+git add "new-file"
+git checkout "new-idea" - be in the branch the file should be commited to
+git commit -m "new-file" develope - where .m stands for message and "new-file" is the messege,
+
+To merge "new-idea" with "master" type
+git merge new-idea --no-ff 
+Where  --no-ff means that we create a merge commit even when the merge resolves as a fast-forward.
+
+
+To merge branch "new-idea" with "master"
+git checkout master 	- Change to work ing branch master
+git merge new-idea 	- Merge in "new-idea". You need to be on the branch (master) that
+			should be merged with "new-idea". After the merge "master" will 			also contain all the advances made in new idea. OBS if new changes 				have been made to master these will not be merged to "new-ideas"   
+
+
+
+
+git pull - fetch and merge from remote location
+git fetch - get from remote location, but do not merge. Advantage here is that you now can chack how the remote branch differes from you local branch.
+git merge - merge a fetched branch 
+git push - send and  merge to remote location
+
+
