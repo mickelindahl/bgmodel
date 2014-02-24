@@ -1351,42 +1351,16 @@ class TestMyNetworkNode(unittest.TestCase):
         g=MyGroup(*self.args, **self.kwargs)
     
 
-    def test_2_get_firing_rate(self):
-        fr=self.sim_group.get_firing_rate()
+    def test_2_get_spike_signal(self):
+        l=self.sim_group.get_spike_signal()
         shape=(len(self.sets), self.sim_time)
-        self.assertEqual(fr['y'].shape, shape)
-        self.assertEqual(fr['x'].shape, shape)
+        self.assertEqual(len(l), len(self.sets))
     
-    def test_3_get_mean_rates(self):
-        mrs=self.sim_group.get_mean_rates()
-        shape=(len(self.sets), self.n/len(self.sets))
-        self.assertEqual(mrs['y'].shape, shape)
-        self.assertEqual(mrs['ids'].shape, shape)
-             
-    def test_4_get_mean_rate(self):
-        mr=self.sim_group.get_mean_rate()
-        self.assertEqual(mr['y'].shape, (len(self.sets),))      
+    def test_3_get_voltage_signal(self):
+        l=self.sim_group.get_voltage_signal()
+        self.assertEqual(len(l), len(self.sets))
 
-        
-    def test_5_get_rasters(self):
-        d=self.sim_group.get_rasters()
-        for key in ['spike_ids', 'spike_times', 'ids']:
-            self.assertEqual(len(d[key]),len(self.sets))  
-            self.assertEqual(type(d[key]),list)     
 
-    def test_6_get_voltage_trace(self):
-        d=self.sim_group.get_voltage_trace()
-        for key in ['y','x']:
-            self.assertEqual(type(d[key]),numpy.ndarray)
-            shape=(self.n, self.sim_time-1)        
-            self.assertEqual(d[key].shape,shape) 
-            
-    def test_7_get_mean_rate_error(self):
-        g=self.sim_group
-        e=g.get_mean_rate()
-        self.assertTrue(type(e['errors'])==numpy.ndarray)
-        self.assertEqual(list(e['errors']), 
-                         list(e['y']-g.target_rate))   
 
 
         

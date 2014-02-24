@@ -708,7 +708,6 @@ def dummy_data(**kwargs):
         n_pop_vm=kwargs.get('n_pop_vm',4)
         shift=kwargs.get('shift',0.)
         
-        
         l1,l2=[],[]
         for i in xrange(n_runs):
             s,v=[],[]

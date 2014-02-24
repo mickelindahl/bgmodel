@@ -597,7 +597,7 @@ class Conn_dic(Base_dic):
 
 
 def build(params_nest, params_node, params_pop):   
-    nodes=create_nodes(params_node)
+    nodes=create_struc(params_node)
     pops=create_pops(params_nest, params_pop)      
     return nodes, pops
 
@@ -659,7 +659,7 @@ def create_conns(nodes, params_conn, save_path, display_print=False):
                      display_print=False)
     return conns      
       
-def create_nodes(params_node):
+def create_struc(params_node):
     nodes=Surface_dic()       
     for k,v in params_node.iteritems(): 
         nodes.add(k, **v)
@@ -844,58 +844,56 @@ class TestConn_dic(unittest.TestCase):
 class TestModuleFunctions(unittest.TestCase):
     def setUp(self):
         
-        from toolbox.network.default_params import Par_unittest
-        self.par=Par_unittest({})
+        from toolbox.network.default_params import Unittest
+        self.par=Unittest()
         self.home_path=('/afs/nada.kth.se/home/w/u1yxbcfw/'
                         +'results/papers/inhibition')
         self.save_path_extension='/unittest/conn/'
         self.save_path=self.home_path+self.save_path_extension
     @property           
     def params_conn(self):
-        return self.par['conn']
+        return self.par.get_conn()
     
     @property    
     def params_nest(self):
-        return self.par['nest']
+        return self.par.get_nest()
     
     @property
-    def params_node(self):
-        return self.par['node']
+    def params_stru(self):
+        return self.par.get_stru()
     
     @property
-    def params_pop(self):
-        dic={}
-        for key in self.params_node.keys():
-            dic[key]=self.params_node[key]['pop_params']
-        return dic
+    def params_popu(self):
+        return self.par.get_popu()
+
            
     def test_1_create_nodes(self):
-        nodes=create_nodes(self.params_node)
+        nodes=create_struc(self.params_stru)
         #print nodes
         
     def test_2_create_pops(self):
-        nodes=create_nodes(self.params_node)
-        pops=create_pops(self.params_nest, self.params_pop)
+        nodes=create_struc(self.params_stru)
+        pops=create_pops(self.params_nest, self.params_popu)
 
 
     def test_3_create_conns(self):
-        nodes=create_nodes(self.params_node)
+        nodes=create_struc(self.params_stru)
         conns=create_conns(nodes, self.params_conn, self.save_path)
     
 
     def test_4_connect_conns(self):
-        nodes=create_nodes(self.params_node)
-        pops=create_pops(self.params_nest, self.params_pop)
+        nodes=create_struc(self.params_stru)
+        pops=create_pops(self.params_nest, self.params_popu)
         conns=create_conns(nodes, self.params_conn, self.save_path)
         connect_conns(self.params_nest, conns, pops)
         
         
     def test_5_build(self):
-        args=[self.params_nest, self.params_node, self.params_pop]
+        args=[self.params_nest, self.params_stru, self.params_pop]
         nodes, pops=build(*args)
         
     def test_6_connect(self):    
-        args=[self.params_nest, self.params_node, self.params_pop]
+        args=[self.params_nest, self.params_stru, self.params_popu]
         nodes, pops=build(*args)
         conns=connect(pops, nodes, self.params_nest, self.params_conn,
                       self.save_path)

@@ -192,7 +192,7 @@ def fmin_error_fun_wrap(self, x, *arg):
     return fopt
 
 
-from toolbox.network.construction import Unittest
+from toolbox.network.construction import Unittest_net
 class TestFmin(unittest.TestCase):
 
     
@@ -202,8 +202,8 @@ class TestFmin(unittest.TestCase):
              'x':['node.n1.rate', 'node.n4.rate'],
              'x0':[2600., 2400.]}
         
-        par_rep={}
-        par_rep.update({'simu':{'sim_stop':1000.0,
+        dic_rep={}
+        dic_rep.update({'simu':{'sim_time':1000.0,
                                 'stim_time':1000.0,
                              'mm_params':{'to_file':False, 'to_memory':True},
                              'sd_params':{'to_file':False, 'to_memory':True}},
@@ -214,9 +214,9 @@ class TestFmin(unittest.TestCase):
         net_kwargs={'save_conn':False, 
                 'sub_folder':'unit_testing', 
                 'verbose':False,
-                'par_rep':par_rep}
+                'dic_rep':dic_rep}
         name='net1'
-        self.Network=Unittest
+        self.Network=Unittest_net
         net=[self.Network(name, **net_kwargs)]
         self.nd=Network_list(net)
         #nd.add(name, **kwargs)
