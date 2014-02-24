@@ -2,9 +2,10 @@
 #! Imports
 import numpy
 import pylab
-from toolbox.network_construction import Single_units_in_vitro 
+from toolbox.network.construction import Single_units_in_vitro 
 from toolbox import plot_settings
 from in_vitro_base import In_vitro
+#import structure
 
 class In_vitro_FSN(In_vitro):
     
@@ -33,10 +34,10 @@ inv=In_vitro_FSN(Single_units_in_vitro, labels, tata_dop)
 
 
 inv.simulate_IV(1, numpy.arange(-200, 0,30), labels[0:2], 5000.0)
-inv.simulate_IF(1, numpy.arange(100, 300,10), labels[0:2], 5000.0)   
-inv.simulate_IF_variation(1, numpy.arange(0, 300,30), [labels[2]], 500.0, 10, ['C_m'])
-inv.simulate_IF_variation(1, numpy.arange(0, 300,30), [labels[3]], 500.0, 10, ['V_th'])
-inv.simulate_IF_variation(1, numpy.arange(0, 300,30), [labels[4]], 500.0, 10, ['C_m', 'V_th'])
+inv.simulate_IF(0, numpy.arange(100, 300,30*3), labels[0:2], 500.0)   
+inv.simulate_IF_variation(0, numpy.arange(0, 300,30*3), [labels[2]], 500.0, 10, ['C_m'])
+inv.simulate_IF_variation(0, numpy.arange(0, 300,30*3), [labels[3]], 500.0, 10, ['V_th'])
+inv.simulate_IF_variation(0, numpy.arange(0, 300,30*3), [labels[4]], 500.0, 10, ['C_m', 'V_th'])
 inv.show(labels)
 pylab.show()
 

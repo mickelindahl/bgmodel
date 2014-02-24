@@ -8,7 +8,7 @@ Created on Aug 14, 2013
 #! Imports
 import numpy
 import pylab
-from toolbox.network_construction import Single_units_in_vitro 
+from toolbox.network.construction import Single_units_in_vitro 
 from in_vitro_base import In_vitro
 from toolbox import plot_settings, data_to_disk
 
@@ -71,11 +71,11 @@ tata_dop=[0.8,0.0,
 inv=In_vitro_GPE(Single_units_in_vitro, labels, tata_dop)
 
 
-inv.simulate_IV(1, numpy.arange(-200, 0,30), labels[0:2], 5000.0)
-inv.simulate_IF(1, numpy.arange(-10, 10,0.5), labels[0:2], 5000.0)   
-inv.simulate_IF_variation(1, numpy.arange(-50, 300,30), [labels[2]], 500.0, 10, ['C_m'])
-inv.simulate_IF_variation(1, numpy.arange(-50, 300,30), [labels[3]], 500.0, 10, ['V_th'])
-inv.simulate_IF_variation(1, numpy.arange(-50, 300,30), [labels[4]], 500.0, 10, ['C_m', 'V_th'])
+inv.simulate_IV(1, numpy.arange(-200, 0,30), labels[0:2], 500.0)
+inv.simulate_IF(0, numpy.arange(-10, 10,0.5), labels[0:2], 500.0)   
+inv.simulate_IF_variation(0, numpy.arange(-50, 300,30), [labels[2]], 500.0, 10, ['C_m'])
+inv.simulate_IF_variation(0, numpy.arange(-50, 300,30), [labels[3]], 500.0, 10, ['V_th'])
+inv.simulate_IF_variation(0, numpy.arange(-50, 300,30), [labels[4]], 500.0, 10, ['C_m', 'V_th'])
 inv.show(labels)
 pylab.show()
 

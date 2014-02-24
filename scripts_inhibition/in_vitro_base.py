@@ -1,8 +1,8 @@
 #! Imports
 import numpy
 import pylab 
-from toolbox.network_construction import Single_units_in_vitro 
-from toolbox.network_handling_single_units import In_vitro
+from toolbox.network.construction import Single_units_in_vitro 
+from toolbox.network.handling_single_units import In_vitro
         
         
 def main():
@@ -15,7 +15,7 @@ def main():
 
     inv=In_vitro(Single_units_in_vitro, labels, tata_dop)
 
-    inv.simulate_IV(1, numpy.arange(-200, 0,30), labels[0:2], 5000.0)
+    inv.simulate_IV(0, numpy.arange(-200, 0,30), labels[0:2], 5000.0)
     inv.simulate_IF(1, numpy.arange(100, 300,10), labels[0:2], 5000.0)   
     inv.simulate_IF_variation(1, numpy.arange(0, 300,30), [labels[2]], 500.0, 10, ['C_m'])
     inv.simulate_IF_variation(1, numpy.arange(0, 300,30), [labels[3]], 500.0, 10, ['V_th'])
