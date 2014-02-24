@@ -1,0 +1,14 @@
+/* 
+ * Initialization file for Ml_Module.
+ * Run automatically when Ml_Module is loaded.
+ */
+
+M_DEBUG (ml_module.sli) (Initializing SLI support for Ml_Module.) message
+
+/ml_module /SLI ($Revision: 7918 $) provide-component
+/ml_module /C++ (7165) require-component
+
+/StepPatternConnect [ /arraytype /integertype /arraytype /integertype /literaltype ]
+{ 
+  StepPatternConnect_Vi_i_Vi_i_l
+} def
