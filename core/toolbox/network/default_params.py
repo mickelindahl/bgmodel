@@ -67,14 +67,22 @@ network  - define layers and populations
 '''
 
 from copy import deepcopy
+
 from toolbox import misc
 from toolbox.misc import my_slice
+
+
 
 import nest # Has to after misc. 
 import numpy
 import operator
-MODULE_PATH=  ('/afs/nada.kth.se/home/w/u1yxbcfw/tools/NEST/dist/'+
-               'install-nest-2.2.2/lib/nest/ml_module')
+
+from os.path import expanduser
+HOME = expanduser("~")
+
+#MODULE_PATH=  (HOME+'/tools/NEST/dist/'+
+#               'install-nest-2.2.2/lib/nest/ml_module')
+MODULE_PATH= (HOME+'/opt/NEST/dist/install-nest-2.2.2/lib/nest/ml_module')
     
 #@todo: change name on Node to Surface
 class Call(object):
@@ -91,7 +99,7 @@ class Call(object):
         self.op=None 
         self.parent=None
         self.val=None 
-        self.order='right'
+        self.order=''
         
     
     @classmethod
@@ -126,8 +134,10 @@ class Call(object):
             if self.order=='right':    
                 a=self.op(val, val_parent)
                 
-            else:
+            elif self.order=='left':
                 a=self.op(val_parent, val)
+        
+        
         return a
         
     def __repr__(self):
@@ -271,7 +281,7 @@ class Perturbation_list(object):
                 self.list.append(Perturbation(keys, val, op))
             
     def __str__(self):
-        return self.name
+        return  self.name+':'+str(self.list)
 
     def __repr__(self):
         return  self.name+':'+str(self.list)
@@ -287,22 +297,16 @@ class Perturbation_list(object):
 
         d={}
         for p in self.list:
-            if not misc.dict_haskey(dic, p.keys):
-                continue 
             val=misc.dict_recursive_get(dic, p.keys)
-            if not isinstance(val, Call):
-                #if isinstance(val, Call):
-                #    val=deepcopy(val)
-                d=misc.dict_recursive_add(d,  p.keys, val)
-                d=misc.dict_apply_operation(d, p.keys, p.val, p.op)
+            d=misc.dict_recursive_add(d,  p.keys, val)
+            d=misc.dict_apply_operation(d, p.keys, p.val, p.op)
         
         dic=misc.dict_update(dic, d)
         
         if display:
             print 'perturbations applied ' 
                    
-        return dic
-
+        return dic        
 
     def set_list(self, val):
         self.list=val
@@ -311,23 +315,33 @@ class Base(object):
     
     def __init__(self, **kwargs):
         
-        self.per=kwargs.get('perturbations', Perturbation_list())
         self._dic={}
         self._dic_con = {}
         self._dic_dep = {}
-        self._dic_rep = kwargs.get('dic_rep', {}) # parameters to change
- 
-        self.changed={'dic': True,
-                      'dic_con': self._dic_rep!={},
-                      'dic_dep':True,             
-                      'dic_rep':self._dic_rep!={}}
+        self._dic_rep = kwargs.get('dic_rep', {})
+        self._per = kwargs.get('perturbations', Perturbation_list())
         
+        self.changed={'dic': True,
+                      'dic_con': True,
+                      'dic_dep':True,             
+                      'dic_rep':True}
+        
+        #
+        
+#         self.set_dic_rep(kwargs.get('dic_rep', {})) 
+#         l=kwargs.get('perturbations', Perturbation_list())
+#         self.set_perturbation_list(l)
+
         self.module_path=MODULE_PATH
        
         if not 'my_aeif_cond_exp' in nest.Models(): 
             nest.Install( self.module_path)
+        if not 'my_aeif_cond_exp' in nest.Models(): 
+            nest.Install( self.module_path)
+
+        self.dep={} #dic storing dependable calculations, dynamically growing
         self.other=kwargs.get('other', None)                
-        self.dep={}
+        
         self.rec={}
         df=nest.GetDefaults('my_aeif_cond_exp')['receptor_types']
         self.rec['aeif']=df    # get receptor types
@@ -336,6 +350,7 @@ class Base(object):
         self.unittest=kwargs.get('unittest',False)
 
         Call.set_obj(self)
+        self.trigger_dic_update()
     
     def __getitem__(self, key):
         return self.dic[key]
@@ -369,45 +384,29 @@ class Base(object):
             
     @property
     def dic(self):
-        
-        if not self.changed['dic']:
-            pass        
-        else:
-
-            self._dic=misc.dict_update(self.dic_con, self.dic_dep)
-            
-            self.changed['dic']=False
-            self.changed['dic_con']=True
         return self._dic   
-   
-    @property 
-    def dic_con(self): 
-        
-        if not self.changed['dic_con'] and self._dic_con!={}:
-            return self._dic_con
 
-        self._dic_con=self._get_par_constant()                     
-        self._dic_con=misc.dict_update(self._dic_con, self.dic_rep, 
-                                       skip=True, skip_val=None)     
-        self.apply_pertubations(self._dic_con)
-        
-        self.changed['dic_con']=False
+
+    @dic.setter
+    def dic(self, val):
+        self._dic=val
+      
+    @property 
+    def dic_con(self):       
         return self._dic_con
+    
+
+    @dic_con.setter
+    def dic_con(self, val):
+        self._dic_con=val
         
     @property 
-    def dic_dep(self): 
-        
-        if not self.changed['dic_dep']:
-            return self._dic_dep
-
-        self._dic_dep=self._get_par_dependable()               
-        self._dic_dep=misc.dict_update(self._dic_dep, self.dic_rep, 
-                                       no_mapping_change=True)
-        self.apply_pertubations(self._dic_dep)
-        
-        self.changed['dic_dep']=False  
-        
+    def dic_dep(self):        
         return self._dic_dep   
+
+    @dic_dep.setter
+    def dic_dep(self, val):
+        self._dic_dep=val
     
     @property
     def dic_rep(self):
@@ -417,7 +416,69 @@ class Base(object):
     def dic_rep(self, value):
         self._dic_rep=value            
 
+    @property
+    def keys_conn(self):
+        l=['beta_fan_in', 
+           'class_surface', 
+           'delay', 
+           'fan_in', 
+           'fan_in0', 
+           'netw_size', 
+           'lesion', 
+           'mask', 
+           'rule', 
+           'save_path', 
+           'source',
+           'syn', 
+           'target',
+           'tata_dop', 
+           'weight']
+        return l
+    
+    @property
+    def keys_node_shared(self):
+        l=['class_population',
+           'class_surface', 
+           'edge_wrap', 
+           'extent', 
+           'lesion', 
+           'model', 
+           'n', 
+           'n_sets', 
+           'nest_params', 
+           'sets', 
+           'rate', 
+           'type']
+        return l      
 
+    @property
+    def keys_node_network(self):
+
+        l=['I_vitro', 
+           'I_vivo', 
+           'mm', 
+           'rand', 
+           'rate_in_vitro', 
+           'sd', 
+           ]
+        l.extend(self.keys_node_shared)
+        return sorted(l)
+    
+    @property
+    def keys_node_input(self):
+        l=['spike_setup',
+           'target']
+        l.extend(self.keys_node_shared)
+        return sorted(l)
+
+
+    @property
+    def per(self):
+        return self._per
+
+    @per.setter
+    def per(self, val):
+        self._per=val
 
     def add(self, *args):
         if args[1] in ['netw',',simu']:
@@ -441,7 +502,6 @@ class Base(object):
              
             val=misc.dict_recursive_get(self.dic_con, k1)
             dd=misc.dict_recursive_add({}, k1, val)
-            #print name
 
             for k2, val in misc.dict_iter(dd):
                 #print k2, val
@@ -461,17 +521,6 @@ class Base(object):
             n+=self.compute_node_sizes()[name]['n']
         return n
     
-    def compute_conn_mask_dist_restric(self):
-    
-        d={}
-        for conn, val in self._get_mask_dist_limits().items():
-                n_den=val['neurons_in_denritic_volume']
-                call=getattr(self, val['neurons_total']['call'])
-                args=val['neurons_total']['args']
-                d[conn]={'mask':compute_conn_mask_dist_restric(n_den, 
-                                                               call(*args))}
-        return d
-
     def calc_fan_in(self, name):
         fan_in0=self._get('conn', name, 'fan_in0')
         beta=self._get('conn', name, 'beta_fan_in')
@@ -484,18 +533,8 @@ class Base(object):
         n=self._get('node', name, 'n')
         return calc_sets(n_sets, n)
       
-
-    def do_calls(self, d1):
-        #d1=deepcopy(d1)
-        for key, val in misc.dict_iter(d1):
-            if isinstance(val, Call):
-                val = val.do()
-            misc.dict_recursive_add(d1, key, val)
-        return d1
-    
     def calc_n(self, name):
         d1=self._get('netw', 'n_nuclei')      
-        d1=self.do_calls(d1)
         d2=self._get('netw', 'sub_sampling')
         size=self._get('netw', 'size')
         
@@ -518,14 +557,13 @@ class Base(object):
         ''' 
         Exampel:
         
-        _dep('node','n1','n')
-        _dep('node','n1','spike_setup')
-        _dep('node','i1_n1','fan_in')
+        _dep('node','n1','calc_n')
+        _dep('node','n1','calc_spike_setup')
+        _dep('node','i1_n1','calc_fan_in')
         
         '''
         if type(args)!=list:
             args=list(args)
-
         if not misc.dict_haskey(self.dep, args):
             val=Call(args[-1], args[-2]).do(self)
             misc.dict_recursive_add(self.dep, args, val)
@@ -569,8 +607,9 @@ class Base(object):
         nodes=d.keys()
         
         dic={}
-        for k, v in dic.items():
+        for k, v in d.items():
             source, target=k.split('_')[0:2]
+#             print v
             if not v['lesion']:
                 dic[k]=d[k]
             if ((source in nodes) and (target in nodes)):
@@ -593,7 +632,6 @@ class Base(object):
         return self.dic
     
     def get_dic_con(self):
-        self.changed['dic_con']=True
         return self.dic_con    
     
     def get_FF_input(self):
@@ -653,8 +691,27 @@ class Base(object):
             
             dic[key]['class']=dic[key]['class_population']
             del dic[key]['class_population']
-        return dic
 
+            dic[key]['params']=dic[key]['nest_params']
+            del dic[key]['nest_params']
+        return dic
+    
+    def get_popu_nest_params(self):
+        d=self.get_popu()
+        dic={}
+        for key in d.keys():
+            dic[key]=d[key]['params']
+        return dic
+    
+    def get_spike_setup(self):
+        d=self.get_node()
+        dic={}
+        for key, val in d.items():
+            if 'spike_setup' not in val.keys():
+                continue
+            
+            dic[key]=d[key]['spike_setup']
+        return dic
         
     def get_sim_stop(self):
         return self.dic_con['simu']['sim_stop']
@@ -668,18 +725,16 @@ class Base(object):
     def get_stop_rec(self):
         return self.dic_con['simu']['stop_rec']  
 
-    def get_stru(self):
+    def get_surf(self):
         dic={}
         for key in self.get_node().keys():
             d=self.dic['node'][key]
-            keys=set(self.dic['netw']['attr_node_stru']).intersection(d.keys())
+            keys=set(self.dic['netw']['attr_surf']).intersection(d.keys())
             dic[key]=misc.dict_slice(d, keys)
-            dic[key]['class']=dic[key]['class_structure']
-            del dic[key]['class_structure']
+            dic[key]['class']=dic[key]['class_surface']
+            del dic[key]['class_surface']
         
         return dic
-
-        
 
     def get_threads(self):
         return self.dic_con['simu']['threads']  
@@ -710,22 +765,57 @@ class Base(object):
     def set_sim_stop(self, val): 
         self.dic_rep=misc.dict_merge(self.dic_rep, {'simu':{'sim_stop':val}})
         self.dic_rep=misc.dict_merge(self.dic_rep, {'simu':{'stop_rec':val}}) 
+
+    def clear_dep(self, val):
+        self.dep={}
+    
+    def set_perturbation_list(self, val):
+        self.clear_dep(val)       
+        self.per=val        
+        self.trigger_dic_update()    
+
+    def set_dic_rep(self, d): 
+        self.clear_dep(d)       
+        self.dic_rep=d
+        self.trigger_dic_update()
+
+    def trigger_dic_update(self):
+        self.update_dic_con()
+        self.update_dic_dep()
+        self.update_dic()
         
+    def update_dic(self):
+        d={}
+        d=misc.dict_update(d, self.dic_con)
+
+        self.dic=misc.dict_update(d, self.dic_dep)
+           
     def update_dic_rep(self, d):
-        self.dep={}
-        self.changed['dic']=True
-        self.changed['dic_con']=True
-        self.changed['dic_dep']=True
+        self.clear_dep(d)       
         self.dic_rep=misc.dict_update(self.dic_rep, d) 
-        
+        self.trigger_dic_update()
  
-    def update_perturbation_list(self, val):
-        self.dep={}
-        self.changed['dic']=True
-        self.changed['dic_con']=True
-        self.changed['dic_dep']=True
-        self.per=val
-         
+    def update_dic_con(self):
+        dic=self._get_par_constant()     
+        for keys, val in misc.dict_iter(self.dic_rep):
+            dic=misc.dict_recursive_set(dic, keys, val)   
+                         
+        self.apply_pertubations(dic)     
+        self.dic_con=dic
+    
+    def update_dic_dep(self):                
+        self.dic_dep=self._get_par_dependable()               
+
+
+class Base_mixin_dummy(object):
+    def _get_par_constant(self):
+        return {}
+    def _get_par_dependable(self):
+        return {}
+    
+class Base_dummy(Base, Base_mixin_dummy):    
+    pass
+
 class Base_mixin(object):
     
     def build_setup_mm_params(self):
@@ -763,53 +853,63 @@ class Base_mixin(object):
     def _get_attr_popu(self):
         p = ['class_population', 'model', 
             'n', 
-            'mm', 
-            'mm_params', 
+            'mm',  
             'nest_params', 
             'rand', 
             'sd', 
             'sd_params', 
             'sets', 
             'spike_setup', 
-            'rate'
+            'syn_target',
+            'rate',
             'type']
         return p
         
-    def _get_attr_node_stru(self):
-        p = ['class_structure', 
+    def _get_attr_surf(self):
+        p = ['class_surface', 
              'extent', 
             'edge_wrap', 
             'lesion', 
             'model', 
             'n', 
             'n_sets', 
-            'I_vitro', 
-            'I_vivo', 
+#             'I_vitro', 
+#             'I_vivo', 
             'type']
         return p
     
-    def _get_defaults_conn(self, k, syn):
-        source, target=k.split('_')[0:2]
-
-        pr = 0.5
-        delay = {'type':'uniform', 'params':{'min':GetNest(syn, 'delay') * pr, 
-                'max':GetNest(syn, 'delay') * (1 + pr)}}
-        weight = {'type':'uniform', 
-            'params':{'min':GetNest(syn, 'weight') * pr, 
-                'max':GetNest(syn, 'weight') * (1 + pr)}}
+    
+    
+    def _get_defaults_conn(self, name, syn, **kwargs ):
+        source, target=name.split('_')[0:2]
         
+        syn_call=GetConn(name, 'syn')
+        pr = 0.5
+        if kwargs.get('conn_type','uniform')=='uniform':
+            delay = {'type':'uniform', 
+                     'params':{'min':GetNest(syn_call, 'delay') * pr, 
+                               'max':GetNest(syn_call, 'delay') * (1 + pr)}}
+            weight = {'type':'uniform', 
+                      'params':{'min':GetNest(syn_call) * pr, 
+                                'max':GetNest(syn_call, 'weight') * (1 + pr)}}
+        else:
+            delay = {'type':'constant', 
+                     'params':GetNest(syn_call, 'delay')}
+            weight = {'type':'constant', 
+                      'params':GetNest(syn_call, 'weight')}
+            
         d = {'beta_fan_in':0.0, 
-            'class_structure':'Conn', 
+            'class_surface':'Conn', 
             'delay':delay, 
-            'fan_in':DepConn(k, 'calc_fan_in'), 
-            'fan_in0':1., 
+            'fan_in':DepConn(name, 'calc_fan_in'), 
+            'fan_in0':kwargs.get('fan_in0',1), 
             'netw_size':GetNetw('size'), 
             'lesion':False, 
             'mask':[-0.5, 0.5], 
-            'rule':'1-1', 
+            'rule':kwargs.get('rule','1-1'), 
             'save_path':GetSimu('path_conn'), 
             'source':source,
-            'syn':k, 
+            'syn':syn, 
             'target':target,
             'tata_dop':DepNetw('calc_tata_dop'), 
             'weight':weight}
@@ -818,7 +918,7 @@ class Base_mixin(object):
             
     def _get_defaults_node_input(self, key, target):
         d = {'class_population':'MyPoissonInput', 
-             'class_structure':'Surface', 
+             'class_surface':'Surface', 
             'extent':[-0.5, 0.5], 
             'edge_wrap':True, 
             'lesion':False, 
@@ -829,59 +929,73 @@ class Base_mixin(object):
             'rate':0.0, 
             'sets':DepNode(key, 'calc_sets'), 
             'spike_setup':DepNode(key, 'calc_spike_setup'), 
-            'type':'input'}
+            'type':'input',
+            'target':target}
         return d    
 
 
-    def _get_defaults_node_network(self, key, model):
+    def _get_defaults_node_network(self, key):
         d = {'class_population':'MyNetworkNode',
-             'class_structure':'Surface', 
+             'class_surface':'Surface', 
             'edge_wrap':True, 
             'extent':[-0.5, 0.5], 
             'lesion':False, 
             'I_vitro':0.0, 
             'I_vivo':0.0, 
             'model':key, 
-            'mm':False, 
-            'mm_params':self.build_setup_mm_params(), 
+            'mm':{'active':False, 
+                  'params':self.build_setup_mm_params()}, 
             'n':DepNode(key, 'calc_n'), 
             'n_sets':1, 
             'nest_params':{'I_e':GetNode(key, 'I_vivo')}, 
             'rate_in_vitro':0.0, 
-            'rand':self.build_setup_node_rand(model), 
-            'sd':True, 
-            'sd_params':self.build_setup_sd_params(), 
+            'rand':self.build_setup_node_rand(GetNode(key, 'model')), 
+            'sd':{'active':True,
+                  'params':self.build_setup_sd_params()}, 
             'sets':DepNode(key, 'calc_sets'), 
             'rate':0.5, 
             'type':'network'}
         return d
+
+    def _get_defaults_node_volume_transmitter(self,  key, nest_model, syn_target):
+        d = {'class_population':'VolumeTransmitter',
+             'class_surface':'Surface',
+             'extent':[-0.5, 0.5], 
+             'edge_wrap':True,  
+             'lesion':False, 
+             'model':nest_model, 
+             'n':1, 
+             'n_sets':1, 
+             'nest_params':{}, 
+             'sets':[],
+             'syn_target':syn_target,
+             'type':'volume_transmitter'}
+        return d
     
     def _get_par_dependable(self):
-        d={}
-
-        d=self.add(d, 'conn', 'weight') 
-        
+        d={}        
         d=self.add(d, 'netw', 'n_nuclei')    
         
         d=self.add(d, 'nest', 'GABAA_1_Tau_decay')    
         d=self.add(d, 'nest', 'GABAA_2_Tau_decay')           
         d=self.add(d, 'nest', 'tata_dop')
 
-        d=self.add(d, 'node', 'mm_params')
+        d=self.add(d, 'node', 'mm')
         d=self.add(d, 'node', 'n')
         d=self.add(d, 'node', 'nest_params')
         d=self.add(d, 'node', 'rand')
-        d=self.add(d, 'node', 'sd_params')
+        d=self.add(d, 'node', 'sd')
         d=self.add(d, 'node', 'sets')
         d=self.add(d, 'node', 'spike_setup')
         d=self.add(d, 'node', 'rate')
-                
+                        
         d=self.add(d, 'conn', 'delay')          
         d=self.add(d, 'conn', 'fan_in')  
         d=self.add(d, 'conn', 'fan_in0')
         d=self.add(d, 'conn', 'netw_size')
         d=self.add(d, 'conn', 'save_path')
         d=self.add(d, 'conn', 'tata_dop')
+        d=self.add(d, 'conn', 'weight') 
 
         
         return d
@@ -890,7 +1004,8 @@ class Base_mixin(object):
 
         do=self.other.get_dic_con()
 
-        d['simu']={}
+        if not 'simu' in d.keys():
+            d['simu']={}
         for key in ['mm_params',
                     'path_conn',
                     'path_data',
@@ -905,7 +1020,7 @@ class Base_mixin(object):
             d['simu'][key]=do['simu'][key]
         
         for key in ['attr_popu',
-                    'attr_node_stru',
+                    'attr_surf',
                     'tata_dop',
                     'tata_dop0',
                     'rand_nodes',
@@ -934,8 +1049,7 @@ class Base_mixin_bcpnn(Base_mixin):
         d=self.add(d, 'nest', 'weight')    
         d=self.add(d, 'node', 'n_sets')            
         
-        return d
-        
+        return d     
             
 class Base_single_unit(Base):
     def __init__(self, **kwargs ):
@@ -968,9 +1082,8 @@ class Unittest_base(object):
         dic['simu']['sd_params']={'to_file':True, 'to_memory':False}
         
 
-        dc='/afs/nada.kth.se/home/w/u1yxbcfw/results/unittest/conn'
-        dp=('/afs/nada.kth.se/home/w/u1yxbcfw/results/unittest/'
-            +self.__class__.__name__)
+        dc=HOME+'/results/unittest/conn'
+        dp=HOME+'/results/unittest/' +self.__class__.__name__
         df=dp
         dn=dp+'/nest/'
         
@@ -981,7 +1094,7 @@ class Unittest_base(object):
     
         dic['netw']={}        
         dic['netw']['attr_popu']=self._get_attr_popu()
-        dic['netw']['attr_node_stru']=self._get_attr_node_stru()
+        dic['netw']['attr_surf']=self._get_attr_surf()
         dic['netw']['FF_curve']={'input':inp,
                                  'output':net}
         
@@ -1005,7 +1118,8 @@ class Unittest_base(object):
         # ========================
         d={inp+'_nest':{'type_id':'poisson_generator'}, 
            net+'_nest':{'type_id':'iaf_cond_exp',
-                 'C_m':200.0, 'V_th':-50.},
+                 'C_m':200.0, 'V_th':-50.,
+                     'tau_minus':20.0, },
            inp+'_'+net+'_nest':{'type_id':'static_synapse',
                                     'delay':1.0,
                                     'weight':10.0}}
@@ -1021,8 +1135,8 @@ class Unittest_base(object):
         d1['model']=inp+'_nest'
      
         
-        model=GetNode(net, 'model')
-        d2= self._get_defaults_node_network(net, model)
+#         model=GetNode(net, 'model')
+        d2= self._get_defaults_node_network(net)
         d2['n_sets']=3
         d2['model']=net+'_nest'
         d2['rate']=10.0
@@ -1036,11 +1150,13 @@ class Unittest_base(object):
         syn=GetConn(c, 'syn')
         d1=self._get_defaults_conn( c, syn)
         d1['delay']['params']=GetNest(syn,'delay')
+        d1['delay']['type']='constant'  
         d1['fan_in0']=10.
         d1['mask']=[-0.25,0.25]
         d1['rule']='all-all'
         d1['syn']=inp+'_'+net+'_nest'
-        d1['weight']['params']=GetNest(syn,'weight')        
+        d1['weight']['params']=GetNest(syn,'weight')   
+        d1['weight']['type']='constant'        
         
         dic['conn']={inp+'_'+net:d1}   
 
@@ -1049,7 +1165,6 @@ class Unittest_base(object):
 class Unittest(Base, Unittest_base, Base_mixin):
     pass              
  
-
 class Unittest_extend_base(object):
     
 
@@ -1060,8 +1175,17 @@ class Unittest_extend_base(object):
         
         
         dic={}
+        
         # ========================
         # Default simu parameters 
+        # ========================        
+        dic['simu']={}
+        dic['simu']['threads']=1
+        
+        
+        
+        # ========================
+        # Default netw parameters 
         # ========================        
         dic['netw']={}  
         
@@ -1152,9 +1276,7 @@ class Unittest_extend_base(object):
 class Unittest_extend(Base, Unittest_extend_base, Base_mixin):
     pass 
 
-
-
-class Unittest_bcpnn_base(object):
+class Unittest_bcpnn_dopa_base(object):
     def _get_par_constant(self):     
 
         dic_other=self.other.get_dic_con()
@@ -1163,28 +1285,45 @@ class Unittest_bcpnn_base(object):
             
         dic={}
         dic['netw']={}
-        dic['netw']['size']=1
+        dic['netw']['size']=12
+        dic['netw']['n_nuclei']={'n1':1, 'n2':1, 'm1':10}
         
-        params1={'start':0.0,
-                'time_burst':200.0,
-                'time_pause':600.0 ,
-                'rate_burst':10.0,
-                'rate_pause':0.0,
-                'repetitions':2}
-        params2=deepcopy(params1)
-        params2['start']=200.0
+        params1={'start':1.0,
+                'time_first':1000.0,
+                'time_second':1000.0 ,
+                'rate_first':3100.0,
+                'rate_second':2600.0,
+                'repetitions':20}
+        
+        params2={'start':1.0,
+                'time_first':1000.0,
+                'time_second':1000.0 ,
+                'rate_first':3100.0,
+                'rate_second':2600.0,
+                'repetitions':20}
+        
+        params3={'start':0.0,
+                'time_first':10000.0,
+                'time_second':10000.0 ,
+                'rate_first':5000.0,
+                'rate_second':2500.0,
+                'repetitions':4}
         dic['netw']['input']={'i1':{'type':'burst','params':params1},
-                              'i2':{'type':'burst','params':params2}}
+                              'i2':{'type':'burst','params':params2},
+                              'i3':{'type':'burst','params':params3}}
         # ========================
         # Default nest parameters 
         # ========================
         d={'bias':0.0,   #ANN interpretation. Only calculated here to demonstrate match to rule. 
                            # Will be eliminated in future versions, where bias will be calculated postsynaptically       
+           'b':0.0,
            'delay':1.,
+           'dopamine_modulated':True,
            'epsilon':0.001, #lowest possible probability of spiking, e.g. lowest assumed firing rate
            'fmax':50.0,    #Frequency assumed as maximum firing, for match with abstract rule
-           'gain':1.0,    #Coefficient to scale weight as conductance, can be zero-ed out
-           'K':0.,         #Print-now signal // Neuromodulation. Turn off learning, K = 0
+           'gain':20.0,    #Coefficient to scale weight as conductance, can be zero-ed out
+           'K':1.0,         #Print-now signal // Neuromodulation. Turn off learning, K = 0
+           'n':1.0, 
            'tau_i':10.,     #Primary trace presynaptic time constant
            'tau_j':10.,      #Primary trace postsynaptic time constant
            'tau_e':100.,      #Secondary trace time constant
@@ -1192,55 +1331,285 @@ class Unittest_bcpnn_base(object):
            'type_id':'bcpnn_dopamine_synapse',
            'weight':10.0}
           
-        
         dic['nest']={}
-        dic['nest']['i2_n1_nest_bcpnn']=d
+        dic['nest']['n1_n2_nest_bcpnn_dopa']=d  
+        
+        d={'bias':0.0,   #ANN interpretation. Only calculated here to demonstrate match to rule. 
+                           # Will be eliminated in future versions, where bias will be calculated postsynaptically       
+           'delay':1.,
+           'epsilon':0.001, #lowest possible probability of spiking, e.g. lowest assumed firing rate
+           'fmax':50.0,    #Frequency assumed as maximum firing, for match with abstract rule
+           'gain':20.,    #Coefficient to scale weight as conductance, can be zero-ed out
+           'K':1.,         #Print-now signal // Neuromodulation. Turn off learning, K = 0
+           'tau_i':10.,     #Primary trace presynaptic time constant
+           'tau_j':10.,      #Primary trace postsynaptic time constant
+           'tau_e':100.,      #Secondary trace time constant
+           'tau_p':1000.,     #Tertiarty trace time constant
+           'type_id':'bcpnn_synapse',
+           'weight':10.0}
+                
+        dic['nest']['n1_n2_nest_bcpnn']=d  
+        
 
-        d={'type_id':'static_synapse'}
+        #i1_n1_nest
+        d={ 'type_id':'static_synapse',
+           'delay':1.0,
+            'weight':10.0}
+        dic['nest']['i1_n1_nest']=d
+        
+        #i2_n2_nest
+        d={'type_id':'static_synapse',
+           'delay':1.0,
+            'weight':10.0}
+        dic['nest']['i2_n2_nest']=d
+
+        #i3_m1_nest
+        d={'type_id':'static_synapse',
+            'delay':1.0,
+            'weight':10.0}
+        dic['nest']['i3_m1_nest']=d
+
+        #m1_v1_nest
+        d={'type_id':'static_synapse',
+            'delay':1.0,
+            'weight':1.0}
         dic['nest']['m1_v1_nest']=d
+        
 
+        #v1       
         d={'type_id':'volume_transmitter'}
         dic['nest']['v1_nest']=d
 
+        #m1_nest
         d={'type_id':'iaf_cond_exp',
             'C_m':200.0, 'V_th':-50.}
         dic['nest']['m1_nest']=d
 
-
+        #n2_nest
+        d={'type_id':'iaf_cond_exp',
+            'C_m':200.0, 'V_th':-50.}
+        dic['nest']['n2_nest']=d
+        
+        #i2_nest
         d={'type_id':'poisson_generator'}
         dic['nest']['i2_nest']=d
+
+        #i3_nest
+        d={'type_id':'poisson_generator'}
+        dic['nest']['i3_nest']=d
         # ========================
         # Default node parameters 
         # ========================  
         dic['node']={}
         
-        d1=self._get_defaults_node_input( 'i2', 'n1')
-        d1['rate']=10.
-        d1['model']='i2_nest'       
-        dic['node']['i2']=d1
+        #n1
+        net='n1'
+        d= self._get_defaults_node_network(net)
+        d['n_sets']=1
+        d['model']=net+'_nest'
+        d['rate']=10.0
+        dic['node']['n1']=d
+        
+        #n2
+        net='n2'
+        d= self._get_defaults_node_network(net)
+        d['n_sets']=1
+        d['model']=net+'_nest'
+        d['rate']=10.0
+
+        dic['node']['n2']=d
+           
+        #i2     
+        d=self._get_defaults_node_input( 'i2', 'n2')
+        d['rate']=10.
+        d['model']='i2_nest'       
+        dic['node']['i2']=d
+
+        #i3
+        d=self._get_defaults_node_input( 'i3', 'm1')
+        d['rate']=10.
+        d['model']='i3_nest'       
+        dic['node']['i3']=d
+
+
+        #Volume transmitter
+        d=self._get_defaults_node_volume_transmitter( 'v1', 'v1_nest',
+                                                      'n1_n2_nest_bcpnn_dopa')
+        dic['node']['v1']=d
+                
+        # Modulator neurons
+        d=self._get_defaults_node_network( 'm1')    
+        d['model']='m1_nest' 
+        dic['node']['m1']=d
 
         # ========================
         # Default conn parameters 
         # ========================
         
-        dic['conn']={}
-        dic['conn']['i2_n1']=deepcopy(dic_other['conn']['i1_n1'])
-        dic['conn']['m1_v1']=deepcopy(dic_other['conn']['i1_n1'])
-        
-        d={'fan_in0':1.,
-           'fan_in':DepConn('i2_n1', 'calc_fan_in'), 
-           'rule':'1-1',
-           'syn':'i2_n1_nest_bcpnn'}
-        dic['conn']['i2_n1'].update(d)
-        
-        d={'rule':'all-all',
-           'fan_in':DepConn('m1_v1', 'calc_fan_in'), 
-           'syn':'m1_v1_nest'}
-        dic['conn']['m1_v1'].update(d)
+        dic['conn']={}      
 
+        #n1_n2
+        d=self._get_defaults_conn( 'n1_n2', 'n1_n2_nest_bcpnn_dopa',
+                                   **{'conn_type':'constant',
+                                      'rule':'1-1'})   
+        dic['conn']['n1_n2_dop']=d   
+
+        #n1_n2
+        d=self._get_defaults_conn( 'n1_n2', 'n1_n2_nest_bcpnn',
+                                   **{'conn_type':'constant',
+                                      'rule':'1-1'})   
+        dic['conn']['n1_n2']=d 
+   
+        #i1_n1
+        d=self._get_defaults_conn( 'i1_n1', 'i1_n1_nest',
+                                   **{'conn_type':'constant',
+                                      'rule':'1-1'}) 
+        dic['conn']['i1_n1']=d        
+        
+        #i2_n2
+        d=self._get_defaults_conn( 'i2_n2', 'i2_n2_nest',
+                               **{'conn_type':'constant',
+                                  'rule':'1-1'}) 
+        dic['conn']['i2_n2']=d
+        
+        #i3_m1
+        d=self._get_defaults_conn( 'i3_m1', 'i3_m1_nest',
+                               **{'conn_type':'constant',
+                                  'rule':'1-1'})         
+        dic['conn']['i3_m1']=d
+
+        #m1_v1
+        d=self._get_defaults_conn( 'm1_v1', 'm1_v1_nest',
+                              **{'conn_type':'constant',
+                                  'rule':'all-all',
+                                  'fan_in0':10.0})         
+        dic['conn']['m1_v1']=d
+
+
+    
+        del dic_other['node']['n1']
+        del dic_other['conn']['i1_n1']
+        
+        dic=misc.dict_update(dic_other, dic)
+        
         return misc.dict_update(dic_other, dic)
 
 
+class Unittest_bcpnn_dopa(Base, Unittest_bcpnn_dopa_base, Base_mixin):
+    pass
+
+
+class Unittest_stdp_base(object):
+    def _get_par_constant(self):     
+        # Need the Unittest_bcpnn
+        dic_other=self.other.get_dic_con()
+
+        dic={}
+        d={'A_plus':0.01,
+           'A_minus':0.1,
+           'c':1.,
+           'n':0.1,
+           'tau_plus':20.0,   
+           'tau_c':1000.0,    
+           'tau_n':200.,   
+           'type_id':'stdp_dopamine_synapse',      
+           'Wmin':0.,     
+           'Wmax':200.,   
+           'weight':10.0,
+           'delay':1.0,
+           'b':0.03,
+           }
+                
+        dic['nest']={}
+        dic['nest']['n1_n2_nest_stdp']=d        
+        
+        # ========================
+        # Default node parameters 
+        # ========================          
+        dic['node']={}
+        dic['node']['v1']={'syn_target':'n1_n2_nest_stdp'}
+        
+        # ========================
+        # Default conn parameters 
+        # ========================        
+        dic['conn']={}
+        dic['conn']['n1_n2']={'syn':'n1_n2_nest_stdp'}
+        
+        
+            
+ 
+        
+        
+        return misc.dict_update(dic_other, dic)
+    
+class Unittest_stdp(Base, Unittest_stdp_base, Base_mixin):
+    pass
+
+
+class Unittest_bcpnn_base(object):
+    def _get_par_constant(self):     
+        # Need the Unittest_bcpnn
+        dic_other=self.other._get_par_constant()
+
+        dic={}
+        dic['netw']={'size':2}
+
+        params1={'start':1.0,
+                'time_first':1000.0,
+                'time_second':1000.0 ,
+                'rate_first':3500.0,
+                'rate_second':2600.0,
+                'repetitions':20}
+        
+        params2={'start':1.0,
+                'time_first':1000.0,
+                'time_second':1000.0 ,
+                'rate_first':3500.0,
+                'rate_second':2600.0,
+                'repetitions':20}
+        
+        dic['netw']['input']={'i1':{'type':'burst','params':params1},
+                              'i2':{'type':'burst','params':params2}}
+                
+        d={'bias':0.0,   #ANN interpretation. Only calculated here to demonstrate match to rule. 
+                           # Will be eliminated in future versions, where bias will be calculated postsynaptically       
+           'delay':1.,
+           'epsilon':0.001, #lowest possible probability of spiking, e.g. lowest assumed firing rate
+           'fmax':50.0,    #Frequency assumed as maximum firing, for match with abstract rule
+           'gain':20.,    #Coefficient to scale weight as conductance, can be zero-ed out
+           'K':1.,         #Print-now signal // Neuromodulation. Turn off learning, K = 0
+           'tau_i':10.,     #Primary trace presynaptic time constant
+           'tau_j':10.,      #Primary trace postsynaptic time constant
+           'tau_e':100.,      #Secondary trace time constant
+           'tau_p':1000.,     #Tertiarty trace time constant
+           'type_id':'bcpnn_synapse',
+           'weight':10.0}
+                
+        dic['nest']={}
+        dic['nest']['n1_n2_nest_bcpnn']=d        
+        
+        # ========================
+        # Default node parameters 
+        # ========================          
+#         dic['node']={}
+#         dic['node']['v1']={'syn_target':'n1_n2_nest_bcpnn'}
+        
+        # ========================
+        # Default conn parameters 
+        # ========================        
+        dic['conn']={}
+        dic['conn']['n1_n2']={'syn':'n1_n2_nest_bcpnn'}
+        
+        del dic_other['netw']['input']['i3']
+        del dic_other['netw']['n_nuclei']['m1']
+        del dic_other['node']['i3']
+        del dic_other['node']['m1']
+        del dic_other['node']['v1']        
+        del dic_other['conn']['i3_m1']
+        del dic_other['conn']['m1_v1']       
+        
+        return misc.dict_update(dic_other, dic)
+    
 class Unittest_bcpnn(Base, Unittest_bcpnn_base, Base_mixin):
     pass
 
@@ -1259,14 +1628,13 @@ class Single_unit_base(object):
         # ========================        
         dic['simu']=np.get('simu')
 
-        dc=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
-            +'single/conn')        
-        dp=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
-            +'single/'+self.other.__class__.__name__)
-        df=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/inhibition/'
-           +'figures/'+self.other.__class__.__name__)
-        dn=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
-            +'single/'+self.other.__class__.__name__+'/nest')         
+        dc=(HOME+'/results/papers/inhibition/single/conn')        
+        dp=(HOME+'/results/papers/inhibition/single/'
+            +self.other.__class__.__name__)
+        df=(HOME+'/projects/papers/inhibition/figures/'
+            +self.other.__class__.__name__)
+        dn=(HOME+'/results/papers/inhibition/single/'
+            +self.other.__class__.__name__+'/nest')         
         
         dic['simu']['path_conn']=dc
         dic['simu']['path_data']=dp
@@ -1318,10 +1686,8 @@ class Single_unit_base(object):
             for par in ['I_vivo',  
                         'I_vitro', 
                         'mm',
-                        'mm_params',  
                         'rand', 
                         'sd',
-                        'sd_params', 
                         'rate_in_vitro',
                          ]:
                 if par in vn.keys():
@@ -1365,13 +1731,13 @@ class InhibitionBase(object):
                                    'to_memory':False,
                                    'record_from':['V_m'] }
 
-        dc=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
+        dc=(HOME+'/results/papers/inhibition/'
             +'network/conn')        
-        dp=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
+        dp=(HOME+'/results/papers/inhibition/'
             +'network/'+self.__class__.__name__)
-        df=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/inhibition/'
+        df=(HOME+'/projects/papers/inhibition/'
            +'figures/'+self.__class__.__name__)
-        dn=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
+        dn=(HOME+'/results/papers/inhibition/'
             +'network/'+self.__class__.__name__+'/nest')        
         
         dic['simu']['path_conn']=dc
@@ -1393,7 +1759,7 @@ class InhibitionBase(object):
         dic['netw']={} 
 
         dic['netw']['attr_popu']=self._get_attr_popu()
-        dic['netw']['attr_node_stru']=self._get_attr_node_stru()
+        dic['netw']['attr_surf']=self._get_attr_surf()
 
         dic['netw']['FF_curve']={'input':'C1',
                                  'output':'M1'}
@@ -1436,14 +1802,7 @@ class InhibitionBase(object):
         dic['netw']['tata_dop0'] = 0.8
         dic['netw']['rate_GPE_A'] = 27.1    
         dic['netw']['V_th_sigma']=1.0
-        
-#            
-#        prop=dic['netw']['n_nuclei'].copy()
-#        dic['netw']['n_nuclei_sub_sampling']={}
-#        for k in prop.keys(): 
-#            dic['netw']['n_nuclei_sub_sampling'].update({k:None})  
-#        dic['netw']['optimization']={'fopt':[]}
-        
+                
          
         # ========================
         # Default nest parameters 
@@ -1963,7 +2322,7 @@ class InhibitionBase(object):
                 'ES': { 'target':'SN', 'rate':1800.}}#295 
         
         for key, val in inputs.items():         
-            d=self._get_defaults_node_input(key, val)
+            d=self._get_defaults_node_input(key, val['target'])
             inputs[key]=misc.dict_update(d,inputs[key])
 
                 
@@ -2097,8 +2456,7 @@ class InhibitionBase(object):
 class Inhibition(Base, InhibitionBase, Base_mixin):
     pass      
       
-
-               
+              
 class Slow_wave_base(object):
 
     def _get_par_constant(self):
@@ -2137,13 +2495,13 @@ class ThalamusBase(object):
         
         dic['simu']={}
         
-        dc=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
+        dc=(HOME+'/results/papers/inhibition/'
             +'network/conn')        
-        dp=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
+        dp=(HOME+'/results/papers/inhibition/'
             +'network/'+self.__class__.__name__)
-        df=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/inhibition/'
+        df=(HOME+'/projects/papers/inhibition/'
            +'figures/'+self.__class__.__name__)
-        dn=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
+        dn=(HOME+'/results/papers/inhibition/'
             +'network/'+self.__class__.__name__+'/nest')     
         
                  
@@ -2314,13 +2672,13 @@ class Bcpnn_h0_base(object):
         
         dic['simu']={}
         
-        dc=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn/'
+        dc=(HOME+'/results/papers/bcpnn/'
             +'network/conn')        
-        dp=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn/'
+        dp=(HOME+'/results/papers/bcpnn/'
             +'network/'+self.__class__.__name__)
-        df=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/bcpnn/'
+        df=(HOME+'/projects/papers/bcpnn/'
            +'figures/'+self.__class__.__name__)
-        dn=('/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn/'
+        dn=(HOME+'/results/papers/bcpnn/'
             +'network/'+self.__class__.__name__+'/nest')     
         
                  
@@ -2840,8 +3198,11 @@ def compute_conn_weight_params(weight, weight_type):
 def calc_n(d_nuclei_sizes, d_sub_sampl, name, netw_size):
     nodes, sizes=[],[]
     for k,v in d_nuclei_sizes.items():
+        if isinstance(v, Call):
+            v=v.do()
         if k in d_sub_sampl.keys():
             v=v/d_sub_sampl[k]
+            
         nodes.append(k)
         sizes.append(v)
         
@@ -2892,10 +3253,10 @@ def calc_spike_setup(n, params, rate ,start, stop, typ):
                      't_stop':stop}]
 
     if typ=='burst': 
-        tb=params['time_burst']
-        tp=params['time_pause'] 
-        rb=params['rate_burst']
-        rp=params['rate_pause']
+        tb=params['time_first']
+        tp=params['time_second'] 
+        rb=params['rate_first']
+        rp=params['rate_second']
         s=params['start']        
         rep=params['repetitions']
         step=tb+tp
@@ -2923,9 +3284,7 @@ def calc_spike_setup(n, params, rate ,start, stop, typ):
                  'times':times, 
                  'idx':idx, 
                  't_stop':stop}]
-    
-
-        
+            
     return setup
 
 
@@ -3006,10 +3365,10 @@ def dummy_args(flag, **kwargs):
  
         #BURST
         params={'start':100.0,
-                'time_burst':100.0,
-                'time_pause':500.0 ,
-                'rate_burst':10.0,
-                'rate_pause':0.0,
+                'time_first':100.0,
+                'time_second':500.0 ,
+                'rate_first':10.0,
+                'rate_second':0.0,
                 'repetitions':2}
         
         args.append([4, params, 25.0, 100.0, 2000.0, 'burst']) 
@@ -3049,16 +3408,16 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
                      'uniform': {'min': -70.,  'max':-50. }}}
         
         d2={'n':n,
-            'mm_params':{'interval':0.5, 
-                       'start':0.0, 
-                       'stop':numpy.Inf,
-                       'to_file':True, 
-                       'to_memory':False,
-                       'record_from':['V_m']  },
+            'mm':{'params':{'interval':0.5, 
+                           'start':0.0, 
+                           'stop':numpy.Inf,
+                           'to_file':True, 
+                           'to_memory':False,
+                           'record_from':['V_m']}},
             'nest_params':{'I_e':0.0},
             'rand':ra, 
-            'sd_params':{'start':0.0, 'stop':numpy.Inf,
-                        'to_file':True, 'to_memory':False }, 
+            'sd':{'params':{'start':0.0, 'stop':numpy.Inf,
+                            'to_file':True, 'to_memory':False}}, 
             'sets':[my_slice(s, n, 3) for s in range(3)], 
             }
         
@@ -3071,7 +3430,7 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
         d1={'delay': { 'params':1.0},
             'fan_in':10.0,
             'netw_size':n,
-            'save_path':'/afs/nada.kth.se/home/w/u1yxbcfw/results/unittest/conn', 
+            'save_path':HOME+'/results/unittest/conn', 
             'tata_dop':0.0,
             'weight': {'params':10.0},
             }
@@ -3098,7 +3457,7 @@ def dummy_unittest_extend(flag=True):
     d1={'delay': { 'params':1.0},
         'fan_in':10.0,
         'netw_size':10.0,
-        'save_path':'/afs/nada.kth.se/home/w/u1yxbcfw/results/unittest/conn', 
+        'save_path':HOME+'/results/unittest/conn', 
         'tata_dop':0.0,
         'weight': {'params':10.0}, 
        }
@@ -3106,10 +3465,19 @@ def dummy_unittest_extend(flag=True):
     return dic
 
 
-def dummy_unittest_bcpnn(flag=True):
+def dummy_unittest_bcpnn_dopa(flag=True):
     n=1
     dic=dummy_unittest_small(n=n)
     
+    
+    dic['node']['m1']=deepcopy(dic['node']['n1'])
+    dic['node']['m1']['n']=10
+    dic['node']['m1']['sets']=[my_slice(s, 10, 1) for s in range(1)]
+    
+    dic['node']['n2']=deepcopy(dic['node']['n1']) 
+    dic['node']['n2']['sets']=[my_slice(s, 1, 1) for s in range(1)]     
+    
+    dic['node']['n1']['sets']=[my_slice(s, 1, 1) for s in range(1)] 
 
     dic['node']['i2']=deepcopy(dic['node']['i1'])
     l=[{'rates': [10.0, 0.0, 10.0, 0.0], 
@@ -3117,33 +3485,98 @@ def dummy_unittest_bcpnn(flag=True):
         'idx': [0], 
         'times': [0.0, 200.0, 800.0, 1000.0]}]
     dic['node']['i1']['spike_setup']=l
+
     
     l=[{'rates': [10.0, 0.0, 10.0, 0.0], 
         't_stop': 3000.0, 
         'idx': [0], 
         'times': [200., 400.0, 1000.0, 1200.0]}]
     dic['node']['i2']['spike_setup']=l
+
+
+    dic['node']['i3']=deepcopy(dic['node']['i1'])
+    l=[{'rates': [10.0, 20.0], 
+        't_stop': 3000.0, 
+        'idx':range(10), 
+        'times': [0., 800.0]}]
+    dic['node']['i3']['spike_setup']=l   
+    dic['node']['i3']['n']=10
+    dic['node']['i3']['sets']=[my_slice(s, 10, 1) for s in range(1)]
     
+
+    d1={
+        'fan_in':1.0,
+        'netw_size':12,
+       }
+
+    dic['conn']['i1_n1'].update(d1)    
     
     d1={'delay': { 'params':1.0},
         'fan_in':1.0,
-        'netw_size':1.0,
-        'save_path':'/afs/nada.kth.se/home/w/u1yxbcfw/results/unittest/conn', 
+        'netw_size':12,
+        'save_path':HOME+'/results/unittest/conn', 
         'tata_dop':0.0,
         'weight': {'params':10.0}, 
        }
 
-    dic['conn'].update({'i2_n1':d1})
+    dic['conn'].update({'n1_n2':d1})
     
+
+    d1={'delay': { 'params':1.0},
+        'fan_in':1.0,
+        'netw_size':12,
+        'save_path':HOME+'/results/unittest/conn', 
+        'tata_dop':0.0,
+        'weight': {'params':10.0}, 
+       }
+    
+    dic['conn'].update({'n1_n2_dopa':d1})
+    
+
+    d1={'delay': { 'params':1.0},
+        'fan_in':1.0,
+        'netw_size':12,
+        'save_path':HOME+'/results/unittest/conn', 
+        'tata_dop':0.0,
+        'weight': {'params':10.0}, 
+       }
+    
+    dic['conn'].update({'i2_n2':d1})
     
     d={'delay': { 'params':1.0},
         'fan_in':10.0,
-        'netw_size':1.0,
-        'save_path':'/afs/nada.kth.se/home/w/u1yxbcfw/results/unittest/conn', 
+        'netw_size':12,
+        'save_path':HOME+'/results/unittest/conn', 
+        'tata_dop':0.0,
+        'weight': {'params':1.0}, 
+       }    
+    dic['conn'].update({'m1_v1':d})
+    
+ 
+    d={'delay': { 'params':1.0},
+        'fan_in':1.0,
+        'netw_size':12,
+        'save_path':HOME+'/results/unittest/conn', 
         'tata_dop':0.0,
         'weight': {'params':10.0}, 
        }    
-    dic['conn'].update({'m1_v1':d})
+    dic['conn'].update({'i3_m1':d})
+    
+    return dic
+
+def dummy_unittest_bcpnn(flag=True):
+    n=1
+    dic=dummy_unittest_bcpnn_dopa()
+    
+#         del dic_other['netw']['input']['i3']
+    del dic['node']['i3']
+    del dic['node']['m1']
+    del dic['conn']['i3_m1']
+    del dic['conn']['m1_v1']   
+    
+    for c in dic['conn'].values():
+        c['netw_size']=2.
+    
     return dic
 
 def dummy_perturbations_lists(flag, conn):
@@ -3228,13 +3661,18 @@ class TestCall(unittest.TestCase):
 
     def test2(self):
         return 0.8
+
+
+    def test3(self):
+        return -4
     
     def setUp(self):
         self.m=misc.import_module('toolbox.network.default_params')
         Call.set_obj(self)
         self.c=Call('test') 
         self.d=Call('test')
-        self.e=Call('test2')        
+        self.e=Call('test2') 
+        self.f=Call('test3')        
 #    def test_do(self):
 #        self.assertEqual(self.c.do(),4)
         
@@ -3250,6 +3688,7 @@ class TestCall(unittest.TestCase):
         self.assertEquals(self.c.do()*self.d.do(), (self.c*4).do(), 4*4)        
     def test_sub(self):
         self.assertEquals(self.c.do()-4, (self.c-4).do(), 4-4)
+        self.assertEquals(self.f.do()-4, (self.f-4).do(), -4-4)
         
     def test_complicated_left(self):
         self.assertEqual(self.c.do()*(1-0.5), (self.c*(1-0.5)).do())  
@@ -3261,25 +3700,6 @@ class TestCall(unittest.TestCase):
         
         self.assertEquals(3000.0*(1-self.e.do()), (3000.0*(1-self.e)).do() , 
                          3000.0*0.2) 
-
-
-    def _dep(self, *args):
-        ''' 
-        Exampel:
-        
-        _dep('node','n1','n')
-        _dep('node','n1','spike_setup')
-        _dep('node','i1_n1','fan_in')
-        
-        '''
-        if type(args)!=list:
-            args=list(args)
-        
-        if not misc.dict_haskey(self.dep, args):
-            val=Call('calc_'+args[-1], args[-2]).do()
-            misc.dict_recursive_add(self.dep, args, val)
-        
-        return misc.dict_recursive_get(self.dep, args)
 
 class TestCallSubClassesWithBase(unittest.TestCase):
     def add(self, *args):
@@ -3315,7 +3735,7 @@ class TestCallSubClassesWithBase(unittest.TestCase):
         self.cd=[]
         Base._get_par_constant=self._get_par_constant
         Base.calc_test2=self.calc_test2
-        self.b=Base()
+        self.b=Base_dummy()
         self.c.append(GetNetw('test'))
         self.c.append(GetNode('n1','test')) 
         self.c.append(GetNest('n1','test')) 
@@ -3367,28 +3787,28 @@ class TestMixinBase(object):
         first=self.par._get(*['node', self.test_node_model,'type'])
         second=self.par.dic_con['node'][self.test_node_model]['type']
         self.assertEqual(first, second)
- 
+     
     def test__get_list_add(self):
         l=['node', self.test_node_model]
         first=self.par._get(l+['type'])
         second=self.par.dic_con['node'][self.test_node_model]['type']
         self.assertEqual(first, second)
- 
-        
+     
+            
     def test_call_with__get(self):
         c1=self.C(*['_get','node', self.test_node_model,'type'])
         c2=self.par.dic_con['node'][self.test_node_model]['type']
         self.assertEqual(c1.do(), c2)
-        
+            
     def test__get_with_call(self):        
         c1=self.C(*['_get', 'node', self.test_node_model, 'model'])
         c2=self.par.dic_con['node'][self.test_node_model]['model']
         first=self.par._get(*['nest', c1,'C_m'])
         second=self.par.dic_con['nest'][c2]['C_m']
         self.assertEqual(first,second)
-            
+                
     def test__get_functions(self):
-        
+            
         keys=dir(self.par)
         for key in keys:
             if key[0:3]=='_get':
@@ -3396,7 +3816,7 @@ class TestMixinBase(object):
                 args=[]  
                 call=getattr(self.par, key)
                 call(*args)
-
+    
     def test_get_funtions(self):
         keys=dir(self.par)
         for key in keys:
@@ -3404,48 +3824,37 @@ class TestMixinBase(object):
                 #print key
                 call=getattr(self.par, key)
                 call(*[])
-        
-
-    def test_dic_con(self):
+           
+ 
+    def test_dic_integrity(self):
         d1=self.par._get_par_constant()
-        d2=self.par.dic_con
-        print_dic_comparison(d1,d2, 'values')
-        self.assertDictEqual(d1, d2)        
+        d2=self.par._get_par_dependable()
+         
+        s='' 
+        for keys, val in misc.dict_iter(d1):
+            if not isinstance(val, Call):
+                continue
+ 
+            if not misc.dict_haskey(d2, keys):
+                s+='dic_dep is missing key {}\n'.format(keys)
+                continue
+              
+            val2=misc.dict_recursive_get(d2, keys)
+            if not val.do()==val2:
+                s+='dic_con:{} != dic_dep:{} at {}'.format(val,val2, keys)
         
+        if s:
+            print s
+              
+        self.assertFalse(s)        
+          
     def test_change_val(self):
         sim_stop=self.par['simu']['sim_stop']
         self.par['simu']['sim_stop']=sim_stop*2
         self.par.dic_rep['simu']={'stop_rec':1000.0}
         self.assertFalse(sim_stop==self.par['simu']['sim_stop'])
-
-    def test_dic_integrity(self):
-        '''
-        Make sure that all None values in dic_con are 
-        in dic_dep
-        '''
+  
         
-
-        d1=misc.dict_reduce(self.par.dic_con, {}, deliminator='.')
-        d2=misc.dict_reduce(self.par.dic_dep, {}, deliminator='.')
-        
-        #conn.i1_n1.delay_val
-        
-        keys=d1.keys()
-        for key in keys:
-            if not isinstance(d1[key], Call):
-                del d1[key]
-
-        keys2=d2.keys()
-        for key2 in keys2:
-                del d1[key2]
-                del d2[key2]
-                
-                
-        print_dic_comparison(d1,d2)
-        #print sorted(d1.keys())
-        #print sorted(d2.keys())
-        self.assertListEqual(sorted(d1.keys()), sorted(d2.keys()))    
-    
     def test_input_par_added(self):
         '''
         Test that par is updated with par_rep for both constant
@@ -3453,56 +3862,60 @@ class TestMixinBase(object):
         '''
         dic_rep={'netw':{'size':20000.0}, # constant value    
                  'node':{self.test_node_model:{'n':100*3}}} # dependable value
-        
+            
         self.par.update_dic_rep(dic_rep)
         dic_post=self.par.dic
         dic_post_dep=self.par.dic_dep
         dic_post_con=self.par.dic_con
         dic_netw=self.par['netw'] #Test that get item works
         dic_node=self.par['node'] 
-        
-        l1=[dic_rep['netw']['size'],  
-            dic_rep['node'][self.test_node_model]['n']]*3
+            
+        l1=([dic_rep['netw']['size']]*3
+            +[dic_rep['node'][self.test_node_model]['n']]*2)
         l2=[dic_post['netw']['size'], 
-            dic_post['node'][self.test_node_model]['n'],
             dic_post_con['netw']['size'], 
-            dic_post_dep['node'][self.test_node_model]['n'],
             dic_netw['size'], 
+            dic_post['node'][self.test_node_model]['n'],
             dic_node[self.test_node_model]['n'],]
         self.assertListEqual(l1, l2)
-        
+            
+        # Assert 'n' is not present in dependable dict any more
+        d=dic_post_dep['node'][self.test_node_model]
+        self.assertFalse('n' in d.keys())
+    
+            
     def test_pertubations(self):
         l=self.pert
-        
+            
         l1=[]
         l2=[]
         for pl in l:
-            self.par.update_perturbation_list(Perturbation_list())    
+            self.par.set_perturbation_list(Perturbation_list())    
             for p in pl:
                 l1.append(misc.dict_recursive_get(self.par.dic, p.keys)*p.val)
-            
-            self.par.update_perturbation_list(pl)    
+                
+            self.par.set_perturbation_list(pl)    
             for p in pl:
                 l2.append(misc.dict_recursive_get(self.par.dic, p.keys))
- 
+     
         self.assertListEqual(l1, l2)            
-
-
+    
+    
     def test_pertubations_append(self):
         p1, p2=self.pert
-    
+        
         p1.append(p2)
         l1=[]
         l2=[]
         for p in p1:
             l1.append(misc.dict_recursive_get(self.par.dic, p.keys)*p.val)      
-        
-        self.par.update_perturbation_list(p1)
+            
+        self.par.set_perturbation_list(p1)
         for p in p1:
             l2.append(misc.dict_recursive_get(self.par.dic, p.keys))
-        
+            
         self.assertListEqual(l1, l2)         
-
+    
     def test_change_con_effect_dep(self):
         mul=4
         dic=deepcopy(self.par.dic)
@@ -3511,12 +3924,12 @@ class TestMixinBase(object):
         self.par.update_dic_rep(dic_rep)
         v2=self.par.dic['node'][self.test_node_model]['n']
         self.assertAlmostEqual(v1*mul,v2,delta=mul+1)
-
+   
     def test_change_con_effect_dep_initiation(self):
         mul=8
         d={'netw': {'size': self.par.dic['netw']['size']*2}}
         self.kwargs['par_rep']=d 
-        
+           
         par= self.the_class(**self.kwargs)
         dic=deepcopy(par.dic)
         dic_rep={'netw':{'size':dic['netw']['size']*mul}} # constant value    
@@ -3524,7 +3937,7 @@ class TestMixinBase(object):
         self.par.update_dic_rep(dic_rep)
         v2=self.par.dic['node'][self.test_node_model]['n']
         self.assertAlmostEqual(v1*mul,v2,delta=mul+1)       
-
+   
     def test_nest_params_exist(self):
         d_nest=self.par.dic['nest']  
         d1, d2={}, {}
@@ -3536,16 +3949,31 @@ class TestMixinBase(object):
                     if key not in df.keys():
                         d1[key]=val
         self.assertDictEqual(d1, d2)
-
+    
+    
+    def test_node_conns_keys_integrity(self):
+        for key, val in self.par.dic_con['node'].items():
+                
+            self.assertTrue('type' in val.keys())
+            if val['type']=='network':
+                self.assertEqual(set(val.keys()), 
+                                 set(self.par.keys_node_network))
+            if val['type']=='input':
+                self.assertEqual(set(val.keys()), 
+                                 set(self.par.keys_node_input))
+        
+        for val in self.par.dic_con['conn'].values():
+            self.assertEqual(set(val.keys()), set(self.par.keys_conn))
+    
     def test_nodes_network_sum_size(self):
         s=0.0
         for name in self.par._get('node').keys():
-            #print name
+#             print name
             tp=self.par.dic['node'][name]['type']
             if tp=='network':
                 s+=self.par.dic['node'][name]['n']
         self.assertAlmostEqual(s, self.par.dic['netw']['size'], 7)
-
+    
     def test_conn_keys_integrity(self):
         keys=[]
         for val in self.par.dic['conn'].values():
@@ -3554,7 +3982,7 @@ class TestMixinBase(object):
         counts=[]
         for key in unique_keys:
             counts.append(keys.count(key))
-            
+                
     def test_model_copy(self):
         keys=(self.par['nest'].keys()+
               [val['model'] for val in self.par['node'].values()]+
@@ -3564,23 +3992,34 @@ class TestMixinBase(object):
             params=self.par._get_nest_setup(model)
             if 'type_id' in params.keys():
                 self.CopyModel( params, model )
-
-                
+    
+                    
     def test_str_method(self):
         s=str(self.par)
         self.assertTrue(isinstance(s, str))
-
-
+    
+    
     def test_input_params_integrity(self):
         l1=self.par['netw']['input'].keys()
         l2=[]   
         for key, val in self.par['node'].items():
+#             print key
             if val['type'] == 'input':
                 l2.append(key)
-                
+                    
         self.assertListEqual(sorted(l1), sorted(l2))    
-  
-  
+      
+    
+    def test_update_dic_rep(self):
+        dic_rep={'node':{self.test_node_model:{'n':100*3}}} 
+        self.par.update_dic_rep(dic_rep)
+            
+        dic_rep={'node':{'dummy':{'n':100*3}}} 
+        self.assertRaises(KeyError, self.par.update_dic_rep, dic_rep)
+            
+           
+         
+   
 class TestSetup_mixin(object):
     def _setUp(self):
         from toolbox import my_nest
@@ -3615,10 +4054,38 @@ class TestUnittestExtend(TestUnittestExtendBase, TestMixinBase,TestMixinDummy,
                          TestSetup_mixin ):
     pass                    
 
-class TestUnittestBcpnnBase(unittest.TestCase):
+class TestUnittestBcpnnDopaBase(unittest.TestCase):
+    def setUp(self):
+        self.dummy=dummy_unittest_bcpnn_dopa
+        self.kwargs={'other':Unittest(),
+                     'unittest':True}
+        self.the_class=Unittest_bcpnn_dopa
+        self.pert=dummy_perturbations_lists('unittest', 'i1_n1')
+        self.test_node_model='n1'
+        self._setUp()
+        
+class TestUnittestBcpnnDopa(TestUnittestBcpnnDopaBase, TestMixinBase,TestMixinDummy,
+                         TestSetup_mixin ):
+    pass  
+
+class TestUnittestStdpBase(unittest.TestCase):
     def setUp(self):
         self.dummy=dummy_unittest_bcpnn
-        self.kwargs={'other':Unittest(),
+        self.kwargs={'other':Unittest_bcpnn_dopa(**{'other':Unittest()}),
+                     'unittest':True}
+        self.the_class=Unittest_stdp
+        self.pert=dummy_perturbations_lists('unittest', 'i1_n1')
+        self.test_node_model='n1'
+        self._setUp()
+        
+class TestUnittestStdp(TestUnittestStdpBase, TestMixinBase,TestMixinDummy,
+                         TestSetup_mixin ):
+    pass         
+        
+class TestUnittestBcpnnBase(unittest.TestCase):
+    def setUp(self):
+        self.dummy=dummy_unittest_bcpnn_dopa
+        self.kwargs={'other':Unittest_bcpnn_dopa(**{'other':Unittest()}),
                      'unittest':True}
         self.the_class=Unittest_bcpnn
         self.pert=dummy_perturbations_lists('unittest', 'i1_n1')
@@ -3641,7 +4108,6 @@ class TestInhibition(TestInhibitionBase, TestMixinBase, TestSetup_mixin ):
     pass  
         
 class TestSingleUnitBase(unittest.TestCase):     
-    test_node_model='GA'
     def setUp(self):
         self.kwargs={'network_node':'GA', 
                      'other':Inhibition()}
@@ -3706,12 +4172,14 @@ class TestBcpnnH1(TestBcpnnH1Base,  TestMixinBase, TestSetup_mixin):
 if __name__ == '__main__':
     
     test_classes_to_run=[
-                         TestModuleFuncions,
+#                         TestModuleFuncions,
 #                         TestCall,
 #                         TestCallSubClassesWithBase,
 #                         TestUnittest,
 #                         TestUnittestExtend,
-                          TestUnittestBcpnn,    
+#                         TestUnittestBcpnn,   
+                        TestUnittestBcpnnDopa,   
+#                         TestUnittestStdp, 
 #                         TestSingleUnit,
 #                         TestInhibition,
 #                         TestThalamus,

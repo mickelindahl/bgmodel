@@ -22,6 +22,9 @@
 
 #include "config.h"
 
+
+//Remeber, nest has to have been compiled with GSL before
+//module is compiled.
 #ifdef HAVE_GSL_1_11
 
 #include "nest.h"

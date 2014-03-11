@@ -215,7 +215,8 @@ namespace mynest
       }
 
       /* CASE: Post spiking */
-      if ((timestep == (nest::int_t)((post_spiketimes.at(counter) - t_lastspike)/resolution)
+      if ((timestep == (nest::int_t)((post_spiketimes.at(counter)
+    		  - t_lastspike)/resolution)
     		  && (nest::int_t)(post_spiketimes.at(counter)) != 0) || (j_flag == 1))
       {
 	yj_ = 1.0;
@@ -246,7 +247,9 @@ namespace mynest
     pij_ += K_ * (eij_ - pij_) * resolution / taup_/* * eij_*/;
     
 	/*weight_ = gain_ * std::log(pij_ / (pi_ * pj_)) /*- std::log(min_weight)*/;
-	/*cout << ei_ << endl;*/
+	//cout << 3 << endl;
+
+
     } /* of for */
 
     /* Update the weight & bias before event is sent. Use commented normalization to 

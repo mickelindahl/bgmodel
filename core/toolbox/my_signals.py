@@ -283,7 +283,7 @@ class MyVmList(VmList):
         self.ids = sorted( self.id_list() )     # sorted id list
 
     def __repr__(self):
-        return self.__class__.__name__+':'+str(self.id_list) 
+        return self.__class__.__name__+':'+str(self.id_list()) 
     
     def id_list(self):
         """ 
@@ -304,6 +304,16 @@ class MyVmList(VmList):
         id_list=super( MyVmList, self ).id_list()
         id_list=numpy.sort(id_list)
         return id_list
+
+    def id_slice(self, id_list):
+        """ Slice by ids
+        """
+        new_SpikeList=super( MyVmList, self ).id_slice(id_list)
+        
+        new_MyVmList=convert_super_to_sub_class(new_SpikeList, MyVmList)
+        
+        return new_MyVmList
+
     
     def get_voltage_trace(self, normalized=False, **kwargs):
         t,v=[], []
@@ -319,7 +329,39 @@ class MyVmList(VmList):
         return {'ids':self.id_list(), 
                 'x':numpy.array(t),
                 'y':numpy.array(v)}
+        
+    def merge(self, analog_signals):
+        """
+        """
 
+        for _id, analog_signal in analog_signals.analog_signals.items():
+            if _id in self.id_list():
+                
+                s1=self.analog_signals[_id].signal
+                s2=analog_signal.signal
+                if self.t_start< analog_signal.t_start:
+                    s3=numpy.append(s1,s2)
+                    t_start=self.t_start
+                    t_stop=analog_signal.t_stop
+                else:
+                    t_start=analog_signal.t_start
+                    t_stop=self.t_stop
+                    s3=numpy.append(s2,s1)
+                    
+                self.analog_signals[_id].signal=s3
+                self.analog_signals[_id].t_start=t_start
+                self.analog_signals[_id].t_stop=t_stop         
+#                 print s3.shape
+            else:
+                self.append(_id, analog_signal)
+   
+   
+        self.t_start     = min(self.t_start, analog_signal.t_start)
+        self.t_stop      = max(self.t_stop, analog_signal.t_stop)
+        
+        if self.t_start!=analog_signal.t_start:
+            self.signal_length=(self.signal_length
+                                + analog_signals.signal_length)
 
     def my_plot(self, id_list = None, display = True, kwargs = {} ):
         """
@@ -399,22 +441,29 @@ class MyVmList(VmList):
         super(MyVmList, self).save( userFile )
 
     def my_set_spike_peak(self, peak, spkSignal, start=0):
-        for id in self.ids:
+        
+        for id in self.id_list():
             spikes=numpy.round((spkSignal[id].spike_times-spkSignal.t_start)/self.dt)#-start
             spikes=numpy.array(spikes, int)
             # t_start_voltage=self.analog_signals[id].t_start
-            
+            self.time_axis()
             if len(spikes):
                 first_spike=spikes[0]
-                r=range(int(-4/self.dt+first_spike), int(4/self.dt+first_spike))
+                r=numpy.arange(int(-20/self.dt+first_spike),
+                                     int(20/self.dt+first_spike))
+                
+                r=r[r<len(self.analog_signals[id].signal)]
+                
+                
                 amax=self.analog_signals[id].signal[r].argmax()
                 shift=first_spike-r[amax]
                 
                 signal=self.analog_signals[id].signal
                 idx=numpy.array(spikes-shift)
+                #idx=spikes
                 idx=idx[idx<len(signal)]
                 signal[idx] =peak
-        
+                print 
 
             
     def my_image_plot(self, display = None, kwargs = {}):
@@ -431,7 +480,65 @@ class MyVmList(VmList):
         ax.set_ylabel('Neuron #')  
         ax.set_aspect(aspect='auto')
         return image
-             
+
+    def plot(self, ax=[], id_list=None, v_thresh=None, display=True, **kwargs):
+        """
+        Plot all cells in the AnalogSignalList defined by id_list
+        
+        Inputs:
+            id_list - can be a integer (and then N cells are randomly selected) or a 
+                      list of ids. If None, we use all the ids of the SpikeList
+            v_thresh- For graphical purpose, plot a spike when Vm > V_thresh. If None, 
+                      just plot the raw Vm
+            display - if True, a new figure is created. Could also be a subplot
+            kwargs  - dictionary contening extra parameters that will be sent to the plot 
+                      function
+        
+        Examples:
+            >> z = subplot(221)
+            >> aslist.plot(5, v_thresh = -50, display=z, kwargs={'color':'r'})
+        """
+        if 'spike_signal' in kwargs.keys():
+            spike_signal=kwargs['spike_signal']
+            self.my_set_spike_peak( 15, spkSignal= spike_signal )
+            del kwargs['spike_signal'] 
+        
+        if id_list:
+            id_list=list(self.id_list()[id_list])
+            
+        if not ax:
+            ax=pylab.subplot(111)
+            
+        subplot=ax
+        id_list   = self._AnalogSignalList__sub_id_list(id_list)
+        time_axis = self.time_axis()  
+        xlabel = "Time (ms)"
+        ylabel = "Membrane Potential (mV)"
+        set_labels(subplot, xlabel, ylabel)
+        for id in id_list:
+            to_be_plot = self.analog_signals[id].signal
+            if v_thresh is not None:
+                to_be_plot = pylab.where(to_be_plot>=v_thresh-0.02, v_thresh+0.5, to_be_plot)
+            if len(time_axis) > len(to_be_plot):
+                time_axis = time_axis[:-1]
+            if len(to_be_plot) > len(time_axis):
+                to_be_plot = to_be_plot[:-1]
+                
+            if len(time_axis)!=len(to_be_plot):
+                time_axis=numpy.linspace(time_axis[0],time_axis[-1], 
+                                         len(to_be_plot))
+                   
+            
+            subplot.plot(time_axis, to_be_plot, **kwargs)
+            subplot.hold(1)       
+#             
+#     def time_axis(self, normalized=False):
+#         """
+#         Return the time axis of the AnalogSignal
+#         """
+#         return numpy.linspace(self.t_stop,self.t_stop, self.signal_length)
+# #         return numpy.arange(self.t_start-norm, self.t_stop-norm, self.dt) 
+#          
 class MySpikeList(SpikeList):
     """
     MySpikeList(spikes, id_list, t_start=None, t_stop=None, dims=None)
@@ -562,7 +669,8 @@ class MySpikeList(SpikeList):
         
         time_bin=int(1000/fs)
         
-        ids1, ids2=shuffle(*[self.id_list,other.id_list],**{'sample':sample})
+        ids1, ids2=shuffle(*[self.id_list, other.id_list],
+                           **{'sample':sample})
                
         sl1=self.id_slice(ids1)
         sl2=other.id_slice(ids2)
@@ -600,7 +708,7 @@ class MySpikeList(SpikeList):
                 'x':x,
                 'y':mr, }
 
-    
+     
     def get_mean_rates(self, run=1, **kwargs):
         
         y=numpy.array(self.mean_rates(**kwargs)) 
@@ -770,6 +878,7 @@ class MySpikeList(SpikeList):
         See also:
             concatenate, append, __setitem__
         """
+
         super( MySpikeList, self ).merge(spikelist, relative)
 
         self.t_start=numpy.min([v.t_start for v in self.spiketrains.values()])
@@ -1228,7 +1337,8 @@ class MySpikeList(SpikeList):
 
     def time_axis_centerd(self, time_bin):
         x=self.time_axis(time_bin) 
-        return numpy.linspace(time_bin/2., x[-1]-time_bin/2., len(x)-1)
+        
+        return numpy.linspace(x[0]+time_bin/2., x[-1]-time_bin/2., len(x)-1)
     
 class BaseListMatrix(object):
     ''' 
@@ -1236,17 +1346,41 @@ class BaseListMatrix(object):
     Made up of a 2d array of signal objects. Take the signals
     obejcts as instance variables (dependancy injection).
     '''
-    def __init__(self, list2d, *args, **kwargs):
+    def __init__(self, o, *args, **kwargs):
         
-        self.m = list2d_to_numpy_array(list2d)
+        self.m = to_numpy_2darray(o)
         
         self.attr=None 
         self.allowed=kwargs.get('allowed',[])
 
+#     @property
+#     def m(self):
+#         if self._m.shape(1,1):
+#             return self._m[0,0]
+#         else: 
+#             return self._m
+#         pass
+#     
+#     @m.setter
+#     def m(self, val):
+#         self._m=val
+
     @property
     def shape(self):
         return self.m.shape
+    
+    def __getitem__(self, key):
         
+        m=numpy.matrix(self.m)
+        m=m.__getitem__(key)
+        if type(m)!=numpy.matrix:
+            _m=numpy.empty((1,1), dtype=object)
+        
+            _m[0,0]=m
+            m=_m
+        m=numpy.array(m)
+        return self.__class__(m)       
+    
     def __getattr__(self, name):
         if name in self.allowed:
             self.attr=name
@@ -1264,29 +1398,44 @@ class BaseListMatrix(object):
     def __iter__(self):
         for i,j,obj in iter2d(self.m):
             yield i,j,obj
-        
-    def __repr__(self):
-        return self.__class__.__name__+':'+str([str(d) for d in self.m]) 
 
+    def __repr__(self):
+        return self.__class__.__name__+':\n'+str(self.m) 
+    
+        
     def _caller(self, *args, **kwargs):
-        a=numpy.empty(shape=self.shape, dtype=object)
         
         other=kwargs.get('other', None)
+        if other:    
+            o=other.merge(axis=0)
+            o=o.merge(axis=1)        
+            kwargs['other']=o.m[0,0]
         
-        for i, j, obj in self:
-            call=getattr(obj, self.attr)
-            kwargs['run']=i
-            
-            # For relation between to matricies
-            if other:
-                kwargs['other']=other.get_m(i,j)
-            
-            d=call(*args, **kwargs)
-            if type(d)==tuple:
-                d=list(d)
-            a[i,j]=d
+        w=self.merge(axis=0)
+        w=w.merge(axis=1)    
+        
+        call=getattr(w.m[0,0], self.attr)
+        d=call(*args, **kwargs)
+        return d
+        
+#         a=numpy.empty(shape=self.shape, dtype=object)
+#         
+#         other=kwargs.get('other', None)
+#         
+#         for i, j, obj in self:
+#             call=getattr(obj, self.attr)
+#             kwargs['run']=i
+#             
+#             # For relation between to matricies
+#             if other:
+#                 kwargs['other']=other.get_m(i,j)
+#             
+#             d=call(*args, **kwargs)
+#             if type(d)==tuple:
+#                 d=list(d)
+#             a[i,j]=d
                
-        return a
+#        return a
 
     def concatenate(self, a, *args, **kwargs):
         
@@ -1294,10 +1443,10 @@ class BaseListMatrix(object):
         m=transpose_if_axis_1(axis, self.m)
         
         s='Wrong length. List need to be {}'
-        assert len(a)==m.shape[1], s.format(m.shape[1])
+        assert a.shape[1]==m.shape[1], s.format(m.shape[1])
         
-        a = list2d_to_numpy_array(a)
-        m=numpy.concatenate((m,a), axis=0)
+#         a = to_numpy_2darray(a)
+        m=numpy.concatenate((m,a.m), axis=0)
         
         self.m=transpose_if_axis_1(axis, m)
     def get_m(self, i,j):
@@ -1309,19 +1458,40 @@ class VmListMatrix(BaseListMatrix):
     def __init__(self, matrix, *args, **kwargs):
         super( VmListMatrix, self ).__init__( matrix, *args,
                                                             **kwargs)
-        self.allowed=kwargs.get('allowed',['get_voltage_trace',
+        self.allowed=kwargs.get('allowed',['plot', 
+                                           'get_voltage_trace',
                                            ]) 
+    def merge(self, axis=0, *args, **kwargs):
 
+        m=transpose_if_axis_1(axis, self.m)
+            
+        'merge along rows'
+        a=numpy.empty(shape=(1,m.shape[1]), dtype=object)
+        a[0,:]=deepcopy(m[0,:])
+            
+        for i in xrange(1, m.shape[0]):
+            for j in xrange(m.shape[1]):
+                call=getattr(a[0,j], 'merge')
+                call(m[i,j])
+        
+        a=transpose_if_axis_1(axis, a)
+        a=[list(aa) for aa in a]
+        
+        return SpikeListMatrix(a)
+    
 class SpikeListMatrix(BaseListMatrix):
     def __init__(self, matrix, *args, **kwargs):
         
-        super( SpikeListMatrix, self ).__init__( matrix, *args,
-                                                        **kwargs)
-        self.allowed=kwargs.get('allowed',['firing_rate',
+        super( SpikeListMatrix, self ).__init__( matrix, *args, **kwargs)
+        
+        self.allowed=kwargs.get('allowed',[#'as_spike_list',
+                                           'firing_rate',
                                            'get_firing_rate',
                                            'get_isi',
+                                           'get_isi_IF',
                                            'get_mean_coherence',
                                            'get_mean_rate',
+                                           'get_mean_rate_parts',
                                            'get_mean_rates', 
                                            'get_raster',
                                            'get_phase',
@@ -1334,21 +1504,54 @@ class SpikeListMatrix(BaseListMatrix):
                                            'merge',
                                            'my_raster',
                                            ])   
-            
-            
+    
+    
 
+        
+#     def __getslice__(self, key):
+#         return SpikeListMatrix(self.m[key])
+    def as_spike_list(self):
+        return self.merge(axis=0).merge(axis=1).m[0,0]    
+      
     def get_raster(self, *args, **kwargs):
         
         self.attr='get_raster'
         l=self._caller(*args, **kwargs)
         
-        n=0
-        for d in l.ravel():
-            d['ids']+=n
-            d['x']+=n
-            n+=len(d['ids'])
+#         n=0
+#         for d in l.ravel():
+#             d['ids']+=n
+#             d['x']+=n
+#             n+=len(d['ids'])
         return l
+    def get_isi_parts(self, run=1, **kwargs): 
+        w=self.merge(axis=1)
+        x=numpy.zeros(w.m.shape)
+        y=numpy.empty(w.m.shape, dtype=object)
+        id_list=[]
+        for i,j, obj in iter2d(w.m):
+            x[i,j]=i
+            y[i,j]=obj.isi(**kwargs)
+            id_list=set(id_list).union(obj.id_list) 
+            
+               
+        return {'ids':id_list,
+                'x':x,
+                'y':y}
 
+    def get_mean_rate_parts(self, **kwargs):
+        w=self.merge(axis=1)
+        x=numpy.zeros(w.m.shape)
+        y=numpy.zeros(w.m.shape)
+        id_list=[]
+        for i,j, obj in iter2d(w.m):
+            x[i,j]=i
+            y[i,j]=obj.mean_rate(**kwargs)
+            id_list=set(id_list).union(obj.id_list) 
+            
+        return {'ids':list(id_list),
+                'y':y.ravel(), 
+                'x':x.ravel()}  
 
     def merge(self, axis=0, *args, **kwargs):
 
@@ -1374,9 +1577,18 @@ def iter2d(m):
         for j in xrange(m.shape[1]):
             yield i, j, m[i,j]
 
-def list2d_to_numpy_array(m):
+def to_numpy_2darray(m):
+
+    if type(m) is numpy.ndarray:
+        if len(m.shape)==1:
+            m=list(m)
+        else:
+            m=[list(mm) for mm in m]
 
     #if not 2d make
+    
+    if type(m)!=list:
+        m=[m]
     if type(m[0])!=list:
         m=[m]
         
@@ -1443,22 +1655,30 @@ def dummy_data(flag, **kwargs):
     n_events=kwargs.get('n_events', 50)    
     n_pop=kwargs.get('n_pop', 10)
     n_sets=kwargs.get('n_sets', 3)
+    reset=kwargs.get('reset',False)
     run=kwargs.get('run',0)
     scale=kwargs.get('scale',2)
     set=kwargs.get('set',0)
     set_slice=misc.my_slice(set, n_pop, n_sets)
     shift=kwargs.get('shift',0.)
     sim_time=kwargs.get('sim_time', 1000.0)
-    start=int(sim_time*run)
-    stop=int(sim_time*(1+run))
-    V_rest=kwargs.get('V_rest', 60.0)
     
+    
+    if not reset:
+        start=int(sim_time*run)
+        stop=int(sim_time*(1+run))
+    else:
+        start=int(0)
+        stop=int(sim_time)
+        
+    V_rest=kwargs.get('V_rest', 60.0)
+    ids=range(n_pop)[set_slice.get_slice()]
     if flag=='spike':
         
     
         n_events=(n_events+40*run+20*set)*sim_time/1000.0
         n=numpy.random.randint(int(n_events*0.8), n_events)
-        ids=range(n_pop)[set_slice.get_slice()]
+
         
         
         i, t=[],[]#numpy.array(sw(ids,n_events))
@@ -1488,7 +1708,7 @@ def dummy_data(flag, **kwargs):
         ids_events=numpy.array(ids_events, int)  
         signals=zip(numpy.ravel(ids_events), numpy.ravel(y))
  
-        l=MyVmList(signals, range(n_pop), 1, t_start=start, t_stop=stop)
+        l=MyVmList(signals, ids, 1, t_start=start, t_stop=stop)
         
     return l
 
@@ -1556,6 +1776,13 @@ class TestSpikeListMatrix(unittest.TestCase):
         slc=SpikeListMatrix(self.spike_lists) 
         #print slc
 
+    def test_10_item(self):
+        slc=SpikeListMatrix(self.spike_lists) 
+        self.assertEqual(slc[0:2,0:2].shape, (2,2))
+        self.assertEqual(slc[0:2,0].shape, (2,1))
+        self.assertEqual(slc[0,0:2].shape, (1,2))
+        self.assertEqual(slc[0,0].shape, (1,1))
+
     def test_2_calls_wrapped_class(self):
         other=SpikeListMatrix(self.spike_lists)
         calls=[
@@ -1570,6 +1797,7 @@ class TestSpikeListMatrix(unittest.TestCase):
                                           'sample':2.,
                                       }],
                ['get_mean_rate', [],{}],
+               ['get_mean_rate_parts',[],{}],
                ['get_mean_rates',[],{}],
                ['get_psd', [256,1000.0],{}],
                ['get_phase', [10,20,3,1000.0],{}],
@@ -1601,7 +1829,7 @@ class TestSpikeListMatrix(unittest.TestCase):
                         'get_mean_rate',
                         'get_mean_rates'
                         ]:
-                d=r[-1][0,0]
+                d=r[-1]
                 self.assertEqual(d['x'].shape, d['y'].shape) 
         
     def test_3_class_methods(self):

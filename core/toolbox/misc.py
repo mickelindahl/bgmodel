@@ -276,42 +276,6 @@ def _convolve(binned_data, bin_extent=1, kernel_type='triangle', axis=0,
         conv_data=conv_data.transpose()
     return conv_data
 
-
-def dict_depth(d, depth=1):
-    if not isinstance(d, dict) or not d:
-        return depth
-    return max(dict_depth(v, depth+1) for k, v in d.iteritems())
-
-def dict_haskey(dic, keys):
-        
-        '''recursively merges dict's. not just simple a['key'] = b['key'], if
-        both a and b have a key who's value is a dict then dict_merge is called
-        on both values and the result stored in the returned dictionary.'''
-        if len(keys)==0:
-            return True
-        
-        #dic=deepcopy(dic)
-        if keys[0] in dic.keys():
-            val=dict_haskey(dic[keys[0]], keys[1:])
-        else:
-            val=False
-        
-        return val 
-
-def dict_merge(a, b):
-    '''recursively merges dict's. not just simple a['key'] = b['key'], if
-    both a and b have a key who's value is a dict then dict_merge is called
-    on both values and the result stored in the returned dictionary.'''
-    if not isinstance(b, dict):
-        return b
-    result = deepcopy(a)
-    for k, v in b.iteritems():
-        if k in result and isinstance(result[k], dict):
-                result[k] = dict_merge(result[k], v)
-        else:
-            result[k] = deepcopy(v)
-    return result           
-
 def dict_recursive_add(dic, keys, val):
         
         '''recursively merges dict's. not just simple a['key'] = b['key'], if
@@ -332,9 +296,36 @@ def dict_recursive_add(dic, keys, val):
             dic[keys[0]]={}
             dic[keys[0]]=dict_recursive_add(dic[keys[0]], keys[1:], val )
         
-        return dic   
+        return dic  
+     
+def dict_depth(d, depth=1):
+    if not isinstance(d, dict) or not d:
+        return depth
+    return max(dict_depth(v, depth+1) for k, v in d.iteritems())
 
+def dict_haskey(dic, keys):
+        
+        '''recursively merges dict's. not just simple a['key'] = b['key'], if
+        both a and b have a key who's value is a dict then dict_merge is called
+        on both values and the result stored in the returned dictionary.'''
+        if len(keys)==0:
+            return True
+        
+        #dic=deepcopy(dic)
+        if keys[0] in dic.keys():
+            val=dict_haskey(dic[keys[0]], keys[1:])
+        else:
+            val=False
+        
+        return val 
+    
 def dict_recursive_get(dic, keys):
+    try:
+        return _dict_recursive_get(dic, keys)
+    except KeyError:
+        raise KeyError(dict_key_error_msg(dic, keys))
+
+def _dict_recursive_get(dic, keys):
         
         '''recursively merges dict's. not just simple a['key'] = b['key'], if
         both a and b have a key who's value is a dict then dict_merge is called
@@ -347,10 +338,77 @@ def dict_recursive_get(dic, keys):
             val=dict_recursive_get(dic[keys[0]], keys[1:])
         else:
             #val=None
-            raise KeyError('key {} do not exist'.format(keys))
+            raise KeyError()
         return val   
 
+
+def dict_iter(d):
+    stack = d.items()
+    while stack:
+        s=stack.pop()
+        k=list(s[:-1])
+        v=s[-1]
+        if isinstance(v, dict) and v:
+            e=[tuple(k+[kk,vv]) for kk,vv in v.iteritems()]
+            stack.extend(e)
+        else:
+            yield k,v    
+            
+def dict_key_error_msg(d, keys):
+
+        
+        k2=[]
+        while keys:
+            if dict_haskey(d, keys):
+                break
+            else:
+                k2.insert(0, keys[-1])
+                del keys[-1]
+        s='Mapping '
+        for k in k2:
+            s+="['{}']".format(k)
+        s+=' does not exist in '
+                        
+        s+='dic'
+        if keys:
+            for k in keys:
+                s+="['{}']".format(k)
+        else:
+            s+=' none'
+        return s
+        
+
+def dict_merge(a, b):
+    '''recursively merges dict's. not just simple a['key'] = b['key'], if
+    both a and b have a key who's value is a dict then dict_merge is called
+    on both values and the result stored in the returned dictionary.'''
+    if not isinstance(b, dict):
+        return b
+    result = deepcopy(a)
+    for k, v in b.iteritems():
+        if k in result and isinstance(result[k], dict):
+                result[k] = dict_merge(result[k], v)
+        else:
+            result[k] = deepcopy(v)
+    return result           
+
+
+
+def dict_recursive_set(dic, keys, val):
+    '''set the value val in dic at mapping keys. keys has to be
+    a enrty in the dic'''
+    if not dict_haskey(dic, keys):
+        raise KeyError(dict_key_error_msg(dic, keys))
+    else:
+        return dict_recursive_add(dic, keys, val)
+    
 def dict_apply_operation(d, keys, val, op='='):
+    try:
+        return _dict_apply_operation(d, keys, val, op) 
+    except KeyError:
+        raise KeyError(dict_key_error_msg(d, keys))
+    
+def _dict_apply_operation(d, keys, val, op='='):
         
     '''recursively merges dict's. not just simple a['key'] = b['key'], if
     both a and b have a key who's value is a dict then dict_merge is called
@@ -380,17 +438,14 @@ def dict_update(d, u, skip=False, skip_val=None, no_mapping_change=False):
                     
             d[k] = r
         else:
-            if skip and(d[k]==skip_val):
+
+            if (k in d.keys()) and skip and (d[k]==skip_val) :
                 pass
 
             elif no_mapping_change and (d=={}):
-                #if d=={}:# or isinstance(d[k], collections.Mapping):
                 pass
             else:
-             #   try:
-                    d[k] = u[k]
-              #  except:
-               #     print 'h'
+                d[k] = u[k]
     return d
 
 def dict_reduce(dic_in, dic_out, s='', deliminator='.'):
@@ -415,17 +470,7 @@ def dict_slice(d, keys):
     return dict(zip(keys,m)) 
 
 
-def dict_iter(d):
-    stack = d.items()
-    while stack:
-        s=stack.pop()
-        k=list(s[:-1])
-        v=s[-1]
-        if isinstance(v, dict):
-            e=[tuple(k+[kk,vv]) for kk,vv in v.iteritems()]
-            stack.extend(e)
-        else:
-            yield k,v
+
 
 def sigmoid(p,x):
         x0,y0,c,k=p
@@ -944,7 +989,14 @@ class TestModule_functions(unittest.TestCase):
 
         d2={1:None, 2:None}
         self.assertDictEqual(dict_update(d2, d1, no_mapping_change=True), d2)   
-             
+        
+        d1={1:{1:1,
+               2:{1:1}},
+            2:{1:1,
+               2:{1:1}}}
+        d5={1:{3:{1:1}}}
+        dict_update(d1, d5, skip=True)    
+         
     def test_dict_apply_operation(self):
         d1={1:{1:2}}
         
@@ -966,10 +1018,19 @@ class TestModule_functions(unittest.TestCase):
 
     def test_dict_iter(self):
         d={'a':{'b':{'c':1, 'd':2}, 
-                'e':{'f':3, 'g':{'h':{'i':{'bu':5}, 'j':6}}}}, 
-           'k':{'l':5, 'm':6}}
-             
+                'e':{'f':3}},
+           'g':{}}
+        l1,l2=[],[]
+        for k, v in dict_iter(d):
+            l1.append(k)
+            l2.append(v)
 
+        self.assertListEqual(l1, [['g'], 
+         ['a', 'e', 'f'], 
+         ['a', 'b', 'd'], 
+         ['a', 'b', 'c']])
+        self.assertListEqual(l2,[{},3,2,1])
+        
     def test_dict_recursive_get(self):
         d={'a':{'b':{'c':1, 'd':2}, 
                 'e':{'f':3, 'g':{'h':{'i':{'bu':5}, 'j':6}}}}, 
@@ -978,6 +1039,21 @@ class TestModule_functions(unittest.TestCase):
         val=dict_recursive_get(d, ['a','b','c'])
         self.assertEqual(val, 1)
         self.assertRaises(KeyError, dict_recursive_get, d, ['a','b','z'])
+        
+    def test_dict_recrsive_add(self):
+        d1={'a':{'b':1}}
+        d2={'a':{'b':1,
+                 'c':2,}}
+        d1=dict_recursive_add(d1, ['a','c'], 2 )
+        self.assertDictEqual(d1, d2)
+       
+    def test_dict_recrsive_set(self):
+        d1={'a':{'b':1}}
+        d2={'a':{'b':2}}
+        d1=dict_recursive_add(d1, ['a','b'], 2 )
+        self.assertDictEqual(d1, d2)
+        self.assertRaises(KeyError, dict_recursive_set, d1, ['a','c'], 1)
+        
         
 if __name__ == '__main__':
     

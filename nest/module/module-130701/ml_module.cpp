@@ -195,7 +195,11 @@ mynest::Ml_Module::~Ml_Module()
        The first argument is always a reference to the network.
        Return value is a handle for later unregistration.
     */
-    nest::register_model<iaf_cond_alpha_bias>(nest::NestModule::get_network(),
+
+//	nest::register_model<pif_psc_alpha>(nest::NestModule::get_network(),
+//	                                                "iaf_cond_alpha_bias");
+//
+	nest::register_model<iaf_cond_alpha_bias>(nest::NestModule::get_network(),
                                                 "iaf_cond_alpha_bias");
     nest::register_model<izhik_cond_exp>(nest::NestModule::get_network(),
                                                 "izhik_cond_exp");
@@ -209,8 +213,14 @@ mynest::Ml_Module::~Ml_Module()
     */
     nest::register_prototype_connection<BCPNNConnection>(nest::NestModule::get_network(), 
                                                        "bcpnn_synapse");
-    nest::register_prototype_connection<BCPNNDopaConnection>(nest::NestModule::get_network(),
-                                                       "bcpnn_dopamine_synapse");    /* Register a SLI function.
+/*    nest::register_prototype_connection<BCPNNDopaConnection>(nest::NestModule::get_network(),
+                                                       "bcpnn_dopamine_synapse");*/
+
+    nest::register_prototype_connection_commonproperties <BCPNNDopaConnection,
+                                                    BCPNNDopaCommonProperties
+                                                   > (nest::NestModule::get_network(),
+                                                		   "bcpnn_dopamine_synapse");
+    /* Register a SLI function.
        The first argument is the function name for SLI, the second a pointer to
        the function object. If you do not want to overload the function in SLI,
        you do not need to give the mangled name. If you give a mangled name, you

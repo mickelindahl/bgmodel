@@ -107,6 +107,34 @@ def CC( pre,  post,
                 w = [ wj for wj in wghts[ i ] ]
             	ConvergentConnect( pre, [ post_id ], weight = w, 
                                         delay = d, model = m )                   
+
+
+def GetConn(soruces, targets):    
+    c=[]
+    
+    for s in soruces:
+        for t in targets:
+            c.extend(nest.GetStatus(nest.FindConnections([s], [t])))     
+    return c
+
+def GetConnProp(soruces, targets, prop_name):
+    c=GetConn(soruces, targets)                                        
+    w=[]
+    for conn in c:
+        if prop_name in conn.keys():
+            w.append(conn[prop_name])
+        else:
+            w.append(numpy.NaN)
+    return w
+
+# def GetDopamine(soruces, targets):
+#     c=GetConn(soruces, targets)                                                 
+#     w=[]
+#     for conn in c:
+#         w.append(conn['n'])
+#     return w
+# 
+#     return w
     
 def DC( pre, post,
         params = { 'd_mu'  : [], 'w_mu'  : [], 'd_rel_std' : 0.0, 'w_rel_std' : 0.0 }, 

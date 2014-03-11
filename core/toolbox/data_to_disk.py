@@ -150,7 +150,8 @@ def pickle_save(data, fileName):
 
 
     mkdir('/'.join(fileName.split('/')[0:-1]))    
-    if 4<len(fileName) or fileName[-4:]!='.pkl':
+    
+    if 4<len(fileName) and fileName[-4:]!='.pkl':
         fileName=fileName+'.pkl'
     f=open(fileName, 'wb') #open in binary mode
     
@@ -160,12 +161,6 @@ def pickle_save(data, fileName):
     #cPickle.dump(data, f, -1)
     
     f.close()
-
-
-def pickle_save_groups(group_list, fileName):
-    fileName=fileName+'-'+str(nest.Rank())
-    pickle_save(group_list, fileName)
-
     
 def pickle_load(fileName):
     '''
@@ -181,69 +176,6 @@ def pickle_load(fileName):
     #data=cPickle.load(f) 
     f.close()
     return data
-
-
-def pickle_load_groups(file_name):
-    path='/'.join(file_name.split('/')[0:-1])
-    name=file_name.split('/')[-1]
-    fileNames = read_f_name( path, contain_string=name )
-    
-    check_parts=pickle_load(path+'/'+fileNames[0])
-    parts=[]   
-    for name in fileNames:
-        if isinstance(check_parts[0],list):
-            parts.append(pickle_load(path+'/'+name))
-        else:
-            # Put it in a list
-            parts.append([pickle_load(path+'/'+name)])
-    
-    # To put merge parts groups in 
-    groups=parts[0]   
-
-    # Find what data is recorded from    
-    recorded_from=parts[0][0][0].signals.keys() 
-  
-    # Iterate over groups
-    for j in range(len(parts[0])):
-        for k in range(len(parts[0][0])) :   
-            group=parts[0][j][k]
-                       
-            # For each recordable
-            for recordable in recorded_from:                                           
-                
-                if 'spikes' == recordable:
-                    
-                    spk_signal=group.signals[recordable]
-                    
-                    # Iterate over parts and merge spike data
-                    # Only happens for mpi data
-                    
-                    for i_part in range(1, len(parts[1:])+1):
-                        group_k = parts[i_part][j][k]
-                        add_spk_signal = group_k.signals[recordable]
-                        spk_signal.merge(add_spk_signal)
-                        
-                    group.signals[recordable] = spk_signal
-                
-                # Must be analog signal    
-                else:
-                    
-                    ag_signal=group.signals[recordable]
-                    
-                    # Iterate over parts and merge analog data
-                    # Only happens for mpi data
-                    for i_part in range(1, len(parts[1:])+1):
-                        group_k = parts[i_part][j][k]
-                        ag_signal_k = group_k.signals[recordable]
-                        
-                        for id, signal in ag_signal_k.analog_signals.iteritems():
-                            ag_signal.append(id, signal)
-                    
-                    group.signals[recordable] = ag_signal
-                    
-                groups[j][k]=group
-    
-    return groups         
 
 
 def text_save(data, fileName):

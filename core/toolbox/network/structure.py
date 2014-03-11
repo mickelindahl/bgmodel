@@ -18,6 +18,9 @@ from toolbox.misc import my_slice
 import unittest
 import pylab
 
+from os.path import expanduser
+HOME = expanduser("~")
+HOME_PATH=(HOME+'/results/papers/inhibition')
 
 class Dic(object):
     
@@ -72,8 +75,8 @@ class Base_dic(Dic):
 
 class Surface(Dic):
     '''
-    As represents either group of input nodes, neuron model nodes, 
-    or background nodes. It has different properties that define
+    As represents either group of input surfs, neuron model surfs, 
+    or background surfs. It has different properties that define
     it, such as extent, edge_wrap, neuron model, number of neurons. 
     '''
     def __init__(self, name, **kwargs):
@@ -166,7 +169,7 @@ class Surface(Dic):
      
     def _apply_kernel(self, idx, fan):
         '''
-        Pickes out n nodes from the pool such that it approximately equals the
+        Pickes out n surfs from the pool such that it approximately equals the
         fan. 
         idx - the set of pool the idx to considered
         fan - governs the probability of connections. Approximately fan 
@@ -275,20 +278,23 @@ class Population_dic(Base_dic):
         self.recorded_models=kwargs.get('recorded_models',[])
         
     def __str__(self):
-        s='\n****************\nSurface info\n****************'
-        s+='\n{0:14}{1}'.format('Total number:', self.size)
-        s+='\n{0:14}'.format('By node:')
         
-        text_lists=[]
-        for struc in sorted(self.dic.values(), key=lambda x:x.name):
-            text_lists.append('{0:>5}:{1:<8}'.format(struc.name, len(struc.conn_pre)))
-        n=len(text_lists)
-        text_lists=[text_lists[i:n:6] for i in range(6)] 
-
-        for i, text_list in enumerate(text_lists):
-            if i==0: pass
-            else:s+='\n{0:14}'.format('')
-            s+=''.join(text_list)
+        import pprint
+        s=pprint.pformat(self.dic)
+#         s='\n****************\nSurface info\n****************'
+#         s+='\n{0:14}{1}'.format('Total number:', self.size)
+#         s+='\n{0:14}'.format('By node:')
+#         
+#         text_lists=[]
+#         for struc in sorted(self.dic.values(), key=lambda x:x.name):
+#             text_lists.append('{0:>5}:{1:<8}'.format(struc.name, len(struc.conn_pre)))
+#         n=len(text_lists)
+#         text_lists=[text_lists[i:n:6] for i in range(6)] 
+# 
+#         for i, text_list in enumerate(text_lists):
+#             if i==0: pass
+#             else:s+='\n{0:14}'.format('')
+#             s+=''.join(text_list)
         
         return s
     
@@ -353,7 +359,7 @@ class Conn(Dic):
     
     Convergent connection:
     When creating a divergent connection, each node in the source units 
-    is visited in turn and selects target nodes from the target units. Masks, kernels,
+    is visited in turn and selects target surfs from the target units. Masks, kernels,
     and boundary conditions are applied in the target units
          
     Divergent connection:               
@@ -367,8 +373,8 @@ class Conn(Dic):
     def __init__(self, name, **kwargs):
         
         #self.dic=par['conn'][name]
-        self.delay_setup=kwargs.get('delay_setup', {'type':'constant', 
-                                                    'params':1.0})
+        self.delay=kwargs.get('delay', {'type':'constant', 
+                                              'params':1.0})
         self.fan_in=kwargs.get('fan_in', 10)
         self.name=name            
         self.netw_size=kwargs.get('netw_size', 'unknown')
@@ -376,12 +382,14 @@ class Conn(Dic):
         self.pre=[]
         self.post=[]
         self.rule=kwargs.get('rule','all-all')
+
         self.sets=[]    
-        self.save_path=(kwargs.get('save_path', '~/temp/unittest/conn'))
+        self.source=kwargs.get('source', 'C0')
         self.syn=kwargs.get('syn', 'CO_M1_ampa') # nest 
+        self.target=kwargs.get('target', 'CO')
         self.tata_dop=kwargs.get('tata_dop', 0.8)
-        self.weight_setup=kwargs.get('weight_setup', {'type':'constant', 
-                                                      'params':1.0})
+        self.weight=kwargs.get('weight', {'type':'constant', 
+                                                'params':1.0})
     @property
     def n(self):
         return len(self.pre)
@@ -400,12 +408,12 @@ class Conn(Dic):
     def _add_connections(self, d_slice, p_slice, driver, pool, fan_in, 
                          flag='Convergent'):
         '''
-        For each node driver not nodes from the pool is considered 
+        For each node driver not surfs from the pool is considered 
         '''
         
-        # For each driver as set of pool nodes considered depending on
+        # For each driver as set of pool surfs considered depending on
         # driver position and allowed idx. Then the fan governs the probability
-        # of makeing a connection to the set of pool nodes.
+        # of makeing a connection to the set of pool surfs.
         d_idx=driver.get_idx(d_slice)
         p_idx=pool.get_idx(p_slice)
         d_pos=driver.get_pos(d_slice)
@@ -416,7 +424,7 @@ class Conn(Dic):
         fun_sum=lambda x,y: list(x)+list(y)
         fun_mul=lambda x,y: (x,)*y 
 
-        #nodes=[gc(pool.get_pos(v), *a, **k) for v in p_idx]
+        #surfs=[gc(pool.get_pos(v), *a, **k) for v in p_idx]
         
         
         n=len(d_idx)#pool.get_n()
@@ -456,7 +464,7 @@ class Conn(Dic):
 
                  
     def get_delays(self):
-        x=self.delay_setup
+        x=self.delay
         if 'constant' == x['type']:
             return numpy.ones(self.n)*x['params']
         elif 'uniform' == x['type']:
@@ -480,7 +488,7 @@ class Conn(Dic):
         return self.name.split('_')[1]
     
     def get_weights(self):
-        x=self.weight_setup
+        x=self.weight
         if 'constant' == x['type']:
             return numpy.ones(self.n)*x['params']
         if 'uniform' == x['type']:
@@ -497,18 +505,27 @@ class Conn(Dic):
     
 
     
-    def set(self, driver, pool, save_mode=True, display_print=True):
+    def set(self, surfs, path, save_mode=True, display_print=True):
         t=time.time()
         
-        if save_mode and os.path.isfile(self.save_path+'.pkl'): 
-            d=data_to_disk.pickle_load(self.save_path)
+        
+        # Convergent connections when driver = target and  pool = source.
+        # The for each node driver not surfs from the pool is considered
+        
+        # Divergent connections when driver = source and  pool = target.
+        # The for each node driver not surfs from the pool is considered
+        driver=surfs[self.target]
+        pool=surfs[self.source]
+        
+        if save_mode and os.path.isfile(path+'.pkl'): 
+            d=data_to_disk.pickle_load(path)
             self.pre, self.post, self.sets=d
         
         else:
             self._set(driver, pool)
             if save_mode:
                 data_to_disk.pickle_save([self.pre, self.post, 
-                                          self.sets], self.save_path)         
+                                          self.sets], path)         
                    
         t=time.time()-t
         if display_print:
@@ -522,14 +539,14 @@ class Conn(Dic):
     
     def _set(self, driver, pool):   
         '''
-        For each node driver not nodes from the pool is considered
+        For each node driver nodes from the pool is considered
         '''   
         fan_in=self.get_fan_in(driver)
         args=[driver, pool, fan_in]
         if self.rule=='1-1':
             # Each presynaptic node connects to only one postsynaptic node.
             if driver.get_n()!=pool.get_n(): 
-                raise Exception(('number of pre nodes needs to'
+                raise Exception(('number of pre surfs needs to'
                                  + 'equal number of post'))
             self.pre, self.post= driver.get_idx(), pool.get_idx()
 
@@ -596,26 +613,32 @@ class Conn_dic(Base_dic):
         self.dic[a[0]]=the_class(*a, **k)
 
 
-def build(params_nest, params_node, params_pop):   
-    nodes=create_struc(params_node)
-    pops=create_pops(params_nest, params_pop)      
-    return nodes, pops
+def build(params_nest, params_surf, params_popu):   
+    surfs=create_surfaces(params_surf)
+    popus=create_populations(params_nest, params_popu)      
+    return surfs, popus
 
-def connect(pops, nodes, params_nest, params_conn, save_path, display_print=False):
-    conns=create_conns(nodes, params_conn, save_path, display_print=False)
-    connect_conns(params_nest, conns, pops, display_print)
+def connect(popus, surfs, params_nest, params_conn, path_conn, display_print=False):
+    for source in popus:
+        if not isinstance(source, my_population.VolumeTransmitter):
+            continue
+        name=source.get_syn_target()
+        my_nest.MyCopyModel( params_nest[name], name)
+        my_nest.SetDefaults(name, {'vt':source.ids[0]}) 
+    
+    conns=create_connections(surfs, params_conn, path_conn, display_print=False)
+    connect_conns(params_nest, conns, popus, display_print)
+    return conns
 
-
-
-def connect_conns(params_nest, conns, pops, display_print=False):
+def connect_conns(params_nest, conns, popus, display_print=False):
     for c in conns:
         if display_print:
             print 'Connecting '+str(c)
         my_nest.MyCopyModel( params_nest[c.get_syn()], c.get_syn())
         #c.copy_model( params_nest )
                     
-        sr_ids=numpy.array(pops[c.get_source()].ids)
-        tr_ids=numpy.array(pops[c.get_target()].ids)
+        sr_ids=numpy.array(popus[c.get_source()].ids)
+        tr_ids=numpy.array(popus[c.get_target()].ids)
 
         weights=list(c.get_weights())
         delays=list(c.get_delays())
@@ -624,47 +647,45 @@ def connect_conns(params_nest, conns, pops, display_print=False):
 
         my_nest.Connect(pre, post , weights, delays, model=c.get_syn())    
 
-def create_pops(params_nest, params_pop):
-    #! Create input nodes
-    pops=Population_dic()
-    for name in params_pop.keys():
+def create_populations(params_nest, params_popu):
+    #! Create input surfs
+    popus=Population_dic()
+    for name in params_popu.keys():
  
-        model=params_pop[name]['model']
+        model=params_popu[name]['model']
         my_nest.MyCopyModel( params_nest[model], model)
       
         args=[name]
-        kwargs=deepcopy(params_pop[name])                            
-        pops.add(*args, **kwargs)
+        kwargs=deepcopy(params_popu[name])                            
+        popus.add(*args, **kwargs)
             
-    return pops
+    return popus
 
-def create_conns(nodes, params_conn, save_path, display_print=False):
+def create_connections(surfs, params_conn, path, display_print=False):
     conns=Conn_dic()
     for k,v in params_conn.iteritems(): 
         
-        source=v['source']
-        target=v['target']
-        #kwargs={'source':source, 'target':target}
-        v['save_path']=save_path
         conns.add(k, **v)
         
-        # Convergent connections when driver = target and  pool = source.
-        # The for each node driver not nodes from the pool is considered
-        
-        # Divergent connections when driver = source and  pool = target.
-        # The for each node driver not nodes from the pool is considered
-        conns[k].set(driver=nodes[target], 
-                     pool=nodes[source],
-                     save_mode=False, 
-                     display_print=False)
+        conns[k].set(surfs, path, save_mode=False, display_print=False)
     return conns      
       
-def create_struc(params_node):
-    nodes=Surface_dic()       
-    for k,v in params_node.iteritems(): 
-        nodes.add(k, **v)
-    return nodes
+def create_surfaces(params_surf):
+    surfs=Surface_dic()       
+    for k,v in params_surf.iteritems(): 
+        surfs.add(k, **v)
+    return surfs
 
+def create_dummy_learned_weights(path_file, n_sets):
+
+    w=[]
+    for _ in range(n_sets):
+        w.append(random.random())
+    
+    w=numpy.array(w)+0.5
+
+    data_to_disk.pickle_save(w, path_file)
+        
            
 class TestSurface(unittest.TestCase):
         
@@ -742,19 +763,18 @@ class TestConn(unittest.TestCase):
         
     def setUp(self):
         sets=[my_slice(s, 100, 2) for s in range(2)]
-        self.source=Surface('n1', **{'n':100, 
-                                  'n_sets':2,
-                                  'sets':sets })
-        self.target=Surface('n2', **{'n':100, 
-                                  'n_sets':2, 
-                                  'sets':sets})
-        self.home_path=('/afs/nada.kth.se/home/w/u1yxbcfw/'
-                        +'results/papers/inhibition')
-        self.save_path_conn=self.home_path+'/unittest/conn/'
-        
-        self.path_ext_learned='/unittest/learned'
+        self.n_sets=len(sets)
+        nd=Surface_dic()
+        nd.add('n1', **{'n':100, 'n_sets':2, 'sets':sets })
+        nd.add('n2', **{'n':100, 'n_sets':2, 'sets':sets})
+        self.surfs=nd
+        self.source=nd['n1']
+        self.target=nd['n2']
+        self.path_conn=HOME+'/results/unittest/conn/'
+        self.path_learned=HOME+'/results/unittest/learned.pkl'
+
     def test_create(self):
-        c=Conn('n1_n2', **{'fan_in':10.0})
+        _=Conn('n1_n2', **{'fan_in':10.0})
 
     
     def test_set_con(self):
@@ -778,41 +798,46 @@ class TestConn(unittest.TestCase):
 #            
     def test_set_save_load(self):
         rules=['1-1', 'all-all', 'set-set', 'set-not_set', 'all_set-all_set']     
-        k={'fan_in':10.0, 
-           'save_path':self.save_path_conn}
+        k={'fan_in':10.0}
         l1=[]
         l2=[]
         for rule in rules:
             k.update({'rule':rule,
-                      'save_path':self.save_path_conn+rule})
+                      'source':self.source.get_name(),
+                      'target':self.target.get_name(),
+                      'save_path':self.path_conn+rule})
             c1=Conn('n1_n2', **k)
-            c1.set(self.source, self.target, display_print=False)
+            c1.set(self.surfs, self.path_conn, display_print=False)
             l1.append(c1.n)
             c2=Conn('n1_n2', **k)
-            c2.set(self.source, self.target,  display_print=False)
+            c2.set(self.surfs, self.path_conn,  display_print=False)
             l2.append(c2.n)
 
 
-        path=self.save_path_conn+'*'
+        path=self.path_conn+'*'
         os.system('rm ' + path  + ' 2>/dev/null' )  
             
         self.assertListEqual(l1, l2)     
             
     def test_get_weight(self):
         m=1.
-        c1=Conn('n1_n2', **{'weight_setup':{'params':m, 
+        c1=Conn('n1_n2', **{'weight':{'params':m, 
                                             'type':'constant'}})
-        c2=Conn('n1_n2', **{'weight_setup':{'params':{'min':m-0.5,
+        c2=Conn('n1_n2', **{'weight':{'params':{'min':m-0.5,
                                                          'max':m+0.5}, 
                                               'type':'uniform'}})      
-        c3=Conn('n1_n2', **{'weight_setup':{'params':1, 
-                                              'type':'learned', 
-                                              'path':(self.home_path
-                                                      +self.path_ext_learned)}})   
+        
+        create_dummy_learned_weights(self.path_learned, self.n_sets )
+        
+        c3=Conn('n1_n2', **{'weight':{'params':1, 
+                                             'type':'learned', 
+                                             'path':(self.path_learned)}})   
         c1._set(self.source, self.target) 
         c2._set(self.source, self.target) 
+        c3._set(self.source, self.target) 
         d1=c1.get_weights()
         d2=c2.get_weights()
+        d3=c3.get_weights()
         
         self.assertAlmostEqual(numpy.mean(d1), m, 10)
         self.assertAlmostEqual(numpy.mean(d2), m, 1)  
@@ -820,9 +845,9 @@ class TestConn(unittest.TestCase):
 
     def test_get_delays(self):
         m=1.
-        c1=Conn('n1_n2', **{'delay_setup':{'params':m, 
+        c1=Conn('n1_n2', **{'delay':{'params':m, 
                                             'type':'constant'}})
-        c2=Conn('n1_n2', **{'delay_setup':{'params':{'min':m-0.5,
+        c2=Conn('n1_n2', **{'delay':{'params':{'min':m-0.5,
                                                          'max':m+0.5}, 
                                               'type':'uniform'}})      
         c1._set(self.source, self.target) 
@@ -843,13 +868,10 @@ class TestConn_dic(unittest.TestCase):
                            
 class TestModuleFunctions(unittest.TestCase):
     def setUp(self):
-        
         from toolbox.network.default_params import Unittest
-        self.par=Unittest()
-        self.home_path=('/afs/nada.kth.se/home/w/u1yxbcfw/'
-                        +'results/papers/inhibition')
-        self.save_path_extension='/unittest/conn/'
-        self.save_path=self.home_path+self.save_path_extension
+        self.par=Unittest()      
+        self.path_conn=HOME+'/results/unittest/conn/'
+        
     @property           
     def params_conn(self):
         return self.par.get_conn()
@@ -859,44 +881,44 @@ class TestModuleFunctions(unittest.TestCase):
         return self.par.get_nest()
     
     @property
-    def params_stru(self):
-        return self.par.get_stru()
+    def params_surfs(self):
+        return self.par.get_surf()
     
     @property
     def params_popu(self):
         return self.par.get_popu()
 
            
-    def test_1_create_nodes(self):
-        nodes=create_struc(self.params_stru)
-        #print nodes
+    def test_1_create_surfaces(self):
+        surfs=create_surfaces(self.params_surfs)
+        #print surfs
         
-    def test_2_create_pops(self):
-        nodes=create_struc(self.params_stru)
-        pops=create_pops(self.params_nest, self.params_popu)
+    def test_2_create_populations(self):
+        surfs=create_surfaces(self.params_surfs)
+        popus=create_populations(self.params_nest, self.params_popu)
 
 
-    def test_3_create_conns(self):
-        nodes=create_struc(self.params_stru)
-        conns=create_conns(nodes, self.params_conn, self.save_path)
+    def test_3_create_connections(self):
+        surfs=create_surfaces(self.params_surfs)
+        conns=create_connections(surfs, self.params_conn, self.path_conn)
     
 
     def test_4_connect_conns(self):
-        nodes=create_struc(self.params_stru)
-        pops=create_pops(self.params_nest, self.params_popu)
-        conns=create_conns(nodes, self.params_conn, self.save_path)
-        connect_conns(self.params_nest, conns, pops)
+        surfs=create_surfaces(self.params_surfs)
+        popus=create_populations(self.params_nest, self.params_popu)
+        conns=create_connections(surfs, self.params_conn, self.path_conn)
+        connect_conns(self.params_nest, conns, popus)
         
         
     def test_5_build(self):
-        args=[self.params_nest, self.params_stru, self.params_pop]
-        nodes, pops=build(*args)
+        args=[self.params_nest, self.params_surfs, self.params_popu]
+        surfs, popus=build(*args)
         
     def test_6_connect(self):    
-        args=[self.params_nest, self.params_stru, self.params_popu]
-        nodes, pops=build(*args)
-        conns=connect(pops, nodes, self.params_nest, self.params_conn,
-                      self.save_path)
+        args=[self.params_nest, self.params_surfs, self.params_popu]
+        surfs, popus=build(*args)
+        conns=connect(popus, surfs, self.params_nest, self.params_conn,
+                      self.path_conn)
         
         
 if __name__ == '__main__':

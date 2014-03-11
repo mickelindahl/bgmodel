@@ -35,7 +35,7 @@
 #include <iostream>
 #include <cstdio>
 
-using namespace nest; //added
+//using namespace nest; //added
 /* ---------------------------------------------------------------- 
  * Recordables map
  * ---------------------------------------------------------------- */
@@ -316,22 +316,22 @@ mynest::my_aeif_cond_exp::Buffers_::Buffers_(const Buffers_ &, my_aeif_cond_exp 
 
 void mynest::my_aeif_cond_exp::Parameters_::get(DictionaryDatum &dd) const
 {
-	def<double>(dd,names::C_m,        C_m);
-	def<double>(dd,names::V_th,       V_th);
-	def<double>(dd,names::t_ref,      t_ref_);
-	def<double>(dd,names::g_L,        g_L);
-	def<double>(dd,names::E_L,        E_L);
-	def<double>(dd,names::V_reset,    V_reset_);
+	def<double>(dd,nest::names::C_m,        C_m);
+	def<double>(dd,nest::names::V_th,       V_th);
+	def<double>(dd,nest::names::t_ref,      t_ref_);
+	def<double>(dd,nest::names::g_L,        g_L);
+	def<double>(dd,nest::names::E_L,        E_L);
+	def<double>(dd,nest::names::V_reset,    V_reset_);
 	//def<double>(dd,names::a,          a);
 	def<nest::double_t>(dd, "a_1",       a_1);
 	def<nest::double_t>(dd, "a_2",       a_2);
 	def<nest::double_t>(dd, "V_a",       V_a);
-	def<double>(dd,names::b,          b);
-	def<double>(dd,names::Delta_T,    Delta_T);
-	def<double>(dd,names::tau_w,      tau_w);
-	def<double>(dd,names::I_e,        I_e);
-	def<double>(dd,names::V_peak,     V_peak_);
-	def<double>(dd,names::gsl_error_tol, gsl_error_tol);
+	def<double>(dd,nest::names::b,          b);
+	def<double>(dd,nest::names::Delta_T,    Delta_T);
+	def<double>(dd,nest::names::tau_w,      tau_w);
+	def<double>(dd,nest::names::I_e,        I_e);
+	def<double>(dd,nest::names::V_peak,     V_peak_);
+	def<double>(dd,nest::names::gsl_error_tol, gsl_error_tol);
 	
 	
 	def<nest::double_t>(dd, "V_reset_slope1",       			  V_reset_slope1);
@@ -370,24 +370,24 @@ void mynest::my_aeif_cond_exp::Parameters_::get(DictionaryDatum &dd) const
 
 void mynest::my_aeif_cond_exp::Parameters_::set(const DictionaryDatum &dd)
 {
-	updateValue<double>(dd,names::V_th,    V_th);
-	updateValue<double>(dd,names::V_peak,  V_peak_);
-	updateValue<double>(dd,names::t_ref,   t_ref_);
-	updateValue<double>(dd,names::E_L,     E_L);
-	updateValue<double>(dd,names::V_reset, V_reset_);
+	updateValue<double>(dd,nest::names::V_th,    V_th);
+	updateValue<double>(dd,nest::names::V_peak,  V_peak_);
+	updateValue<double>(dd,nest::names::t_ref,   t_ref_);
+	updateValue<double>(dd,nest::names::E_L,     E_L);
+	updateValue<double>(dd,nest::names::V_reset, V_reset_);
 
-	updateValue<double>(dd,names::C_m, C_m);
-	updateValue<double>(dd,names::g_L, g_L);
+	updateValue<double>(dd,nest::names::C_m, C_m);
+	updateValue<double>(dd,nest::names::g_L, g_L);
 
 	//updateValue<double>(dd,names::a,       a);
 	updateValue<nest::double_t>(dd, "a_1",       a_1);
 	updateValue<nest::double_t>(dd, "a_2",       a_2);
 	updateValue<nest::double_t>(dd, "V_a",       V_a);
-	updateValue<double>(dd,names::b,       b);
-	updateValue<double>(dd,names::Delta_T, Delta_T);
-	updateValue<double>(dd,names::tau_w,   tau_w);
-	updateValue<double>(dd,names::I_e, I_e);
-	updateValue<double>(dd,names::gsl_error_tol, gsl_error_tol);
+	updateValue<double>(dd,nest::names::b,       b);
+	updateValue<double>(dd,nest::names::Delta_T, Delta_T);
+	updateValue<double>(dd,nest::names::tau_w,   tau_w);
+	updateValue<double>(dd,nest::names::I_e, I_e);
+	updateValue<double>(dd,nest::names::gsl_error_tol, gsl_error_tol);
 
 
 	updateValue<nest::double_t>(dd, "V_reset_slope1",       V_reset_slope1);
@@ -423,37 +423,37 @@ void mynest::my_aeif_cond_exp::Parameters_::set(const DictionaryDatum &dd)
 	updateValue<nest::double_t>(dd, "beta_I_GABAA_2",	beta_I_GABAA_2);     //!< Dopamine effect GABAA 2 current
 
 	if ( V_reset_ >= V_peak_ )
-		throw BadProperty("Reset potential must be smaller than spike cut-off threshold.");
+		throw nest::BadProperty("Reset potential must be smaller than spike cut-off threshold.");
 
 	if ( V_peak_ <= V_th )
-		throw BadProperty("V_peak must be larger than threshold.");
+		throw nest::BadProperty("V_peak must be larger than threshold.");
 
 	if ( C_m <= 0 )
-		throw BadProperty("Capacitance must be strictly positive.");
+		throw nest::BadProperty("Capacitance must be strictly positive.");
 
 	if ( t_ref_ < 0 )
-		throw BadProperty("Refractory time cannot be negative.");
+		throw nest::BadProperty("Refractory time cannot be negative.");
 
 	if ( AMPA_1_Tau_decay    <= 0 ||
 			AMPA_2_Tau_decay    <= 0 ||
 			NMDA_1_Tau_decay    <= 0 ||
 			GABAA_1_Tau_decay <= 0 ||
 			GABAA_2_Tau_decay <= 0 )
-		throw BadProperty("All time constants must be strictly positive.");
+		throw nest::BadProperty("All time constants must be strictly positive.");
 
 	if ( gsl_error_tol <= 0. )
-		throw BadProperty("The gsl_error_tol must be strictly positive.");
+		throw nest::BadProperty("The gsl_error_tol must be strictly positive.");
 }
 
 void mynest::my_aeif_cond_exp::State_::get(DictionaryDatum &d) const
 {
-	def<double>(d,names::V_m,  y[V_M]);
+	def<double>(d,nest::names::V_m,  y[V_M]);
 	def<nest::double_t>(d, "u", y[u]); // Recovery variable
 }
 
 void mynest::my_aeif_cond_exp::State_::set(const DictionaryDatum &d, const Parameters_ &)
 {
-	updateValue<double>(d,names::V_m,  y[V_M]);
+	updateValue<double>(d,nest::names::V_m,  y[V_M]);
 	updateValue<nest::double_t>(d, "u", y[u]); // Recovery variable
 
 }
@@ -519,7 +519,7 @@ void mynest::my_aeif_cond_exp::init_buffers_()
 	
 	nest::Archiving_Node::clear_history();
 
-	B_.step_ = Time::get_resolution().get_ms();
+	B_.step_ = nest::Time::get_resolution().get_ms();
 
 	// We must integrate this model with high-precision to obtain decent results
 	B_.IntegrationStep_ = std::min(0.01, B_.step_);
@@ -552,7 +552,8 @@ void mynest::my_aeif_cond_exp::init_buffers_()
 void mynest::my_aeif_cond_exp::calibrate()
 {
 	B_.logger_.init();  // ensures initialization in case mm connected after Simulate
-	V_.RefractoryCounts_ = Time(Time::ms(P_.t_ref_)).get_steps();
+	//nest::double_t t=nest::Time::ms(P_.t_ref_);
+	V_.RefractoryCounts_ = 2; //nest::Time(t).get_steps();
 	assert(V_.RefractoryCounts_ >= 0);  // since t_ref_ >= 0, this can only fail in error
 }
 
@@ -560,9 +561,9 @@ void mynest::my_aeif_cond_exp::calibrate()
  * Update and spike handling functions
  * ---------------------------------------------------------------- */
 
-void mynest::my_aeif_cond_exp::update(const Time &origin, const long_t from, const long_t to)
+void mynest::my_aeif_cond_exp::update(const nest::Time &origin, const nest::long_t from, const nest::long_t to)
 {
-	assert ( to >= 0 && (delay) from < Scheduler::get_min_delay() );
+	assert ( to >= 0 && (nest::delay) from < nest::Scheduler::get_min_delay() );
 	assert ( from < to );
 	assert ( State_::V_M == 0 );
 
@@ -593,12 +594,12 @@ void mynest::my_aeif_cond_exp::update(const Time &origin, const long_t from, con
 					S_.y);               // neuronal state
 
 			if ( status != GSL_SUCCESS )
-				throw GSLSolverFailure(get_name(), status);
+				throw nest::GSLSolverFailure(get_name(), status);
 
 			// check for unreasonable values; we allow V_M to explode
 			if ( S_.y[State_::V_M] < -1e3 ||
 					S_.y[State_::u  ] <    -1e6 || S_.y[State_::u] > 1e6    )
-				throw NumericalInstability(get_name());
+				throw nest::NumericalInstability(get_name());
 
 			// spikes are handled inside the while-loop
 			// due to spike-driven adaptation
@@ -617,18 +618,18 @@ void mynest::my_aeif_cond_exp::update(const Time &origin, const long_t from, con
 
 				// Spike reset voltage point adapation
 				if ( S_.y[State_::u] < 0 )
-					S_.y[State_::V_M] =std::min(P_.V_reset_+ S_.y[State_::u]*P_.V_reset_slope1, P_.V_reset_max_slope1);
+					S_.y[State_::V_M] =std::min<nest::double_t>(P_.V_reset_+ S_.y[State_::u]*P_.V_reset_slope1, P_.V_reset_max_slope1);
 
 				else
-					S_.y[State_::V_M] =std::min(P_.V_reset_+ S_.y[State_::u]*P_.V_reset_slope2, P_.V_reset_max_slope2);
+					S_.y[State_::V_M] =std::min<nest::double_t>(P_.V_reset_+ S_.y[State_::u]*P_.V_reset_slope2, P_.V_reset_max_slope2);
 
 
 
 				S_.y[State_::u]   += P_.b; // spike-driven adaptation
 				S_.r_               = V_.RefractoryCounts_;
 
-				set_spiketime(Time::step(origin.get_steps() + lag + 1));
-				SpikeEvent se;
+				set_spiketime(nest::Time::step(origin.get_steps() + lag + 1));
+				nest::SpikeEvent se;
 				network()->send(*this, se, lag);
 			}
 		}
@@ -649,7 +650,7 @@ void mynest::my_aeif_cond_exp::update(const Time &origin, const long_t from, con
 	}
 }
 
-void mynest::my_aeif_cond_exp::handle(SpikeEvent & e)
+void mynest::my_aeif_cond_exp::handle(nest::SpikeEvent & e)
 {
 	assert(e.get_delay() > 0);
 	// Assert that port is 0 or 1 (SUP_SPIKE_RECEPTOR (3)- MIN_SPIKE_RECEPTOR (1)
@@ -684,7 +685,7 @@ void mynest::my_aeif_cond_exp::handle(SpikeEvent & e)
 
 }
 
-void mynest::my_aeif_cond_exp::handle(CurrentEvent &e)
+void mynest::my_aeif_cond_exp::handle(nest::CurrentEvent &e)
 {
 	assert ( e.get_delay() > 0 );
 
@@ -697,7 +698,7 @@ void mynest::my_aeif_cond_exp::handle(CurrentEvent &e)
 	assert(0 <= e.get_rport() && e.get_rport() < SUP_CURR_RECEPTOR - MIN_CURR_RECEPTOR);
 }
 
-void mynest::my_aeif_cond_exp::handle(DataLoggingRequest &e)
+void mynest::my_aeif_cond_exp::handle(nest::DataLoggingRequest &e)
 {
 	B_.logger_.handle(e);
 }

@@ -24,13 +24,17 @@ libdir= @libdir@/nest
 
 lib_LTLIBRARIES=      ml_module.la libml_module.la
 
+# Can not have comments between lines when defining ml_module_la_SOURCES
+# Also can not have backslash after comment (maybe only if comment is last
+
 ml_module_la_CXXFLAGS= @AM_CXXFLAGS@
 ml_module_la_SOURCES =  ml_module.cpp                   ml_module.h         	\
                         bcpnn_connection.cpp            bcpnn_connection.h      \
+                      	izhik_cond_exp.cpp           	izhik_cond_exp.h   		\
                         bcpnn_connection_dopamine.cpp   bcpnn_connection_dopamine.h      \
-                        iaf_cond_alpha_bias.cpp         iaf_cond_alpha_bias.h	\
-                      	izhik_cond_exp.cpp           	izhik_cond_exp.h   		\      
-                     	my_aeif_cond_exp.cpp           	my_aeif_cond_exp.h
+                     	my_aeif_cond_exp.cpp           	my_aeif_cond_exp.h		\
+                        iaf_cond_alpha_bias.cpp         iaf_cond_alpha_bias.h	
+
 ml_module_la_LDFLAGS=  -module
 
 libml_module_la_CXXFLAGS= $(ml_module_la_CXXFLAGS) -DLINKED_MODULE
@@ -39,7 +43,8 @@ libml_module_la_SOURCES=  $(ml_module_la_SOURCES)
 MAKEFLAGS= @MAKE_FLAGS@
 
 AM_CPPFLAGS= @NEST_CPPFLAGS@ \
-             @INCLTDL@      
+             @INCLTDL@ \
+             -I/home/mikael/opt/NEST/dist/nest-2.2.2/models
 
 .PHONY: install-slidoc
 

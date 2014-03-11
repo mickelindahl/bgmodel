@@ -21,7 +21,7 @@
  */
 
 #include "exceptions.h"
-#include "my_volume_transmitter.h"
+#include "volume_transmitter.h"
 #include "network.h"
 #include "dict.h"
 #include "integerdatum.h"
@@ -33,9 +33,6 @@
 
 #include <numeric>
 
-
-namespace mynest
-{
 /* ----------------------------------------------------------------
  * Default constructor defining default parameters
  * ---------------------------------------------------------------- */
@@ -130,5 +127,4 @@ void nest::volume_transmitter::handle(SpikeEvent& e)
 {
 	B_.neuromodulatory_spikes_.add_value(e.get_rel_delivery_steps(network()->get_slice_origin()),
 			static_cast<double_t>(e.get_multiplicity()));
-}
 }

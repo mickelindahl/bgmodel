@@ -1,11 +1,5 @@
 AC_PREREQ(2.52)
-
-AC_INIT(ml_module, 1.0, nest_user@nest-initiative.org)
-
-# These variables are exported to include/config.h
-ML_MODULE_MAJOR=1
-ML_MODULE_MINOR=0
-ML_MODULE_PATCHLEVEL=0
+AC_INIT([ml_module], [1.0], [nest_user@nest-initiative.org])
 
 # Exporting source and build directories requires full path names.
 # Thus we have to expand.
@@ -22,7 +16,7 @@ PKGBUILDDIR=`pwd`
 # moritz, 06-26-06
 AC_CONFIG_AUX_DIR(.)
 
-AM_INIT_AUTOMAKE(nest, $ML_MODULE_VERSION)
+AM_INIT_AUTOMAKE([tar-ustar])
 
 # obtain host system type; HEP 2004-12-20
 AC_CANONICAL_HOST
@@ -54,7 +48,7 @@ AC_ARG_WITH(nest,[  --with-nest=script	nest-config script including path],
 
 # does nest-config work
 AC_MSG_CHECKING([for nest-config ])
-AC_CHECK_FILE($NEST_CONFIG, HAVE_NEST=yes, 
+AC_CHECK_FILE($NEST_CONFIG, HAVE_NEST=yes,
               AC_MSG_ERROR([No usable nest-config was found. You may want to use --with-nest-config.]))
 AC_MSG_RESULT(found)
 
@@ -156,7 +150,7 @@ AC_SUBST(MAKE_FLAGS)
 AC_SUBST(INCLTDL)
 AC_SUBST(LIBLTDL)
 
-AM_CONFIG_HEADER(ml_module_config.h:ml_module_config.h.in)
+AC_CONFIG_HEADER(ml_module_config.h:ml_module_config.h.in)
 AC_CONFIG_FILES(Makefile)
 
 # -----------------------------------------------
@@ -167,13 +161,13 @@ AC_OUTPUT
 
 # -----------------------------------------------
 # Report, after output at end of configure run
-# Must come after AC_OUTPUT, so that it is 
+# Must come after AC_OUTPUT, so that it is
 # displayed after libltdl has been configured
 # -----------------------------------------------
 
 echo
 echo "-------------------------------------------------------"
-echo "Ml_Module Configuration Summary"
+echo "MlModule Configuration Summary"
 echo "-------------------------------------------------------"
 echo
 echo "C++ compiler        : $CXX"
@@ -188,10 +182,10 @@ eval eval eval  PKGDATADIR_AS_CONFIGURED=$PKGDATADIR
 echo
 echo "-------------------------------------------------------"
 echo
-echo "You can build install Ml_Module now, using"
+echo "You can build and install MlModule now, using"
 echo "  make"
 echo "  make install"
 echo
-echo "The Ml_Module executable will be installed to:"
+echo "MlModule will be installed to:"
 echo -n "  "; eval eval echo "$libdir"
 echo

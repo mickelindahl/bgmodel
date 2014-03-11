@@ -29,7 +29,8 @@
 #include "ring_buffer.h"
 #include "spikecounter.h"
 #include "namedatum.h"
-
+/* for Debugging */
+#include <iostream>
 
 /* BeginDocumentation
 
@@ -83,7 +84,7 @@ SeeAlso: stdp_dopamine_synapse
 
 */
 
-namespace mynest
+namespace nest
 {
 
   class Network;
@@ -103,7 +104,7 @@ namespace mynest
    *
    * @ingroup Devices
    */
-  class volume_transmitter : public nest::Archiving_Node
+  class volume_transmitter : public Archiving_Node
   {
 
   public:
@@ -126,12 +127,12 @@ namespace mynest
     using Node::handle;
 
     void handle(SpikeEvent&);
-    nest::port connect_sender(SpikeEvent&, nest::port);
+    port connect_sender(SpikeEvent&, port);
 
     void get_status(DictionaryDatum& d) const;
     void set_status(const DictionaryDatum& d) ;
 
-    const nest::vector<nest::spikecounter>& deliver_spikes();
+    const vector<spikecounter>& deliver_spikes();
 
   protected:
 
@@ -143,7 +144,7 @@ namespace mynest
     void init_buffers_();
     void calibrate();
 
-    void update(const nest::Time&, const nest::long_t, const nest::long_t);
+    void update(const Time&, const long_t, const long_t);
 
     // --------------------------------------------
 
@@ -154,15 +155,15 @@ namespace mynest
       Parameters_();
       void get(DictionaryDatum&) const;
       void set(const DictionaryDatum&);
-      nest::long_t deliver_interval_; //!< update interval in d_min time steps
+      long_t deliver_interval_; //!< update interval in d_min time steps
     };
 
     //-----------------------------------------------
 
     struct Buffers_ {
-    	nest::RingBuffer neuromodulatory_spikes_; //!< buffer to store incoming spikes
-    	nest::vector<nest::Connector*> targets_;        //!< vector to store target synapses
-      nest::vector<nest::spikecounter> spikecounter_; //!< vector to store and deliver spikes
+      RingBuffer neuromodulatory_spikes_; //!< buffer to store incoming spikes
+      vector<Connector*> targets_;        //!< vector to store target synapses
+      vector<spikecounter> spikecounter_; //!< vector to store and deliver spikes
     };
 
     Parameters_ P_;
@@ -172,10 +173,10 @@ namespace mynest
 
 
   inline
-  nest::port volume_transmitter::connect_sender(nest::SpikeEvent&, nest::port receptor_type)
+  port volume_transmitter::connect_sender(SpikeEvent&, port receptor_type)
   {
     if (receptor_type != 0)
-      throw nest::UnknownReceptorType(receptor_type, get_name());
+      throw UnknownReceptorType(receptor_type, get_name());
     return 0;
   }
 
@@ -185,7 +186,7 @@ namespace mynest
     P_.get(d);
     Archiving_Node::get_status(d);
 
-    (*d)[nest::names::type] = LiteralDatum(nest::names::other);
+    (*d)[names::type] = LiteralDatum(names::other);
   }
 
   inline
@@ -207,9 +208,11 @@ namespace mynest
   inline
   const vector<nest::spikecounter>& volume_transmitter::deliver_spikes()
   {
+	std::cout << 50. << std::endl;
+	std::cout << B_.spikecounter_.size() << std::endl;
     return B_.spikecounter_;
   }
 
 } // namespace
 
-#endif /* #ifndef VOLUME_TRANSMITTER_H */
+#endif /* #ifndef MY_VOLUME_TRANSMITTER_H */

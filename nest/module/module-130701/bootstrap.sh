@@ -1,7 +1,6 @@
 #!/bin/sh
 
-echo "Bootstrapping MyModule"
-
+echo "Bootstrapping Ml_Module"
 if test -d autom4te.cache ; then
 # we must remove this cache, because it
 # may screw up things if configure is run for
