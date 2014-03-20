@@ -24,6 +24,9 @@ libdir= @libdir@/nest
 
 lib_LTLIBRARIES=      ml_module.la libml_module.la
 
+# Need to set this to correct directory!
+NEST_MODELS_DIR := $(shell echo $(HOME))/opt/NEST/dist/nest-2.2.2/models
+
 # Can not have comments between lines when defining ml_module_la_SOURCES
 # Also can not have backslash after comment (maybe only if comment is last
 
@@ -44,7 +47,7 @@ MAKEFLAGS= @MAKE_FLAGS@
 
 AM_CPPFLAGS= @NEST_CPPFLAGS@ \
              @INCLTDL@ \
-             -I/home/mikael/opt/NEST/dist/nest-2.2.2/models
+             -I$(NEST_MODELS_DIR)
 
 .PHONY: install-slidoc
 

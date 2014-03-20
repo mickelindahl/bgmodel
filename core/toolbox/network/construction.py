@@ -16,7 +16,8 @@ import toolbox
 from copy import deepcopy
 from toolbox.network.default_params import (Inhibition, Slow_wave, Bcpnn_h0,  
                                             Bcpnn_h1, Single_unit, 
-                                            Unittest, Perturbation_list,
+                                            Unittest, Unittest_extend, 
+                                            Perturbation_list,
                                             Unittest_bcpnn_dopa, Unittest_stdp,
                                             Unittest_bcpnn)
 import nest # Can not be first then I get segmentation Fault
@@ -25,6 +26,8 @@ import pylab
 import time
 import unittest
 import os, sys
+import pprint
+pp=pprint.pprint
 
 
 class Network_base(object):
@@ -72,6 +75,8 @@ class Network_base(object):
         
         self.verbose=kwargs.get('verbose', 'True')
 
+    def __repr__(self):
+        return self.__class__.__name__+':'+self.name   
         
     @property
     def path_data(self):
@@ -243,6 +248,7 @@ class Network_base(object):
     def get_x0(self):
         return self.x0opt
 
+
     def init_optimization(self, x0):
         self.record=['spike_signal']
         self.reset=True
@@ -263,7 +269,8 @@ class Network_base(object):
                 duds[attr]=Data_units_dic(Data_unit_vm)   
                 
         for source, target, props in self.record_weights_from:
-            duds[source+'_'+target]=dict(zip(props, [[] 
+            duds[source+'_'+target]=dict(zip(props, [{'x':[],
+                                                      'y':[]} 
                                                      for _ in 
                                                      range(len(props))]))
           
@@ -312,39 +319,43 @@ class Network_base(object):
         
     def _sim_XX_curve(self, flag, stim=[], stim_time=0, model='',  **kwargs):    
     
-        if flag=='currents':
+        if flag=='IF':
             rp=self.get_perturbations(stim, **kwargs)
             self.replace_perturbation=rp   
-            activity_attr=['isi_IF']
-        if flag=='rates':
+            self.record=['spike_signal']
+        if flag=='FF':
             ru=self.get_perturbations(stim, **kwargs)  
             self.replace_perturbation=ru
-            activity_attr=['mean_rate']
-        
-        self.record=['spike_signal']
+            self.record=['spike_signal']
+        if flag=='IV':
+            ru=self.get_perturbations(stim, **kwargs)  
+            self.replace_perturbation=ru
+            self.record=['voltage_signal']        
+
+
                 
         self.set_sim_stop(stim_time*len(stim))
         self.set_sim_time(stim_time)
         self.set_print_time(False)
         self.reset=False
           
-        dud=self.simulation_loop()
-#         du=dud.get_model(model)
-#         for key in activity_attr:
-#             du.compute_set(key)
-#             du.set_stimulus(key, 'x', stim)
-            
+        dud=self.simulation_loop()        
         return dud
+
+    def sim_IV_curve(self, **kwargs):
+        if 'op' not in kwargs.keys():
+            kwargs['op']='='
+        return self._sim_XX_curve(flag='IV', **kwargs)
     
     def sim_IF_curve(self, **kwargs):
         if 'op' not in kwargs.keys():
-            kwargs['op']='+'
-        return self._sim_XX_curve(flag='currents', **kwargs)
+            kwargs['op']='='
+        return self._sim_XX_curve(flag='IF', **kwargs)
 
     def sim_FF_curve(self, **kwargs):
         if 'op' not in kwargs.keys():
             kwargs['op']='='
-        return self._sim_XX_curve(flag='rates', **kwargs)
+        return self._sim_XX_curve(flag='FF', **kwargs)
 
     def sim_optimization(self, x0):
         
@@ -365,7 +376,7 @@ class Network_base(object):
             dud[k].set('target_rate', v)
         
         dud.compute_set('mean_rate')
-        dud['n1'].wrap.mean_rate()
+        
         e=dud.get_mean_rate_error(**{'models':self.fopt})
         self.clear_dud(Data_unit_spk) 
         return e
@@ -431,13 +442,6 @@ class Network_list(object):
     def append(self, val):
         self.l.append(val)
     
-#    def add(self, *a, **k):
-#
-#        class_name=k.get('class', 'Inhibition')
-#        the_class=misc.import_class('toolbox.network.construction.'
-#                                    +class_name)
-#        self.dic[a[0]]=the_class(*a, **k)
-    
     def get_x0(self):
         x0=[]
         for net in self:
@@ -448,7 +452,7 @@ class Network_list(object):
         e=[]
         for net, x_slice in zip(self, self.x_slices):
             e+=net.sim_optimization(x[x_slice])
-        self.run_counter+=1
+#         self.run_counter+=1
         return e
         
 class Network(Network_base):
@@ -502,7 +506,7 @@ class Network(Network_base):
             self.set_kernel_status()
             my_nest.Simulate(self.sim_time)       
             self.sim_time_progress+=self.sim_time
-             
+              
        
     def do_delete_nest_data(self): 
         with Stop_stdout(not self.verbose):
@@ -548,11 +552,11 @@ class Network(Network_base):
     
             for source, target, prop in self.record_weights_from:
                 for p in prop:
-                    l=my_nest.GetConnProp(self.pops[source].ids,
+                    y=my_nest.GetConnProp(self.pops[source].ids,
                                           self.pops[target].ids,
                                           p)
-                    duds[source+'_'+target][p].append(l)
-
+                    x=[self.sim_time_progress for e in y]
+                    duds=fill_duds_conn(duds, source+'_'+target, p, x, y)
             
             self.run_counter+=1
            
@@ -567,24 +571,15 @@ class Network(Network_base):
                     int(100*self.time_connected/t_total),
                     int(100*self.time_run/t_total))
         return s
-      
-#     def get_spikes_binned(self, models, res, clip=0):
-#         rdb={} 
+
+
+# class Inhibition(Network):
 # 
-#         for model in models:
-#             self.get_spikes(model)
-#             pop=self.surfs[model].population
-#             times, rdb[model]=pop.signals['spikes'].raw_data_binned(self.sim_start, self.sim_stop, res, clip)
-            
-#         return rdb
-
-class Inhibition(Network):
-
-    def get_data_root_path(self):
-        return toolbox.get_data_root_path('inhibition')
-
-    def get_figure_root_path(self):
-        return toolbox.get_figure_root_path('inhibition')
+#     def get_data_root_path(self):
+#         return toolbox.get_data_root_path('inhibition')
+# 
+#     def get_figure_root_path(self):
+#         return toolbox.get_figure_root_path('inhibition')
     
               
 class Slow_wave(Network):  
@@ -756,7 +751,22 @@ class Bcpnn_h1(Bcpnn_h0):
         # In order to be able to convert super class object to subclass object   
         self.class_par=Bcpnn_h1
  
- 
+def fill_duds_conn(duds, name, p, x, y):
+
+    X=duds[name][p]['x']
+    Y=duds[name][p]['y']
+    
+    if X==[]:
+        X=numpy.array([x])
+        Y=numpy.array([y])
+    else:
+        X=numpy.concatenate((X,[x]), axis=0)
+        Y=numpy.concatenate((Y,[y]), axis=0)
+    
+    duds[name][p]['x']=X
+    duds[name][p]['y']=Y
+        
+    return duds
  
 
 def network_kwargs():
@@ -767,35 +777,106 @@ def network_kwargs():
             'record_weights_from':[]}
     return kwargs     
  
- 
-class TestUnittestMixin(object):
+def plot_plastic(duds):
+    vm = duds['voltage_signal']
+    spk = duds['spike_signal']
+    pylab.figure()
+    ax = pylab.subplot(311)
+    obj = spk['n1'].wrap.as_spike_list()
+    vm['n1'].plot(**{'ax':ax, 'id_list':[0], 'spike_signal':obj})
+    obj = spk['n2'].wrap.as_spike_list()
+    vm['n2'].plot(**{'ax':ax, 'id_list':[0], 'spike_signal':obj})
+    ax.legend(['Neuron 1', 'Neuron 2'])
+    ax = pylab.subplot(312)
+    spk['n1'].plot_firing_rate(ax)
+    ax = pylab.subplot(312)
+    spk['n2'].plot_firing_rate(ax)
+    ax.legend(['Neuron 1', 'Neuron 2'])
+    ax = pylab.subplot(313)
+    ax.plot(numpy.array(duds['n1_n2']['weight']), **{'label':'Weight'})
+    ax.legend()
+
+
+def plot_plastic_dopa(duds):
+    vm=duds['voltage_signal']
+    spk=duds['spike_signal']
+    pylab.figure()
+
+    ax=pylab.subplot(211)  
+    spk['n1'].plot_firing_rate(ax, **{'win':100,'linewidth':2.0})
+    spk['n2'].plot_firing_rate(ax,**{'win':100,'linewidth':2.0})
+    spk['m1'].plot_firing_rate(ax, **{'win':100,'linewidth':2.0})
+    ax.legend(['Neuron 1', 'Neuron 2','Dopamine neurons'])
+
+    ax=pylab.subplot(212)    
+         
+    p=duds['n1_n2']['p_i']['y']*duds['n1_n2']['p_j']['y']
+    p=duds['n1_n2']['p_ij']['y']/p
+    p=numpy.log(p)
+    
+    c=misc.make_N_colors('jet', 12)
+    ax.plot(duds['n1_n2']['p_i']['x'][:,0] , p[:,0], **{'label':'weight', 
+                                                        'linewidth':2.0,
+                                                        'color':c[0]} )
+    ax.set_ylabel('Weight')
+
+    ax.plot(duds['n1_n2']['k']['x'][:,0], 
+            duds['n1_n2']['k']['y'][:,0], **{'label':'Dopamine (Kappa)', 
+                                             'color':'k', 'linewidth':2.0})
+    ax.legend()   
+    
+    #ax.legend(['Bcpnn dopa', 'Bcpnn (Phils code)' ])
+    
+#     pylab.figure()
+
+#     ax=pylab.subplot(211)    
+#     i=1
+#     for v in ['z_i', 'z_j', 'z_j_c', 'e_i', 'e_j', 'e_ij', 
+#               'e_j_c', 'e_ij_c',]:
+#         ax.plot(duds['n1_n2'][v]['x'][:,0],
+#                 duds['n1_n2'][v]['y'][:,0], 
+#                 **{'label':v, 'color':c[i], 'linewidth':2.0})
+#         i+=1
+#  
+      
+#     ax=pylab.subplot(212)    
+# 
+#     for v in [ 'p_i', 'p_j',  'p_ij',]:
+#         ax.plot(duds['n1_n2'][v]['x'][:,0],
+#                 duds['n1_n2'][v]['y'][:,0], 
+#                 **{'label':v, 'color':c[i], 'linewidth':2.0})
+#         i+=1
+# #     ax.plot(duds['n1_n2']['m']['x'][:,0], 
+# #             duds['n1_n2']['m']['y'][:,0], **{'label':'Dopamine (Kappa)'})
+#     ax.legend()
+        
+         
+class TestMixin_1(object):
     pass
-#     def test_1_build(self):
-#         network=self.class_network(self.name, **self.kwargs)
-#         network.do_build()
-#         
-#     def test_2_connect(self):
-#         network=self.class_network(self.name, **self.kwargs)
-#         network.do_connect()    
-#    
-#     def test_3_run(self):
-#         network=self.class_network(self.name, **self.kwargs)
-#         network.do_run()  
-#            
-#     def test_4_reset(self):
-#         network=self.class_network(self.name, **self.kwargs)  
-#         network.do_run()
-#         network.do_reset()
-#         network.do_run() 
-#         
-class TestUnittest_base(unittest.TestCase):
-    kwargs=network_kwargs()
-    curr=[400,500,700]
-    rates=range(200, 500, 100)
-    def update_par_rep(self):
+    def test_1_build(self):
+        network=self.class_network(self.name, **self.kwargs)
+        network.do_build()
+          
+    def test_2_connect(self):
+        network=self.class_network(self.name, **self.kwargs)
+        network.do_connect()    
+     
+    def test_3_run(self):
+        network=self.class_network(self.name, **self.kwargs)
+        network.do_run()  
+             
+    def test_4_reset(self):
+        network=self.class_network(self.name, **self.kwargs)  
+        network.do_run()
+        network.do_reset()
+        network.do_run() 
+
+
+class TestMixin_2(object):
+    def update_par_rep(self, node):
         update_par_rep=[]
         for c in self.curr:
-            dic_rep={'node':{'n1':{'I_vivo':float(c)}}}
+            dic_rep={'node':{node:{'I_vivo':float(c)}}}
             update_par_rep.append(dic_rep) 
         return update_par_rep
     
@@ -803,7 +884,7 @@ class TestUnittest_base(unittest.TestCase):
         replace_perturbation=[]
         for c in  self.curr:
             
-            p=Perturbation_list('Curr', ['node.n1.nest_params.I_e', 
+            p=Perturbation_list('Curr', ['node.'+self.node+'.nest_params.I_e', 
                                          float(c), '+'])
             replace_perturbation.append(p) 
         return replace_perturbation
@@ -812,76 +893,51 @@ class TestUnittest_base(unittest.TestCase):
         replace_perturbation=[]
         for c in  self.rates:
             
-            p=Perturbation_list('Rate', ['node.i1.rate', 
+            p=Perturbation_list('Rate', ['node.'+self.input+'.rate', 
                                          float(c), '='])
             replace_perturbation.append(p) 
-        return replace_perturbation    
+        return replace_perturbation  
     
-    def setUp(self):
-        
-        self.class_network=Network
-        self.class_par=Unittest
-        #self.fileName=self.class_network().path_data+'network'
-        self.model_list=['n1']
-        dic_rep={}
-        dic_rep.update({'simu':{'sim_stop':3000.0,
-                                'threads':4,
-                         'mm_params':{'to_file':False, 'to_memory':True},
-                         'sd_params':{'to_file':False, 'to_memory':True}},
-                         'netw':{'size':9.},
-                         'node':{'n1':{'mm':{'active':True},
-                                       'sd':{'active':True}}}})
-        self.kwargs.update({'par':self.class_par(**{'dic_rep':dic_rep})})
-        self.dic_rep=dic_rep
-        self.name='net1'
-        
-  
-
-# 
 #     def test_5_simulation_loop(self):
-#           
-#         d={'node':{'n1':{'nest_params':{'I_e':400.0}}}}
+#              
+#         d={'node':{self.node:{'nest_params':{'I_e':400.0}}}}
 #         network=self.class_network(self.name, **self.kwargs)  
 #         network.update_dic_rep(d)
 #         network.reset=False
 #         network.set_sim_stop(1000.0)     
 #         dud=network.simulation_loop()['spike_signal']    
 #         pylab.figure()   
-#  
-#         dud['n1'].set('merge_runs', True) 
-#         dud['n1'].set('merge_sets', True) 
-#         dud['n1'].plot_firing_rate(**{'win':100})  
-#  
-#         dud['n1'].reset('firing_rate')        
-#         dud['n1'].set('merge_sets', False) 
-#         n_sets=len(network.pops['n1'].sets)
-#         dud['n1'].plot_firing_rate(**{'win':100})      
-#         dud['n1'][:,0].plot_firing_rate(**{'win':100}) 
-#         dud['n1'][:,1].plot_firing_rate(**{'win':100}) 
-#         dud['n1'][:,2].plot_firing_rate(**{'win':100}) 
-# #         pylab.show()
 #     
+#         dud[self.node].plot_firing_rate(**{'win':100, 'label':'Mean'})  
+#         dud[self.node][:,0].plot_firing_rate(**{'win':100, 'label':'Set 1'}) 
+#         dud[self.node][:,1].plot_firing_rate(**{'win':100, 'label':'Set 2'}) 
+#         dud[self.node][:,2].plot_firing_rate(**{'win':100, 'label':'Set 3'}) 
+# #         pylab.show()
+# #      
 #     def test_6_simulation_loop_x3_update_par_rep(self):
 #         kwargs=deepcopy(self.kwargs)
-#         kwargs.update({'update_par_rep':self.update_par_rep()})
+#         kwargs.update({'update_par_rep':self.update_par_rep(self.node)})
 #         network=self.class_network(self.name, **kwargs)  
 #         network.reset=False
 #         dud=network.simulation_loop()['spike_signal'] 
 #         pylab.figure()
-#         dud['n1'].set('merge_runs', True) 
-#         dud['n1'].plot_firing_rate(pylab.subplot(221), **{'win':100})
-#         dud['n1'][:,0].plot_firing_rate(pylab.subplot(221), **{'win':100})
-#           
-#         kwargs.update({'update_par_rep':self.update_par_rep()})
+#         ax=pylab.subplot(221)
+#         dud[self.node].plot_firing_rate(ax, **{'win':100, 'label':'Mean'})
+#         dud[self.node][:,0].plot_firing_rate(ax, **{'win':100, 'label':'Set 1'})
+#              
+#         kwargs.update({'update_par_rep':self.update_par_rep(self.node)})
 #         network=self.class_network(self.name, **kwargs)  
 #         network.reset=True
 #         dud=network.simulation_loop()['spike_signal']        
-#         dud['n1'].set('merge_sets', True) 
-#         dud['n1'].reset('firing_rate') 
-#         dud['n1'].plot_firing_rate(pylab.subplot(222),**{'win':100})
-#         dud['n1'].plot_hist_isis(pylab.subplot(223))
-#         pylab.show()  
- 
+#         dud[self.node].set('merge_sets', True) 
+#         dud[self.node].reset('firing_rate') 
+#         ax=pylab.subplot(222)
+#         dud[self.node][0,:].plot_firing_rate(ax,**{'win':100, 'label':'Run 1'})
+#         dud[self.node][1,:].plot_firing_rate(ax,**{'win':100, 'label':'Run 2'})
+#         dud[self.node][2,:].plot_firing_rate(ax,**{'win':100, 'label':'Run 3'})
+#         dud[self.node].plot_hist_isis(pylab.subplot(223))
+# #         pylab.show()  
+#   
 #     def test_7_simulation_loop_x3_replace_pertubations(self):
 #         kwargs=deepcopy(self.kwargs)
 #         kwargs.update({'replace_perturbation':self.replace_perturbation()})
@@ -889,204 +945,221 @@ class TestUnittest_base(unittest.TestCase):
 #         network.reset=False
 #         dud=network.simulation_loop()['spike_signal'] 
 #         pylab.figure()
-#         dud['n1'].plot_firing_rate(pylab.subplot(221), **{'win':100})
-#            
-#            
+#         dud[self.node].plot_firing_rate(pylab.subplot(221), **{'win':100})
+#               
+#               
 #         kwargs.update({'replace_perturbation':self.replace_perturbation()})
 #         network=self.class_network(self.name, **kwargs)  
 #         network.reset=True
 #         dud=network.simulation_loop()['spike_signal'] 
-#         dud['n1'].reset('firing_rate') 
-#         dud['n1'][0,:].plot_firing_rate(pylab.subplot(222),**{'win':100})
-#         dud['n1'][1,:].plot_firing_rate(pylab.subplot(222),**{'win':100})
-#         dud['n1'][2,:].plot_firing_rate(pylab.subplot(222),**{'win':100})   
-#         dud['n1'].plot_hist_isis(pylab.subplot(223))
-#           
+#         dud[self.node].reset('firing_rate') 
+#         ax=pylab.subplot(222)
+#         dud[self.node][0,:].plot_firing_rate(ax,**{'win':100, 'label':'Run 1'})
+#         dud[self.node][1,:].plot_firing_rate(ax,**{'win':100, 'label':'Run 2'})
+#         dud[self.node][2,:].plot_firing_rate(ax,**{'win':100, 'label':'Run 3'}) 
+#         dud[self.node].plot_hist_isis(pylab.subplot(223))
+             
 #         pylab.show()  
-# #                      
+
+
+#     def test_90_IV_curve(self):
+#         network=self.class_network(self.name, **self.kwargs)  
+#         kwargs={'stim':self.curr_IV,
+#                 'stim_name':'node.'+self.node+'.nest_params.I_e',
+#                 'stim_time':500.0,
+#                 'model':self.node}
+#         dud=network.sim_IV_curve(**kwargs)['voltage_signal'] 
+#         pylab.figure()
+#         dud[self.node].plot_IV_curve(x=self.curr_IV,
+#                                      **{'label':'Mean', 'marker':'o'})
+# #         pylab.show() 
+#                      
 #     def test_90_IF_curve(self):
 #         network=self.class_network(self.name, **self.kwargs)  
 #         kwargs={'stim':self.curr,
-#                 'stim_name':'node.n1.nest_params.I_e',
+#                 'stim_name':'node.'+self.node+'.nest_params.I_e',
 #                 'stim_time':500.0,
-#                 'model':'n1'}
+#                 'model':self.node}
 #         dud=network.sim_IF_curve(**kwargs)['spike_signal'] 
 #         pylab.figure()
-#         dud['n1'].set('merge_sets', True) 
-#         dud['n1'].plot_IF_curve()
-#         pylab.show() 
-#                         
-#     def test_91_FF_curve(self):
-#         dic_rep={'simu':{'sd_params':{'to_file':False, 'to_memory':True}},
-#                          'netw':{'size':36.}}
-#         self.kwargs.update({'dic_rep':dic_rep})
-#         network=self.class_network(self.name, **self.kwargs)  
-#         kwargs={'stim':self.rates,
-#                 'stim_name':'node.i1.rate',
-#                 'stim_time':3000.0,
-#                 'model':'n1'}
-#         dud=network.sim_FF_curve(**kwargs)['spike_signal']
-#         pylab.figure()class TestUnittest(unittest.TestCase):
-#          
-#         dud['n1'].plot_FF_curve(x=self.rates, **{'label':'Mean'})
-#         dud['n1'][:,0].plot_FF_curve(x=self.rates, **{'label':'Set 1'})
-#         pylab.show()
-# ##
-    def test_92_voltage_trace(self):
-        dic_rep=deepcopy(self.dic_rep)
-        dic_rep['node']['n1']['mm']['active']=True
-        kwargs=deepcopy(self.kwargs)
-        kwargs.update({'dic_rep':dic_rep, 
-                            'record':['voltage_signal', 'spike_signal']})
-        kwargs.update({'replace_perturbation':self.replace_perturbation2()})
-        network=self.class_network(self.name, **kwargs)          
-        network.reset=False
-        duds=network.simulation_loop()
-        vm=duds['voltage_signal']
-        spk=duds['spike_signal']
+#   
+#         dud[self.node].plot_IF_curve(**{'linewidth':3.0, 'color':'b'})
+#         dud[self.node].plot_IF_curve(part='first',**{'linewidth':3.0, 
+#                                                       'color':'g'})#       
+# #         pylab.show() 
+#                            
+    def test_91_FF_curve(self):
+        dic_rep={'simu':{'sd_params':{'to_file':False, 'to_memory':True}},
+                         'netw':{'size':36.}}
+        self.kwargs.update({'dic_rep':dic_rep})
+        network=self.class_network(self.name, **self.kwargs)  
+        kwargs={'stim':self.rates,
+                'stim_name':'node.'+self.input+'.rate',
+                'stim_time':3000.0,
+                'model':self.node}
+        dud=network.sim_FF_curve(**kwargs)['spike_signal']
         pylab.figure()
-         
-        obj=spk['n1'].wrap.as_spike_list()
-         
-        vm['n1'].plot(**{'id_list':[0], 'spike_signal':obj})
-         
+              
+        dud[self.node].plot_FF_curve(x=self.rates, **{'label':'Mean'})
+        dud[self.node][:,0].plot_FF_curve(x=self.rates, **{'label':'Set 1'})
         pylab.show()
-#        
-#     def test_93_optimization(self):
+##
+#     def test_92_voltage_trace(self):
 #         dic_rep=deepcopy(self.dic_rep)
-#         
-#         x0=[2580.0+340.]
-#         opt={'f':['n1'],
-#              'x':['node.i1.rate'],
-#              'x0':x0}
-#         dic_rep.update({'simu':{'sim_stop':1000.0,
-#                                 'sim_time':1000.0},
-#                         'netw':{'optimization':opt}})
-#         self.kwargs.update({'par':self.class_par(**{'dic_rep':dic_rep})})
-#        # self.kwargs.update({'dic_rep':dic_rep})
-#         network=self.class_network(self.name, **self.kwargs)  
-#  
-#         e1=network.sim_optimization(x0)
-#         
-# #        network=self.class_network(self.name, **self.kwargs)  
-#         e2=network.sim_optimization([3000.0+200.0])
-#         
-#         self.assertAlmostEqual(e1[0], 0, delta=3)
-#         self.assertAlmostEqual(e2[0], 16.6, delta=2)
-#         #pylab.show()
-#     
-class TestUnittest(TestUnittest_base, TestUnittestMixin):
-    pass
+#         dic_rep['node'][self.node]['mm']['active']=True
+# 
+#         kwargs=deepcopy(self.kwargs)
+#         kwargs.update({'dic_rep':dic_rep, 
+#                        'record':['voltage_signal', 'spike_signal']})
+#         #kwargs.update({'replace_perturbation':self.replace_perturbation2()})
+#         network=self.class_network(self.name, **kwargs)          
+#         network.reset=False
+#         duds=network.simulation_loop()
+#         vm=duds['voltage_signal']
+#         spk=duds['spike_signal']
+#         pylab.figure()
+#             
+#         obj=spk[self.node].wrap.as_spike_list()
+#             
+#         vm[self.node].plot(**{'id_list':[0], 'spike_signal':obj})
+#             
+#         pylab.show()
+# #        
+    def test_93_optimization(self):
+        dic_rep=deepcopy(self.dic_rep)
+         
+        x0=[2580.0+340.]
+        opt={'f':[self.node],
+             'x':['node.i1.rate'],
+             'x0':x0}
+        dic_rep.update({'simu':{'sim_stop':1000.0,
+                                'sim_time':1000.0},
+                        'netw':{'optimization':opt}})
+        self.kwargs.update({'par':self.class_par(**{'dic_rep':dic_rep})})
+       # self.kwargs.update({'dic_rep':dic_rep})
+        network=self.class_network(self.name, **self.kwargs)  
+  
+        e1=network.sim_optimization(x0)
+         
+#        network=self.class_network(self.name, **self.kwargs)  
+        e2=network.sim_optimization([3000.0+200.0])
+         
+        self.assertAlmostEqual(e1[0], 0, delta=3)
+        self.assertAlmostEqual(e2[0], 16.6, delta=2)
+        #pylab.show()
+        
 
-class TestUnittestPlasticMixin(object):
+class TestMixinPlastic(object):           
     def test_simulation_loop(self):
-        dic_rep=self.dic_rep            
-        self.kwargs.update({'verbose':True,
-                            'par':self.class_par(**{'dic_rep':dic_rep,
-                                                    'other':self.other,
-                                                     }),
-                            'record':[
-                                       'voltage_signal', 
-                                       'spike_signal'],
-                            'record_weights_from':[['n1', 'n2', ['weight',
-                                                                 ]]]})
+        dic_rep=self.dic_rep
+        d={'verbose':True,
+            'par':self.class_par(**{'dic_rep':dic_rep,
+                                    'other':self.other,
+                                     }),
+            'record':['voltage_signal', 
+                       'spike_signal'],
+            'record_weights_from':[['n1', 'n2', ['weight',
+                                                 ]]]}            
+        self.kwargs.update(d)
 
         network=self.class_network(self.name, **self.kwargs)  
         network.reset=False     
         duds=network.simulation_loop() 
-        vm=duds['voltage_signal']
-        spk=duds['spike_signal']
-        pylab.figure()
-        ax=pylab.subplot(311)  
-        
-        obj=spk['n1'].wrap.as_spike_list() 
-        vm['n1'].plot(**{'ax':ax, 'id_list':[0], 'spike_signal':obj,})  
-        
-        obj=spk['n2'].wrap.as_spike_list() 
-        vm['n2'].plot(**{'ax':ax, 'id_list':[0], 'spike_signal':obj})  
-
-        ax.legend(['Neuron 1', 'Neuron 2'])
-        ax=pylab.subplot(312)  
-        spk['n1'].plot_firing_rate(ax)
-
-        ax=pylab.subplot(312)  
-        spk['n2'].plot_firing_rate(ax)
-        ax.legend(['Neuron 1', 'Neuron 2'])
-
-
-        ax=pylab.subplot(313)    
-            
-        ax.plot(numpy.array(duds['n1_n2']['weight']), **{'label':'Weight'})
-        ax.legend()
+        plot_plastic(duds)
         pylab.show()  
         
-class TestUnittestPlasticDopMixin(object):
+class TestMixinPlasticDopa(object):
     def test_simulation_loop(self):
-        dic_rep=self.dic_rep            
-        self.kwargs.update({'verbose':True,
-                            'par':self.class_par(**{'dic_rep':dic_rep,
-                                                    'other':self.other,
-                                                     }),
-                            'record':[
-                                       'voltage_signal', 
-                                       'spike_signal'],
-                            'record_weights_from':[['n1', 'n2', ['weight',
-                                                                'n',
-#                                                                 'c'
-                                                                 ]]]})
+        dic_rep=self.dic_rep
+        d={'verbose':True,
+            'par':self.class_par(**{'dic_rep':dic_rep,
+                                    'other':self.other,
+                                     }),
+            'record':['voltage_signal', 
+                      'spike_signal'],
+            'record_weights_from':[['n1', 'n2', ['weight',
+                                                'k',
+                                                'm',
+                                                'z_i',
+                                                'z_j',
+                                                'z_j_c',
+                                                'e_i',
+                                                'e_j',
+                                                'e_ij',
+                                                'e_j_c',
+                                                'e_ij_c',
+                                                'p_i',
+                                                'p_j',
+                                                'p_ij',
+                                                 ]]]}               
+        self.kwargs.update(d)
 
         network=self.class_network(self.name, **self.kwargs)  
         network.reset=False     
         duds=network.simulation_loop()
-
-#         network.set_sim_stop(1000.0)     
-        vm=duds['voltage_signal']
-        spk=duds['spike_signal']
-        pylab.figure()
-        ax=pylab.subplot(511)  
-        
-        obj=spk['n1'].wrap.as_spike_list() 
-        vm['n1'].plot(**{'ax':ax, 'id_list':[0], 'spike_signal':obj,})  
-        obj=spk['n2'].wrap.as_spike_list() 
-        vm['n2'].plot(**{'ax':ax, 'id_list':[0],  'spike_signal':obj})  
-
-        ax.legend(['Neuron 1', 'Neuron 2'])
-        ax=pylab.subplot(512)
-        obj=spk['m1'].wrap.as_spike_list()
-        vm['m1'].plot(**{'ax':ax, 'id_list':[0,1], 'spike_signal':obj})  
-        ax.legend(['Dopamine neurons'])
-        
-        ax=pylab.subplot(513)  
-        spk['n1'].plot_firing_rate(ax, **{'win':100})
-
-        ax=pylab.subplot(513)  
-        spk['n2'].plot_firing_rate(ax,**{'win':100})
-
-        ax=pylab.subplot(513)  
-        spk['m1'].plot_firing_rate(ax, **{'win':100})
-        ax.legend(['Neuron 1', 'Neuron 2','Dopamine neurons'])
-
-        ax=pylab.subplot(514)    
-            
-        ax.plot(numpy.array(duds['n1_n2']['weight']))
-        ax.set_ylabel('Weight')
-        ax.legend(['Bcpnn dopa', 'Bcpnn (Phils code)' ])
-         
-        ax=pylab.subplot(515)    
-             
-#         ax.plot(numpy.array(duds['n1_n2']['c']), **{'label':'Eligability trace'})
-#         ax.legend()
-#                 
-#         ax.set_ylim([0,1])
-#          
+        plot_plastic_dopa(duds)
+        pylab.show() 
  
-        ax.plot(numpy.array(duds['n1_n2']['n'])[:,0], **{'label':'Dopamine (Kappa)'})
-        ax.legend()     
-        pylab.show()   
+class TestMixinSetup(object):
+    def _setUp(self, **kwargs):
+        dic_rep=kwargs.get('dic_rep',{})
+        d={'simu':{'sim_stop':3000.0,
+                    'threads':4,
+                    'mm_params':{'to_file':False, 'to_memory':True},
+                    'sd_params':{'to_file':False, 'to_memory':True}},
+            'netw':{'size':9.},
+            'node':{self.node:{'mm':{'active':True},
+                               'sd':{'active':True}}}}
+        dic_rep=misc.dict_update(d, dic_rep)
+        self.kwargs.update({'verbose':False,
+                            'par':self.class_par(**{'dic_rep':dic_rep})})
+        self.dic_rep=dic_rep
+
+class TestUnittest_base(unittest.TestCase):
+    kwargs=network_kwargs()
+    curr=[100,500,700]
+    curr_IV=range(0,400,110)
+    rates=range(200, 500, 100)
+       
+    def setUp(self):    
+        self.class_network=Network
+        self.class_par=Unittest
+        self.name='net1'
+        self.node='n1'
+        self.input='i1'
+        self._setUp()
+
         
-   
+class TestUnittest(
+                   TestUnittest_base, 
+                   TestMixin_1, 
+                   TestMixin_2,
+                   TestMixinSetup,
+                   ):
+    pass
+
+class TestUnittestExtend_base(unittest.TestCase):
+    kwargs=network_kwargs()
+    curr=[100,500,700]
+    curr_IV=range(0,400,110)
+    rates=range(200, 500, 100)
+       
+    def setUp(self):    
+        self.class_network=Network
+        self.class_par=Unittest_extend
+        self.name='net1'
+        self.node='n1'
+        self.input='i1'
+        self._setUp()
+
         
-        
+class TestUnittestExtend(
+                   TestUnittest_base, 
+                   TestMixin_1, 
+                   TestMixin_2,
+                   TestMixinSetup,
+                   ):
+    pass        
 class TestUnittestBcpnnDopa_base(unittest.TestCase):
     kwargs=network_kwargs()
     
@@ -1094,16 +1167,18 @@ class TestUnittestBcpnnDopa_base(unittest.TestCase):
         self.other=Unittest()
         self.class_network=Network
         self.class_par=Unittest_bcpnn_dopa
-        #self.fileName=self.class_network().path_data+'network'
-        self.model_list=['n1']
         dic_rep={}
-        dic_rep.update({'simu':{'sim_stop':20000.0,
-                                'sim_time':1000.0,
+        dic_rep.update({'simu':{'sim_stop':9000.0,
+                                'sim_time':100.0,
                                 'threads':1,
                          'mm_params':{'to_file':False, 'to_memory':True},
                          'sd_params':{'to_file':False, 'to_memory':True}},
-                         'netw':{'size':12},
+                         'netw':{'size':52},
                          'node':{'n1':{'mm':{'active':True},
+                                       'sd':{'active':True}},
+                                 'n2':{'mm':{'active':True},
+                                       'sd':{'active':True}},
+                                 'm1':{'mm':{'active':True},
                                        'sd':{'active':True}}}})
         self.kwargs.update({'verbose':True,
                             'par':self.class_par(**{'dic_rep':dic_rep,
@@ -1113,8 +1188,8 @@ class TestUnittestBcpnnDopa_base(unittest.TestCase):
         self.name='net1'        
         
    
-class TestUnittestBcpnnDopa(TestUnittestBcpnnDopa_base, TestUnittestMixin,
-                        TestUnittestPlasticDopMixin):
+class TestUnittestBcpnnDopa(TestUnittestBcpnnDopa_base, TestMixin_1,
+                        TestMixinPlasticDopa):
     pass
 
 class TestUnittestStdp_base(unittest.TestCase):
@@ -1129,8 +1204,8 @@ class TestUnittestStdp_base(unittest.TestCase):
         self.other=Unittest_bcpnn_dopa(**{'other':Unittest()})
         dic_rep={}
         
-        dic_rep.update({'simu':{'sim_stop':400.0,
-                                'sim_time':50.0,
+        dic_rep.update({'simu':{'sim_stop':5000.0,
+                                'sim_time':100.0,
                                 'threads':1,
                          'mm_params':{'to_file':False, 'to_memory':True},
                          'sd_params':{'to_file':False, 'to_memory':True}},
@@ -1146,8 +1221,11 @@ class TestUnittestStdp_base(unittest.TestCase):
         self.name='net1'        
       
  
-class TestUnittestStdp(TestUnittestStdp_base, TestUnittestMixin,
-                        TestUnittestPlasticDopMixin):
+class TestUnittestStdp(
+                       TestUnittestStdp_base, 
+                       TestMixin_1,
+                       TestMixinPlasticDopa,
+                       ):
     pass
 
 class TestUnittestBcpnn_base(unittest.TestCase):
@@ -1179,221 +1257,295 @@ class TestUnittestBcpnn_base(unittest.TestCase):
         self.name='net1'        
       
  
-class TestUnittestBcpnn(TestUnittestBcpnn_base, TestUnittestMixin,
-                        TestUnittestPlasticMixin):
+class TestUnittestBcpnn(TestUnittestBcpnn_base, TestMixin_1,
+                        TestMixinPlastic):
+    pass
+
+
+
+class TestSinlge_unit_base(unittest.TestCase):
+    kwargs=network_kwargs()
+    curr=range(200,400,50)#[-300,500,700]
+    curr_IV=range(-300,200, 100)
+    rates=range(0, 1600, 500)
+       
+    def setUp(self):    
+        self.class_network=Network
+        self.class_par=Single_unit
+        self.name='net1'
+        self.node='FS'
+        self.input='CFp'
+
+        d={'simu':{'sim_stop':3000.0,
+                   'sim_time':1000.0,
+                   'start_rec':0.0,
+                   'stop_rec':3000.0,
+                   'print_time':False,
+                    'threads':1,
+                    'mm_params':{'to_file':False, 'to_memory':True},
+                    'sd_params':{'to_file':False, 'to_memory':True},
+                    },
+            'netw':{'size':9.,
+                    'single_unit':self.node},
+            'node':{self.node:{'mm':{'active':True},
+                               'sd':{'active':True},
+                               'n_sets':3},
+                    'FSp':{'lesion':True},
+                    'GAp':{'lesion':True},
+                    'CFp':{'lesion':False, 'rate':0.0},
+                    }}
+        par=self.class_par(**{'dic_rep':d,
+                               'other':Inhibition()})
+        self.kwargs.update({'verbose':True,
+                            'par':par})
+        self.dic_rep=d
+
+        
+class TestSingle_unit(
+                   TestSinlge_unit_base, 
+                   TestMixin_1, 
+                   TestMixin_2,
+                   ):
     pass
 
 class TestNetwork_dic(unittest.TestCase):
     def setUp(self):
         self.x0=[3000.0, 3000.0]
-        opt={'f':['n2', 'n3'],
-             'x':['node.n1.rate', 'node.n4.rate'],
+        opt={'f':['n1', 'n2'],
+             'x':['node.i1.rate', 'node.i2.rate'],
              'x0':self.x0}
         
         dic_rep={}
         dic_rep.update({'simu':{'sim_stop':1000.0,
-                                'stim_time':1000.0,
+                                'sim_time':1000.0,
                              'mm_params':{'to_file':False, 'to_memory':True},
                              'sd_params':{'to_file':False, 'to_memory':True}},
-                             'netw':{'size':20.,
-                                     'optimization':opt}})
+                        'netw':{'rand_nodes':{'C_m':False, 
+                                              'V_th':False, 
+                                              'V_m':False},
+                                'size':50.,
+                                'optimization':opt},
+#                         'conn':{'n1_n2':{'lesion':True}},
+                        })
 
         k={'class':'Unittest',
             'save_conn':False, 
             'sub_folder':'unit_testing', 
             'verbose':True,
-            'dic_rep':dic_rep}
+            'par':Unittest_extend(**{'dic_rep':dic_rep, 'other':Unittest()})}
         self.network_kwargs=k
-        self.nd=Network_list()
+#         self.nd=Network_list()
         #nd.add(name, **kwargs)
-        self.kwargs={'models':self.nd}
+#         self.kwargs={'models':self.nd}
     
     def test_x_slice(self):
-        self.nd.add('net1', **self.network_kwargs) 
+        nd=Network_list([Network('net1', **self.network_kwargs)])
+#         self.nd.add('net1', **self.network_kwargs) 
         #self.nd.sim_optimization([3000, 3000])
-        s=self.nd.x_slices
+        s=nd.x_slices
         self.assertEqual(s,[slice(0,2)])
         
-        self.nd.add('net2', **self.network_kwargs) 
-        s=self.nd.x_slices
+        nd.append( Network('net2', **self.network_kwargs)) 
+        s=nd.x_slices
         self.assertEqual(s,[slice(0,2),slice(2,4)]) 
      
     def test_sim_optimization(self):
-        self.nd.add('net1', **self.network_kwargs) 
-        e1=self.nd.sim_optimization([3000., 3000.])
-       
-        self.nd.add('net2', **self.network_kwargs) 
-        e2=self.nd.sim_optimization([3000., 3000., 3100., 3100.])
+        nd=Network_list([Network('net1', **self.network_kwargs)])
+#         self.nd.add('net1', **self.network_kwargs) 
+        e1=nd.sim_optimization([3000., 3000.])
+        nd.append( Network('net2', **self.network_kwargs)) 
+        e2=nd.sim_optimization([3000., 3000., 3100., 3100.])
         
         self.assertAlmostEquals(sum(e1),sum(e2[0:2]), delta=0.1)
         self.assertFalse(sum(e1)==sum(e2))
+
+
+
                            
-class TestStructureInhibition(unittest.TestCase):
-    
-    nest.sr("M_WARNING setverbosity") #silence nest output
-    def do_reset(self):
-        self.kwargs={'save_conn':False, 'sub_folder':'unit_testing', 'verbose':True}
-        self.dic_rep={'simu':{'start_rec':1.0, 'stop':100.0,'sim_time':100., 
-                              'sd_params':{'to_file':True, 'to_memory':False},
-                              'threads':4, 'print_time':False},
-             'netw':{'size':500.0},
-             }
-        
-    def change_fan_in(self):
-        self.dic_rep.update({'conn':{'M1_M1_gaba':{'fan_in0':5},
-                                     'M1_M2_gaba':{'fan_in0':5},
-                                     'M2_M1_gaba':{'fan_in0':5},
-                                     'M2_M2_gaba':{'fan_in0':5},
-                                     'M1_SN_gaba':{'fan_in0':5},
-                                     'M2_GI_gaba':{'fan_in0':5}}})
-        
-    def build_connect(self):
-        network=self.class_network(self.name, **self.kwargs)
-        
-        for key, val in network.par['conn'].items():
-            #print key
-            if val['delay_setup']['type']=='uniform':
-                val['delay_setup']['type']='constant'
-                val['delay_setup']['params']=(val['delay_setup']['params']['max']
-                                              +val['delay_setup']['params']['min'])/2.
-        
-        network.do_build()
-        network.do_connect()
-        return network 
-    
-    def setUp(self):
-        self.do_reset()
-        self.change_fan_in()
-        self.dic_rep['netw'].update({'size':50.0, 
-                                     'sub_sampling':{'M1':20.0,'M2':20.0}})
-        self.class_network=Inhibition
-        
-        self.fileName=self.class_network().path_data+'network'
-        self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
-            
-    def test_a_build_connect_run(self):
-        
-        network=self.build_connect()
-        network.do_run()
-        data_to_disk.pickle_save(network, self.fileName)
-
-        
-    def test_reset(self):
-        network=self.build_connect()    
-        network.do_run()
-        network.do_reset()
-        network.do_run()
-        self.assertEqual(network.start_rec, network.sim_start)
-        
-    def test_get_firing_rate(self):
-        
-        network=data_to_disk.pickle_load(self.fileName)
-        my_nest.SetKernelStatus({'data_path':network.path_nest})
-        fr=network.get_firing_rate(self.model_list)
-        
-        for k in self.model_list:
-            self.assertEqual(len(fr[k]['times']), network.par['simu']['sim_time']-1)
-            self.assertEqual(len(fr[k]['rates']), network.par['simu']['sim_time']-1)
-
-    def test_get_firing_rate_sets(self):
-        
-        network=data_to_disk.pickle_load(self.fileName)
-        my_nest.SetKernelStatus({'data_path':network.path_nest})
-        d=network.get_firing_rate_sets(self.model_list)
-        
-        for k in self.model_list:
-            self.assertEqual(len(d[k]['times']), network.par['simu']['sim_time']-1)
-            self.assertEqual(d[k]['rates'].shape[1], network.par['simu']['sim_time']-1)
-            self.assertEqual(d[k]['rates'].shape[0], network.par['node'][k]['n_sets'])
-
-    def test_get_raster(self):
-        
-        network=data_to_disk.pickle_load(self.fileName)
-        my_nest.SetKernelStatus({'data_path':network.path_nest})
-        d=network.get_rasters(self.model_list)
-        
-        for k in self.model_list:
-            self.assertIsInstance(d[k][0], numpy.ndarray)
-            self.assertEqual(d[k][0].shape[0], 2)
-            self.assertListEqual(list(d[k][1]), range(network.par['node'][k]['n']))
-
-    def test_get_rasters_sets(self):
-        
-        network=data_to_disk.pickle_load(self.fileName)
-        my_nest.SetKernelStatus({'data_path':network.path_nest})
-        d=network.get_rasters_sets(self.model_list)
-        
-        for k in self.model_list:
-            n_sets=network.par['node'][k]['n_sets']
-            n=network.par['node'][k]['n']
-            self.assertEqual(len(d[k]), n_sets)
-            i=0
-            acum=0
-            for l in d[k]:
-                self.assertIsInstance(l[0], numpy.ndarray)
-                self.assertEqual(l[0].shape[0], 2)
-                self.assertEqual(len(l[0][0]),len(l[0][1]))
-                
-                
-                m=len(list(range(i, n, n_sets)))
-                self.assertListEqual(list(l[1]), range(acum, acum+m))
-                i+=1
-                acum+=m
-
-
-class TestStructureSingle_units_activity(TestStructureInhibition):
-    def setUp(self):
-        self.do_reset()
-        self.class_network=Single_units_activity    
-        self.dic_rep['netw'].update({'size':10})  
-        #for key in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:
-        #    del self.dic_rep['conn'][key]
-        self.fileName=self.class_network().path_data+'network'             
-        self.model_list=['M1']
-        
-class TestStructureSlow_wave(TestStructureInhibition):
-    
-    def setUp(self):
-        self.do_reset()
-        self.change_fan_in() 
-        self.dic_rep['netw'].update({'size':50.0, 'sub_sampling':{'M1':20.0,'M2':20.0}}) 
-        self.class_network=Slow_wave
-        
-        self.fileName=self.class_network().path_data+'network'
-        self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
-        
-class TestStructureBcpnn_h0(TestStructureInhibition):
-    
-    def setUp(self):
-        self.do_reset()
-        self.change_fan_in()
-        self.dic_rep['netw'].update({'sub_sampling':{'M1':40.0,'M2':40.0, 'CO':600.0},
-                                      'size':100.})     
-        self.class_network=Bcpnn_h0
-        
-        self.fileName=self.class_network().path_data+'network'
-        self.model_list=['CO', 'M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
-            
-class TestStructureBcpnn_h1(TestStructureBcpnn_h0):
-
-    def setUp(self):
-        self.do_reset()
-        self.change_fan_in()
-        self.dic_rep['netw'].update({'sub_sampling':{'M1':40.0,'M2':40.0, 'CO':600.0},
-                                      'size':100.})      
-        self.class_network=Bcpnn_h1        
-        self.fileName=self.class_network().path_data+'network'
-        self.model_list=['CO', 'M1','M2', 'F1', 'F2', 'GA', 'GI', 'ST', 'SN']
+# class TestStructureInhibition(unittest.TestCase):
+#     
+#     nest.sr("M_WARNING setverbosity") #silence nest output
+#     def do_reset(self):
+#         self.kwargs={'save_conn':False, 'sub_folder':'unit_testing', 'verbose':True}
+#         self.dic_rep={'simu':{'start_rec':1.0, 'stop':100.0,'sim_time':100., 
+#                               'sd_params':{'to_file':True, 'to_memory':False},
+#                               'threads':4, 'print_time':False},
+#              'netw':{'size':500.0},
+#              }
+#         
+#     def change_fan_in(self):
+#         self.dic_rep.update({'conn':{'M1_M1_gaba':{'fan_in0':5},
+#                                      'M1_M2_gaba':{'fan_in0':5},
+#                                      'M2_M1_gaba':{'fan_in0':5},
+#                                      'M2_M2_gaba':{'fan_in0':5},
+#                                      'M1_SN_gaba':{'fan_in0':5},
+#                                      'M2_GI_gaba':{'fan_in0':5}}})
+#         
+#     def build_connect(self):
+#         network=self.class_network(self.name, **self.kwargs)
+#         
+#         for key, val in network.par['conn'].items():
+#             #print key
+#             if val['delay_setup']['type']=='uniform':
+#                 val['delay_setup']['type']='constant'
+#                 val['delay_setup']['params']=(val['delay_setup']['params']['max']
+#                                               +val['delay_setup']['params']['min'])/2.
+#         
+#         network.do_build()
+#         network.do_connect()
+#         return network 
+#     
+#     def setUp(self):
+#         self.do_reset()
+#         self.change_fan_in()
+#         self.dic_rep['netw'].update({'size':50.0, 
+#                                      'sub_sampling':{'M1':20.0,'M2':20.0}})
+#         self.class_network=Inhibition
+#         
+#         self.fileName=self.class_network().path_data+'network'
+#         self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
+#             
+#     def test_a_build_connect_run(self):
+#         
+#         network=self.build_connect()
+#         network.do_run()
+#         data_to_disk.pickle_save(network, self.fileName)
+# 
+#         
+#     def test_reset(self):
+#         network=self.build_connect()    
+#         network.do_run()
+#         network.do_reset()
+#         network.do_run()
+#         self.assertEqual(network.start_rec, network.sim_start)
+#         
+#     def test_get_firing_rate(self):
+#         
+#         network=data_to_disk.pickle_load(self.fileName)
+#         my_nest.SetKernelStatus({'data_path':network.path_nest})
+#         fr=network.get_firing_rate(self.model_list)
+#         
+#         for k in self.model_list:
+#             self.assertEqual(len(fr[k]['times']), network.par['simu']['sim_time']-1)
+#             self.assertEqual(len(fr[k]['rates']), network.par['simu']['sim_time']-1)
+# 
+#     def test_get_firing_rate_sets(self):
+#         
+#         network=data_to_disk.pickle_load(self.fileName)
+#         my_nest.SetKernelStatus({'data_path':network.path_nest})
+#         d=network.get_firing_rate_sets(self.model_list)
+#         
+#         for k in self.model_list:
+#             self.assertEqual(len(d[k]['times']), network.par['simu']['sim_time']-1)
+#             self.assertEqual(d[k]['rates'].shape[1], network.par['simu']['sim_time']-1)
+#             self.assertEqual(d[k]['rates'].shape[0], network.par['node'][k]['n_sets'])
+# 
+#     def test_get_raster(self):
+#         
+#         network=data_to_disk.pickle_load(self.fileName)
+#         my_nest.SetKernelStatus({'data_path':network.path_nest})
+#         d=network.get_rasters(self.model_list)
+#         
+#         for k in self.model_list:
+#             self.assertIsInstance(d[k][0], numpy.ndarray)
+#             self.assertEqual(d[k][0].shape[0], 2)
+#             self.assertListEqual(list(d[k][1]), range(network.par['node'][k]['n']))
+# 
+#     def test_get_rasters_sets(self):
+#         
+#         network=data_to_disk.pickle_load(self.fileName)
+#         my_nest.SetKernelStatus({'data_path':network.path_nest})
+#         d=network.get_rasters_sets(self.model_list)
+#         
+#         for k in self.model_list:
+#             n_sets=network.par['node'][k]['n_sets']
+#             n=network.par['node'][k]['n']
+#             self.assertEqual(len(d[k]), n_sets)
+#             i=0
+#             acum=0
+#             for l in d[k]:
+#                 self.assertIsInstance(l[0], numpy.ndarray)
+#                 self.assertEqual(l[0].shape[0], 2)
+#                 self.assertEqual(len(l[0][0]),len(l[0][1]))
+#                 
+#                 
+#                 m=len(list(range(i, n, n_sets)))
+#                 self.assertListEqual(list(l[1]), range(acum, acum+m))
+#                 i+=1
+#                 acum+=m
+# 
+# 
+# class TestStructureSingle_units_activity_base(unittest.TestCase):
+#     def setUp(self):
+#         self.do_reset()
+#         self.class_network=Single_units_activity    
+#         self.dic_rep['netw'].update({'size':10})  
+#         #for key in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:
+#         #    del self.dic_rep['conn'][key]
+#         self.fileName=self.class_network().path_data+'network'             
+#         self.model_list=['M1']
+# 
+# class TestStructureSingle_units_activity(TestStructureSingle_units_activity_base, TestMixin_1):
+#     pass
+# 
+# 
+# class TestStructureSingle_units_in_vitro_base(unittest.TestCase):
+#     def setUp(self):
+#         self.do_reset()
+#         self.class_network=Single_units_activity    
+#         self.dic_rep['netw'].update({'size':10})  
+#         #for key in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:
+#         #    del self.dic_rep['conn'][key]
+#         self.fileName=self.class_network().path_data+'network'             
+#         self.model_list=['M1']
+# 
+# class TestStructureSingle_units_in_vitro(TestStructureSingle_units_activity_base, TestMixin_1):
+#     pass
+#         
+# class TestStructureSlow_wave(TestStructureInhibition):
+#     
+#     def setUp(self):
+#         self.do_reset()
+#         self.change_fan_in() 
+#         self.dic_rep['netw'].update({'size':50.0, 'sub_sampling':{'M1':20.0,'M2':20.0}}) 
+#         self.class_network=Slow_wave
+#         
+#         self.fileName=self.class_network().path_data+'network'
+#         self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
+#         
+# class TestStructureBcpnn_h0(TestStructureInhibition):
+#     
+#     def setUp(self):
+#         self.do_reset()
+#         self.change_fan_in()
+#         self.dic_rep['netw'].update({'sub_sampling':{'M1':40.0,'M2':40.0, 'CO':600.0},
+#                                       'size':100.})     
+#         self.class_network=Bcpnn_h0
+#         
+#         self.fileName=self.class_network().path_data+'network'
+#         self.model_list=['CO', 'M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
+#             
+# class TestStructureBcpnn_h1(TestStructureBcpnn_h0):
+# 
+#     def setUp(self):
+#         self.do_reset()
+#         self.change_fan_in()
+#         self.dic_rep['netw'].update({'sub_sampling':{'M1':40.0,'M2':40.0, 'CO':600.0},
+#                                       'size':100.})      
+#         self.class_network=Bcpnn_h1        
+#         self.fileName=self.class_network().path_data+'network'
+#         self.model_list=['CO', 'M1','M2', 'F1', 'F2', 'GA', 'GI', 'ST', 'SN']
 
        
 if __name__ == '__main__':
     
     test_classes_to_run=[
 #                         TestUnittest,
-                        TestUnittestBcpnnDopa,
+#                           TestUnittestExtend,
+#                         TestUnittestBcpnnDopa,
 #                         TestUnittestStdp,
 #                         TestUnittestBcpnn,
-#                         TestUnittest_bcpnn,
+                        TestSingle_unit
 #                         TestNetwork_dic,
                        ]
     suites_list = []

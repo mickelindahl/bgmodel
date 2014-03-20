@@ -71,11 +71,15 @@ from copy import deepcopy
 from toolbox import misc
 from toolbox.misc import my_slice
 
-
+import sys
 
 import nest # Has to after misc. 
 import numpy
 import operator
+
+import pprint
+pp=pprint.pprint
+
 
 from os.path import expanduser
 HOME = expanduser("~")
@@ -93,6 +97,11 @@ class Call(object):
         if type(args[0])==list:
             args=args[0]
 
+        self.dtype=kwargs.get('dtype', None)
+        
+        if 'dtype' in kwargs.keys():
+            del kwargs['dtype']
+
         self.method=args[0]
         self.args=args[1:]
         self.kwargs=kwargs  
@@ -104,19 +113,44 @@ class Call(object):
     
     @classmethod
     def set_obj(cls, obj):
-        cls.obj=obj
+        cls.obj=obj #caller
        
     def do(self, obj=None):
-        if obj!=None:
-            self.obj=obj
-        
-        if self.obj==None:
-            raise RuntimeError('Need to set class variable self.obj in Call class')
+        try:
+            return self._do(obj)
+        except Exception as e:
+            s='\nTrying to do Call {} (id {}) with parent ->'
+            s=s.format(self, id(self), self.parent)
+            s+=self.parent_chain('\n\t')
+            raise type(e)(e.message + s), None, sys.exc_info()[2]
+           
+           
+    def parent_chain(self, t):
+        if self.parent:
+            s=t+'with parent {} (id {}) ->'.format( self.parent, id(self.parent))
+            s+=self.parent.parent_chain(t=t+'\t')
+        else:
+            s='parent {}'.format(self.parent)
+        return s
+            
+           
+    def _do(self, obj=None):
 
-        call=getattr(self.obj, self.method)
+        if obj==None:
+            try:
+                obj=self.obj
+            except:
+                raise RuntimeError(('Need to set class variable self.obj in'+
+                                    ' Call class or provide obj at do call'))
+            
+        call=getattr(obj, self.method)
 
         if id(self)==id(self.val):
             s='val can not be a reference to self: {}'
+            raise RuntimeError(s.format(self))
+
+        if id(self)==id(self.parent):
+            s='parent can not be a reference to self: {}'
             raise RuntimeError(s.format(self))
 
         if not self.val:
@@ -124,21 +158,37 @@ class Call(object):
         else:
             #print self.parent!=None
             if self.parent!=None:
-                val_parent=self.parent.do()    
-            
+                val_parent=self.parent.do(obj)  #ensures obj integrity  
+                   
             if isinstance(self.val, Call):
                 val=self.val.do()
             else:
                 val=self.val
             
-            if self.order=='right':    
-                a=self.op(val, val_parent)
-                
-            elif self.order=='left':
-                a=self.op(val_parent, val)
-        
-        
+            try:
+                if self.order=='right':    
+                    a=self.op(val, val_parent)
+                    
+                elif self.order=='left':
+                    a=self.op(val_parent, val)
+                    
+            except Exception as e:
+                s='\nTrying to to operation {} on {} and {} \nself for {} (id {})'
+                s+=' and parent {} (id {})'
+                s=s.format(self.op.__doc__, val, val_parent, self, id(self),
+                           self.parent, id(self.parent))
+                raise type(e)(e.message + s), None, sys.exc_info()[2]
+        if self.dtype:
+            a=self.dtype(a)        
         return a
+
+             
+# import sys
+#             print self
+#             print "Unexpected error:", sys.exc_info()[0]
+#             raise
+                    
+        
         
     def __repr__(self):
         s=[str(a) for a in self.args[1:]]
@@ -165,28 +215,28 @@ class Call(object):
     def __add__(self, other):
         new=deepcopy(self)
         new.op=operator.__add__
-        return self.add_right(new, other)
+        return self.add_left(new, other)
 
     def __radd__(self, other):
         new=deepcopy(self)
         new.op=operator.__add__
-        return self.add_left(new, other)
+        return self.add_right(new, other)
     
     def __div__(self, other):
         new=deepcopy(self)
         new.op=operator.__div__
-        return self.add_right(new, other)
+        return self.add_left(new, other)
     
     def __rdiv__(self, other):
         new=deepcopy(self)
         new.op=operator.__div__
-        return self.add_left(new, other)
+        return self.add_right(new, other)
 
 
     def __mul__(self, other):
         new=deepcopy(self)
         new.op=operator.__mul__
-        return self.add_right(new, other)
+        return self.add_left(new, other)
     
     def __rmul__(self, other):
         new=deepcopy(self)
@@ -508,8 +558,12 @@ class Base(object):
                 if not isinstance(val, Call):
                     continue
                 #print k2
-                d=misc.dict_recursive_add(d, k2, val.do(self))
-
+                try:
+                    d=misc.dict_recursive_add(d, k2, val.do(self))
+                except Exception as e:
+                    s='\nTrying to add:{}'
+                    raise type(e)(e.message + s.format(str(k2))), None, sys.exc_info()[2]
+                    
         return d
 
     def apply_pertubations(self, dic):
@@ -587,8 +641,12 @@ class Base(object):
             return self.dic_con
         if type(args[0])==list:
             args=args[0]
-        
-        args=[a.do(self) if isinstance(a, Call) else a for a in args]
+        try:
+            args=[a.do(self) if isinstance(a, Call) else a for a in args]
+        except Exception as e:
+            s='\nTrying to do _get for self: {}'
+            s=s.format(self)
+            raise type(e)(e.message + s), None, sys.exc_info()[2]
         
         v=misc.dict_recursive_get(self.dic_con, args) 
         while isinstance(v,Call):
@@ -604,16 +662,18 @@ class Base(object):
         
     def get_conn(self):
         d=self.dic['conn']
-        nodes=d.keys()
+        nodes=self.get_node().keys()
         
         dic={}
         for k, v in d.items():
             source, target=k.split('_')[0:2]
 #             print v
-            if not v['lesion']:
-                dic[k]=d[k]
-            if ((source in nodes) and (target in nodes)):
-                dic[k]=d[k] 
+            if v['lesion']:
+                continue
+                #dic[k]=d[k]
+            if not ((source in nodes) and (target in nodes)):
+                continue
+            dic[k]=d[k] 
             
         return dic
 
@@ -756,15 +816,15 @@ class Base(object):
                 yield conn, syn, model    
  
     def set_print_time(self, val):
-        self.dic_rep=misc.dict_update(self.dic_rep, {'simu':{'print_time':val}})
+        self.update_dic_rep( {'simu':{'print_time':val}})
  
     def set_sim_time(self, val):
-        self.dic_rep=misc.dict_merge(self.dic_rep, {'simu':{'sim_time':val}})
- 
+        self.update_dic_rep( {'simu':{'sim_time':val}})
  
     def set_sim_stop(self, val): 
-        self.dic_rep=misc.dict_merge(self.dic_rep, {'simu':{'sim_stop':val}})
-        self.dic_rep=misc.dict_merge(self.dic_rep, {'simu':{'stop_rec':val}}) 
+        self.update_dic_rep({'simu':{'sim_stop':val}})
+        self.update_dic_rep( {'simu':{'stop_rec':val}})
+
 
     def clear_dep(self, val):
         self.dep={}
@@ -831,7 +891,7 @@ class Base_mixin(object):
         ra = {}
         ra['C_m'] = {'active':GetNetw('rand_nodes', 'C_m'), 
                      'gaussian':{'my':GetNest(model, 'C_m'), 
-                     'sigma':GetNest(model, 'C_m') * 0.1}}
+                                 'sigma':GetNest(model, 'C_m') * 0.1}}
         ra['V_th'] = {'active':GetNetw('rand_nodes', 'V_th'), 
                       'gaussian':{'my':GetNest(model, 'V_th'), 
                       'sigma':GetNetw('V_th_sigma'), 
@@ -890,7 +950,7 @@ class Base_mixin(object):
                      'params':{'min':GetNest(syn_call, 'delay') * pr, 
                                'max':GetNest(syn_call, 'delay') * (1 + pr)}}
             weight = {'type':'uniform', 
-                      'params':{'min':GetNest(syn_call) * pr, 
+                      'params':{'min':GetNest(syn_call, 'weight') * pr, 
                                 'max':GetNest(syn_call, 'weight') * (1 + pr)}}
         else:
             delay = {'type':'constant', 
@@ -1082,8 +1142,8 @@ class Unittest_base(object):
         dic['simu']['sd_params']={'to_file':True, 'to_memory':False}
         
 
-        dc=HOME+'/results/unittest/conn'
-        dp=HOME+'/results/unittest/' +self.__class__.__name__
+        dc=HOME+'/results/unittest/conn/'
+        dp=HOME+'/results/unittest/' +self.__class__.__name__+'/'
         df=dp
         dn=dp+'/nest/'
         
@@ -1151,9 +1211,9 @@ class Unittest_base(object):
         d1=self._get_defaults_conn( c, syn)
         d1['delay']['params']=GetNest(syn,'delay')
         d1['delay']['type']='constant'  
-        d1['fan_in0']=10.
+        d1['fan_in0']=1.
         d1['mask']=[-0.25,0.25]
-        d1['rule']='all-all'
+        d1['rule']='1-1'
         d1['syn']=inp+'_'+net+'_nest'
         d1['weight']['params']=GetNest(syn,'weight')   
         d1['weight']['type']='constant'        
@@ -1250,11 +1310,14 @@ class Unittest_extend_base(object):
             'params':GetNest( syn,'weight')}
         
         d2=deepcopy(dic_other['conn']['i1_n1'])
+        d2['fan_in0']=10.0
         d2['fan_in']=DepConn('n1_n2', 'calc_fan_in')
         d2['delay']=d 
         d2['mask']=[-e, e]
         d2['rule']='set-set'
         d2['syn']='n1_n2_nest'
+        d2['source']='n1'
+        d2['target']='n2'
         d2['weight']=w
         
         syn= GetConn('i2_n2', 'syn')
@@ -1264,8 +1327,10 @@ class Unittest_extend_base(object):
             'params':GetNest( syn,'weight')}
         
         d3=deepcopy(dic_other['conn']['i1_n1'])
-        d3['fan_in']=DepConn('n1_n2', 'calc_fan_in')
+        d3['fan_in']=DepConn('i2_n2', 'calc_fan_in')
         d3['delay']=d
+        d3['source']='i2'
+        d3['target']='n2'
         d3['syn']='i2_n2_nest'
         d3['weight']=w
       
@@ -1285,29 +1350,23 @@ class Unittest_bcpnn_dopa_base(object):
             
         dic={}
         dic['netw']={}
-        dic['netw']['size']=12
-        dic['netw']['n_nuclei']={'n1':1, 'n2':1, 'm1':10}
+        dic['netw']['size']=52
+        dic['netw']['n_nuclei']={'n1':1, 'n2':1, 'm1':50}
         
-        params1={'start':1.0,
-                'time_first':1000.0,
-                'time_second':1000.0 ,
-                'rate_first':3100.0,
-                'rate_second':2600.0,
-                'repetitions':20}
+        params1={
+                'duration':[800.,100.]+[800,100]*9,
+                'rates':[2000.0, 3500.0]*10,
+                'repetitions':2}
         
-        params2={'start':1.0,
-                'time_first':1000.0,
-                'time_second':1000.0 ,
-                'rate_first':3100.0,
-                'rate_second':2600.0,
-                'repetitions':20}
+        params2={
+                'duration':[800.,100.]+[800,100]*9,
+                'rates':[2000.0, 3500.0]*10,
+                'repetitions':2}
         
-        params3={'start':0.0,
-                'time_first':10000.0,
-                'time_second':10000.0 ,
-                'rate_first':5000.0,
-                'rate_second':2500.0,
-                'repetitions':4}
+        params3={
+                 'duration':[1000.,200.]+[700.,200.]*9,
+                'rates':[2500.0, 2800.0]*5+[2500.0, 0.0]*5,
+                'repetitions':2}
         dic['netw']['input']={'i1':{'type':'burst','params':params1},
                               'i2':{'type':'burst','params':params2},
                               'i3':{'type':'burst','params':params3}}
@@ -1316,20 +1375,31 @@ class Unittest_bcpnn_dopa_base(object):
         # ========================
         d={'bias':0.0,   #ANN interpretation. Only calculated here to demonstrate match to rule. 
                            # Will be eliminated in future versions, where bias will be calculated postsynaptically       
-           'b':0.0,
+           'b':-0.4,
            'delay':1.,
            'dopamine_modulated':True,
+           'e_i':0.01,
+           'e_j':0.01,
+           'e_ij':0.0001,
            'epsilon':0.001, #lowest possible probability of spiking, e.g. lowest assumed firing rate
            'fmax':50.0,    #Frequency assumed as maximum firing, for match with abstract rule
-           'gain':20.0,    #Coefficient to scale weight as conductance, can be zero-ed out
+           'gain':0.0,    #Coefficient to scale weight as conductance, can be zero-ed out
+           'gain_dopa':2.0, 
            'K':1.0,         #Print-now signal // Neuromodulation. Turn off learning, K = 0
-           'n':1.0, 
+           'n':0.4,
+           'p_i':0.01,
+           'p_j':0.01,
+           'p_ij':0.0001,
+           'reverse':1., 
            'tau_i':10.,     #Primary trace presynaptic time constant
            'tau_j':10.,      #Primary trace postsynaptic time constant
-           'tau_e':100.,      #Secondary trace time constant
+           'tau_e':300.,      #Secondary trace time constant
            'tau_p':1000.,     #Tertiarty trace time constant
+           'tau_n':100.,
            'type_id':'bcpnn_dopamine_synapse',
-           'weight':10.0}
+           'weight':10.0,
+           'z_i':0.01,
+           'z_j':0.01,}
           
         dic['nest']={}
         dic['nest']['n1_n2_nest_bcpnn_dopa']=d  
@@ -1339,14 +1409,14 @@ class Unittest_bcpnn_dopa_base(object):
            'delay':1.,
            'epsilon':0.001, #lowest possible probability of spiking, e.g. lowest assumed firing rate
            'fmax':50.0,    #Frequency assumed as maximum firing, for match with abstract rule
-           'gain':20.,    #Coefficient to scale weight as conductance, can be zero-ed out
+           'gain':0.,    #Coefficient to scale weight as conductance, can be zero-ed out
            'K':1.,         #Print-now signal // Neuromodulation. Turn off learning, K = 0
            'tau_i':10.,     #Primary trace presynaptic time constant
            'tau_j':10.,      #Primary trace postsynaptic time constant
            'tau_e':100.,      #Secondary trace time constant
            'tau_p':1000.,     #Tertiarty trace time constant
            'type_id':'bcpnn_synapse',
-           'weight':10.0}
+           'weight':0.0}
                 
         dic['nest']['n1_n2_nest_bcpnn']=d  
         
@@ -1482,7 +1552,7 @@ class Unittest_bcpnn_dopa_base(object):
         d=self._get_defaults_conn( 'm1_v1', 'm1_v1_nest',
                               **{'conn_type':'constant',
                                   'rule':'all-all',
-                                  'fan_in0':10.0})         
+                                  'fan_in0':50.0})         
         dic['conn']['m1_v1']=d
 
 
@@ -1617,24 +1687,33 @@ class Unittest_bcpnn(Base, Unittest_bcpnn_base, Base_mixin):
 class Single_unit_base(object):
     
     def _get_par_constant(self):
-         
-        dic_net=self.other.get_dic_con()
-        np=self.other
+    
+#         dic_other=self.other._get_par_constant()
+        dic_other=self.other.dic
+    
+        if misc.dict_haskey(self.dic_rep, ['netw', 'single_unit']):
+            single_unit=misc.dict_recursive_get(self.dic_rep, 
+                                            ['netw', 'single_unit'])
+        else:
+            for key in dic_other['node'].keys():
+                if dic_other['node'][key]['type']=='network':
+                    single_unit=key
+                    break
                
         dic={}
 
         # ========================
         # Default simu parameters 
         # ========================        
-        dic['simu']=np.get('simu')
+        dic['simu']=dic_other['simu']
 
-        dc=(HOME+'/results/papers/inhibition/single/conn')        
+        dc=(HOME+'/results/papers/inhibition/single/conn/')        
         dp=(HOME+'/results/papers/inhibition/single/'
-            +self.other.__class__.__name__)
+            +self.other.__class__.__name__)+'/'
         df=(HOME+'/projects/papers/inhibition/figures/'
-            +self.other.__class__.__name__)
+            +self.other.__class__.__name__)+'/'
         dn=(HOME+'/results/papers/inhibition/single/'
-            +self.other.__class__.__name__+'/nest')         
+            +self.other.__class__.__name__+'/nest/')         
         
         dic['simu']['path_conn']=dc
         dic['simu']['path_data']=dp
@@ -1644,9 +1723,10 @@ class Single_unit_base(object):
         # Default netw parameters 
         # ========================
         
-        dic['netw']=np.get('netw')
+        dic['netw']=dic_other['netw']
         dic['netw']['input']={}
-        dic['netw']['n_nuclei']={self.network_node:1.}
+        dic['netw']['n_nuclei']={single_unit:1.}
+        dic['netw']['single_unit']=single_unit
         dic['netw']['sub_sampling']={}
 #       
         dic['node']={}
@@ -1654,17 +1734,28 @@ class Single_unit_base(object):
         dic['nest']={}
         dic['nest']={'my_poisson_generator': {'rate':0.0, 
                                               'type_id':'poisson_generator'} }
-        dic['nest'].update(dic_net['nest'])
+        dic['nest'].update(dic_other['nest'])
         
-        dic['node'][self.network_node]=dic_net['node'][self.network_node]
-        dic['node'][self.network_node]['n']=GetNetw('size')
+        # Since dic_other is only constant values 
+        for key in dic['nest'].keys():
+            if not 'tata_dop' in dic['nest'][key].keys():
+                continue
+            dic['nest'][key]['tata_dop'] = DepNetw('calc_tata_dop')
         
-        target=self.network_node
-        d=np.get('conn')
-        for key, _, source in iter_node_connected_to(d,target):
+        dic['node'][single_unit]=dic_other['node'][single_unit]
+        dic['node'][single_unit]['n']=GetNetw('size', dtype=int)
+        dic['node'][single_unit]['mm']['params']=self.build_setup_mm_params() 
+        dic['node'][single_unit]['sd']['params']=self.build_setup_sd_params()
+        rand=self.build_setup_node_rand(GetNode(single_unit, 'model'))
+        dic['node'][single_unit]['rand']=rand 
+        dic['node'][single_unit]['sets']=DepNode( single_unit,'calc_sets')
+        dic['node'][single_unit]['nest_params']={'I_e':GetNode(single_unit, 
+                                                               'I_vivo')} 
+        d=dic_other['conn']
+        for key, _, source,tp in iter_node_connected_to(d,single_unit):
             new_name=source+'p'      
-            
-            vn=deepcopy(dic_net['node'][source])
+            new_conn=new_name+'_'+single_unit+'_'+tp
+            vn=deepcopy(dic_other['node'][source])
             
             dic['node'][new_name]=vn
             
@@ -1676,13 +1767,14 @@ class Single_unit_base(object):
             vn['spike_setup']= DepNode( new_name, 'calc_spike_setup')
             
             if vn['type']=='input':
+                vn['n']=1
                 continue
             
             vn['class_population']='MyPoissonInput'    
-            vn['n']=GetConn(key, 'fan_in')
+            vn['n']=GetConn(new_conn, 'fan_in', dtype=int)
             vn['nest_params']={}
             vn['type']='input'
-  
+            vn['target']=single_unit
             for par in ['I_vivo',  
                         'I_vitro', 
                         'mm',
@@ -1693,27 +1785,27 @@ class Single_unit_base(object):
                 if par in vn.keys():
                     del vn[par]          
 
-        # can be eatiher AMPA and NMDA or GABAA
-        for key, _, source in iter_conn_connected_to(d, target):
+        # can be either AMPA and NMDA or GABAA
+        for key, _, source, tp in iter_conn_connected_to(d, single_unit):
             new_name=source+'p' 
-    
+            new_conn=new_name+'_'+single_unit+'_'+ tp
             #Create connections   
-            vc=deepcopy(dic_net['conn'][key])
+            vc=deepcopy(dic_other['conn'][key])
                                           
             # Add units to dictionary
-            syn=GetConn(key, 'syn')
+            syn=GetConn(new_conn, 'syn')
             vc['delay']  = {'type':'constant',
                             'params':GetNest(syn,'delay') }                                 
             vc['mask']= [-0.5, 0.5]
             vc['rule']    = 'all-all'
             vc['source']=new_name
             vc['weight'] = {'type':'constant',
-                            'params':GetNest(syn,'delay') }
-            dic['conn'][key]=vc
+                            'params':GetNest(syn,'weight') }
+            dic['conn'][new_conn]=vc
         
         return dic
     
-class Single_unit(Base_single_unit, Single_unit_base, Base_mixin):
+class Single_unit(Base, Single_unit_base, Base_mixin):
     pass
 
 class InhibitionBase(object):
@@ -1766,7 +1858,7 @@ class InhibitionBase(object):
         dic['netw']['GP_fan_in']=30 
         dic['netw']['GP_rate']=30.
         dic['netw']['GP_fan_in_prop_GA']=1/17.
-        dic['netw']['GP_prop']=0.2
+        dic['netw']['GA_prop']=0.2
         dic['netw']['GI_prop']=0.8
         d={'type':'constant', 'params':{}}
         dic['netw']['input']={}
@@ -1777,8 +1869,8 @@ class InhibitionBase(object):
                                  'M2':2791000/2.,
                                  'FS': 0.02*2791000, # 2 % if MSN population
                                  'ST': 13560.,
-                                 'GI': 45960.*(1.-GetNetw('GP_prop')),
-                                 'GA': 45960.*GetNetw('GP_prop'),
+                                 'GI': 45960.*(1.-GetNetw('GA_prop')),
+                                 'GA': 45960.*GetNetw('GA_prop'),
                                  'SN': 26320.}
         
         '''
@@ -1999,7 +2091,7 @@ class InhibitionBase(object):
         dic['nest']['GI_SN_gaba']['tau_rec']  = 969.0
         dic['nest']['GI_SN_gaba']['tau_psc']  = 2.1    # (Connelly et al. 2010),
         dic['nest']['GI_SN_gaba']['type_id'] = 'tsodyks_synapse'   
-          
+        dic['nest']['GI_SN_gaba']['receptor_type']= self.rec['aeif']['GABAA_2']          
     
         # ============        
         # Input Models
@@ -2317,7 +2409,7 @@ class InhibitionBase(object):
                 'C2': { 'target':'M2', 'rate':690.}, 
                 'CF': { 'target':'FS', 'rate':1010.},
                 'CS': { 'target':'ST', 'rate':160.},#295 
-                'EA': { 'target':'GA', 'rate':1130.},
+                'EA': { 'target':'GA', 'rate':0.},
                 'EI': { 'target':'GI', 'rate':1130.},
                 'ES': { 'target':'SN', 'rate':1800.}}#295 
         
@@ -2338,14 +2430,14 @@ class InhibitionBase(object):
                  'SN':{'model':'SN',     'I_vitro':15.0,'I_vivo':19.2, }}
         
 
-        GA_prop=GetNetw('GP_prop')
+        GA_prop=GetNetw('GA_prop')
         GP_tr=GetNetw('GP_rate')
         GA_tr=GetNode('GA', 'rate')
         network['M1'].update({'rate':0.1, 'rate_in_vitro':0.0})
         network['M2'].update({'rate':0.1, 'rate_in_vitro':0.0})
         network['FS'].update({'rate':20.0, 'rate_in_vitro':0.0})
         network['ST'].update({'rate':10.0, 'rate_in_vitro':10.0})
-        network['GA'].update({'rate':5.0, 'rate_in_vitro':4.0})
+        network['GA'].update({'rate':30.0, 'rate_in_vitro':4.0})
         network['GI'].update({'rate':(GP_tr-GA_prop*GA_tr)/(1-GA_prop),
                               'rate_in_vitro':15.0})
         network['SN'].update({'rate':30., 'rate_in_vitro':15.0})
@@ -2353,8 +2445,8 @@ class InhibitionBase(object):
                  
         # Randomization of C_m and V_m
         for key in network.keys():     
-            model=GetNode(key, 'model')      
-            d=self._get_defaults_node_network(key, model)     
+            #model=GetNode(key, 'model')      
+            d=self._get_defaults_node_network(key)     
             network[key]=misc.dict_update(d,network[key])
 
         dic['node']=misc.dict_update(dic['node'], network)   
@@ -2424,18 +2516,17 @@ class InhibitionBase(object):
         # Add extend to conn
         for k in sorted(conns.keys()): 
             source=k.split('_')[0]
-            syn=GetConn(k, 'syn') 
-            d=self._get_defaults_conn(k,syn)
-            
-            if k=='FS_M2_gaba':
-                d['beta_fan_in']=0.8
 
             # Cortical input do not randomally change CTX input
             if dic['node'][source]['type']=='input':
-                d['delay']  = {'type':'constant', 
-                               'params':GetNest(syn,'delay')}
-                d['weight'] = {'type':'constant', 
-                               'params':GetNest(syn,'weight')}
+                kwargs={'conn_type':'constant'}
+            if dic['node'][source]['type']=='network':
+                kwargs={'conn_type':'uniform'}
+ 
+            d=self._get_defaults_conn(k, k, **kwargs)
+            
+            if k=='FS_M2_gaba':
+                d['beta_fan_in']=0.8
 
             e=None
             if k in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:#pre[0:2] in ['M1', 'M2'] and post[0:2] in ['M1', 'M2']:
@@ -2869,7 +2960,7 @@ class Bcpnn_h0_base(object):
         for k in sorted(conns.keys()): 
                         
             syn=GetConn(k, 'syn')
-            d=self._get_defaults_conn(k,syn)
+            d=self._get_defaults_conn(k, syn)
             # Cortical input do not randomally change CTX input
             if k=='EC_CO_ampa':
                 d['delay']  = {'type':'constant', 
@@ -3253,18 +3344,16 @@ def calc_spike_setup(n, params, rate ,start, stop, typ):
                      't_stop':stop}]
 
     if typ=='burst': 
-        tb=params['time_first']
-        tp=params['time_second'] 
-        rb=params['rate_first']
-        rp=params['rate_second']
-        s=params['start']        
+        t=numpy.array(params['duration'])
+        r=params['rates']     
         rep=params['repetitions']
-        step=tb+tp
+        
         idx=range(n)
-        times=numpy.array([[s+step*i, s+tb+step*i] for i in range(rep) ])
+        times=numpy.array([[0]+list(numpy.cumsum(t)[0:-1])
+                          +i*numpy.sum(t) for i in range(rep) ])
         times=list(times.ravel())
         
-        rates=[rb,rp]*rep
+        rates=r*rep
         setup+=[{'rates':rates, 
                  'times':times, 
                  'idx':idx,
@@ -3364,18 +3453,17 @@ def dummy_args(flag, **kwargs):
              'times': [1.0, 1050.0, 2000.0]}])
  
         #BURST
-        params={'start':100.0,
-                'time_first':100.0,
-                'time_second':500.0 ,
-                'rate_first':10.0,
-                'rate_second':0.0,
+        params={'duration':[100.0, 500.0, 200.0],
+                'rates':[10.0,0.0, 20.0],
                 'repetitions':2}
         
         args.append([4, params, 25.0, 100.0, 2000.0, 'burst']) 
-        out.append([{'rates': [10.0, 0.0, 10.0, 0.0], 
+        out.append([{'rates': [10.0, 0.0, 20.0, 
+                               10.0, 0.0, 20.0], 
                      't_stop': 2000.0, 
                      'idx': [0,1,2,3], 
-                     'times': [100.0, 200.0, 700.0, 800.0]}]) 
+                     'times': [0.0, 100.0, 600.0,  
+                               800.0, 900.0, 1400]}]) 
     
     
     if flag=='calc_sets':
@@ -3428,7 +3516,7 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
         # ========================
         
         d1={'delay': { 'params':1.0},
-            'fan_in':10.0,
+            'fan_in':1.0,
             'netw_size':n,
             'save_path':HOME+'/results/unittest/conn', 
             'tata_dop':0.0,
@@ -3471,8 +3559,8 @@ def dummy_unittest_bcpnn_dopa(flag=True):
     
     
     dic['node']['m1']=deepcopy(dic['node']['n1'])
-    dic['node']['m1']['n']=10
-    dic['node']['m1']['sets']=[my_slice(s, 10, 1) for s in range(1)]
+    dic['node']['m1']['n']=30
+    dic['node']['m1']['sets']=[my_slice(s, 30, 1) for s in range(1)]
     
     dic['node']['n2']=deepcopy(dic['node']['n1']) 
     dic['node']['n2']['sets']=[my_slice(s, 1, 1) for s in range(1)]     
@@ -3500,23 +3588,23 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'idx':range(10), 
         'times': [0., 800.0]}]
     dic['node']['i3']['spike_setup']=l   
-    dic['node']['i3']['n']=10
-    dic['node']['i3']['sets']=[my_slice(s, 10, 1) for s in range(1)]
+    dic['node']['i3']['n']=30
+    dic['node']['i3']['sets']=[my_slice(s, 30, 1) for s in range(1)]
     
 
     d1={
         'fan_in':1.0,
-        'netw_size':12,
+        'netw_size':32,
        }
 
     dic['conn']['i1_n1'].update(d1)    
     
     d1={'delay': { 'params':1.0},
         'fan_in':1.0,
-        'netw_size':12,
+        'netw_size':32,
         'save_path':HOME+'/results/unittest/conn', 
         'tata_dop':0.0,
-        'weight': {'params':10.0}, 
+        'weight': {'params':0.0}, 
        }
 
     dic['conn'].update({'n1_n2':d1})
@@ -3524,10 +3612,10 @@ def dummy_unittest_bcpnn_dopa(flag=True):
 
     d1={'delay': { 'params':1.0},
         'fan_in':1.0,
-        'netw_size':12,
+        'netw_size':32,
         'save_path':HOME+'/results/unittest/conn', 
         'tata_dop':0.0,
-        'weight': {'params':10.0}, 
+        'weight': {'params':0.0}, 
        }
     
     dic['conn'].update({'n1_n2_dopa':d1})
@@ -3535,7 +3623,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
 
     d1={'delay': { 'params':1.0},
         'fan_in':1.0,
-        'netw_size':12,
+        'netw_size':32,
         'save_path':HOME+'/results/unittest/conn', 
         'tata_dop':0.0,
         'weight': {'params':10.0}, 
@@ -3545,7 +3633,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
     
     d={'delay': { 'params':1.0},
         'fan_in':10.0,
-        'netw_size':12,
+        'netw_size':32,
         'save_path':HOME+'/results/unittest/conn', 
         'tata_dop':0.0,
         'weight': {'params':1.0}, 
@@ -3555,7 +3643,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
  
     d={'delay': { 'params':1.0},
         'fan_in':1.0,
-        'netw_size':12,
+        'netw_size':32,
         'save_path':HOME+'/results/unittest/conn', 
         'tata_dop':0.0,
         'weight': {'params':10.0}, 
@@ -3594,19 +3682,19 @@ def dummy_perturbations_lists(flag, conn):
 
 def iter_conn_connected_to(d, target):
     for key, val in d.items():
-        s, t=key.split('_')[0:2]
+        s, t, tp=key.split('_')
         if t==target: 
-            yield key, val, s  
+            yield key, val, s, tp  
 
 def iter_node_connected_to(d, target):
     l=[]
     for key, val in d.items():
-        s, t=key.split('_')[0:2]
+        s, t, tp=key.split('_')
         if t!=target:
             continue 
         if s in l:
             continue
-        yield key, val, s 
+        yield key, val, s, tp
         l.append(s) 
 
            
@@ -3665,14 +3753,20 @@ class TestCall(unittest.TestCase):
 
     def test3(self):
         return -4
+
+    def test4(self):
+        return 4
     
     def setUp(self):
         self.m=misc.import_module('toolbox.network.default_params')
         Call.set_obj(self)
+
         self.c=Call('test') 
         self.d=Call('test')
         self.e=Call('test2') 
         self.f=Call('test3')        
+        self.g=Call('test4')
+            
 #    def test_do(self):
 #        self.assertEqual(self.c.do(),4)
         
@@ -3685,7 +3779,8 @@ class TestCall(unittest.TestCase):
         
     def test_mul(self):
         self.assertEquals(self.c.do()*4, (self.c*4).do(), 4*4)
-        self.assertEquals(self.c.do()*self.d.do(), (self.c*4).do(), 4*4)        
+        self.assertEquals(self.c.do()*self.d.do(), (self.c*4).do(), 4*4)     
+           
     def test_sub(self):
         self.assertEquals(self.c.do()-4, (self.c-4).do(), 4-4)
         self.assertEquals(self.f.do()-4, (self.f-4).do(), -4-4)
@@ -3700,6 +3795,9 @@ class TestCall(unittest.TestCase):
         
         self.assertEquals(3000.0*(1-self.e.do()), (3000.0*(1-self.e)).do() , 
                          3000.0*0.2) 
+    def test_complicated_3(self):   
+        self.assertEquals(((self.c-self.e*self.c)/(1-self.e)).do(),
+                          (4-0.8*4)/(1-0.8))    
 
 class TestCallSubClassesWithBase(unittest.TestCase):
     def add(self, *args):
@@ -3880,8 +3978,9 @@ class TestMixinBase(object):
         self.assertListEqual(l1, l2)
             
         # Assert 'n' is not present in dependable dict any more
-        d=dic_post_dep['node'][self.test_node_model]
-        self.assertFalse('n' in d.keys())
+        if self.test_node_model in dic_post_dep['node'].keys():
+            d=dic_post_dep['node'][self.test_node_model]
+            self.assertFalse('n' in d.keys())
     
             
     def test_pertubations(self):
@@ -3927,8 +4026,8 @@ class TestMixinBase(object):
    
     def test_change_con_effect_dep_initiation(self):
         mul=8
-        d={'netw': {'size': self.par.dic['netw']['size']*2}}
-        self.kwargs['par_rep']=d 
+        d={'netw': {'size': self.par.dic['netw']['size']}}
+        self.kwargs['dic_rep']=d 
            
         par= self.the_class(**self.kwargs)
         dic=deepcopy(par.dic)
@@ -4015,7 +4114,7 @@ class TestMixinBase(object):
         self.par.update_dic_rep(dic_rep)
             
         dic_rep={'node':{'dummy':{'n':100*3}}} 
-        self.assertRaises(KeyError, self.par.update_dic_rep, dic_rep)
+        self.assertRaises(LookupError, self.par.update_dic_rep, dic_rep)
             
            
          
@@ -4109,11 +4208,11 @@ class TestInhibition(TestInhibitionBase, TestMixinBase, TestSetup_mixin ):
         
 class TestSingleUnitBase(unittest.TestCase):     
     def setUp(self):
-        self.kwargs={'network_node':'GA', 
+        self.kwargs={'dic_rep':{'netw':{'single_unit':'FS'}}, 
                      'other':Inhibition()}
         self.the_class=Single_unit
-        self.pert=dummy_perturbations_lists('inhibition', 'EA_GA_ampa')
-        self.test_node_model='GA'
+        self.pert=dummy_perturbations_lists('inhibition', 'CFp_FS_ampa')
+        self.test_node_model='FS'
         self._setUp()       
         
 class TestSingleUnit(TestSingleUnitBase, TestMixinBase, TestSetup_mixin):
@@ -4173,12 +4272,12 @@ if __name__ == '__main__':
     
     test_classes_to_run=[
 #                         TestModuleFuncions,
-#                         TestCall,
+                        TestCall,
 #                         TestCallSubClassesWithBase,
 #                         TestUnittest,
 #                         TestUnittestExtend,
 #                         TestUnittestBcpnn,   
-                        TestUnittestBcpnnDopa,   
+#                         TestUnittestBcpnnDopa,   
 #                         TestUnittestStdp, 
 #                         TestSingleUnit,
 #                         TestInhibition,

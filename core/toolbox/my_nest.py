@@ -108,7 +108,17 @@ def CC( pre,  post,
             	ConvergentConnect( pre, [ post_id ], weight = w, 
                                         delay = d, model = m )                   
 
-
+def Create(*args, **kwargs):
+    try:
+        return nest.Create(*args, **kwargs)
+    except Exception as e:
+        s='\nargs:{} \nkwargs:{} \nAvailable models: \n{}'.format(args, 
+                                                           kwargs, 
+                                                           nest.Models())
+        if len(e.message)>40:
+            e.message=e.message[0:40]+'\n'+e.message[40:]
+        raise type(e)(e.message + s), None, sys.exc_info()[2]
+        
 def GetConn(soruces, targets):    
     c=[]
     

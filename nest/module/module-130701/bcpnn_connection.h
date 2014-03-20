@@ -233,8 +233,13 @@ namespace mynest
       }
 
     /* Primary synaptic traces. Noise - commented out*/
-    zi_ += (spike_height * yi_ - zi_ + epsilon_ /*+ (0.01 + (double)rand() / RAND_MAX * (0.05 - 0.01))*/ ) * resolution / taui_;
-    zj_ += (spike_height * yj_ - zj_ + epsilon_ /*+ (0.01 + (double)rand() / RAND_MAX * (0.05 - 0.01))*/ ) * resolution / tauj_;
+ /*   zi_ += (spike_height * yi_ - zi_ + epsilon_ + (0.01 + (double)rand() / RAND_MAX * (0.05 - 0.01)) ) * resolution / taui_;
+    zj_ += (spike_height * yj_ - zj_ + epsilon_ + (0.01 + (double)rand() / RAND_MAX * (0.05 - 0.01)) ) * resolution / tauj_;
+*/
+    zi_ += (spike_height * yi_ - zi_ + epsilon_ ) * resolution / taui_;
+    zj_ += (K_ < 0) ? (1./1000.0 - yj_/fmax_ - zj_ + epsilon_)
+    		* resolution / tauj_  : (spike_height * yj_ - zj_ + epsilon_ ) * resolution / tauj_;
+
 
     /* Secondary synaptic traces */
     ei_  += (zi_ - ei_) * resolution / taue_;
@@ -242,9 +247,9 @@ namespace mynest
     eij_ += (zi_ * zj_ - eij_) * resolution / taue_;
 
     /* Tertiary synaptic traces. Commented is from Wahlgren paper. */
-    pi_  += K_ * (ei_ - pi_) * resolution / taup_/* * eij_*/;
-    pj_  += K_ * (ej_ - pj_) * resolution / taup_/* * eij_*/;
-    pij_ += K_ * (eij_ - pij_) * resolution / taup_/* * eij_*/;
+    pi_  +=std::abs( K_) * (ei_ - pi_) * resolution / taup_/* * eij_*/;
+    pj_  +=std::abs( K_) * (ej_ - pj_) * resolution / taup_/* * eij_*/;
+    pij_ +=std::abs( K_ )* (eij_ - pij_) * resolution / taup_/* * eij_*/;
     
 	/*weight_ = gain_ * std::log(pij_ / (pi_ * pj_)) /*- std::log(min_weight)*/;
 	//cout << 3 << endl;
@@ -256,6 +261,10 @@ namespace mynest
        implement soft weight bounds, this way the weight will never go below 0 because
        you push all weights up by the most negative weight possible. */
     bias_ = std::log(pj_);
+
+//    cout << 111 << endl;
+//    cout << pij_ / (pi_ * pj_) << endl;
+
     weight_ = gain_ * (std::log(pij_ / (pi_ * pj_)) /*- std::log(min_weight) */);
 
     /* STEP THREE. Implement hard weight bounds. NOTE if using above normalization, weights

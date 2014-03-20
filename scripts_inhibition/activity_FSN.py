@@ -5,111 +5,171 @@ Created on Jul 4, 2013
 '''
 
 from copy import deepcopy
+from toolbox.network.default_params import Single_unit, Inhibition
+from toolbox.network.construction import Network
 from toolbox.network.handling_single_units import Activity_model_dic
-from toolbox import misc, plot_settings
+from toolbox import misc, data_to_disk
+from toolbox import plot_settings as pl
 import pylab
+import numpy
 
-labels_dic={0:'$FSN_{+d}^{l}$',  
-            1:'$FSN_{-d}^{l}$', 
-            2:'$FSN_{+d}^{h}$',  
-            3:'$FSN_{-d}^{h}$'}
+import pprint
+pp=pprint.pprint
 
-def get_kwargs_dics(stop):
 
-    k={}
-    for name, label in labels_dic.items():
-        k[name]={'input_models':['CFp', 'GAp', 'FSp', 'FS'], 
-
-                   'label':label,
-                   'par_rep':{'simu':{'threads':1, 
-                                       'start_rec':1000.0, 
-                                        'stop_rec':stop, 
-                                        'sim_time':stop,
-                                        'sim_stop':stop, 
-                                        'print_time':False},
-                              'netw':{'size':50.}},
-                    'stim_model': 'CFp',
-                    'study_name':'FS',
-                    'verbose':True,
-                   }
-         
+def beautify(axs):
+    colors=['b', 'b', 'g','g',]
+    linestyles=['-','--','-','--']  
     
-    l=[ {'keys':['par_rep.node.FS.model'], 'val':'FS_low', 'names':[0,1]},
-        {'keys':['par_rep.node.FS.model'], 'val':'FS_high', 'names':[2,3]},
+    for i in [0,2]:
+        for c, ls, l in zip(colors, linestyles, axs[i].get_lines()):
+            pylab.setp(l,color=c, linestyle=ls)
+            pylab.setp(axs[i].collections, color=c)
+        axs[i].legend()
+    
+    
+    for c, ls, i in zip(colors, linestyles, range(4)):
+        pylab.setp(axs[1].get_lines()[i*10:(i+1)*10],color=c, linestyle=ls)
+        pylab.setp(axs[1].collections, color=c)
+    axs[1].legend()
         
-        {'keys':['par_rep.node.CFp.lesion',
-                 'par_rep.node.GAp.lesion',
-                 'par_rep.node.FSp.lesion',
-                 'par_rep.node.FS.lesion'], 'val':False, 'names':[0,1,2,3]},    
-             
-        {'keys':['par_rep.netw.tata_dop'], 'val':0.8, 'names':[0,2]},
-        {'keys':['par_rep.netw.tata_dop'], 'val':0.0, 'names':[1,3]},]
+
+def build_general(**kwargs):
+    d={'simu':{
+               'mm_params':{'to_file':False, 'to_memory':True},
+               'print_time':False,
+               'sd_params':{'to_file':False, 'to_memory':True},
+               'sim_stop':kwargs.get('sim_stop', 1000.0),
+               'sim_time':kwargs.get('sim_time', 1000.0),
+               'start_rec':0.0,
+               'stop_rec':kwargs.get('sim_stop', 1000.0),
+               'threads':kwargs.get('threads', 1),
+               },}
+    return d
+
+def build_specific(**kwargs):
+    su=kwargs.get('single_unit', 'FS')
+    inputs=kwargs.get('inputs',['FSp', 'GAp', 'CFp'])   
     
+    d={'netw':{
+               'size':kwargs.get('size',9),
+               'single_unit':su,
+            },
+       'node':{su:{'mm':{'active':kwargs.get('mm', False)},
+                   'sd':{'active':True},
+                   'n_sets':1}}}
+       
+
+    for inp in inputs:
+        d['node'][inp]={'lesion':kwargs.get('lesion', False)}
+  
+    return d
+
+def build_cases(**kwargs):
+    l=[{'netw':{'tata_dop':0.8},
+        'node':{'FS':{'model':'FS_low'}}}]
+    l+=[{'netw':{'tata_dop':0.0},
+        'node':{'FS':{'model':'FS_low'}}}]
+    l+=[{'netw':{'tata_dop':0.8},
+        'node':{'FS':{'model':'FS_high'}}}]
+    l+=[{'netw':{'tata_dop':0.0},
+             'node':{'FS':{'model':'FS_high'}}}]
     
-    for d in l:
-        for name in d['names']:
-            for key in d['keys']:
-                misc.dict_recursive_add(k[name], 
-                                        key.split('.'), d['val'])
-                
-    return k
+    d=build_general(**kwargs)
+    d=misc.dict_update(d, build_specific(**kwargs))
+    
+    names=['$FSN_{+d}^{l}$',
+           '$FSN_{-d}^{l}$',
+           '$FSN_{+d}^{h}$',
+           '$FSN_{-d}^{h}$']
+    
+    nets=[]
+    for name, e in zip(names, l):
+        dd=misc.dict_update(e, d)
+        par=Single_unit(**{'dic_rep':dd, 'other':Inhibition()})
+        net=Network(name, **{'par':par}) 
+        nets.append(net)
         
-def main():
-    stop=21000.0
-    amd=Activity_model_dic()
-    for name, k in get_kwargs_dics(stop).items():
-        amd.add(name, **k)
+    return nets
 
-#    for i in range(2):         
-#        kwargs[i].update({'par_xopt':{'node':{'CFp':{'rate': None}}}, 
-#                          'par_key_ftar':[['node','FS','target_rate']], 
-#                          'fun_ftar':['get_mean_rate'], 
-#                          'par_key_input':['node','CFp'],
-#                          'args_ftar':[['FS']],
-#                          'kwargs_ftar':[{}]})
-#
-#    kwargs[0]['par_xopt']['node']['CFp']['rate']=970.0
-#    kwargs[1]['par_xopt']['node']['CFp']['rate']=870.0
-#    
-#    
-#    
-#    setup_models=[['$FSN_{low}$',         'FS_low-FS-all-dop',     kwargs[0]],
-#                  ['$FSN_{low-no-dop}$',  'FS_low-FS-all-no_dop',  kwargs[1]],
-#                  ['$FSN_{high}$',        'FS_high-FS-all-dop',    kwargs[2]],
-#                  ['$FSN_{high-no-dop}$', 'FS_high-FS-all-no_dop', kwargs[3]],
-#                  ]
-#    
-#    labels_models=[sl[0] for sl in setup_models]
-#
-#    stop=21000.0
-#    lables_fmin=[[labels_models[0]], [labels_models[2]]]
-#    
-#    lesion_setup={'all':[]}
-
- #   amd=Activity_model_dic(lesion_setup, setup_models)
-    amd.simulate_input_output(  [0]*4, range(4), range(400,1050,100), 
-                                stim_time=1000.0)   
-    fig, ax_list=plot_settings.get_figure(n_rows=1, n_cols=1, 
-                                              w=1000.0, h=800.0, fontsize=12)     
-    colors=['g','g','b', 'b', 'c', 'k']*2
-    coords=[[0.05, 0.9-i*0.1] for i in range(len(colors))]
-    linestyles=['-','--','-','--','-','--','-','--',]  
-    linestyles_hist=['solid', 'dashed','solid', 'dashed', 'solid', 'dashed', 'solid', 'dashed']
-    amd.plot_input_output(ax_list[0], labels_dic.values(), colors, coords, linestyles)
-
-
+def get_simulation(obj, method, load, **k):
+    fileName=obj.get_path_data()+obj.get_name()+'_'+method
+    if load:
+        return data_to_disk.pickle_load(fileName)
+    else:
+        call=getattr(obj, method)
+        d=call(**k)
+        data_to_disk.pickle_save(d, fileName)
+        return d
+        
+def plots(method, nets, loads, **kwargs):
+    module= __import__(__name__)
+    call=getattr(module, method)
+    if type(loads)!=list: loads=[loads for _ in nets]
     
-#    kwargs={'par_rep': {'simu':{'threads':4}}, 'rand_setup':{'n':100, 'rand_params':['C_m', 'V_th']}
-#    amd_fmin=amd.label_slice(lables_fmin).update_kwargs(kwargs)
-#    par_var_dic=Fmin_dic(am_fmin)
-#     
-#    
-#    amd.find_params([0]*2, labels_fmin)
-#    rand_setup={'rand_params': ['C_m','V_th'], 'n':100}   
-#    amd.simulate_variable_population([0]*2, labels_fmin, rand_setup)    
-#    amd.rheobase_variable_population([0]*1, labels_models, rand_setup)
-#    
-#    amd.show2x2(labels_models, labels_fmin)
+    for net, load in zip(nets, loads):
+        call(net, load, **kwargs)
+
+
+def plot_IV_curve(net, load, ax=None, **kwargs):
+    if ax==None:
+        ax=pylab.subplot(111)
+    curr=kwargs.get('curr',range(-200,300,100))
+    node=kwargs.get('node', 'FS')
+    k={'stim':curr,
+       'stim_name':'node.'+node+'.nest_params.I_e',
+       'stim_time':kwargs.get('sim_time',1000.0),
+       'model':node}
+
+    dud=get_simulation(net, 'sim_IV_curve', load, **k)['voltage_signal'] 
+    dud[node].plot_IV_curve(ax=ax, x=curr, **{'label':net.name, 
+                                              'marker':'o',
+                                              'linewidth':3.0}) 
+
+def plot_IF_curve(net, load, ax=None, **kwargs):
+    if ax==None:
+        ax=pylab.subplot(111)
+    curr=kwargs.get('curr',range(0,500,100))
+    node=kwargs.get('node', 'FS')
+    k={'stim':curr,
+       'stim_name':'node.'+node+'.nest_params.I_e',
+       'stim_time':kwargs.get('sim_time',1000.0),
+       'model':node}
+
+    dud=get_simulation(net, 'sim_IF_curve', load, **k)['spike_signal'] 
+    dud[node].plot_IF_curve(ax=ax, x=curr, **{'label':net.name, 
+                                              'linewidth':3.0}) 
+
+def plot_FF_curve(net, load, ax=None, **kwargs):
+    if ax==None:
+        ax=pylab.subplot(111)
+    rate=kwargs.get('rate',range(0,500,100))
+    node=kwargs.get('node', 'FS')
+    input=kwargs.get('input', 'CFp')
+    k={'stim':rate,
+       'stim_name':'node.'+input+'.rate',
+       'stim_time':kwargs.get('sim_time',1000.0),
+       'model':node}
+
+    dud=get_simulation(net, 'sim_FF_curve', load, **k)['spike_signal'] 
+    dud[node].plot_FF_curve(ax=ax, x=rate, **{'label':net.name, 
+                                              'linewidth':3.0}) 
+           
+def main():    
+    IV=build_cases(**{'lesion':True, 'mm':True})
+    IF=build_cases(**{'lesion':True})
+    FF=build_cases(**{'lesion':False})
+    
+    curr_IV=range(-200,300,100)
+    curr_IF=range(0,500,100)
+    rate_FF=range(100,1500,100)
+    _, axs=pl.get_figure(n_rows=2, n_cols=2, w=1000.0, h=800.0, fontsize=16)     
+    
+    plots('plot_IV_curve', IV, 1, **{'ax':axs[0],'curr':curr_IV, 'node':'FS'})
+    plots('plot_IF_curve', IF, 1, **{'ax':axs[1],'curr':curr_IF, 'node':'FS'})
+    plots('plot_FF_curve', FF, 1, **{'ax':axs[2],'rate':rate_FF, 'node':'FS',
+                                     'input':'CFp'})    
+    beautify(axs)
     pylab.show()
     
 if __name__ == "__main__":

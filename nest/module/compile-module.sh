@@ -3,8 +3,8 @@
 # OBS need to define directory in were nest is installed.
 
 # Directory where nest have been installed
-#export NEST_INSTALL_DIR="$HOME/tools/NEST/dist/install-$2"
-export NEST_INSTALL_DIR="/home/mikael/opt/NEST/dist/install-$2"
+export NEST_INSTALL_DIR="$HOME/opt/NEST/dist/install-$2"
+#export NEST_INSTALL_DIR="/home/mikael/opt/NEST/dist/install-$2"
 echo "Nest instalation dir: $NEST_INSTALL_DIR"
 
 currDir=$(pwd)

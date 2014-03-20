@@ -31,7 +31,7 @@ class Fmin(object):
                        'maxfun':40,
                        'full_output':1,
                        'retall':1,
-                       'xtol':50.0,
+                       'xtol':10.0,
                        'ftol':2.,
                        'disp':0}
         
@@ -60,18 +60,18 @@ class Fmin(object):
         else:
             raise AttributeError
                
-    def fmin(self, load, save_at):
+    def fmin(self):#, load, save_at):
         
-        with Stop_stdout(not self.verbose):
-            if not load:    
-                self._fmin()
-                data_to_disk.pickle_save(self.data,  save_at)    
-            else:
-                [ self.data ]=data_to_disk.pickle_load(save_at)        
-                self.print_summary()
-               
-            
-        return self.xopt[-1]
+#         with Stop_stdout(not self.verbose):
+#             if not load:    
+#                 self._fmin()
+#                 data_to_disk.pickle_save(self.data,  save_at)    
+#             else:
+#                 [ self.data ]=data_to_disk.pickle_load(save_at)        
+#                 self.print_summary()
+#                
+        self._fmin()    
+        return self.data
                        
     def _fmin(self):
         '''
@@ -99,7 +99,7 @@ class Fmin(object):
             self.data['allvecs']=allvecs
             
             self.print_last()
-            self.print_summary()
+#             self.print_summary()
                
     def fmin_error_fun(self, x, *arg):
         with Stop_stdout(not self.verbose):
@@ -114,6 +114,12 @@ class Fmin(object):
             self.print_last()
         
         return fopt
+    
+    def get_path_data(self):
+        return self.model.get_path_data()
+    
+    def get_name(self):
+        return self.name
     
     def get_x0(self):
         call=getattr(self.model, self.call_get_x0)
@@ -197,14 +203,15 @@ class TestFmin(unittest.TestCase):
 
     
     
-    def setUp(self):        
-        opt={'f':['n2', 'n3'],
-             'x':['node.n1.rate', 'node.n4.rate'],
+    def setUp(self):
+        from default_params import Unittest, Unittest_extend        
+        opt={'f':['n1', 'n2'],
+             'x':['node.i1.rate', 'node.i2.rate'],
              'x0':[2600., 2400.]}
         
         dic_rep={}
         dic_rep.update({'simu':{'sim_time':1000.0,
-                                'stim_time':1000.0,
+                                'sim_stop':1000.0,
                              'mm_params':{'to_file':False, 'to_memory':True},
                              'sd_params':{'to_file':False, 'to_memory':True}},
                              'netw':{'size':20.,
@@ -214,7 +221,8 @@ class TestFmin(unittest.TestCase):
         net_kwargs={'save_conn':False, 
                 'sub_folder':'unit_testing', 
                 'verbose':False,
-                'dic_rep':dic_rep}
+                 'par':Unittest_extend(**{'dic_rep':dic_rep,
+                                          'other':Unittest()})}
         name='net1'
         self.Network=Unittest_net
         net=[self.Network(name, **net_kwargs)]
@@ -230,7 +238,7 @@ class TestFmin(unittest.TestCase):
     def test_1_fmin_error_fun(self):
         
         
-        f=Fmin('n1_n4_opt', **self.kwargs)
+        f=Fmin('n1_n2_opt', **self.kwargs)
         e1=f.fmin_error_fun([3100., 3100.])
         e2=f.fmin_error_fun([3100., 3100.])
         e3=f.fmin_error_fun([3000., 3000.])
@@ -240,13 +248,13 @@ class TestFmin(unittest.TestCase):
 
     def test_2__fmin(self):
         
-        f=Fmin('n1_n4_opt', **self.kwargs)
+        f=Fmin('n1_n2_opt', **self.kwargs)
         h=f._fmin()
         
     def test_3__fmin(self):
         self.nd.append(self.Network('net2', **self.net_kwargs))
         #self.nd.add('net2', **self.net_kwargs)
-        f=Fmin('n1_n4_opt', **self.kwargs)
+        f=Fmin('n1_n2_opt', **self.kwargs)
         f._fmin()
         xopt=f.xopt[0]
         self.assertAlmostEqual(xopt[0], xopt[2], delta=50)
@@ -254,7 +262,7 @@ class TestFmin(unittest.TestCase):
 
     def test_4__fmin_single_network(self):
         self.kwargs['model']=self.nd.l[0]
-        f=Fmin('n1_n4_opt', **self.kwargs)
+        f=Fmin('n1_n2_opt', **self.kwargs)
         h=f._fmin()        
         
 if __name__ == '__main__':

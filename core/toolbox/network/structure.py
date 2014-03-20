@@ -18,6 +18,10 @@ from toolbox.misc import my_slice
 import unittest
 import pylab
 
+import pprint
+pp=pprint.pprint
+
+
 from os.path import expanduser
 HOME = expanduser("~")
 HOME_PATH=(HOME+'/results/papers/inhibition')
@@ -548,8 +552,15 @@ class Conn(Dic):
             if driver.get_n()!=pool.get_n(): 
                 raise Exception(('number of pre surfs needs to'
                                  + 'equal number of post'))
-            self.pre, self.post= driver.get_idx(), pool.get_idx()
-
+            self.pre, self.post= pool.get_idx(),driver.get_idx()
+        elif self.rule=='1-all':
+            # Each presynaptic node connects to only one postsynaptic node.
+            if pool.get_n()!=1 : 
+                raise Exception(('Pool population has to of size 1'))
+            
+            post=[driver.get_idx()[0] for _ in range(len(pool.get_idx()))]
+            self.pre, self.post= pool.get_idx(), post
+            
         elif self.rule in ['all-all', 'set-set', 
                            'set-not_set', 'all_set-all_set']:
             
@@ -589,22 +600,9 @@ class Conn(Dic):
 class Conn_dic(Base_dic):
     
     def __str__(self):
-        s='\n****************\nConnection info\n****************'
-        s+='\n{0:14}{1}'.format('Total number:', self.size)
-        s+='\n{0:14}'.format('By connection:')
-        
-        text_lists=[]
-        for struc in sorted(self.dic.keys(), key=lambda x:x.name):
-            text_lists.append('{0:>5}:{1:<8}'.format(struc.name, len(struc.n)))
-        n=len(text_lists)
-        text_lists=[text_lists[i:n:6] for i in range(6)] 
 
-        for i, text_list in enumerate(text_lists):
-            if i==0: pass
-            else:s+='\n{0:14}'.format('')
-            s+=''.join(text_list)
         
-        return s
+        return str(self.dic)
     
     def add(self, *a, **k):
           

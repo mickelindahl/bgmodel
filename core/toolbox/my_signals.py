@@ -1353,17 +1353,6 @@ class BaseListMatrix(object):
         self.attr=None 
         self.allowed=kwargs.get('allowed',[])
 
-#     @property
-#     def m(self):
-#         if self._m.shape(1,1):
-#             return self._m[0,0]
-#         else: 
-#             return self._m
-#         pass
-#     
-#     @m.setter
-#     def m(self, val):
-#         self._m=val
 
     @property
     def shape(self):
@@ -1418,24 +1407,6 @@ class BaseListMatrix(object):
         d=call(*args, **kwargs)
         return d
         
-#         a=numpy.empty(shape=self.shape, dtype=object)
-#         
-#         other=kwargs.get('other', None)
-#         
-#         for i, j, obj in self:
-#             call=getattr(obj, self.attr)
-#             kwargs['run']=i
-#             
-#             # For relation between to matricies
-#             if other:
-#                 kwargs['other']=other.get_m(i,j)
-#             
-#             d=call(*args, **kwargs)
-#             if type(d)==tuple:
-#                 d=list(d)
-#             a[i,j]=d
-               
-#        return a
 
     def concatenate(self, a, *args, **kwargs):
         
@@ -1457,10 +1428,27 @@ class VmListMatrix(BaseListMatrix):
     
     def __init__(self, matrix, *args, **kwargs):
         super( VmListMatrix, self ).__init__( matrix, *args,
-                                                            **kwargs)
+                                                     **kwargs)
         self.allowed=kwargs.get('allowed',['plot', 
                                            'get_voltage_trace',
                                            ]) 
+
+        
+    def get_mean_voltage_parts(self, **kwargs):
+#       w=self.merge(axis=1)    
+        w=self
+        x=numpy.zeros(w.m.shape)
+        y=numpy.zeros(w.m.shape)
+        id_list=[]
+        for i,j, obj in iter2d(w.m):
+            x[i,j]=i
+            y[i,j]=numpy.mean(obj.mean())
+            id_list=set(id_list).union(obj.id_list()) 
+            
+        return {'ids':list(id_list),
+                'y':y, 
+                'x':x}  
+        
     def merge(self, axis=0, *args, **kwargs):
 
         m=transpose_if_axis_1(axis, self.m)
@@ -1898,6 +1886,7 @@ class TestVm_list_matrix(unittest.TestCase):
     def test_2_calls_wrapped_class(self):
         calls=[
                ['get_voltage_trace', [], {}],
+               ['get_mean_voltage_parts',[],{}],
                ]
         
         slc=VmListMatrix(self.vm_lists)
@@ -1906,9 +1895,12 @@ class TestVm_list_matrix(unittest.TestCase):
             func=getattr(slc, call)
             r.append(func(*a, **k))
         #print r
+        
+        
 if __name__ == '__main__':
-    test_classes_to_run=[TestSpikeList,
-                         TestSpikeListMatrix,
+    test_classes_to_run=[
+#                         TestSpikeList,
+#                          TestSpikeListMatrix,
                          TestVm_list_matrix
                          ]
     suites_list = []

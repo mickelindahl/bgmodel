@@ -26,7 +26,6 @@ Mikael Lindahl August 2011
 
 import numpy
 import os
-import random # Random generator
 from my_signals import (MyConductanceList, MyCurrentList, 
                         MyVmList, MySpikeList, SpikeListMatrix,
                         VmListMatrix)
@@ -80,9 +79,11 @@ class MyGroup(object):
         params=kwargs.get('params',{})          
             
         self.connections     = {}        # Set after network has been built with FindConnections
+        print model
         self.ids             = kwargs.get('ids', my_nest.Create(model, 
                                                                 n, 
                                                                 params))
+
         self._local_ids       = []
         self.name            = name
         self.n=n
@@ -125,16 +126,12 @@ class MyGroup(object):
         '''
         return len(self.ids)   
              
-    #def __repr__(self):
-    #    return self.ids
+        
+    def __repr__(self):
+        return self.__class__.__name__+':'+self.name    
     
     def __str__(self):
-        '''
-        Function called when printing object.
-        '''
-        return str(self.ids)
-        
-    
+        return self.__class__.__name__+':'+self.name 
 
     def count_afferents( self, connecting_group ):
         ''' 
@@ -434,10 +431,10 @@ class MyNetworkNode(MyGroup):
                       'to_file':False,
                       'to_memory':True}} # recodring interval (dt) 
         d=misc.dict_update(d, d_add) 
-        
-        _id=my_nest.Create(model, params=d['params'])
-        my_nest.DivergentConnect(_id, self.ids)
-        d.update({'id':_id, 'model':model})
+        if d['active']:
+            _id=my_nest.Create(model, params=d['params'])
+            my_nest.DivergentConnect(_id, self.ids)
+            d.update({'id':_id, 'model':model})
         return d
     
     def create_sd(self, name, d_add):
@@ -449,10 +446,10 @@ class MyNetworkNode(MyGroup):
            'params': {"withgid": True, 'to_file':False, 
                       'to_memory':True }} 
         d=misc.dict_update(d, d_add) 
-        
-        _id=my_nest.Create(model, params=d['params'])
-        my_nest.ConvergentConnect(self.ids, _id )
-        d.update({'id':_id, 'model':model})
+        if d['active']:
+            _id=my_nest.Create(model, params=d['params'])
+            my_nest.ConvergentConnect(self.ids, _id )
+            d.update({'id':_id, 'model':model})
         
         return d 
 

@@ -1,7 +1,7 @@
 /*
  *  bcpnn_connection.h
  *
- *  Written by Philip Tully and Mikae Lindahl
+ *  Written by  Mikael Lindahl
  *
  */
 
@@ -216,21 +216,17 @@ private:
 			nest::double_t t0, nest::double_t t1, bool pre_spike,
 			const BCPNNDopaCommonProperties& cp);
 
-
-	void hebbian(nest::double_t t, nest::double_t spk_amp_hebbian,
-			bool pre_spike);
-
-	void anti_hebbian( nest::double_t t, nest::double_t spk_amp_anti_hebbian,
-			bool pre_spike);
-
 	nest::double_t bias_;
 	nest::double_t yi_;
 	nest::double_t yj_;
 	nest::double_t zi_;
 	nest::double_t zj_;
+	nest::double_t zj_c_;
 	nest::double_t ei_;
 	nest::double_t ej_;
 	nest::double_t eij_;
+	nest::double_t ej_c_;
+	nest::double_t eij_c_;
 	nest::double_t pi_;
 	nest::double_t pj_;
 	nest::double_t pij_;
@@ -255,8 +251,6 @@ private:
 
 	nest::vector<nest::double_t> post_spiketimes_;
 	nest::int_t BUFFER_;
-
-
 };
 
 
@@ -291,38 +285,6 @@ void BCPNNDopaConnection::fill_post_spiketimes(nest::double_t t0,
 	}
 }
 
-
-inline
-void BCPNNDopaConnection::hebbian(nest::double_t t,
-		nest::double_t spk_amp_hebbian, bool pre_spike) {
-	yi_ = 0.0;
-	yj_ = 0.0;
-
-	if ((t == t_last_update_) && pre_spike) {
-		yi_ = spk_amp_hebbian;
-	}
-	if  (post_spiketimes_.size()>spike_idx_) {
-		yj_ = spk_amp_hebbian;
-		spike_idx_++;
-	}
-}
-
-inline
-void BCPNNDopaConnection::anti_hebbian(nest::double_t t,
-		nest::double_t spk_amp_anti_hebbian, bool pre_spike) {
-	yi_ = spk_amp_anti_hebbian;
-	yj_ = spk_amp_anti_hebbian;
-
-	if ((t == t_last_update_) && pre_spike) {
-		yi_ = 0.0;
-	}
-	if  (post_spiketimes_.size()>spike_idx_) {
-		yj_ = 0.0;
-		spike_idx_++;
-	}
-}
-
-
 inline void BCPNNDopaConnection::progress_state_variables(
 		const nest::vector<nest::spikecounter>& dopa_spikes,
 		nest::double_t t0,
@@ -331,8 +293,10 @@ inline void BCPNNDopaConnection::progress_state_variables(
 		const BCPNNDopaCommonProperties& cp) {
 
 	nest::double_t resolution = nest::Time::get_resolution().get_ms();
-	nest::double_t spk_amp_hebbian = 1000.0 / cp.fmax_/resolution;
-	nest::double_t spk_amp_anti_hebbian = 1000.0 / cp.fmax_anti_/resolution;
+	nest::double_t spk_amp= 1000.0 / cp.fmax_/resolution;
+
+	nest::double_t ej;
+	nest::double_t eij;
 
 	/*Since post_spiketimes is a variable*/
 	spike_idx_ = 0;
@@ -354,35 +318,57 @@ inline void BCPNNDopaConnection::progress_state_variables(
 
 		/*Update dopamine trace an relative dopamine trace*/
 		n_ = n_ * std::exp(-resolution / cp.tau_n_) + n_add_ / cp.tau_n_;
-		m_ = n_ -cp.b_;
+		m_ = n_ + cp.b_;
 
 		if (cp.dopamine_modulated_) {
-			k_=std::abs(cp.gain_dopa_* m_);
+			k_=cp.gain_dopa_* m_;
    		} else {
 			k_=cp.K_;
 		}
-		if (k_>=0) {
-			hebbian(t, spk_amp_hebbian, pre_spike);
-		} else {
-			anti_hebbian(t, spk_amp_anti_hebbian, pre_spike);
+
+		yi_ = 0.0;
+		yj_ = 0.0;
+
+		if ((t == t_last_update_) && pre_spike) {
+			yi_ = spk_amp;
+		}
+		if  (post_spiketimes_.size()>spike_idx_) {
+			yj_ = spk_amp;
+			spike_idx_++;
 		}
 
 		zi_ += ( yi_ - zi_ + cp.epsilon_) * resolution / cp.taui_;
 		zj_ += ( yj_ - zj_ + cp.epsilon_) * resolution / cp.tauj_;
+		zj_c_ += ( 1-yj_ - zj_c_ + cp.epsilon_) * resolution / cp.tauj_;
 
 		ei_ += (zi_ - ei_) * resolution / cp.taue_;
 		ej_ += (zj_ - ej_) * resolution / cp.taue_;
-		eij_ += (zi_ * zj_ - eij_) * resolution / cp.taue_;
+		eij_+= (zi_ * zj_ - eij_) * resolution / cp.taue_;
+		ej_c_ += (zj_c_ - ej_c_) * resolution / cp.taue_;
+		eij_c_+= (zi_ * zj_c_ - eij_c_) * resolution / cp.taue_;
 
-		pi_ += std::abs(k_)*(ei_ - pi_) * resolution / cp.taup_;
-		pj_ += std::abs(k_)*(ej_ - pj_) * resolution / cp.taup_;
-		pij_ += std::abs(k_)*(eij_ - pij_) * resolution / cp.taup_;
+		if (cp.reverse_*k_>=0) {
+			ej=ej_;
+			eij=eij_;
+		} else {
+			ej=ej_c_;
+			eij=eij_c_;
+		}
+
+		pi_ += std::abs(k_*k_*k_)*(ei_ - pi_) * resolution / cp.taup_;
+		pj_ += std::abs(k_*k_*k_)*(ej - pj_) * resolution / cp.taup_;
+		pij_+= std::abs(k_*k_*k_)*(eij - pij_) * resolution / cp.taup_;
+
 	};
+
 
 	/*cout << 200 << endl;*/
 
 	bias_ = std::log(pj_);
-	weight_ = cp.gain_ * (std::log(pij_ / (pi_ * pj_)));
+
+	nest::double_t w =pij_ / (pi_ * pj_);
+
+	weight_ = cp.gain_ * ((w<0) ? std::log(0.0001) : std::log(w));
 
 	/*Reset variables*/
 	post_spiketimes_.clear();

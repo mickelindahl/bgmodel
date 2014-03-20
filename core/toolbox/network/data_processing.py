@@ -73,49 +73,11 @@ class Data_unit_base(object):
         self.data[name][attr]=val
                  
 
-    def compute(self, attr, *args, **kwargs):
-           
+    def compute(self, attr, *args, **kwargs):      
         d=self._compute(attr, *args, **kwargs)
-#         d=to_single_dic(d)
         return d
 
     def _compute(self, attr, *args, **kwargs):
-#         
-#         ''' Attributes are based on my_signal get functions''' 
-#         if attr in ['firing_rate',
-#                     'isi',
-#                     'psd',
-#                     'phase', 
-#                     'phases',
-#                     'raster',
-#                     'spike_stats',
-#                     'isi_IF',
-#                     'mean_coherence',
-#                     'mean_rate',
-#                     'mean_rate_parts',
-#                     'mean_rates', 
-#                     'mean_rate_elements',
-#                     'phase_diff',
-#                    ]:
-#             w=self.wrap['s']['obj']
-#     
-#             if attr=='isi_IF':
-#                 attr='isi'
-#                                
-#             
-#             w=self.wrap['s']['obj']  
-#             
-#             if self.merge_runs:
-#                 w=w.merge(axis=0)
-#             if self.merge_sets:
-#                 w=w.merge(axis=1)
-#         if attr in ['voltage_trace',
-#                     ]:
-#             w=self.wrap['v']['obj']  
-
-
-#             if attr=='isi_IF':
-#                 attr='isi'
         call=getattr(self.wrap, 'get_'+attr)
         return call(*args, **kwargs) 
 
@@ -192,22 +154,14 @@ class Mixin_spk(object):
         
 
                
-    def get_IF_curve(self, set=0):
+    def get_IF_curve(self):
         
         if self.isi_parts['y']==[]:
             self.compute_set('isi_parts',*[],**{})
-            #raise RuntimeError('isis IF are not recorded')
         
-#         if 'x' not in self.isi_IF.keys():
-#             raise RuntimeError('need to add x attribute')
-                
         isi={'curr':[], 'first':[], 'mean':[], 'last':[]}
         x, y=self.get('isi_parts', attr_list=['x', 'y'])
         
-        # To get all aligned
-        #x,y=to_2d_array(*[x,y])
-        #y=y.reshape((x.shape[0], x.shape[1]*x.shape[2])) 
-        #x=x.reshape((x.shape[0], x.shape[1]*x.shape[2]))   
         y=y.ravel()
         for xx, yy in zip(x,y):
             #if type(yy)!=list:
@@ -215,7 +169,7 @@ class Mixin_spk(object):
                 
             for yyy in yy:
                 if not yyy.any():
-                    isis=[1000000.]
+                    yyy=[1000000.]
                 isi['first'].append( yyy[ 0 ] )            # retrieve first isi
                 isi['mean'].append( numpy.mean( yyy ) )   # retrieve mean isi
                 isi['last'].append( yyy[ -1 ] )           # retrieve last isi
@@ -264,17 +218,7 @@ class Mixin_spk(object):
             self.compute_set('firing_rate',*[1],**{'average':True})
 
         x, y=self.get('firing_rate', attr_list=['x','y'], )
-#         x,y=to_2d_array(*[x,y])
-        
-#         a=get_labels(y.shape[0:2])
-#         for i, j, _ in iter2d(y):
-            
-#             if runs and i not in runs:
-#                 continue
-#             if sets and j not in sets:
-#                 continue
-#             k['label']=a[i,j]
-            
+    
         y=misc.convolve(y, **{'bin_extent':win, 'kernel_type':'triangle',
                           'axis':1})     
         ax.plot(x, y, **k)
@@ -324,17 +268,31 @@ class Mixin_spk(object):
         ax.set_xlabel('Stimuli')
         
         
-    def plot_IF_curve(self, ax=None, x=[], **k):
+    def plot_IF_curve(self, ax=None, x=[], part='last', **k):
         if not ax:
             ax=pylab.subplot(111) 
-        c, _, _, lisi=self.get_IF_curve()
+        c, fisi, misi, lisi=self.get_IF_curve()
         
-        if x:
-            c=x
-        ax.plot(c, lisi, **k)
+        if not x:
+            x=numpy.mean(c,axis=1)
+       
+        if part=='first':isi=fisi
+        if part=='mean':isi=misi
+        if part=='last':isi=lisi    
+        
+        
+        std=numpy.std(isi,axis=1)
+        
+        m=numpy.mean(isi,axis=1)
+        color=pylab.getp(ax.plot(x, m, marker='o', **k)[0], 'color')    
+        
+        p= ax.fill_between(x, m-std,m+std, facecolor=color,  
+                        alpha=0.5)  
+        ax.plot(x, lisi , **{'color':color})    
         ax.set_xlabel('Current (pA)') 
         ax.set_ylabel('Rate (spike/s)') 
-
+        ax.legend()
+        
     def plot_FF_curve(self, ax=None, sets=[], x=[], **k):
         if not self.isrecorded('mean_rate_parts'):
             self.compute_set('mean_rate_parts',*[],**{})          
@@ -347,8 +305,8 @@ class Mixin_spk(object):
         #x,y=get_sets_or_single('mean_rate', sets, *[ x, y])
         #add_labels(sets,  k)
         ax.plot(x, y, **k)
-        ax.set_xlabel('Response (spike/s)') 
-        ax.set_ylabel('Stimuli (spike/s)') 
+        ax.set_xlabel('Stimuli (spike/s)') 
+        ax.set_ylabel('Response (spike/s)') 
         ax.legend()
     
     def sample(self, n_sample, seed=1):
@@ -397,9 +355,25 @@ class Mixin_vm(object):
         '''
     
         d={'voltage_trace':{'ids':[], 'x':[], 'y':[]},
+           'mean_voltage_parts':{'ids':[], 'x':[], 'y':[]},
             }
         self.data=d    
+   
+    def plot_IV_curve(self, ax=None, sets=[], x=[], **k):
+        if not self.isrecorded('mean_voltage_parts'):
+            self.compute_set('mean_voltage_parts',*[],**{})          
+        if not ax:
+            ax=pylab.subplot(111) 
         
+        _x, y=self.get('mean_voltage_parts', attr_list=['x','y'])
+        if not len(x):
+            x=_x
+
+        ax.plot(x, y, **k)
+        ax.set_xlabel('Current (pA)') 
+        ax.set_ylabel('Membrane potential (mV)') 
+        ax.legend()
+                
     def plot_voltage_trace(self, ax=None, index=[[0, 0]], **k):
         
         if not ax:
@@ -849,134 +823,142 @@ class TestData_unit_spk(unittest.TestCase):
 
         self.obj, _=dummy_data_du(**{'n_runs':self.n_runs})
          
-#     def test_1_compute_set_get(self):
-#         for attr, a, k in [['firing_rate',[100],{'average':True}], 
-#                            ['isi', [],{}],
-#                            ['mean_rate', [],{}],
-#                            ['mean_rates',[],{}],
-#                            ['psd',[256,1000.0],{}],
-#                            ['phase',[10,20,3,1000.0],{}],
-#                            ['phases',[10,20,3,1000.0],{}],
-#                            ['raster',[], {}],
-# #                            ['voltage_trace', [], {}],
-#                            ]:
-#  
-#             self.obj.compute_set(attr,*a,**k)            
-#             self.obj.get(attr)
+    def test_1_compute_set_get(self):
+        for attr, a, k in [['firing_rate',[100],{'average':True}], 
+                           ['isi', [],{}],
+                           ['mean_rate', [],{}],
+                           ['mean_rates',[],{}],
+                           ['psd',[256,1000.0],{}],
+                           ['phase',[10,20,3,1000.0],{}],
+                           ['phases',[10,20,3,1000.0],{}],
+                           ['raster',[], {}],
+#                            ['voltage_trace', [], {}],
+                           ]:
+  
+            self.obj.compute_set(attr,*a,**k)            
+            self.obj.get(attr)
 
 
-#     def test_2_plot_firing_rate(self):
-#           
-#         self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':False})
-#   
-#         pylab.figure()
-#         ax=pylab.subplot(211)
-#         self.obj.plot_firing_rate(ax, **{'label':'Mean'})
-#         self.obj[:,0].plot_firing_rate(ax, **{'label':'Set 1'})    
-#         self.obj[:,1].plot_firing_rate(ax, **{'label':'Set 2'})   
-# # 
+    def test_2_plot_firing_rate(self):
+           
+        self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':False})
+   
+        pylab.figure()
+        ax=pylab.subplot(211)
+        self.obj.plot_firing_rate(ax, **{'label':'Mean'})
+        self.obj[:,0].plot_firing_rate(ax, **{'label':'Set 1'})    
+        self.obj[:,1].plot_firing_rate(ax, **{'label':'Set 2'})   
 # 
-#         self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':True})
-#         self.obj.compute_set('firing_rate',*[1],**{'average':True})
-#         ax=pylab.subplot(212)
-#         self.obj[0,:].plot_firing_rate(ax, **{'label':'Run 1'})
-#         self.obj[1,:].plot_firing_rate(ax, **{'label':'Run 2'})
-#         self.obj[2,:].plot_firing_rate(ax, **{'label':'Run 3'})  
-# #         pylab.show()                
-#   
-#     def test_3_plot_hist_isis(self):
-# 
-#         pylab.figure()
-#         self.obj.plot_hist_isis( **{'label':'Mean'})    
-#         self.obj[:,0].plot_hist_isis( **{'label':'Set 1'}) 
-# #         pylab.show()
  
-#     def test_4_plot_mean_rate_parts(self):
-#         x= [100,200, 300]
-#         pylab.figure() 
-#         self.obj.plot_mean_rate_parts(x=x, **{'label':'Mean'})
-#         self.obj[:,0].plot_mean_rate_parts(x=x, **{'label':'Set 1'})
+        self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':True})
+        self.obj.compute_set('firing_rate',*[1],**{'average':True})
+        ax=pylab.subplot(212)
+        self.obj[0,:].plot_firing_rate(ax, **{'label':'Run 1'})
+        self.obj[1,:].plot_firing_rate(ax, **{'label':'Run 2'})
+        self.obj[2,:].plot_firing_rate(ax, **{'label':'Run 3'})  
+#         pylab.show()                
+#   
+    def test_3_plot_hist_isis(self):
+ 
+        pylab.figure()
+        self.obj.plot_hist_isis( **{'label':'Mean'})    
+        self.obj[:,0].plot_hist_isis( **{'label':'Set 1'}) 
+#         pylab.show()
+ 
+    def test_4_plot_mean_rate_parts(self):
+        x= [100,200, 300]
+        pylab.figure() 
+        self.obj.plot_mean_rate_parts(x=x, **{'label':'Mean'})
+        self.obj[:,0].plot_mean_rate_parts(x=x, **{'label':'Set 1'})
 # 
 #            
 #         pylab.show()
 #         
-#     def test_5_get_IF_curve(self):
-#         self.obj.compute_set('isi',*[],**{})
-# #         self.obj.set_stimulus('isi', 'x',  range(100,100*(1+self.n_runs),100))
-#         self.obj.get_IF_curve()
-#         #pylab.show()
+    def test_5_get_IF_curve(self):
+        self.obj.compute_set('isi',*[],**{})
+#         self.obj.set_stimulus('isi', 'x',  range(100,100*(1+self.n_runs),100))
+        self.obj.get_IF_curve()
+        #pylab.show()
 # 
 # 
-#     def test_6_plot_IF_curve(self):
-#         pylab.figure()  
-#         x=[100,200,300]   
-#         ax=pylab.subplot(211) 
-#         self.obj.plot_IF_curve(ax, x=x)#**{'color':'b'})
-#         ax.set_title('Mean')
-#         ax=pylab.subplot(212)    
-#         self.obj[:,0].plot_IF_curve(ax,x=x)#**{'color':'b'})
-#         ax.set_title('Set 1')
+    def test_6_plot_IF_curve(self):
+        pylab.figure()  
+        x=[100,200,300]   
+        ax=pylab.subplot(211) 
+        self.obj.plot_IF_curve(ax, x=x)#**{'color':'b'})
+        ax.set_title('Mean')
+        ax=pylab.subplot(212)    
+        self.obj[:,0].plot_IF_curve(ax,x=x)#**{'color':'b'})
+        ax.set_title('Set 1')
 #         pylab.show()
 #  
-#     def test_7_plot_FF_curve(self):
-#         pylab.figure()      
-#         self.obj.plot_FF_curve(**{'label':'Mean'})#**{'color':'b'})
-#         self.obj[:,0].plot_FF_curve(**{'label':'Set 1'})
+    def test_7_plot_FF_curve(self):
+        pylab.figure()      
+        self.obj.plot_FF_curve(**{'label':'Mean'})#**{'color':'b'})
+        self.obj[:,0].plot_FF_curve(**{'label':'Set 1'})
 #         pylab.show()#        d1, d2={}, {}
 # 
 #     def test_9_get_spike_stats(self):
 #         self.obj.compute_set('spike_stats',*[],**{})
 
-# class TestData_unit_vm(unittest.TestCase):
-#     def setUp(self):
-#         self.longMessage=True
-#         self.n_runs=3
-# 
-#         _, self.obj=dummy_data_du(**{'n_runs':self.n_runs})
-#     def test_1_compute_set_get(self):
-#         for attr, a, k in [
-# #                            ['voltage_trace', [], {}],
-#                            ]:
-#   
-#             self.obj.compute_set(attr,*a,**k)            
-#             self.obj.get(attr)
-#  
-#     def test_1_plot_voltage_trace(self):  
-# #        self.obj.compute_set('voltage_trace',*[],**{})
-#         pylab.figure() 
-#         ax=pylab.subplot(211) 
-#         self.obj.plot(**{'ax':ax})
-#         ax.set_title('All traces')
-#         
-#         ax=pylab.subplot(212)   
-#         self.obj[:,0].plot(**{'ax':ax})
-#         ax.set_title('Set 1 traces')
+class TestData_unit_vm(unittest.TestCase):
+    def setUp(self):
+        self.longMessage=True
+        self.n_runs=3
+        _, self.obj=dummy_data_du(**{'n_runs':self.n_runs})
+        
+    def test_1_compute_set_get(self):
+        for attr, a, k in [
+                            ['voltage_trace', [], {}],
+                            ['mean_voltage_parts', [], {}],
+                           ]:
+   
+            self.obj.compute_set(attr,*a,**k)            
+            self.obj.get(attr)
+  
+    def test_1_plot_voltage_trace(self):  
+        pylab.figure() 
+        ax=pylab.subplot(211) 
+        self.obj.plot(**{'ax':ax})
+        ax.set_title('All traces')
+         
+        ax=pylab.subplot(212)   
+        self.obj[:,0].plot(**{'ax':ax})
+        ax.set_title('Set 1 traces')
 #         pylab.show()   
-#        
+        
+    def test_2_plot_IV(self):  
 
+        pylab.figure() 
+        
+        ax=pylab.subplot(111) 
+        self.obj.plot_IV_curve(**{'ax':ax, 'label':'Mean'})
+        self.obj[:,0].plot_IV_curve(**{'ax':ax, 'label':'Set 1'})                          
+        ax.set_title('All traces')
+#         pylab.show()  
 
-# class TestData_units_dic(TestData_unit_spk):
-#     def setUp(self):
-# 
-#         self.longMessage=True
-#         names=['u1','u2']
-#         self.n_runs=3
-#         self.obj=dummy_data_dud(names, **{'n_runs':3})
-# 
-# 
-#     #Blocked    
-#     def test_5_get_IF_curve(self):
-#         pass  
+class TestData_units_dic(TestData_unit_spk):
+    def setUp(self):
+ 
+        self.longMessage=True
+        names=['u1','u2']
+        self.n_runs=3
+        self.obj=dummy_data_dud(names, **{'n_runs':3})
+ 
+ 
+    #Blocked    
+    def test_5_get_IF_curve(self):
+        pass  
 
-# class TestDud_list(TestData_units_dic):
-#     def setUp(self):
-#         self.longMessage=True
-#         names=[['u1','u2'],['u3']]
-#         self.n_runs=3
-#         l=[]
-#         for n in names:
-#             l.append(dummy_data_dud(n, **{'n_runs':3}))
-#         self.obj=Dud_list(l)       
+class TestDud_list(TestData_units_dic):
+    def setUp(self):
+        self.longMessage=True
+        names=[['u1','u2'],['u3']]
+        self.n_runs=3
+        l=[]
+        for n in names:
+            l.append(dummy_data_dud(n, **{'n_runs':3}))
+        self.obj=Dud_list(l)       
          
 class TestData_unit_relation(unittest.TestCase):
     def setUp(self):
@@ -1038,8 +1020,9 @@ class TestData_unit_relation(unittest.TestCase):
         #pylab.show()
             
 if __name__ == '__main__':
-    test_classes_to_run=[TestData_unit_spk,
-                         TestData_unit_vm, 
+    test_classes_to_run=[
+                        TestData_unit_spk,
+                        TestData_unit_vm, 
                          #TestData_units_dic,
                          #TestDud_list,
                          #TestData_unit_relation,

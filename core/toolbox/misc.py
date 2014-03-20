@@ -322,8 +322,13 @@ def dict_haskey(dic, keys):
 def dict_recursive_get(dic, keys):
     try:
         return _dict_recursive_get(dic, keys)
-    except KeyError:
-        raise KeyError(dict_key_error_msg(dic, keys))
+    except Exception as e:
+        if e.message:
+            raise type(e)(e.message)
+        else :
+            s=dict_key_error_msg(dic, keys)
+            raise type(e)(e.message+s)
+
 
 def _dict_recursive_get(dic, keys):
         
@@ -337,8 +342,7 @@ def _dict_recursive_get(dic, keys):
         if keys[0] in dic.keys():
             val=dict_recursive_get(dic[keys[0]], keys[1:])
         else:
-            #val=None
-            raise KeyError()
+            raise LookupError()
         return val   
 
 
@@ -375,6 +379,9 @@ def dict_key_error_msg(d, keys):
                 s+="['{}']".format(k)
         else:
             s+=' none'
+        keys=sorted(dict_recursive_get(d, keys).keys())
+        s+='\nAvailable keys:[{}]'.format(',\n\t\t'.join(keys))
+        
         return s
         
 
@@ -398,7 +405,7 @@ def dict_recursive_set(dic, keys, val):
     '''set the value val in dic at mapping keys. keys has to be
     a enrty in the dic'''
     if not dict_haskey(dic, keys):
-        raise KeyError(dict_key_error_msg(dic, keys))
+        raise LookupError(dict_key_error_msg(dic, keys))
     else:
         return dict_recursive_add(dic, keys, val)
     
