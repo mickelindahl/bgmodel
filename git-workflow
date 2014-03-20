@@ -6,6 +6,9 @@ Git can be used for version control locally on the computer but also remotely sy
 
 Git work on a folder with code. First the code are copied to the folder. Then git is initialized in the folder. Now, git can be used to create branches and switch between these. The code in the folder will then presumably change to the code associated with the current branch. 
 
+git add . - adds all new file
+git status - check the status
+git commit -am "messasge" - commit all changes, OBS do not include new files
 
 Once all the files are in your git workspace, you need to tell git that you want to use your current directory as a git environment.
 user@host ~/git/testing $ git init
