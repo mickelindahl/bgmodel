@@ -34,7 +34,9 @@ def main():
     IF=build_cases(**{'lesion':True})
     FF=build_cases(**{'lesion':False})
     opt=build_cases(**{'lesion':False, 'sim_stop':1000.0, 'sim_time':1000.0})
+    hist=build_cases(**{'lesion':False, 'size':50})
     
+        
     curr_IV=range(-200,300,100)
     curr_IF=range(0,500,100)
     rate_FF=range(100,1500,100)
@@ -44,8 +46,12 @@ def main():
     do('plot_IF_curve', IF, 1, **{'ax':axs[1],'curr':curr_IF, 'node':node})
     do('plot_FF_curve', FF, 1, **{'ax':axs[2],'rate':rate_FF, 'node':node,
                                      'input':'C2p'})    
-    do('optimize', opt, 1, **{'ax':axs[3], 'x0':700.0,'node':node,
-                                   'input':'C2p'})
+    do('optimize', opt, 1, **{'ax':axs[3], 'x0':700.0,'f':[node],
+                                   'x':['node.C2p.rate']})
+
+    set_optimization_val(d, hist, **{'x':['node.C2p.rate'], 'node':node})
+    do('plot_hist_rates', hist, 0, **{'ax':axs[3], 'node':node})
+
 
     beautify(axs)
     pylab.show()

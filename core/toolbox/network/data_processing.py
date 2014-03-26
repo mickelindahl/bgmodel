@@ -34,7 +34,6 @@ class Data_unit_base(object):
         self.merge_sets=False
         self.target_rate=0.0
         self.wrap=wrap
-        
         self._init_extra_attributes( *args, **kwargs)
         
     @property
@@ -86,15 +85,13 @@ class Data_unit_base(object):
         val=self.compute(attr, *args, **kwargs)
         self.set(attr, val)
 
+
     
     def get(self, attr, *args, **kwargs):
         keys=kwargs.get('attr_list', self.data[attr].keys())
         args=[]
         for key in keys: 
-#             if attr in ['mean_rate', 'isi_IF', 'firing_rate', 'mean_rate_parts']:
-                args.append(self.data[attr][key])
-#             else:
-#                 args.append(self.data[attr][key].ravel())
+            args.append(self.data[attr][key])
                             
         return args   
 
@@ -124,7 +121,7 @@ class Data_unit_base(object):
         
     def set_times(self, times):
         self.times=times   
-                
+                    
 class Mixin_spk(object):
     '''
     classdocs
@@ -210,13 +207,16 @@ class Mixin_spk(object):
 #         return w
         
  
-    def plot_firing_rate(self, ax=None, win=100, **k):
+    def plot_firing_rate(self, ax=None, win=100, t_stop=None, 
+                         t_start=None, **k):
         if not ax:
             ax=pylab.subplot(111)
         
         if not self.isrecorded('firing_rate'):
-            self.compute_set('firing_rate',*[1],**{'average':True})
-
+            self.compute_set('firing_rate',*[1],**{'average':True,
+                                                   't_start':t_start,
+                                                   't_stop':t_stop})
+        print self
         x, y=self.get('firing_rate', attr_list=['x','y'], )
     
         y=misc.convolve(y, **{'bin_extent':win, 'kernel_type':'triangle',
@@ -228,7 +228,7 @@ class Mixin_spk(object):
         ax.legend()
 
     
-    def plot_hist_isis(self, ax=None, sets=[], **k):
+    def plot_hist_isis(self, ax=None, **k):
         if not ax:
             ax=pylab.subplot(111)
 
@@ -237,16 +237,28 @@ class Mixin_spk(object):
 
         y,=self.get('isi',  attr_list=['y'])
         y=reduce(lambda a, b:list(a)+list(b), y )
-        #y,=merge_runs(*[y])
-        
-#         
-#         if not sets:
-#             y=[reduce(lambda a, b:list(a)+list(b), y)]
-#         add_labels(sets, k)
-        ax.hist(numpy.array(y), **k)
-        ax.set_xlabel('Time (ms)')     
+
+        ax.hist(1000.0/numpy.array(y), **k)
+        ax.set_xlabel('Rate (Hz)')     
         ax.set_ylabel('Count (#)')
         ax.legend()
+
+
+    def plot_hist_rates(self, ax=None, t_start=None, t_stop=None, **k):
+        if not ax:
+            ax=pylab.subplot(111)
+
+        if not self.isrecorded('mean_rates'):
+            self.compute_set('mean_rates',*[],**{'t_start':t_start, 
+                                                 't_stop':t_stop})     
+
+        y,=self.get('mean_rates',  attr_list=['y'])
+
+        p=ax.hist(numpy.array(y), **k)
+        ax.set_xlabel('Rate (Hz)')     
+        ax.set_ylabel('Count (#)')
+        ax.legend()
+
     def plot_mean_rate_parts(self, ax=None, x=[],  **k):
         if not ax:
             ax=pylab.subplot(111) 
@@ -255,12 +267,9 @@ class Mixin_spk(object):
             self.compute_set('mean_rate_parts',*[],**{})     
         
         _x,y=self.get('mean_rate_parts', attr_list=['x','y'])
-#         x,y=get_sets_or_single('mean_rate', sets, *[ x, y])
         
         if not x:
             x=_x
-              
-#         add_labels(sets,  k)
         
         ax.plot(x, y, **k)
         
@@ -394,6 +403,8 @@ class Data_units_dic(object):
      
     def __init__(self, factory_class, **kwargs):
         #OBS, having dic={} do not ensure clearance of the dictionary.
+        
+        self.file_name=kwargs.get('file_name','')    
         self.dic=kwargs.get('dic',{})
         self.allowed=allowed_Data_units_dic()
         self.attr=''
@@ -414,7 +425,7 @@ class Data_units_dic(object):
         #print '__setstate__ executed'
         self.__dict__ = d               
    
-    def __getattr__(self, attr):    
+    def __getattr__(self, attr):
         if attr in self.allowed:
             self.attr=attr
             return self._caller
@@ -456,7 +467,14 @@ class Data_units_dic(object):
     def get_model(self, name):
         return self.dic[name]
 
-            
+    def get_file_name(self):
+        if not self.file_name:
+            raise 'No filename is set'
+        return self.file_name
+    
+    def set_file_name(self, val):
+        self.file_name=val
+    
             
 class Dud_list(object):
     def __init__(self, dud_list, **kwargs):
@@ -621,15 +639,18 @@ def add_labels(sets, k):
 def allowed_Data_units_dic():
     l=['compute_set',
       'get',
+      'get_file_name',
       'get_mean_rate_error',
       'get_spike_stat', 
       'plot_firing_rate',
       'plot_hist_isis',
+      'plot_hist_rates',
       'plot_mean_rate',    
       'plot_IF_curve',
       'plot_FF_curve',
       'plot_voltage_trace',
       'set',
+      'set_file_name',
       'set_stimulus',
                   ]
     return l

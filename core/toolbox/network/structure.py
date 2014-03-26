@@ -387,6 +387,7 @@ class Conn(Dic):
         self.post=[]
         self.rule=kwargs.get('rule','all-all')
 
+        self.save_path=kwargs.get('save_path', '')
         self.sets=[]    
         self.source=kwargs.get('source', 'C0')
         self.syn=kwargs.get('syn', 'CO_M1_ampa') # nest 
@@ -394,6 +395,7 @@ class Conn(Dic):
         self.tata_dop=kwargs.get('tata_dop', 0.8)
         self.weight=kwargs.get('weight', {'type':'constant', 
                                                 'params':1.0})
+        
     @property
     def n(self):
         return len(self.pre)
@@ -509,9 +511,8 @@ class Conn(Dic):
     
 
     
-    def set(self, surfs, path, save_mode=True, display_print=True):
+    def set(self, surfs, display_print=True):
         t=time.time()
-        
         
         # Convergent connections when driver = target and  pool = source.
         # The for each node driver not surfs from the pool is considered
@@ -521,15 +522,15 @@ class Conn(Dic):
         driver=surfs[self.target]
         pool=surfs[self.source]
         
-        if save_mode and os.path.isfile(path+'.pkl'): 
-            d=data_to_disk.pickle_load(path)
+        if self.save_path and os.path.isfile(self.save_path +'.pkl'): 
+            d=data_to_disk.pickle_load(self.save_path )
             self.pre, self.post, self.sets=d
         
         else:
             self._set(driver, pool)
-            if save_mode:
+            if self.save_path:
                 data_to_disk.pickle_save([self.pre, self.post, 
-                                          self.sets], path)         
+                                          self.sets], self.save_path )         
                    
         t=time.time()-t
         if display_print:
@@ -616,7 +617,7 @@ def build(params_nest, params_surf, params_popu):
     popus=create_populations(params_nest, params_popu)      
     return surfs, popus
 
-def connect(popus, surfs, params_nest, params_conn, path_conn, display_print=False):
+def connect(popus, surfs, params_nest, params_conn, display_print=False):
     for source in popus:
         if not isinstance(source, my_population.VolumeTransmitter):
             continue
@@ -624,7 +625,7 @@ def connect(popus, surfs, params_nest, params_conn, path_conn, display_print=Fal
         my_nest.MyCopyModel( params_nest[name], name)
         my_nest.SetDefaults(name, {'vt':source.ids[0]}) 
     
-    conns=create_connections(surfs, params_conn, path_conn, display_print=False)
+    conns=create_connections(surfs, params_conn, display_print=False)
     connect_conns(params_nest, conns, popus, display_print)
     return conns
 
@@ -659,13 +660,13 @@ def create_populations(params_nest, params_popu):
             
     return popus
 
-def create_connections(surfs, params_conn, path, display_print=False):
+def create_connections(surfs, params_conn, display_print=False):
     conns=Conn_dic()
     for k,v in params_conn.iteritems(): 
         
         conns.add(k, **v)
         
-        conns[k].set(surfs, path, save_mode=False, display_print=False)
+        conns[k].set(surfs, display_print=False)
     return conns      
       
 def create_surfaces(params_surf):
@@ -805,10 +806,10 @@ class TestConn(unittest.TestCase):
                       'target':self.target.get_name(),
                       'save_path':self.path_conn+rule})
             c1=Conn('n1_n2', **k)
-            c1.set(self.surfs, self.path_conn, display_print=False)
+            c1.set(self.surfs, display_print=False)
             l1.append(c1.n)
             c2=Conn('n1_n2', **k)
-            c2.set(self.surfs, self.path_conn,  display_print=False)
+            c2.set(self.surfs, display_print=False)
             l2.append(c2.n)
 
 
@@ -867,12 +868,18 @@ class TestConn_dic(unittest.TestCase):
 class TestModuleFunctions(unittest.TestCase):
     def setUp(self):
         from toolbox.network.default_params import Unittest
-        self.par=Unittest()      
-        self.path_conn=HOME+'/results/unittest/conn/'
+        self.par=Unittest() 
+        self.path=HOME+'/results/unittest/conn/'
+                
+    def params_conn(self, save):
+        p=self.par.get_conn()
+        for c in p.keys():
+            if save:
+                continue
+            
+            p[c]['save_path']=''
         
-    @property           
-    def params_conn(self):
-        return self.par.get_conn()
+        return p
     
     @property    
     def params_nest(self):
@@ -898,13 +905,13 @@ class TestModuleFunctions(unittest.TestCase):
 
     def test_3_create_connections(self):
         surfs=create_surfaces(self.params_surfs)
-        conns=create_connections(surfs, self.params_conn, self.path_conn)
+        conns=create_connections(surfs, self.params_conn(False))
     
 
     def test_4_connect_conns(self):
         surfs=create_surfaces(self.params_surfs)
         popus=create_populations(self.params_nest, self.params_popu)
-        conns=create_connections(surfs, self.params_conn, self.path_conn)
+        conns=create_connections(surfs, self.params_conn(False))
         connect_conns(self.params_nest, conns, popus)
         
         
@@ -915,9 +922,24 @@ class TestModuleFunctions(unittest.TestCase):
     def test_6_connect(self):    
         args=[self.params_nest, self.params_surfs, self.params_popu]
         surfs, popus=build(*args)
-        conns=connect(popus, surfs, self.params_nest, self.params_conn,
-                      self.path_conn)
+        conns=connect(popus, surfs, self.params_nest, self.params_conn(False))
         
+    def test_7_connect_with_save(self):
+        
+        args=[self.params_nest, self.params_surfs, self.params_popu]
+        surfs, popus=build(*args)
+        t=time.time()
+        conns=connect(popus, surfs, self.params_nest, self.params_conn(True))
+        for v in self.params_conn(True).values():
+            filename=v['save_path']+'.pkl' 
+#             print 'Deleting: ' +filename
+            os.remove(filename)
+            
+        conns=connect(popus, surfs, self.params_nest, self.params_conn(True))
+        t1=time.time()-t
+        conns=connect(popus, surfs, self.params_nest, self.params_conn(True))
+        t2=time.time()-t-t1
+        self.assertTrue(t1*10>t2)
         
 if __name__ == '__main__':
     test_classes_to_run=[TestSurface,

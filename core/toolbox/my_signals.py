@@ -686,8 +686,16 @@ class MySpikeList(SpikeList):
  
  
     def get_firing_rate(self, time_bin, **kwargs): 
+        t_start=kwargs.get('t_start', None)
+        t_stop=kwargs.get('t_stop', None)
         x=self.time_axis_centerd(time_bin) 
         y=self.firing_rate(time_bin, **kwargs)
+        if t_start:
+            y=y[x>t_start]
+            x=x[x>t_start]
+        if t_stop:
+            y=y[x<t_stop]
+            x=x[x<t_stop]
         return {'ids':self.id_list,
                 'x':x, 
                 'y':y,}
@@ -809,6 +817,7 @@ class MySpikeList(SpikeList):
         return d       
 
     def mean_rate(self, **kwargs):
+        
         return numpy.mean(self.mean_rates(**kwargs))
      
     def mean_rate_std(self, **kwargs):

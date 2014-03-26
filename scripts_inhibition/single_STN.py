@@ -4,12 +4,12 @@ Created on Mar 19, 2014
 @author: lindahlm
 '''
 
-from single_FSN import (creat_dic_specific, create_nets, build_general, 
-                        do, beautify, create_list_dop)
+from single import (beautify, build_general, creat_dic_specific, create_nets,  
+                    create_list_dop, do, set_optimization_val)
+
 import pylab
 import toolbox.plot_settings as pl
 from toolbox import misc
-
 
 import pprint
 pp=pprint.pprint
@@ -25,8 +25,7 @@ def build_cases(**kwargs):
     l = create_list_dop(su)
     
     # In dopamine depleted case STn firing increases from 10 to 15 Hz,
-    # then firingrate in GPe remains the same
-    
+    # then firingrate in GPe remains the same    
     names=['$STN_{+d}$',
            '$STN_{-d}$',
 ]
@@ -40,8 +39,9 @@ def main():
     IV=build_cases(**{'lesion':True, 'mm':True})
     IF=build_cases(**{'lesion':True})
     FF=build_cases(**{'lesion':False})
-    opt=build_cases(**{'lesion':False, 'sim_stop':1000.0, 'sim_time':1000.0})
-    
+    opt=build_cases(**{'lesion':False})
+    hist=build_cases(**{'lesion':False, 'size':200})
+
     curr_IV=range(-200,300,100)
     curr_IF=range(0,500,100)
     rate_FF=range(100,1500,100)
@@ -51,10 +51,12 @@ def main():
     do('plot_IF_curve', IF, 1, **{'ax':axs[1],'curr':curr_IF, 'node':node})
     do('plot_FF_curve', FF, 1, **{'ax':axs[2],'rate':rate_FF, 'node':node,
                                      'input':'CSp'})    
-#     do('optimize', opt, 0, **{'ax':axs[3], 'x0':-20.0,'f':[node],
-#                                    'x':['node.GA.nest_params.I_e']})
-    do('optimize', opt, 0, **{'ax':axs[3], 'x0':200.0,'f':[node],
+
+    d=do('optimize', opt, 1, **{'ax':axs[3], 'x0':200.0,'f':[node],
                                    'x':['node.CSp.rate']})
+
+    set_optimization_val(d, hist, **{'x':['node.CSp.rate'], 'node':node})
+    do('plot_hist_rates', hist, 0, **{'ax':axs[3], 'node':node})
 
     beautify(axs)
     pylab.show()

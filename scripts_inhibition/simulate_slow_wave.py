@@ -84,6 +84,7 @@ def main():
                          'netw':{'size':size/sub_sampling, 'sub_sampling':{'M1':sub_sampling, 'M2':sub_sampling}}}}   
 
 
+
     pert0= sni.pert_MS_subsampling(sub_sampling)
     setup_list=[]
     #check_perturbations()
@@ -108,8 +109,7 @@ def main():
     nms.show_exclude_rasters(labels[0:4]+labels[16:18], plot_models, plot_relations, xlim=[5000.0,7000.0], xlim_pds=[0,5], xlim_coher=[0,5])
     pylab.show()
     
-    
-    
+        
 main()    
 
 

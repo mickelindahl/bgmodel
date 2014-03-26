@@ -60,16 +60,8 @@ class Fmin(object):
         else:
             raise AttributeError
                
-    def fmin(self):#, load, save_at):
-        
-#         with Stop_stdout(not self.verbose):
-#             if not load:    
-#                 self._fmin()
-#                 data_to_disk.pickle_save(self.data,  save_at)    
-#             else:
-#                 [ self.data ]=data_to_disk.pickle_load(save_at)        
-#                 self.print_summary()
-#                
+    def fmin(self):
+                        
         self._fmin()    
         return self.data
                        

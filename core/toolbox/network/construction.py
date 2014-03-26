@@ -30,6 +30,27 @@ import pprint
 pp=pprint.pprint
 
 
+
+# class Data(object):
+#     
+#     def __init__(self):
+#         self.file_name
+#         
+#     def __repr__(self):
+#         return self.dic
+#     
+#     def __getitem__(self,a):
+#         return self.dic[a]
+#     
+#     def __len__(self):
+#         return len(self.dic.values())  
+# 
+#     def __iter__(self):
+#         for d in self.dic:
+#             yield d
+#     
+#     def get_file_name(self):
+#         return self.file_name
 class Network_base(object):
     def __init__(self, name, *args,  **kwargs):
         '''
@@ -39,16 +60,10 @@ class Network_base(object):
         self.built=False
         self.connected=False
         
-#         self.class_par=Inhibition
-#         self.conns=None
-        
         self.dud=None
-#         self.input_class=MyPoissonInput
-#         self.input_params={} #set in inputs       
         self.name=name
         self.surfs=None
-#         self.dic_rep=kwargs.get('dic_rep', {})
-#         self.perturbation=kwargs.get('perturbation', Perturbation_list())
+
         self.par=kwargs.get('par', Unittest())
         
         self.pops=None
@@ -68,10 +83,7 @@ class Network_base(object):
         self.sim_time_progress=0.0
                 
         self.stopwatch={}
-        
-#         self.units_list=[]
         self.update_par_rep=kwargs.get('update_par_rep',[]) 
-#         self.surfs={}
         
         self.verbose=kwargs.get('verbose', 'True')
 
@@ -230,7 +242,7 @@ class Network_base(object):
     def get_path_data(self):
         return self.path_data
 
-    def get_perturbations(self, stim, stim_name='', op='+'):
+    def get_perturbations(self, stim, stim_name='', op='+', **kwargs):
         replace_perturbation=[]
         for s in stim:            
 
@@ -241,6 +253,19 @@ class Network_base(object):
 
     def get_pertubation_list(self):
         return self.perturbation
+
+    def set_replace_pertubation(self, val):
+        self.replace_perturbation=val
+
+    def get_sim_time(self):
+        return self.par.get_sim_time()
+    
+    def get_start_rec(self):
+        return self.par.get_start_rec()
+    
+    
+    def get_sim_stop(self):
+        return self.par.get_sim_stop()
     
     def get_xopt_length(self):
         return len(self.xopt)
@@ -298,11 +323,11 @@ class Network_base(object):
     
     def set_sim_stop(self, t):
         self.par.set_sim_stop(t)
- 
-
     
     def simulation_loop(self):
         duds=self.init_duds()
+        self.do_reset()
+        
         while True:
             self.do_preprocessing()
             self.do_run()
@@ -369,13 +394,14 @@ class Network_base(object):
         if self.sim_time!=self.sim_stop:
             raise RuntimeError(('simulation time and simulation stop needs',
                                 ' to be equal'))
+        
         dud=self.simulation_loop()['spike_signal']
         
         d=self.pops.get('target_rate')
         for k,v in d.items():
             dud[k].set('target_rate', v)
         
-        dud.compute_set('mean_rate')
+        dud.compute_set('mean_rate', **{'t_start':self.get_start_rec()})
         
         e=dud.get_mean_rate_error(**{'models':self.fopt})
         self.clear_dud(Data_unit_spk) 
@@ -490,7 +516,7 @@ class Network(Network_base):
                                                       self.stopwatch):        
 #             print self.params_conn
             args=[self.pops, self.surfs, self.params_nest, 
-                  self.params_conn, self.save_conn, True]
+                  self.params_conn]
             
             self.conns=structure.connect(*args)
 

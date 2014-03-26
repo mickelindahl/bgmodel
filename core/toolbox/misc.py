@@ -324,10 +324,10 @@ def dict_recursive_get(dic, keys):
         return _dict_recursive_get(dic, keys)
     except Exception as e:
         if e.message:
-            raise type(e)(e.message)
+            raise type(e)(e.message), None, sys.exc_info()[2]
         else :
             s=dict_key_error_msg(dic, keys)
-            raise type(e)(e.message+s)
+            raise type(e)(e.message+s), None, sys.exc_info()[2]
 
 
 def _dict_recursive_get(dic, keys):

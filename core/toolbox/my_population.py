@@ -79,7 +79,7 @@ class MyGroup(object):
         params=kwargs.get('params',{})          
             
         self.connections     = {}        # Set after network has been built with FindConnections
-        print model
+#         print model
         self.ids             = kwargs.get('ids', my_nest.Create(model, 
                                                                 n, 
                                                                 params))
@@ -404,7 +404,7 @@ class MyNetworkNode(MyGroup):
             start=0.0
         
         if not start==my_nest.GetKernelStatus('time'):
-            signal=self.get_signal( flag, recordable=recordable, 
+            signal=self.get_signal(flag, recordable=recordable, 
                                    start=start, 
                                    stop=my_nest.GetKernelStatus('time')) 
             if flag in ['s', 'spikes']:
@@ -747,7 +747,7 @@ class MyPoissonInput(MyGroup):
         self.spike_setup=kwargs.get('spike_setup', [])
         self.input_model=input_model
         self.type_model=type_model
-        self.ids_generator=[]
+        self.ids_generator={}
      
     
     def set_spike_times(self, rates=[], times=[], t_stop=None, ids=None, 
@@ -816,8 +816,12 @@ class MyPoissonInput(MyGroup):
             
             my_nest.Connect(source_nodes, target_nodes)         
             
-            generators=list(set(source_nodes).union(self.ids_generator))
-            self.ids_generator=sorted(generators)
+            generators=[]
+            if hash(tuple(ids)) in self.ids_generator.keys():
+                generators=self.ids_generator[hash(tuple(idx))]
+                
+            generators=list(set(source_nodes).union(generators))
+            self.ids_generator[hash(tuple(idx))]=sorted(generators)
             self.local_ids=list(self.ids) # Nedd to put on locals also
     
  
@@ -829,7 +833,7 @@ class MyPoissonInput(MyGroup):
             
             params =[{'rate':v[0],'start':v[1], 'stop':v[2]} 
                      for v in zip(rates, t_starts, t_stops)] 
-            my_nest.SetStatus(self.ids_generator, params)
+            my_nest.SetStatus(self.ids_generator[hash(tuple(idx))], params)
             
                                     
 class MyLayerGroup(MyGroup):
@@ -1147,13 +1151,13 @@ class MyLayerPoissonInput(MyPoissonInput):
         self.id_mod=[]
     
     def sort_ids(self, pos=[[0,0]]):     
-        print self.layer_id
+#         print self.layer_id
         node=my_topology.FindCenterElement(self.layer_id)
-        print node
+#         print node
         ids=self.ids
         d=numpy.array(my_topology.Distance(node*len(ids),ids))
         idx=sorted(range(len(d)), key=d.__getitem__, reverse=True)
-        print d[idx]
+#         print d[idx]
         return idx 
     def plot(self, ax=None, nodecolor='b', nodesize=20):        
         my_topology.MyPlotLayer(self.layer_id, ax,nodecolor, nodesize)
