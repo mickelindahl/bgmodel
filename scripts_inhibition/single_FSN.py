@@ -37,9 +37,10 @@ def main():
     node='FS'
     IV=build_cases(**{'lesion':True, 'mm':True})
     IF=build_cases(**{'lesion':True})
-    FF=build_cases(**{'lesion':False})
-    opt=build_cases(**{'lesion':False})
-    hist=build_cases(**{'lesion':False, 'size':200})
+    FF=build_cases(**{'lesion':False, 'size':50, 'threads':4})
+    opt=build_cases(**{'lesion':False, 'size':50,  'threads':4})
+    hist=build_cases(**{'lesion':False, 'size':200,  'threads':4})
+
     
     curr_IV=range(-200,300,100)
     curr_IF=range(0,500,100)

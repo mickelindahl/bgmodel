@@ -32,7 +32,7 @@ class Fmin(object):
                        'full_output':1,
                        'retall':1,
                        'xtol':10.0,
-                       'ftol':2.,
+                       'ftol':.5,
                        'disp':0}
         
         self.kwargs_fmin.update(kwargs.get('kwargs_fmin',{}))

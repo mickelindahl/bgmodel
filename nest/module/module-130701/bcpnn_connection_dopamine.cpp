@@ -24,14 +24,17 @@ BCPNNDopaCommonProperties::BCPNNDopaCommonProperties() :
    nest::CommonSynapseProperties(),
 
    b_(0.0),
-   dopamine_modulated_(false),
+   dopamine_modulated_(true),
    epsilon_(0.001),
    fmax_(50.0),
-   fmax_anti_(950.0),
    gain_(1.0),
    gain_dopa_(1.0),
+   k_pow_(1.0),
    K_(1.0),
    reverse_(1.0),
+   sigmoid_(false),
+   sigmoid_mean_(.5),
+   sigmoid_slope_(20.),
    tau_n_(200.0),
    taui_(10.0),
    tauj_(10.0),
@@ -56,9 +59,9 @@ void BCPNNDopaCommonProperties::get_status(DictionaryDatum & d) const
 	def<bool>(d, "dopamine_modulated", dopamine_modulated_);
 	def<nest::double_t>(d, "epsilon", epsilon_);
 	def<nest::double_t>(d, "fmax", fmax_);
-	def<nest::double_t>(d, "fmax_anti", fmax_anti_);
 	def<nest::double_t>(d, "gain", gain_);
 	def<nest::double_t>(d, "gain_dopa", gain_dopa_);
+	def<nest::double_t>(d, "k_pow", k_pow_);
 	def<nest::double_t>(d, "K", K_);
 	def<nest::double_t>(d, "reverse", reverse_);
 	def<nest::double_t>(d, "tau_i", taui_);
@@ -66,6 +69,9 @@ void BCPNNDopaCommonProperties::get_status(DictionaryDatum & d) const
 	def<nest::double_t>(d, "tau_e", taue_);
 	def<nest::double_t>(d, "tau_p", taup_);
 	def<nest::double_t>(d, "tau_n", tau_n_);
+	def<nest::double_t>(d, "sigmoid", sigmoid_);
+	def<nest::double_t>(d, "sigmoid_mean", sigmoid_mean_);
+	def<nest::double_t>(d, "sigmoid_slope", sigmoid_slope_);
 
 }
 
@@ -88,9 +94,9 @@ void BCPNNDopaCommonProperties::set_status(const DictionaryDatum & d,
   updateValue<bool>(d, "dopamine_modulated", dopamine_modulated_);
   updateValue<nest::double_t>(d, "epsilon", epsilon_);
   updateValue<nest::double_t>(d, "fmax", fmax_);
-  updateValue<nest::double_t>(d, "fmax_anti", fmax_anti_);
   updateValue<nest::double_t>(d, "gain", gain_);
   updateValue<nest::double_t>(d, "gain_dopa", gain_dopa_);
+  updateValue<nest::double_t>(d, "k_pow", k_pow_);
   updateValue<nest::double_t>(d, "K", K_);
   updateValue<nest::double_t>(d, "reverse", reverse_);
   updateValue<nest::double_t>(d, "tau_i", taui_);
@@ -98,6 +104,9 @@ void BCPNNDopaCommonProperties::set_status(const DictionaryDatum & d,
   updateValue<nest::double_t>(d, "tau_e", taue_);
   updateValue<nest::double_t>(d, "tau_p", taup_);
   updateValue<nest::double_t>(d, "tau_n", tau_n_);
+  updateValue<nest::double_t>(d, "sigmoid", sigmoid_);
+  updateValue<nest::double_t>(d, "sigmoid_mean", sigmoid_mean_);
+  updateValue<nest::double_t>(d, "sigmoid_slope", sigmoid_slope_);
 }
 
 nest::Node* BCPNNDopaCommonProperties::get_node()
@@ -126,6 +135,7 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
 	eij_(0.0001),
 	eij_c_(0.0001),
 	k_(0.0),
+	k_filtered_(0.0),
 	n_(0.0),
 	n_add_(0.0),
 	m_(0.0),
@@ -153,6 +163,7 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
     eij_ = rhs.eij_;
     eij_c_ = rhs.eij_c_;
     k_ = rhs.k_;
+    k_filtered_ = rhs.k_filtered_;
     n_ = rhs.n_;
     n_add_ = rhs.n_add_;
     m_ = rhs.m_;
@@ -180,6 +191,7 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
     def<nest::double_t>(d, "e_ij", eij_);
     def<nest::double_t>(d, "e_ij_c", eij_c_);
     def<nest::double_t>(d, "k", k_);
+    def<nest::double_t>(d, "k_filtered", k_filtered_);
     def<nest::double_t>(d, "n", n_);
     def<nest::double_t>(d, "m", m_);
     def<nest::double_t>(d, "p_i", pi_);
@@ -205,6 +217,7 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
     updateValue<nest::double_t>(d, "e_ij", eij_);
     updateValue<nest::double_t>(d, "e_ij_c", eij_c_);
     updateValue<nest::double_t>(d, "k", k_);
+    updateValue<nest::double_t>(d, "k_filtered", k_filtered_);
     updateValue<nest::double_t>(d, "n", n_);
     updateValue<nest::double_t>(d, "m", m_);
     updateValue<nest::double_t>(d, "p_i", pi_);
@@ -228,13 +241,18 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
 		  d->known("epsilons")  ||
 		  d->known("fmaxs")     ||
 		  d->known("gains")     ||
+		  d->known("gain_dopas")     ||
+		  d->known("k_pows")     ||
 		  d->known("Ks")        ||
 		  d->known("reverses")  ||
 		  d->known("tau_i")     ||
 		  d->known("tau_j")     ||
 		  d->known("tau_e")     ||
 		  d->known("tau_p")     ||
-		  d->known("tau_n") )
+		  d->known("tau_n") 	||
+		  d->known("sigmoids")     ||
+		  d->known("sigmoid_means")     ||
+		  d->known("sigmoid_slopes") )
 
 	  {
 		  cm.network().message(SLIInterpreter::M_ERROR,
@@ -246,9 +264,10 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
     nest::set_property<nest::double_t>(d, "e_i", p, ei_);
     nest::set_property<nest::double_t>(d, "e_j", p, ej_);
     nest::set_property<nest::double_t>(d, "e_j_c", p, ej_c_);
-     nest::set_property<nest::double_t>(d, "e_ij", p, eij_);
+    nest::set_property<nest::double_t>(d, "e_ij", p, eij_);
     nest::set_property<nest::double_t>(d, "e_ij_c", p, eij_c_);
     nest::set_property<nest::double_t>(d, "k", p, k_);
+    nest::set_property<nest::double_t>(d, "k_filtered", p, k_filtered_);
     nest::set_property<nest::double_t>(d, "n", p, n_);
     nest::set_property<nest::double_t>(d, "m", p, m_);
     nest::set_property<nest::double_t>(d, "p_i", p, pi_);
@@ -272,6 +291,7 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
     initialize_property_array(d, "e_ij");
     initialize_property_array(d, "e_ij_c");
     initialize_property_array(d, "k");
+    initialize_property_array(d, "k_filtered");
     initialize_property_array(d, "n");
     initialize_property_array(d, "m");
     initialize_property_array(d, "p_i");
@@ -299,6 +319,7 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
     append_property<nest::double_t>(d, "e_ij", eij_);
     append_property<nest::double_t>(d, "e_ij_C", eij_c_);
     append_property<nest::double_t>(d, "k", k_);
+    append_property<nest::double_t>(d, "k_filtered", k_filtered_);
     append_property<nest::double_t>(d, "n", n_);
     append_property<nest::double_t>(d, "m", m_);
     append_property<nest::double_t>(d, "p_i", pi_);

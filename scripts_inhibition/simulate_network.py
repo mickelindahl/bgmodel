@@ -27,7 +27,7 @@ def create_dic(dic_calls, **kwargs):
     return d
 
 def create_net(name, dic_calls, per, **kwargs):
-    d = create_dic(dic_calls, kwargs)
+    d = create_dic(dic_calls, **kwargs)
         
     par = Inhibition(**{'dic_rep':d, 
                         'pertubation':per})
@@ -38,23 +38,24 @@ def create_net(name, dic_calls, per, **kwargs):
 
 def create_nets(**kwargs):
     
-    c1=kwargs.get('call_rev',['low'])
-    c2=kwargs.get('call_dop',['dop', 'no_dop'])    
-    c3=kwargs.get('call_general',['general']) 
-    c4=kwargs.get('call_sub_sampling',['sub_sampling_MSN']) 
+    cc1=kwargs.get('call_rev',['low'])
+    cc2=kwargs.get('call_dop',['dop', 'no_dop'])    
+    cc3=kwargs.get('call_general',['general']) 
+    cc4=kwargs.get('call_sub_sampling',['sub_sampling_MSN']) 
+    cc5=kwargs.get('call_lesion',['lesion']) 
     pl=kwargs.get('pl',[perturbations()[0]])
     
     nets=[]
-    for c1, c2, c3, c4, p in iter_comb(c1,c2,c3,c4, pl):
-        name='_net_'+'_'.join([c1, c2, p.name])
-        net=create_net(name, [c1,c2, c3, c4], p)
+    for c1, c2, c3, c4, c5, p in iter_comb(cc1,cc2,cc3,cc4,cc5, pl):
+        name='Test_net_'+'_'.join([c1, c2, p.name])
+        net=create_net(name, [c1,c2, c3, c4, c5], p, **kwargs)
         nets.append(net)
     return nets
 
 def general(**kwargs):
     d={'simu':{
                'mm_params':{'to_file':False, 'to_memory':True},
-               'print_time':True,
+               'print_time':kwargs.get('print_time', True),
                'sd_params':{'to_file':False, 'to_memory':True},
                'sim_stop':kwargs.get('sim_stop', 2000.0),
                'sim_time':kwargs.get('sim_time', 2000.0),
@@ -63,7 +64,7 @@ def general(**kwargs):
                 
                'threads':kwargs.get('threads', 2),
                },
-       'netw':{'size':500}}
+       'netw':{'size':kwargs.get('size',500.0)}}
     return d
 
 def low(**kwargs):
@@ -82,9 +83,25 @@ def no_dop(**kwargs):
     return {'netw':{'tata_dop':0.0}}
 
 def sub_sampling_MSN(**kwargs):
-    d={'netw':{'sub_sampling':{'M1':100,'M2':100}}}
+    d={'netw':{'sub_sampling':{'M1':kwargs.get('sub_sampling',200),
+                               'M2':kwargs.get('sub_sampling',200)}}}
     return d
 
+
+def lesion(**kwargs):
+    conns=kwargs.get('lesion_conns',[])
+    d={}
+    for c in conns:
+        d=misc.dict_update(d, {'conn':{c:{'lesion':True}}})
+
+    
+    nodes=kwargs.get('lesion_nodes',[])
+    for n in nodes:
+        d=misc.dict_update(d, {'nodes':{n:{'lesion':True}}})
+
+
+    return d
+    
 def perturbations():
     
     l=[]
@@ -156,25 +173,56 @@ def plot_firing_rates(*args, **kwargs):
         kwargs['node']=name
         plot_firing_rate(*args, **kwargs)
 
-def show_firing_rates(axs, nets, duds):
-    
-    for i, nodes in enumerate([['M1','M2'],['FS','ST'],['GA','GI'],['SN']]):
-        do('plot_firing_rates', nets, duds, **{'ax':axs[i],'nodes':nodes})
 
+def show_fr(duds, nets):
+    for id_dud in range(len(duds)):
+        _, axs=ps.get_figure(n_rows=6, n_cols=1, w=1000.0, h=800.0, fontsize=16)   
+        axs[0].set_title(nets[id_dud].name)
+        for model, i in [['M1',0], ['M2', 1], ['FS',2],['GA',3], ['GI',3],
+                         ['ST',4],['SN',5]]:
+            duds[id_dud][model].plot_firing_rate(ax=axs[i], **{'label':model}) 
+            
+def show_hr(duds, nets):
+    for id_dud in range(len(duds)):
+        _, axs=ps.get_figure(n_rows=6, n_cols=1, w=1000.0, h=800.0, fontsize=16)   
+        axs[0].set_title(nets[id_dud].name)
+        for model, i in [['M1',0], ['M2', 1], ['FS',2],['GI',3], ['GA',3],
+                         ['ST',4],['SN',5]]:
+            st=duds[id_dud][model].get_spike_stats()
+            st['rates']={'mean':round(st['rates']['mean'],2),
+                            'std':round(st['rates']['std'],2),
+                            'CV':round(st['rates']['CV'],2)}
+            h=duds[id_dud][model].plot_hist_rates(ax=axs[i],
+                                                **{'label':model+' '+str(st['rates']),
+                                                    
+                                                   'histtype':'step',
+                                                   'bins':20}) 
+            
+            ylim=list(axs[i].get_ylim())
+            ylim[0]=0.0
+            axs[i].set_ylim(ylim)
+        
+
+            
 def main():
     
     p=perturbations()
-    nets=create_nets()
+#     lesion_nodes=['M1', 'M2','FS', '']
+    
+#    nets=create_nets(**{'size':10000.0, 'threads':4, 'sim_time':5000.0, 
+#                        'sim_stop':5000.0, 'start_rec':0.0, 'print_time':True,
+#                        'sub_sampling':1})
+    nets=create_nets(**{'size':10000.0, 'threds':4})
     pp(nets[0].par.dic_rep)
     print nets[0].par
-    _, axs=ps.get_figure(n_rows=2, n_cols=2, w=1000.0, h=800.0, fontsize=16)
     
     
     duds=do('sim', nets, [0]*2)
-    show_firing_rates(axs, nets, duds)
+    #show_fr(duds, nets)
+    #show_hr(duds, nets)
     save_dud(*duds)
     
-    pylab.show()
+    #pylab.show()
     
 #     stop=11000.0
 #     sub_sampling=10.0

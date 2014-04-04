@@ -356,15 +356,15 @@ class Network_base(object):
             ru=self.get_perturbations(stim, **kwargs)  
             self.replace_perturbation=ru
             self.record=['voltage_signal']        
-
-
-                
+         
         self.set_sim_stop(stim_time*len(stim))
         self.set_sim_time(stim_time)
         self.set_print_time(False)
         self.reset=False
           
         dud=self.simulation_loop()        
+#         dud['spike_signal']['GI'].plot_firing_rate(win=1000)
+#         pylab.show()
         return dud
 
     def sim_IV_curve(self, **kwargs):
@@ -516,7 +516,7 @@ class Network(Network_base):
                                                       self.stopwatch):        
 #             print self.params_conn
             args=[self.pops, self.surfs, self.params_nest, 
-                  self.params_conn]
+                  self.params_conn, True]
             
             self.conns=structure.connect(*args)
 
@@ -849,53 +849,57 @@ def plot_plastic_dopa(duds):
     ax.plot(duds['n1_n2']['k']['x'][:,0], 
             duds['n1_n2']['k']['y'][:,0], **{'label':'Dopamine (Kappa)', 
                                              'color':'k', 'linewidth':2.0})
+
+    ax.plot(duds['n1_n2']['k_filtered']['x'][:,0], 
+            duds['n1_n2']['k_filtered']['y'][:,0], **{'label':'Dopamine (Kappa)', 
+                                             'color':'k', 'linewidth':2.0})
     ax.legend()   
     
     #ax.legend(['Bcpnn dopa', 'Bcpnn (Phils code)' ])
     
-#     pylab.figure()
-
-#     ax=pylab.subplot(211)    
-#     i=1
-#     for v in ['z_i', 'z_j', 'z_j_c', 'e_i', 'e_j', 'e_ij', 
-#               'e_j_c', 'e_ij_c',]:
-#         ax.plot(duds['n1_n2'][v]['x'][:,0],
-#                 duds['n1_n2'][v]['y'][:,0], 
-#                 **{'label':v, 'color':c[i], 'linewidth':2.0})
-#         i+=1
-#  
-      
-#     ax=pylab.subplot(212)    
-# 
-#     for v in [ 'p_i', 'p_j',  'p_ij',]:
-#         ax.plot(duds['n1_n2'][v]['x'][:,0],
-#                 duds['n1_n2'][v]['y'][:,0], 
-#                 **{'label':v, 'color':c[i], 'linewidth':2.0})
-#         i+=1
-# #     ax.plot(duds['n1_n2']['m']['x'][:,0], 
-# #             duds['n1_n2']['m']['y'][:,0], **{'label':'Dopamine (Kappa)'})
-#     ax.legend()
+    pylab.figure()
+ 
+    ax=pylab.subplot(211)    
+    i=1
+    for v in ['z_i', 'z_j', 'z_j_c', 'e_i', 'e_j', 'e_ij', 
+              'e_j_c', 'e_ij_c',]:
+        ax.plot(duds['n1_n2'][v]['x'][:,0],
+                duds['n1_n2'][v]['y'][:,0], 
+                **{'label':v, 'color':c[i], 'linewidth':2.0})
+        i+=1
+  
+       
+    ax=pylab.subplot(212)    
+ 
+    for v in [ 'p_i', 'p_j',  'p_ij',]:
+        ax.plot(duds['n1_n2'][v]['x'][:,0],
+                duds['n1_n2'][v]['y'][:,0], 
+                **{'label':v, 'color':c[i], 'linewidth':2.0})
+        i+=1
+#     ax.plot(duds['n1_n2']['m']['x'][:,0], 
+#             duds['n1_n2']['m']['y'][:,0], **{'label':'Dopamine (Kappa)'})
+    ax.legend()
         
          
 class TestMixin_1(object):
     pass
-    def test_1_build(self):
-        network=self.class_network(self.name, **self.kwargs)
-        network.do_build()
-          
-    def test_2_connect(self):
-        network=self.class_network(self.name, **self.kwargs)
-        network.do_connect()    
-     
-    def test_3_run(self):
-        network=self.class_network(self.name, **self.kwargs)
-        network.do_run()  
-             
-    def test_4_reset(self):
-        network=self.class_network(self.name, **self.kwargs)  
-        network.do_run()
-        network.do_reset()
-        network.do_run() 
+#     def test_1_build(self):
+#         network=self.class_network(self.name, **self.kwargs)
+#         network.do_build()
+#           
+#     def test_2_connect(self):
+#         network=self.class_network(self.name, **self.kwargs)
+#         network.do_connect()    
+#      
+#     def test_3_run(self):
+#         network=self.class_network(self.name, **self.kwargs)
+#         network.do_run()  
+#              
+#     def test_4_reset(self):
+#         network=self.class_network(self.name, **self.kwargs)  
+#         network.do_run()
+#         network.do_reset()
+#         network.do_run() 
 
 
 class TestMixin_2(object):
@@ -1105,6 +1109,7 @@ class TestMixinPlasticDopa(object):
                       'spike_signal'],
             'record_weights_from':[['n1', 'n2', ['weight',
                                                 'k',
+                                                'k_filtered',
                                                 'm',
                                                 'z_i',
                                                 'z_j',
@@ -1568,10 +1573,10 @@ if __name__ == '__main__':
     test_classes_to_run=[
 #                         TestUnittest,
 #                           TestUnittestExtend,
-#                         TestUnittestBcpnnDopa,
+                        TestUnittestBcpnnDopa,
 #                         TestUnittestStdp,
 #                         TestUnittestBcpnn,
-                        TestSingle_unit
+#                         TestSingle_unit
 #                         TestNetwork_dic,
                        ]
     suites_list = []

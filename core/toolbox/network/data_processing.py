@@ -139,7 +139,7 @@ class Mixin_spk(object):
            'isi':{'ids':[],  'x':[], 'y':[]},
            'isi_parts':{'ids':[],  'x':[], 'y':[]},
            'mean_rate':{ 'ids':[],  'x':[],  'y':[]},
-           'mean_rate_parts':{'ids':[],   'x':[], 'y':[]},
+           'mean_rate_parts':{'ids':[],   'x':[], 'y':[], 'y_std':[]},
            'mean_rates':{ 'ids':[],  'x':[],  'y':[]},
            'psd':{'ids':[],'x':[],'y':[]},
            'phase':{'ids':[],'x':[],'y':[]},
@@ -238,11 +238,11 @@ class Mixin_spk(object):
         y,=self.get('isi',  attr_list=['y'])
         y=reduce(lambda a, b:list(a)+list(b), y )
 
-        ax.hist(1000.0/numpy.array(y), **k)
+        h=ax.hist(1000.0/numpy.array(y), **k)
         ax.set_xlabel('Rate (Hz)')     
         ax.set_ylabel('Count (#)')
         ax.legend()
-
+        return h
 
     def plot_hist_rates(self, ax=None, t_start=None, t_stop=None, **k):
         if not ax:
@@ -254,27 +254,28 @@ class Mixin_spk(object):
 
         y,=self.get('mean_rates',  attr_list=['y'])
 
-        p=ax.hist(numpy.array(y), **k)
+        h=ax.hist(numpy.array(y), **k)
         ax.set_xlabel('Rate (Hz)')     
         ax.set_ylabel('Count (#)')
         ax.legend()
-
-    def plot_mean_rate_parts(self, ax=None, x=[],  **k):
-        if not ax:
-            ax=pylab.subplot(111) 
-
-        if not self.isrecorded('mean_rate_parts'):
-            self.compute_set('mean_rate_parts',*[],**{})     
-        
-        _x,y=self.get('mean_rate_parts', attr_list=['x','y'])
-        
-        if not x:
-            x=_x
-        
-        ax.plot(x, y, **k)
-        
-        ax.set_ylabel('Frequency (spike/s)') 
-        ax.set_xlabel('Stimuli')
+        return h
+    
+#     def plot_mean_rate_parts(self, ax=None, x=[],  **k):
+#         if not ax:
+#             ax=pylab.subplot(111) 
+# 
+#         if not self.isrecorded('mean_rate_parts'):
+#             self.compute_set('mean_rate_parts',*[],**{})     
+#         
+#         _x,y=self.get('mean_rate_parts', attr_list=['x','y'])
+#         
+#         if not x:
+#             x=_x
+#         
+#         ax.plot(x, y, **k)
+#         
+#         ax.set_ylabel('Frequency (spike/s)') 
+#         ax.set_xlabel('Stimuli')
         
         
     def plot_IF_curve(self, ax=None, x=[], part='last', **k):
@@ -295,8 +296,7 @@ class Mixin_spk(object):
         m=numpy.mean(isi,axis=1)
         color=pylab.getp(ax.plot(x, m, marker='o', **k)[0], 'color')    
         
-        p= ax.fill_between(x, m-std,m+std, facecolor=color,  
-                        alpha=0.5)  
+        ax.fill_between(x, m-std,m+std, facecolor=color, alpha=0.5)  
         ax.plot(x, lisi , **{'color':color})    
         ax.set_xlabel('Current (pA)') 
         ax.set_ylabel('Rate (spike/s)') 
@@ -308,12 +308,14 @@ class Mixin_spk(object):
         if not ax:
             ax=pylab.subplot(111) 
         
-        _x, y=self.get('mean_rate_parts', attr_list=['x','y'])
-        if not x:
+        _x, y, y_std=self.get('mean_rate_parts', attr_list=['x','y', 'y_std'])
+        if not list(x):
             x=_x
         #x,y=get_sets_or_single('mean_rate', sets, *[ x, y])
         #add_labels(sets,  k)
-        ax.plot(x, y, **k)
+        h=ax.plot(x, y, **k)
+        color=pylab.getp(h[0], 'color')   
+        ax.fill_between(x, y-y_std,y+y_std, facecolor=color, alpha=0.5)  
         ax.set_xlabel('Stimuli (spike/s)') 
         ax.set_ylabel('Response (spike/s)') 
         ax.legend()
@@ -844,80 +846,80 @@ class TestData_unit_spk(unittest.TestCase):
 
         self.obj, _=dummy_data_du(**{'n_runs':self.n_runs})
          
-    def test_1_compute_set_get(self):
-        for attr, a, k in [['firing_rate',[100],{'average':True}], 
-                           ['isi', [],{}],
-                           ['mean_rate', [],{}],
-                           ['mean_rates',[],{}],
-                           ['psd',[256,1000.0],{}],
-                           ['phase',[10,20,3,1000.0],{}],
-                           ['phases',[10,20,3,1000.0],{}],
-                           ['raster',[], {}],
-#                            ['voltage_trace', [], {}],
-                           ]:
-  
-            self.obj.compute_set(attr,*a,**k)            
-            self.obj.get(attr)
-
-
-    def test_2_plot_firing_rate(self):
-           
-        self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':False})
-   
-        pylab.figure()
-        ax=pylab.subplot(211)
-        self.obj.plot_firing_rate(ax, **{'label':'Mean'})
-        self.obj[:,0].plot_firing_rate(ax, **{'label':'Set 1'})    
-        self.obj[:,1].plot_firing_rate(ax, **{'label':'Set 2'})   
-# 
- 
-        self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':True})
-        self.obj.compute_set('firing_rate',*[1],**{'average':True})
-        ax=pylab.subplot(212)
-        self.obj[0,:].plot_firing_rate(ax, **{'label':'Run 1'})
-        self.obj[1,:].plot_firing_rate(ax, **{'label':'Run 2'})
-        self.obj[2,:].plot_firing_rate(ax, **{'label':'Run 3'})  
-#         pylab.show()                
+#     def test_1_compute_set_get(self):
+#         for attr, a, k in [['firing_rate',[100],{'average':True}], 
+#                            ['isi', [],{}],
+#                            ['mean_rate', [],{}],
+#                            ['mean_rates',[],{}],
+#                            ['psd',[256,1000.0],{}],
+#                            ['phase',[10,20,3,1000.0],{}],
+#                            ['phases',[10,20,3,1000.0],{}],
+#                            ['raster',[], {}],
+# #                            ['voltage_trace', [], {}],
+#                            ]:
 #   
-    def test_3_plot_hist_isis(self):
- 
-        pylab.figure()
-        self.obj.plot_hist_isis( **{'label':'Mean'})    
-        self.obj[:,0].plot_hist_isis( **{'label':'Set 1'}) 
-#         pylab.show()
- 
-    def test_4_plot_mean_rate_parts(self):
-        x= [100,200, 300]
-        pylab.figure() 
-        self.obj.plot_mean_rate_parts(x=x, **{'label':'Mean'})
-        self.obj[:,0].plot_mean_rate_parts(x=x, **{'label':'Set 1'})
+#             self.obj.compute_set(attr,*a,**k)            
+#             self.obj.get(attr)
 # 
+# 
+#     def test_2_plot_firing_rate(self):
 #            
-#         pylab.show()
-#         
-    def test_5_get_IF_curve(self):
-        self.obj.compute_set('isi',*[],**{})
-#         self.obj.set_stimulus('isi', 'x',  range(100,100*(1+self.n_runs),100))
-        self.obj.get_IF_curve()
-        #pylab.show()
-# 
-# 
-    def test_6_plot_IF_curve(self):
-        pylab.figure()  
-        x=[100,200,300]   
-        ax=pylab.subplot(211) 
-        self.obj.plot_IF_curve(ax, x=x)#**{'color':'b'})
-        ax.set_title('Mean')
-        ax=pylab.subplot(212)    
-        self.obj[:,0].plot_IF_curve(ax,x=x)#**{'color':'b'})
-        ax.set_title('Set 1')
-#         pylab.show()
+#         self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':False})
+#    
+#         pylab.figure()
+#         ax=pylab.subplot(211)
+#         self.obj.plot_firing_rate(ax, **{'label':'Mean'})
+#         self.obj[:,0].plot_firing_rate(ax, **{'label':'Set 1'})    
+#         self.obj[:,1].plot_firing_rate(ax, **{'label':'Set 2'})   
+# # 
+#  
+#         self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':True})
+#         self.obj.compute_set('firing_rate',*[1],**{'average':True})
+#         ax=pylab.subplot(212)
+#         self.obj[0,:].plot_firing_rate(ax, **{'label':'Run 1'})
+#         self.obj[1,:].plot_firing_rate(ax, **{'label':'Run 2'})
+#         self.obj[2,:].plot_firing_rate(ax, **{'label':'Run 3'})  
+# #         pylab.show()                
+# #   
+#     def test_3_plot_hist_isis(self):
+#  
+#         pylab.figure()
+#         self.obj.plot_hist_isis( **{'label':'Mean'})    
+#         self.obj[:,0].plot_hist_isis( **{'label':'Set 1'}) 
+# #         pylab.show()
+#  
+#     def test_4_plot_mean_rate_parts(self):
+#         x= [100,200, 300]
+#         pylab.figure() 
+#         self.obj.plot_mean_rate_parts(x=x, **{'label':'Mean'})
+#         self.obj[:,0].plot_mean_rate_parts(x=x, **{'label':'Set 1'})
+# # 
+# #            
+# #         pylab.show()
+# #         
+#     def test_5_get_IF_curve(self):
+#         self.obj.compute_set('isi',*[],**{})
+# #         self.obj.set_stimulus('isi', 'x',  range(100,100*(1+self.n_runs),100))
+#         self.obj.get_IF_curve()
+#         #pylab.show()
+# # 
+# # 
+#     def test_6_plot_IF_curve(self):
+#         pylab.figure()  
+#         x=[100,200,300]   
+#         ax=pylab.subplot(211) 
+#         self.obj.plot_IF_curve(ax, x=x)#**{'color':'b'})
+#         ax.set_title('Mean')
+#         ax=pylab.subplot(212)    
+#         self.obj[:,0].plot_IF_curve(ax,x=x)#**{'color':'b'})
+#         ax.set_title('Set 1')
+# #         pylab.show()
 #  
     def test_7_plot_FF_curve(self):
         pylab.figure()      
         self.obj.plot_FF_curve(**{'label':'Mean'})#**{'color':'b'})
         self.obj[:,0].plot_FF_curve(**{'label':'Set 1'})
-#         pylab.show()#        d1, d2={}, {}
+        pylab.show()#        d1, d2={}, {}
 # 
 #     def test_9_get_spike_stats(self):
 #         self.obj.compute_set('spike_stats',*[],**{})
@@ -1043,7 +1045,7 @@ class TestData_unit_relation(unittest.TestCase):
 if __name__ == '__main__':
     test_classes_to_run=[
                         TestData_unit_spk,
-                        TestData_unit_vm, 
+#                         TestData_unit_vm, 
                          #TestData_units_dic,
                          #TestDud_list,
                          #TestData_unit_relation,

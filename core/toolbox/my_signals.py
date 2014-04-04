@@ -1537,16 +1537,20 @@ class SpikeListMatrix(BaseListMatrix):
                 'y':y}
 
     def get_mean_rate_parts(self, **kwargs):
+        #OBS merge over axis 1
         w=self.merge(axis=1)
         x=numpy.zeros(w.m.shape)
         y=numpy.zeros(w.m.shape)
+        y_std=numpy.zeros(w.m.shape)
         id_list=[]
         for i,j, obj in iter2d(w.m):
             x[i,j]=i
             y[i,j]=obj.mean_rate(**kwargs)
+            y_std[i,j]=obj.mean_rate_std(**kwargs)
             id_list=set(id_list).union(obj.id_list) 
             
         return {'ids':list(id_list),
+                'y_std':y_std.ravel(),
                 'y':y.ravel(), 
                 'x':x.ravel()}  
 

@@ -25,7 +25,7 @@ def beautify(axs):
         axs[i].legend(loc='upper left')
     
     
-    for c, ls, i in zip(colors, linestyles, range(4)):
+    for c, ls, i in zip(colors, linestyles, range(len(axs[1].collections))):
         pylab.setp(axs[1].get_lines()[i*10:(i+1)*10],color=c, linestyle=ls)
         pylab.setp(axs[1].collections, color=c)
     
@@ -33,21 +33,26 @@ def beautify(axs):
     
     for p, c, ls in zip(axs[3].patches, colors, linestyles2):    
         pylab.setp(p, edgecolor=c, linestyle=ls) 
-    ylim=list(axs[3].get_xlim())
+    ylim=list(axs[3].get_ylim())
     ylim[0]=0.0
     axs[3].set_ylim(ylim)
-      
+          
 def build_general(**kwargs):
     d={'simu':{
                'mm_params':{'to_file':False, 'to_memory':True},
                'print_time':False,
+               'save_conn':False,
                'sd_params':{'to_file':False, 'to_memory':True},
-               'sim_stop':kwargs.get('sim_stop', 2000.0),
-               'sim_time':kwargs.get('sim_time', 2000.0),
+               'sim_stop':kwargs.get('sim_stop', 41000.0),
+               'sim_time':kwargs.get('sim_time', 41000.0),
                'start_rec':kwargs.get('start_rec', 1000.0),
                'stop_rec':kwargs.get('stop_rec',numpy.inf),
+               
                'threads':kwargs.get('threads', 1),
-               },}
+               },
+        'netw':{'rand_nodes':{'C_m':False, 'V_th':False, 'V_m':False},
+                }
+}
     return d
 
 def create_list_dop(su):
@@ -105,10 +110,9 @@ def evaluate(obj, method, load, **k):
         return data_to_disk.pickle_load(fileName)
     else:
         call=getattr(obj, method)
-        dud=call(**k)
-        dud.set_file_name(fileName)
-        save_dud(dud)
-        return dud
+        duds=call(**k)
+        data_to_disk.pickle_save(duds, fileName)
+        return duds
 
 def save_dud(*args):
     for a in args:
@@ -202,27 +206,31 @@ def plot_hist_isis(net, load, ax=None, **kwargs):
 def plot_hist_rates(net, load, ax=None, **kwargs):
     node=kwargs.get('node', 'FS')
     dud=evaluate(net, 'simulation_loop', load, **{})['spike_signal']
+    st=dud[node].get_spike_stats()
+    st['rates']={'mean':round(st['rates']['mean'],2),
+                'std':round(st['rates']['std'],2),
+                'CV':round(st['rates']['CV'],2)}
     dud[node].plot_hist_rates(ax=ax, t_start=net.get_start_rec(),
                               t_stop=net.get_sim_stop(), 
-                              **{'label':net.name, 'histtype':'step',
+                              **{'label':net.name+' '+str(st['rates']), 'histtype':'step',
                                  'bins':20})
 
 def sim(net, load, ax=None, **kwargs):
     dud=evaluate(net, 'simulation_loop', load, **{})['spike_signal']
     return dud
 
-def plot_firing_rate(dud, load, ax=None, **kwargs):
-    node=kwargs.get('node', 'FS')
-    dud[node].plot_firing_rate(ax=ax, t_start=net.get_start_rec(),
-                              t_stop=net.get_sim_stop(), 
-                              **{'label':node})    
-    
-def plot_firing_rates(dud, load, ax=None, **kwargs):
-    nodes=kwargs['nodes']
-    for _ax, models in zip(ax, nodes):
-        for name in models:
-            kwargs['node']=name
-            plot_firing_rate(dud, load, ax=_ax, **kwargs)
+# def plot_firing_rate(dud, load, ax=None, **kwargs):
+#     node=kwargs.get('node', 'FS')
+#     dud[node].plot_firing_rate(ax=ax, t_start=net.get_start_rec(),
+#                               t_stop=net.get_sim_stop(), 
+#                               **{'label':node})    
+#     
+# def plot_firing_rates(dud, load, ax=None, **kwargs):
+#     nodes=kwargs['nodes']
+#     for _ax, models in zip(ax, nodes):
+#         for name in models:
+#             kwargs['node']=name
+#             plot_firing_rate(dud, load, ax=_ax, **kwargs)
         
         
     

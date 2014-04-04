@@ -19,7 +19,7 @@ from simulate_network import (create_net, create_dic, do, iter_comb,
                                save_dud)
 from toolbox.network.default_params import Perturbation_list as pl
 from toolbox.network.construction import Network
-from toolbox.network.default_params import Inhibition, Slow_wave 
+from toolbox.network.default_params import Inhibition, Beta
 import toolbox.plot_settings as ps
 import numpy
 import pprint
@@ -34,7 +34,7 @@ def create_nets(**kwargs):
 
     nets=[]
     for a in iter_comb(*l):
-        name='_net_'+'_'.join(*([list(a[0:3])+[a[-1].name]]))
+        name='Beta_net_'+'_'.join(*([list(a[0:3])+[a[-1].name]]))
         net=create_net(name, a[0:3], a[-1], **kwargs)
         nets.append(net)
         
@@ -45,7 +45,7 @@ def create_nets(**kwargs):
 def create_net(name, dic_calls, per, **kwargs):
     d = create_dic(dic_calls, **kwargs)
         
-    par = Slow_wave(**{'dic_rep':d,
+    par = Beta(**{'dic_rep':d,
                            'other':Inhibition(), 
                            'pertubation':per})
     
@@ -80,12 +80,12 @@ def show(duds, nets):
 
 import pylab
 if __name__ == '__main__':
-    nets=create_nets(**{'sim_time':10000.0, 'sim_stop':10000.0, 'start_rec':1000.0,
+    nets=create_nets(**{'sim_time':3000.0, 'sim_stop':3000.0, 'start_rec':1000.0,
                         'size':10000.0, 'threads':4, 'print_time':True})
     pp(nets[0].par.dic_rep)
     pp(nets[0].replace_perturbation)
     
-    duds=do('sim', nets, [1]*len(nets))
+    duds=do('sim', nets, [0]*len(nets))
     show(duds, nets)
     save_dud(*duds)
 

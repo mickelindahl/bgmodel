@@ -41,9 +41,10 @@
 
   FirstVersion: November 2011
   CurrentVersion: March 2012
-  Author: Philip Tully
-          tully@csc.kth.se
-  SeeAlso: synapsedict, stdp_synapse, tsodyks_synapse, static_synapse
+  Author: Mikael Lindahl
+          lindahlm@csc.kth.se
+  SeeAlso: bcpnn_synapse, synapsedict, stdp_synapse, tsodyks_synapse,
+  	  	   static_synapse
  */
 
 /* for Debugging */
@@ -104,9 +105,9 @@ private:
 	bool dopamine_modulated_;
 	nest::double_t epsilon_;
 	nest::double_t fmax_;
-	nest::double_t fmax_anti_;
 	nest::double_t gain_;
 	nest::double_t gain_dopa_;
+	nest::double_t k_pow_;
 	nest::double_t K_;
 	nest::double_t tau_n_;
 	nest::double_t taui_;
@@ -114,6 +115,9 @@ private:
 	nest::double_t taue_;
 	nest::double_t taup_;
 	nest::double_t reverse_;
+	bool sigmoid_;
+	nest::double_t sigmoid_mean_;
+	nest::double_t sigmoid_slope_;
 	nest::volume_transmitter* vt_;
 
 };
@@ -231,6 +235,7 @@ private:
 	nest::double_t pj_;
 	nest::double_t pij_;
 	nest::double_t k_;
+	nest::double_t k_filtered_;
 	nest::double_t n_;
 	nest::double_t n_add_;
 	nest::double_t m_;
@@ -297,6 +302,7 @@ inline void BCPNNDopaConnection::progress_state_variables(
 
 	nest::double_t ej;
 	nest::double_t eij;
+	nest::double_t k;
 
 	/*Since post_spiketimes is a variable*/
 	spike_idx_ = 0;
@@ -321,7 +327,7 @@ inline void BCPNNDopaConnection::progress_state_variables(
 		m_ = n_ + cp.b_;
 
 		if (cp.dopamine_modulated_) {
-			k_=cp.gain_dopa_* m_;
+			k_=cp.gain_dopa_* m_, cp.k_pow_;
    		} else {
 			k_=cp.K_;
 		}
@@ -355,9 +361,15 @@ inline void BCPNNDopaConnection::progress_state_variables(
 			eij=eij_c_;
 		}
 
-		pi_ += std::abs(k_*k_*k_)*(ei_ - pi_) * resolution / cp.taup_;
-		pj_ += std::abs(k_*k_*k_)*(ej - pj_) * resolution / cp.taup_;
-		pij_+= std::abs(k_*k_*k_)*(eij - pij_) * resolution / cp.taup_;
+
+		k_filtered_=std::abs(std::pow(k_, cp.k_pow_));
+		if (cp.sigmoid_) {
+			k_filtered_=1./(1.+std::exp(-cp.sigmoid_slope_*(k-cp.sigmoid_mean_)));
+		}
+
+		pi_ += k_filtered_*(ei_ - pi_) * resolution / cp.taup_;
+		pj_ += k_filtered_*(ej - pj_) * resolution / cp.taup_;
+		pij_+= k_filtered_*(eij - pij_) * resolution / cp.taup_;
 
 	};
 

@@ -47,7 +47,8 @@ def mkdir(path):
         i-=1
         
     while i!=len(path):
-        os.mkdir('/'.join(path[0:i+1])) 
+        if not os.path.isdir('/'.join(path[0:i+1])):
+            os.mkdir('/'.join(path[0:i+1])) 
         i+=1
         
 def dic_save(d, fileName):

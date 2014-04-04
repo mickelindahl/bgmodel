@@ -87,6 +87,7 @@ class Surface(Dic):
         
         self.edge_wrap=kwargs.get('edge_wrap', True)
         self.extent=kwargs.get('extend', [-0.5, 0.5])
+        self.fan_in_distribution=kwargs.get('fan_in_distribution', 'constant')
         self.input=None
         self.model=kwargs.get('model', 'CO') # nest 
         self.name=name
@@ -191,7 +192,10 @@ class Surface(Dic):
         # Mean = n*p
         # Variance= n*p(1-p)
         if p<1:
-            n_sample=rb(n,p)
+            if self.fan_in_distribution == 'binomial':
+                n_sample=rb(n,p)
+            elif self.fan_in_distribution == 'constant':
+                n_sample=int(fan)
             return rs(idx, n_sample)
         else:
             sple=[]
@@ -387,7 +391,8 @@ class Conn(Dic):
         self.post=[]
         self.rule=kwargs.get('rule','all-all')
 
-        self.save_path=kwargs.get('save_path', '')
+        self.save=kwargs.get('save', {'active':False,
+                                      'path':''})
         self.sets=[]    
         self.source=kwargs.get('source', 'C0')
         self.syn=kwargs.get('syn', 'CO_M1_ampa') # nest 
@@ -521,16 +526,17 @@ class Conn(Dic):
         # The for each node driver not surfs from the pool is considered
         driver=surfs[self.target]
         pool=surfs[self.source]
-        
-        if self.save_path and os.path.isfile(self.save_path +'.pkl'): 
-            d=data_to_disk.pickle_load(self.save_path )
+#         pool=surfs[self.target]
+#         driver=surfs[self.source]        
+        if self.save['active'] and os.path.isfile(self.save['path'] +'.pkl'): 
+            d=data_to_disk.pickle_load(self.save['path'] )
             self.pre, self.post, self.sets=d
         
         else:
             self._set(driver, pool)
-            if self.save_path:
+            if self.save['path']:
                 data_to_disk.pickle_save([self.pre, self.post, 
-                                          self.sets], self.save_path )         
+                                          self.sets], self.save['path'] )         
                    
         t=time.time()-t
         if display_print:
@@ -561,7 +567,13 @@ class Conn(Dic):
             
             post=[driver.get_idx()[0] for _ in range(len(pool.get_idx()))]
             self.pre, self.post= pool.get_idx(), post
-            
+        
+        elif self.rule =='fan-1':
+            if driver.get_n()*fan_in!=pool.get_n(): 
+                raise Exception(('number of pre surfs needs to'
+                                 + 'equal number of post'))
+            self.pre, self.post= pool.get_idx(),driver.get_idx()*int(fan_in)
+         
         elif self.rule in ['all-all', 'set-set', 
                            'set-not_set', 'all_set-all_set']:
             
@@ -643,7 +655,7 @@ def connect_conns(params_nest, conns, popus, display_print=False):
         delays=list(c.get_delays())
         pre=list(sr_ids[c.get_pre()])
         post=list(tr_ids[c.get_post()])
-
+        print c, len(weights)
         my_nest.Connect(pre, post , weights, delays, model=c.get_syn())    
 
 def create_populations(params_nest, params_popu):
@@ -804,7 +816,8 @@ class TestConn(unittest.TestCase):
             k.update({'rule':rule,
                       'source':self.source.get_name(),
                       'target':self.target.get_name(),
-                      'save_path':self.path_conn+rule})
+                      'save':{'active':True,
+                             'path':self.path_conn+rule}})
             c1=Conn('n1_n2', **k)
             c1.set(self.surfs, display_print=False)
             l1.append(c1.n)
@@ -877,7 +890,8 @@ class TestModuleFunctions(unittest.TestCase):
             if save:
                 continue
             
-            p[c]['save_path']=''
+            p[c]['save_path']={'active':False,
+                               'path':''}
         
         return p
     
@@ -931,7 +945,7 @@ class TestModuleFunctions(unittest.TestCase):
         t=time.time()
         conns=connect(popus, surfs, self.params_nest, self.params_conn(True))
         for v in self.params_conn(True).values():
-            filename=v['save_path']+'.pkl' 
+            filename=v['save']['path']+'.pkl' 
 #             print 'Deleting: ' +filename
             os.remove(filename)
             

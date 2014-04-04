@@ -39,9 +39,9 @@ def main():
     node='GA' 
     IV=build_cases(**{'lesion':True, 'mm':True})
     IF=build_cases(**{'lesion':True})
-    FF=build_cases(**{'lesion':False})
-    opt=build_cases(**{'lesion':False, 'sim_stop':20000.0, 'sim_time':20000.0})
-    hist=build_cases(**{'lesion':False, 'size':200})
+    FF=build_cases(**{'lesion':False, 'size':50, 'threads':4})
+    opt=build_cases(**{'lesion':False, 'size':50,  'threads':4})
+    hist=build_cases(**{'lesion':False, 'size':200,  'threads':4})
 
     curr_IV=range(-200,300,100)
     curr_IF=range(0,500,100)
@@ -53,10 +53,10 @@ def main():
     do('plot_FF_curve', FF, 0, **{'ax':axs[2],'rate':rate_FF, 'node':node,
                                      'input':'EAp', 'sim_time':5000.0})    
 
-    d=do('optimize', opt, 0, **{'ax':axs[3], 'x0':200.0,'f':[node],
+    d=do('optimize', [opt[0]], 0, **{'ax':axs[3], 'x0':200.0,'f':[node],
                                    'x':['node.EAp.rate']})
-    set_optimization_val(d, hist, **{'x':['node.EAp.rate'], 'node':node})
-    do('plot_hist_rates', hist, 0, **{'ax':axs[3], 'node':node})
+    set_optimization_val(d, [hist[0]], **{'x':['node.EAp.rate'], 'node':node})
+    do('plot_hist_rates', [hist[0]], 1, **{'ax':axs[3], 'node':node})
 
 
     beautify(axs)

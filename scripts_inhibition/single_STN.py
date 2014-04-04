@@ -38,21 +38,21 @@ def main():
     node='ST' 
     IV=build_cases(**{'lesion':True, 'mm':True})
     IF=build_cases(**{'lesion':True})
-    FF=build_cases(**{'lesion':False})
-    opt=build_cases(**{'lesion':False})
-    hist=build_cases(**{'lesion':False, 'size':200})
+    FF=build_cases(**{'lesion':False, 'size':50, 'threads':4})
+    opt=build_cases(**{'lesion':False, 'size':50,  'threads':4})
+    hist=build_cases(**{'lesion':False, 'size':200,  'threads':4})
 
     curr_IV=range(-200,300,100)
     curr_IF=range(0,500,100)
     rate_FF=range(100,1500,100)
     _, axs=pl.get_figure(n_rows=2, n_cols=2, w=1000.0, h=800.0, fontsize=16)     
     
-    do('plot_IV_curve', IV, 1, **{'ax':axs[0],'curr':curr_IV, 'node':node})
-    do('plot_IF_curve', IF, 1, **{'ax':axs[1],'curr':curr_IF, 'node':node})
-    do('plot_FF_curve', FF, 1, **{'ax':axs[2],'rate':rate_FF, 'node':node,
+    do('plot_IV_curve', IV, 0, **{'ax':axs[0],'curr':curr_IV, 'node':node})
+    do('plot_IF_curve', IF, 0, **{'ax':axs[1],'curr':curr_IF, 'node':node})
+    do('plot_FF_curve', FF, 0, **{'ax':axs[2],'rate':rate_FF, 'node':node,
                                      'input':'CSp'})    
 
-    d=do('optimize', opt, 1, **{'ax':axs[3], 'x0':200.0,'f':[node],
+    d=do('optimize', opt, 0, **{'ax':axs[3], 'x0':200.0,'f':[node],
                                    'x':['node.CSp.rate']})
 
     set_optimization_val(d, hist, **{'x':['node.CSp.rate'], 'node':node})

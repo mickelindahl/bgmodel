@@ -122,7 +122,7 @@ class Call(object):
             s='\nTrying to do Call {} (id {}) with parent ->'
             s=s.format(self, id(self), self.parent)
             s+=self.parent_chain('\n\t')
-            s+='\nWith object:'+str(obj)
+            s+='\nWith object:'+str(obj.__repr__())
             raise type(e)(e.message + s), None, sys.exc_info()[2]
            
     def parent_chain(self, t):
@@ -472,7 +472,7 @@ class Base(object):
            'lesion', 
            'mask', 
            'rule', 
-           'save_path', 
+           'save', 
            'source',
            'syn', 
            'target',
@@ -486,6 +486,7 @@ class Base(object):
            'class_surface', 
            'edge_wrap', 
            'extent', 
+           'fan_in_distribution',
            'lesion', 
            'model', 
            'n', 
@@ -672,16 +673,6 @@ class Base(object):
             
         return dic
 
-    def _get_conn_save_path(self, name):
-        source, target=name.split('_')[0:2]
-        s=''
-        if self._get('conn', name, 'beta_fan_in'):
-            s='-dop-'+str(self._get_tata_top())
-        save_path='conn-'+str(int(self._dic_con['netw']['size']))  
-        save_path+='/'+name+s
-        save_path+=str(self.compute_node_sizes()[source]['n'])
-        save_path+=str(self.compute_node_sizes()[target]['n'])
-        return save_path
     
     def get_dic(self):
         return self.dic
@@ -923,12 +914,12 @@ class Base_mixin(object):
         p = ['class_surface', 
              'extent', 
             'edge_wrap', 
+            'fan_in_distribution',
             'lesion', 
             'model', 
             'n', 
             'n_sets', 
-#             'I_vitro', 
-#             'I_vivo', 
+            'sets',
             'type']
         return p
     
@@ -952,10 +943,15 @@ class Base_mixin(object):
             weight = {'type':'constant', 
                       'params':GetNest(syn_call, 'weight')}
         
+        
+        rule=kwargs.get('rule','1-1')
         file_name=(name+'_'
-                   +GetNode(source,'n', dtype=str)+'_'
-                   +GetNode(target,'n', dtype=str)+'_beta_fan_in_'
-                   +GetConn(name,'beta_fan_in', dtype=str))
+                   +GetNode(source,'n', dtype=str)
+                   +GetNode(source,'n_sets', dtype=str)+'_'
+                   +GetNode(target,'n', dtype=str)
+                   +GetNode(target,'n_sets', dtype=str)+'_beta_fan_in_'
+                   +GetConn(name,'beta_fan_in', dtype=str)+'_rule_'
+                   +GetConn(name,'rule', dtype=str))
         
         sp=GetSimu('path_conn')+GetNetw('size', dtype=str)+'_'+file_name
         
@@ -967,8 +963,9 @@ class Base_mixin(object):
             'netw_size':GetNetw('size'), 
             'lesion':False, 
             'mask':[-0.5, 0.5], 
-            'rule':kwargs.get('rule','1-1'), 
-            'save_path':sp, 
+            'rule':rule, 
+            'save':{'active':GetSimu('save_conn'),
+                    'path':sp}, 
             'source':source,
             'syn':syn, 
             'target':target,
@@ -982,6 +979,7 @@ class Base_mixin(object):
              'class_surface':'Surface', 
             'extent':[-0.5, 0.5], 
             'edge_wrap':True, 
+            'fan_in_distribution':GetNetw('fan_in_distribution'),
             'lesion':False, 
             'model':key, 
             'n':GetNode(target, 'n'), 
@@ -1000,6 +998,7 @@ class Base_mixin(object):
              'class_surface':'Surface', 
             'edge_wrap':True, 
             'extent':[-0.5, 0.5], 
+            'fan_in_distribution':GetNetw('fan_in_distribution'),
             'lesion':False, 
             'I_vitro':0.0, 
             'I_vivo':0.0, 
@@ -1041,6 +1040,9 @@ class Base_mixin(object):
         d=self.add(d, 'nest', 'GABAA_2_Tau_decay')           
         d=self.add(d, 'nest', 'tata_dop')
 
+
+            
+        d=self.add(d, 'node', 'fan_in_distribution')
         d=self.add(d, 'node', 'mm')
         d=self.add(d, 'node', 'n')
         d=self.add(d, 'node', 'n_sets')
@@ -1055,7 +1057,7 @@ class Base_mixin(object):
         d=self.add(d, 'conn', 'fan_in')  
         d=self.add(d, 'conn', 'fan_in0')
         d=self.add(d, 'conn', 'netw_size')
-        d=self.add(d, 'conn', 'save_path')
+        d=self.add(d, 'conn', 'save')
         d=self.add(d, 'conn', 'tata_dop')
         d=self.add(d, 'conn', 'weight') 
 
@@ -1153,10 +1155,13 @@ class Unittest_base(object):
         dic['simu']['path_data']=dp
         dic['simu']['path_figure']=df   
         dic['simu']['path_nest']=dn   
+        
+        dic['simu']['save_conn']=True
     
         dic['netw']={}        
         dic['netw']['attr_popu']=self._get_attr_popu()
         dic['netw']['attr_surf']=self._get_attr_surf()
+        dic['netw']['fan_in_distribution']='constant'
         dic['netw']['FF_curve']={'input':inp,
                                  'output':net}
         
@@ -1367,7 +1372,9 @@ class Unittest_bcpnn_dopa_base(object):
         
         params3={
                  'duration':[1000.,200.]+[700.,200.]*9,
-                'rates':[2500.0, 2800.0]*5+[2500.0, 0.0]*5,
+                'rates':([2500.0, 2800.0]*2+[2500.0, 0.0]*1
+                         +[2500.0, 2800.0]*1+[2500.0, 0.0]*2
+                        +[2500.0, 2800.0]*3+[2500.0, 0.0]*1), 
                 'repetitions':2}
         dic['netw']['input']={'i1':{'type':'burst','params':params1},
                               'i2':{'type':'burst','params':params2},
@@ -1382,11 +1389,13 @@ class Unittest_bcpnn_dopa_base(object):
            'dopamine_modulated':True,
            'e_i':0.01,
            'e_j':0.01,
+           'e_j_c':1.0,
            'e_ij':0.0001,
            'epsilon':0.001, #lowest possible probability of spiking, e.g. lowest assumed firing rate
            'fmax':50.0,    #Frequency assumed as maximum firing, for match with abstract rule
            'gain':0.0,    #Coefficient to scale weight as conductance, can be zero-ed out
            'gain_dopa':2.0, 
+           'k_pow':3.0,
            'K':1.0,         #Print-now signal // Neuromodulation. Turn off learning, K = 0
            'n':0.4,
            'p_i':0.01,
@@ -1768,12 +1777,13 @@ class Single_unit_base(object):
             vn['sets']=DepNode( new_name,'calc_sets')
             vn['spike_setup']= DepNode( new_name, 'calc_spike_setup')
             
-            if vn['type']=='input':
-                vn['n']=1
-                continue
+#             if vn['type']=='input':
+#                 vn['n']=1
+#                 continue
             
             vn['class_population']='MyPoissonInput'    
-            vn['n']=GetConn(new_conn, 'fan_in', dtype=int)
+            vn['n']=(GetConn(new_conn, 'fan_in', dtype=int)
+                     *GetNode(single_unit, 'n'))  
             vn['nest_params']={}
             vn['type']='input'
             vn['target']=single_unit
@@ -1791,18 +1801,43 @@ class Single_unit_base(object):
         for key, _, source, tp in iter_conn_connected_to(d, single_unit):
             new_name=source+'p' 
             new_conn=new_name+'_'+single_unit+'_'+ tp
-            #Create connections   
+            #Create connections  
             vc=deepcopy(dic_other['conn'][key])
                                           
             # Add units to dictionary
             syn=GetConn(new_conn, 'syn')
             vc['delay']  = {'type':'constant',
-                            'params':GetNest(syn,'delay') }                                 
+                            'params':GetNest(syn,'delay') }    
+#             vc['delay'] = {'type':'uniform',
+#                             'params':{'min':0.5*GetNest(syn,'delay'),
+#                                       'max':1.5*GetNest(syn,'delay')} }                             
             vc['mask']= [-0.5, 0.5]
-            vc['rule']    = 'all-all'
+            
+
+            vc['rule']    ='fan-1' 
+            vc['netw_size']=GetNetw('size')
             vc['source']=new_name
+
+            # OBS weights need to be varied such that simulation of
+            # a single group get variations in firing rate since they recieve
+            # same poisson input. 
             vc['weight'] = {'type':'constant',
                             'params':GetNest(syn,'weight') }
+#             vc['weight'] = {'type':'uniform',
+#                             'params':{'min':0.5*GetNest(syn,'weight'),
+#                                       'max':1.5*GetNest(syn,'weight')} }
+#             
+            
+            file_name=(new_conn+'_'
+                   +GetNode(new_name,'n', dtype=str)+'_'
+                   +GetNode(single_unit,'n', dtype=str)+'_beta_fan_in_'
+                   +GetConn(new_conn,'beta_fan_in', dtype=str))
+         
+            sp=GetSimu('path_conn')+GetNetw('size', dtype=str)+'_'+file_name
+            
+            vc['save']={'active':GetSimu('save_conn'),
+                        'path':sp}
+                    
             dic['conn'][new_conn]=vc
         
         return dic
@@ -1826,19 +1861,20 @@ class InhibitionBase(object):
                                    'record_from':['V_m'] }
 
         dc=(HOME+'/results/papers/inhibition/'
-            +'network/conn')        
+            +'network/conn/')        
         dp=(HOME+'/results/papers/inhibition/'
-            +'network/'+self.__class__.__name__)
+            +'network/'+self.__class__.__name__+'/')
         df=(HOME+'/projects/papers/inhibition/'
            +'figures/'+self.__class__.__name__)
         dn=(HOME+'/results/papers/inhibition/'
-            +'network/'+self.__class__.__name__+'/nest')        
+            +'network/'+self.__class__.__name__+'/nest/')        
         
         dic['simu']['path_conn']=dc
         dic['simu']['path_data']=dp
         dic['simu']['path_figure']=df
         dic['simu']['path_nest']=dn
         dic['simu']['print_time']=True
+        dic['simu']['save_conn']=True
         dic['simu']['sd_params']={'to_file':False, 'to_memory':True}
         dic['simu']['sim_time']=2000.0
         dic['simu']['sim_stop']=2000.0
@@ -1855,6 +1891,8 @@ class InhibitionBase(object):
         dic['netw']['attr_popu']=self._get_attr_popu()
         dic['netw']['attr_surf']=self._get_attr_surf()
 
+
+        dic['netw']['fan_in_distribution']='constant'
         dic['netw']['FF_curve']={'input':'C1',
                                  'output':'M1'}
         dic['netw']['GP_fan_in']=30 
@@ -1895,8 +1933,7 @@ class InhibitionBase(object):
         dic['netw']['size']=10000.0 
         dic['netw']['sub_sampling']={'M1':1.0,'M2':1.0} 
         dic['netw']['tata_dop']  = 0.8
-        dic['netw']['tata_dop0'] = 0.8
-        dic['netw']['rate_GPE_A'] = 27.1    
+        dic['netw']['tata_dop0'] = 0.8  
         dic['netw']['V_th_sigma']=1.0
                 
          
@@ -2409,12 +2446,12 @@ class InhibitionBase(object):
     
         
         # Model inputs
-        inputs={'C1': { 'target':'M1', 'rate':530.},
-                'C2': { 'target':'M2', 'rate':690.}, 
-                'CF': { 'target':'FS', 'rate':1010.},
-                'CS': { 'target':'ST', 'rate':160.},#295 
+        inputs={'C1': { 'target':'M1', 'rate':530.-20.0},
+                'C2': { 'target':'M2', 'rate':690.-20.0}, 
+                'CF': { 'target':'FS', 'rate':624.},
+                'CS': { 'target':'ST', 'rate':200.0}, #160.},#295 
                 'EA': { 'target':'GA', 'rate':0.},
-                'EI': { 'target':'GI', 'rate':1130.},
+                'EI': { 'target':'GI', 'rate':1500.0},#1130.},
                 'ES': { 'target':'SN', 'rate':1800.}}#295 
         
         for key, val in inputs.items():         
@@ -2439,7 +2476,7 @@ class InhibitionBase(object):
         GA_tr=GetNode('GA', 'rate')
         network['M1'].update({'rate':0.1, 'rate_in_vitro':0.0})
         network['M2'].update({'rate':0.1, 'rate_in_vitro':0.0})
-        network['FS'].update({'rate':20.0, 'rate_in_vitro':0.0})
+        network['FS'].update({'rate':5.0, 'rate_in_vitro':0.0})
         network['ST'].update({'rate':10.0, 'rate_in_vitro':10.0})
         network['GA'].update({'rate':5.0, 'rate_in_vitro':4.0})
         network['GI'].update({'rate':(GP_tr-GA_prop*GA_tr)/(1-GA_prop),
@@ -2518,7 +2555,7 @@ class InhibitionBase(object):
            'GI_GA_gaba':{'fan_in0': GI_XX,'rule':'all-all' },
             
            'GI_ST_gaba':{'fan_in0': 30, 'rule':'all-all' },
-           'GI_SN_gaba':{'fan_in0': 32, 'rule':'all-all' }}  
+           'GI_SN_gaba':{'fan_in0': 32, 'rule':'set-set' }}  
         
         conns.update(d)
         
@@ -2584,6 +2621,28 @@ class Slow_wave_base(object):
 class Slow_wave(Base, Slow_wave_base, Base_mixin): 
     pass   
 
+
+class Beta_base(object):
+    def _get_par_constant(self):
+        dic_other=self.other.get_dic_con()
+        
+        #self._dic_con['node']['M1']['n']
+        
+        
+        dic={'netw':{'input':{}}}
+        
+        d={'type':'oscillation', 
+             'params':{'p_amplitude_mod':0.9,
+                     'freq': 20.}} 
+        for key in ['C1', 'C2', 'CF', 'CS']: 
+            dic['netw']['input'][key]=d      
+        
+        dic = misc.dict_update(dic_other, dic)
+        return dic
+
+
+class Beta(Base, Beta_base, Base_mixin): 
+    pass 
 
 class Burst_compete_base(object):
 
@@ -3575,7 +3634,8 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
         # ========================
         # Default node parameters 
         # ========================  
-        d1={'n':n,
+        d1={'fan_in_distribution':'constant',
+            'n':n,
             'spike_setup': [{'rates': [10.0], 
                              't_stop': 3000.0, 
                              'idx': range(n), 
@@ -3591,7 +3651,8 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
              'V_m': {'active':True,
                      'uniform': {'min': -70.,  'max':-50. }}}
         
-        d2={'n':n,
+        d2={'fan_in_distribution':'constant',
+            'n':n,
             'mm':{'params':{'interval':0.5, 
                            'start':0.0, 
                            'stop':numpy.Inf,
@@ -3614,8 +3675,9 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
         d1={'delay': { 'params':1.0},
             'fan_in':1.0,
             'netw_size':n,
-            'save_path':HOME+('/results/unittest/conn/'+
-                              '10_i1_n1_10_10_beta_fan_in_0.0'), 
+            'save':{'active':True,
+                    'path':HOME+('/results/unittest/conn/'
+                                 +'10_i1_n1_101_103_beta_fan_in_0.0_rule_1-1')}, 
             'tata_dop':0.0,
             'weight': {'params':10.0},
             }
@@ -3642,7 +3704,8 @@ def dummy_unittest_extend(flag=True):
     d1={'delay': { 'params':1.0},
         'fan_in':10.0,
         'netw_size':10.0,
-        'save_path':HOME+'/results/unittest/conn', 
+        'save':{'active':True,
+                'path':HOME+'/results/unittest/conn'}, 
         'tata_dop':0.0,
         'weight': {'params':10.0}, 
        }
@@ -3692,15 +3755,17 @@ def dummy_unittest_bcpnn_dopa(flag=True):
     d1={
         'fan_in':1.0,
         'netw_size':52,
-        'save_path':HOME+'/results/unittest/conn/52_i1_n1_1_1_beta_fan_in_0.0', 
+        'save':{'active':True,
+                'path':HOME+'/results/unittest/conn/52_i1_n1_1_1_beta_fan_in_0.0'}, 
        }
 
     dic['conn']['i1_n1'].update(d1)    
     
     d1={'delay': { 'params':1.0},
         'fan_in':1.0,
-        'netw_size':52,
-        'save_path':HOME+'/results/unittest/conn/52_n1_n2_1_1_beta_fan_in_0.0', 
+        'netw_size':52,        
+        'save':{'active':True,
+                'path':HOME+'/results/unittest/conn/52_n1_n2_1_1_beta_fan_in_0.0'}, 
         'tata_dop':0.0,
         'weight': {'params':0.0}, 
        }
@@ -3711,7 +3776,8 @@ def dummy_unittest_bcpnn_dopa(flag=True):
     d1={'delay': { 'params':1.0},
         'fan_in':1.0,
         'netw_size':52,
-        'save_path':HOME+'/results/unittest/conn/52_n1_n2_1_1_beta_fan_in_0.0', 
+        'save':{'active':True,
+                'path':HOME+'/results/unittest/conn/52_n1_n2_1_1_beta_fan_in_0.0'}, 
         'tata_dop':0.0,
         'weight': {'params':0.0}, 
        }
@@ -3722,7 +3788,8 @@ def dummy_unittest_bcpnn_dopa(flag=True):
     d1={'delay': { 'params':1.0},
         'fan_in':1.0,
         'netw_size':52,
-        'save_path':HOME+'/results/unittest/conn/52_i2_n2_1_1_beta_fan_in_0.0', 
+        'save':{'active':True,
+                'path':HOME+'/results/unittest/conn/52_i2_n2_1_1_beta_fan_in_0.0'}, 
         'tata_dop':0.0,
         'weight': {'params':10.0}, 
        }
@@ -3732,7 +3799,8 @@ def dummy_unittest_bcpnn_dopa(flag=True):
     d={'delay': { 'params':1.0},
         'fan_in':50,
         'netw_size':52,
-        'save_path':HOME+'/results/unittest/conn/52_m1_v1_50_1_beta_fan_in_0.0', 
+        'save':{'active':True,
+                'path':HOME+'/results/unittest/conn/52_m1_v1_50_1_beta_fan_in_0.0'}, 
         'tata_dop':0.0,
         'weight': {'params':1.0}, 
        }    
@@ -3742,7 +3810,8 @@ def dummy_unittest_bcpnn_dopa(flag=True):
     d={'delay': { 'params':1.0},
         'fan_in':1.0,
         'netw_size':52,
-        'save_path':HOME+'/results/unittest/conn/52_i3_m1_50_50_beta_fan_in_0.0', 
+        'save':{'active':True,
+                'path':HOME+'/results/unittest/conn/52_i3_m1_50_50_beta_fan_in_0.0'}, 
         'tata_dop':0.0,
         'weight': {'params':10.0}, 
        }    
@@ -4389,13 +4458,13 @@ if __name__ == '__main__':
 #                         TestUnittest,
 #                         TestUnittestExtend,
 #                         TestUnittestBcpnn,   
-#                         TestUnittestBcpnnDopa,   
+                        TestUnittestBcpnnDopa,   
 #                         TestUnittestStdp, 
 #                         TestSingleUnit,
 #                         TestInhibition,
 #                         TestThalamus,
 #                         TestSlowwave,
-                          TestBurstCompete,
+#                           TestBurstCompete,
 #                         TestBcpnnH0,
 #                         TestBcpnnH1,
 
