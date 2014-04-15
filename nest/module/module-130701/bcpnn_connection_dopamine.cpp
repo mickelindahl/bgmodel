@@ -69,7 +69,7 @@ void BCPNNDopaCommonProperties::get_status(DictionaryDatum & d) const
 	def<nest::double_t>(d, "tau_e", taue_);
 	def<nest::double_t>(d, "tau_p", taup_);
 	def<nest::double_t>(d, "tau_n", tau_n_);
-	def<nest::double_t>(d, "sigmoid", sigmoid_);
+	def<bool>(d, "sigmoid", sigmoid_);
 	def<nest::double_t>(d, "sigmoid_mean", sigmoid_mean_);
 	def<nest::double_t>(d, "sigmoid_slope", sigmoid_slope_);
 
@@ -104,7 +104,7 @@ void BCPNNDopaCommonProperties::set_status(const DictionaryDatum & d,
   updateValue<nest::double_t>(d, "tau_e", taue_);
   updateValue<nest::double_t>(d, "tau_p", taup_);
   updateValue<nest::double_t>(d, "tau_n", tau_n_);
-  updateValue<nest::double_t>(d, "sigmoid", sigmoid_);
+  updateValue<bool>(d, "sigmoid", sigmoid_);
   updateValue<nest::double_t>(d, "sigmoid_mean", sigmoid_mean_);
   updateValue<nest::double_t>(d, "sigmoid_slope", sigmoid_slope_);
 }

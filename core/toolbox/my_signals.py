@@ -652,7 +652,7 @@ class MySpikeList(SpikeList):
     def firing_rate(self, time_bin, **kwargs):
         
         display=kwargs.get('display', False)
-        average=kwargs.get('average', False)
+        average=kwargs.get('average', True)
         binary=kwargs.get('binary', False)
         kwargs=kwargs.get('kwargs',{})
         call=super(MySpikeList, self)
@@ -717,6 +717,26 @@ class MySpikeList(SpikeList):
                 'y':mr, }
 
      
+    def get_mean_rate_slices(self, **kwargs):
+        intervals=kwargs.get('intervals',None)
+        repetitions=kwargs.get('repetitions',1)
+        y=[]
+        for start, stop in intervals:
+            kwargs['t_stop']=stop
+            kwargs['t_start']=start
+            y.append(self.mean_rate(**kwargs)) 
+            fr=self.firing_rate(1)
+        y=numpy.array(y)
+        y=numpy.reshape(y,(repetitions,len(y)/repetitions))
+        y_std=numpy.std(y, axis=0)
+        y_mean=numpy.mean(y, axis=0)
+        x=numpy.ones(len(y))
+        return {'ids':self.id_list,
+                'y':y,
+                'y_mean':y_mean, 
+                'y_std':y_std,
+                'x':x}   
+
     def get_mean_rates(self, run=1, **kwargs):
         
         y=numpy.array(self.mean_rates(**kwargs)) 
@@ -1419,8 +1439,11 @@ class BaseListMatrix(object):
 
     def concatenate(self, a, *args, **kwargs):
         
-        axis=kwargs.get('axis',0)
+        axis=kwargs.get('axis', 0)
         m=transpose_if_axis_1(axis, self.m)
+        
+        #if type(a)==list:
+        #    a=to_numpy_2darray(a)
         
         s='Wrong length. List need to be {}'
         assert a.shape[1]==m.shape[1], s.format(m.shape[1])
@@ -1475,32 +1498,16 @@ class VmListMatrix(BaseListMatrix):
         a=[list(aa) for aa in a]
         
         return SpikeListMatrix(a)
+
+
+
     
 class SpikeListMatrix(BaseListMatrix):
     def __init__(self, matrix, *args, **kwargs):
         
         super( SpikeListMatrix, self ).__init__( matrix, *args, **kwargs)
         
-        self.allowed=kwargs.get('allowed',[#'as_spike_list',
-                                           'firing_rate',
-                                           'get_firing_rate',
-                                           'get_isi',
-                                           'get_isi_IF',
-                                           'get_mean_coherence',
-                                           'get_mean_rate',
-                                           'get_mean_rate_parts',
-                                           'get_mean_rates', 
-                                           'get_raster',
-                                           'get_phase',
-                                           'get_phase_diff',
-                                           'get_phases',
-                                           'get_psd',
-                                           'get_spike_stats',
-                                           'mean_rate',
-                                           'mean_rates', 
-                                           'merge',
-                                           'my_raster',
-                                           ])   
+        self.allowed=kwargs.get('allowed', allowed_spike_list_functions())   
     
     
 
@@ -1572,6 +1579,40 @@ class SpikeListMatrix(BaseListMatrix):
         
         return SpikeListMatrix(a)
     
+def allowed_spike_list_functions():
+    l=[
+       'firing_rate',
+       'get_firing_rate',
+       'get_isi',
+       'get_isi_IF',
+       'get_mean_coherence',
+       'get_mean_rate',
+       'get_mean_rate_parts',
+       'get_mean_rates', 
+       'get_mean_rate_slices', 
+       'get_raster',
+       'get_phase',
+       'get_phase_diff',
+       'get_phases',
+       'get_psd',
+       'get_spike_stats',
+       'mean_rate',
+       'mean_rates', 
+       'merge',
+       'my_raster',
+       ]
+    return l
+
+    
+def convert_super_to_sub_class(superClass, className):
+        ''' Convert a super class object into a sub class object'''
+        subClass = superClass
+        del superClass
+        subClass.__class__ = className
+        subClass._init_extra_attributes()
+        
+        return subClass   
+
 
 def iter2d(m):
     for i in xrange(m.shape[0]):
@@ -1599,51 +1640,6 @@ def to_numpy_2darray(m):
     for i, j, _ in iter2d(a):
         a[i,j]=m[i][j]
     return a    
-    
-def convert_super_to_sub_class(superClass, className):
-        ''' Convert a super class object into a sub class object'''
-        subClass = superClass
-        del superClass
-        subClass.__class__ = className
-        subClass._init_extra_attributes()
-        
-        return subClass   
-
-
-
-def my_load(userFileName, dataType):  
-    
-    """
-    load(userFileName, dataType)
-    Convenient data loader for results saved as NeuroTools StandardPickleFile. 
-    Return the corresponding NeuroTools object. Datatype argument may become 
-    optionnal in the future, but for now it is necessary to specify the type 
-    of the recorded data. To have a better control on the parameters of the 
-    NeuroTools objects, see the load_*** functions.
-    
-    Inputs:
-        userFileName - the user file name
-        datatype - A string to specify the type od the data in
-                    's' : spikes
-                    'g' : conductances
-                    'v' : membrane traces
-                    'c' : currents
-    """
-    userFile=StandardPickleFile(userFileName)
-       
-    if dataType in ('s', 'spikes'):
-        return signals.load_spikelist(userFile)
-    elif dataType == 'v':
-        
-        #  Need t_start to be None, othervice NeuroTools overwrite loaded 
-        # t_start with default value 0
-        return signals.load_vmlist(userFile, t_start=None)  
-    elif dataType == 'c':
-        return signals.load_currentlist(userFile, t_start=None)
-    elif dataType == 'g':
-        return signals.load_conductancelist(userFile,t_start=None)
-    else:
-        raise Exception("The datatype %s is not handled ! Should be 's','g','c' or 'v'" %dataType)
 
 
 def dummy_data(flag, **kwargs):
@@ -1800,6 +1796,9 @@ class TestSpikeListMatrix(unittest.TestCase):
                ['get_mean_rate', [],{}],
                ['get_mean_rate_parts',[],{}],
                ['get_mean_rates',[],{}],
+               ['get_mean_rate_slices',[], {'intervals':[[i*500, i*500+100]
+                                                         for i in range(6)],
+                                            'repetitions':3}], 
                ['get_psd', [256,1000.0],{}],
                ['get_phase', [10,20,3,1000.0],{}],
                ['get_phases', [10,20,3,1000.0],{}],
@@ -1812,10 +1811,10 @@ class TestSpikeListMatrix(unittest.TestCase):
                            'fs': 1000.0},
                  }],
                ['get_spike_stats', [],{}],
-               ['mean_rate',[],{'t_start':250, 't_stop':4000,}], 
-               ['mean_rates',[], {}], 
+               ['mean_rate', [], {'t_start':250, 't_stop':4000}], 
+               ['mean_rates', [], {}], 
                ['merge', [], {}],
-               ['my_raster', [],{}],
+               ['my_raster', [], {}],
               
                ]
         
@@ -1867,8 +1866,8 @@ class TestSpikeListMatrix(unittest.TestCase):
             
         slc01=SpikeListMatrix(self.spike_lists)
         slc02=SpikeListMatrix(self.spike_lists)
-        slc01.concatenate(slc1, axis=0)
-        slc02.concatenate(slc2, axis=1)
+        slc01.concatenate(SpikeListMatrix(slc1), axis=0)
+        slc02.concatenate(SpikeListMatrix(slc2), axis=1)
         
         self.assertEqual((self.n_runs+1,self.n_sets-1), slc01.shape)
         self.assertEqual((self.n_runs,self.n_sets), slc02.shape)
@@ -1912,9 +1911,9 @@ class TestVm_list_matrix(unittest.TestCase):
         
 if __name__ == '__main__':
     test_classes_to_run=[
-#                         TestSpikeList,
-#                          TestSpikeListMatrix,
-                         TestVm_list_matrix
+                        TestSpikeList,
+                        TestSpikeListMatrix,
+#                          TestVm_list_matrix
                          ]
     suites_list = []
     for test_class in test_classes_to_run:

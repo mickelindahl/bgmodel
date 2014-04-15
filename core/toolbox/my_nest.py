@@ -107,7 +107,8 @@ def CC( pre,  post,
                 w = [ wj for wj in wghts[ i ] ]
             	ConvergentConnect( pre, [ post_id ], weight = w, 
                                         delay = d, model = m )                   
-
+    
+    
 def Create(*args, **kwargs):
     try:
         return nest.Create(*args, **kwargs)

@@ -364,9 +364,9 @@ inline void BCPNNDopaConnection::progress_state_variables(
 
 		k_filtered_=std::abs(std::pow(k_, cp.k_pow_));
 		if (cp.sigmoid_) {
-			k_filtered_=1./(1.+std::exp(-cp.sigmoid_slope_*(k-cp.sigmoid_mean_)));
+			k_filtered_=1./(1.+std::exp(-cp.sigmoid_slope_*(k_filtered_-cp.sigmoid_mean_)));
 		}
-
+		//1/(1+numpy.exp(-a*(t+b)))
 		pi_ += k_filtered_*(ei_ - pi_) * resolution / cp.taup_;
 		pj_ += k_filtered_*(ej - pj_) * resolution / cp.taup_;
 		pij_+= k_filtered_*(eij - pij_) * resolution / cp.taup_;

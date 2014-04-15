@@ -25,6 +25,7 @@ plot_settings        - contains functions setting nice plot settings
 
 """
 
+
 import misc
 import data_to_disk
 import network
@@ -36,29 +37,29 @@ import my_topology
 import plot_settings
 
 
-def get_data_root_path(flag):
-    
-    if flag=='unittest':
-        p='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/unittest'
-     
-    if flag=='inhibition':
-        p='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
-     
-    if flag in ['bcpnn_h0', 'bcpnn_h1']:
-        p='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn'
-     
-    return p 
-def get_figure_root_path(flag):
-    
-    if flag=='unittest':
-        p=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/unittest'
-            +'/figures')
-    
-    if flag=='inhibition':
-        p=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/inhibition'
-           +'/figures/')
-    
-    if flag in ['bcpnn_h0', 'bcpnn_h1']:
-        p=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/bcpnnbg'
-           +'/figures')
-    return p
+# def get_data_root_path(flag):
+#     
+#     if flag=='unittest':
+#         p='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/unittest'
+#      
+#     if flag=='inhibition':
+#         p='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/inhibition/'
+#      
+#     if flag in ['bcpnn_h0', 'bcpnn_h1']:
+#         p='/afs/nada.kth.se/home/w/u1yxbcfw/results/papers/bcpnn'
+#      
+#     return p 
+# def get_figure_root_path(flag):
+#     
+#     if flag=='unittest':
+#         p=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/unittest'
+#             +'/figures')
+#     
+#     if flag=='inhibition':
+#         p=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/inhibition'
+#            +'/figures/')
+#     
+#     if flag in ['bcpnn_h0', 'bcpnn_h1']:
+#         p=('/afs/nada.kth.se/home/w/u1yxbcfw/projects/papers/bcpnnbg'
+#            +'/figures')
+#     return p

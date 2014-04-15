@@ -10,22 +10,24 @@ misc
 
 # Imports
 import collections
+import itertools
 import matplotlib
+import multiprocessing as mp
 import numpy
+import numpy as np
+import os
 import pylab
+import random
+import scipy.signal as signal
+import scipy.cluster.vq as clust
+import sys
+import time
 
+
+from copy import deepcopy
 from NeuroTools.stgen import StGen
 from numpy import array, concatenate
-import scipy.signal as signal
-from copy import deepcopy
-
-import scipy.cluster.vq as clust
-
-import random
-import itertools
-import numpy as np
-import time
-import sys,os
+from mpi_comm_wrap import comm
 
 class my_slice(object):
     # can do set manipulations with these
@@ -37,8 +39,7 @@ class my_slice(object):
                 +'({},{},{})'.format(self.slice.start, 
                                      self.slice.stop,
                                      self.slice.step))
-
-    
+   
     @property    
     def start(self):
         return self.slice.start
@@ -69,6 +70,7 @@ class Stopwatch():
     def __enter__(self):
         print self.msg,
         self.time=time.time()
+        
     def __exit__(self, type, value, traceback):
         t=round(time.time()-self.time,)
         print ' {} sec'.format(t)
@@ -703,14 +705,25 @@ def kmean_raster_plot( data_spk, code, display=False, kwargs={} ):
         ax.set_ylim(min(ids), max(ids))
     
 def make_N_colors(cmap_name, N):
-     #! `cmap_name` is a string chosen from the values in cm.datad.keys().You 
-     #! will want N to be one minus number of colors you want.
-     cmap = matplotlib.cm.get_cmap(cmap_name, N)
-     
-     
-     #! Return list with rgb colors. With return cmap(np.arange(N) a list of 
-     #! RGBA values is returned, actually an Nx4 ndarray.
-     return cmap(numpy.arange(N))[:, :-1]
+    #! `cmap_name` is a string chosen from the values in cm.datad.keys().You 
+    #! will want N to be one minus number of colors you want.
+    cmap = matplotlib.cm.get_cmap(cmap_name, N)
+    
+    
+    #! Return list with rgb colors. With return cmap(np.arange(N) a list of 
+    #! RGBA values is returned, actually an Nx4 ndarray.
+    return cmap(numpy.arange(N))[:, :-1]
+
+
+import copy_reg
+import types
+
+def _reduce_method(meth):
+    return (getattr,(meth.__self__,meth.__func__.__name__))
+
+copy_reg.pickle(types.MethodType,_reduce_method)
+
+
 
 def mean(*args, **kwargs):
     d=[]
@@ -959,7 +972,10 @@ import unittest
 
 
 
+
+
 class TestModule_functions(unittest.TestCase):
+    
     def setUp(self):
         pass
     
@@ -1016,13 +1032,11 @@ class TestModule_functions(unittest.TestCase):
         self.assertDictEqual(d3, {1:{1:10}})
         self.assertDictEqual(d4, {1:{1:7}})
         self.assertDictEqual(d5, d1)
-
-
     def test_dict_slice(self):
         d1={1:1,2:2,3:3,4:4}
         d2=dict_slice(d1, [1,3])
         self.assertDictEqual(d2, {1:1,3:3})
-
+        
     def test_dict_iter(self):
         d={'a':{'b':{'c':1, 'd':2}, 
                 'e':{'f':3}},
@@ -1045,7 +1059,7 @@ class TestModule_functions(unittest.TestCase):
         
         val=dict_recursive_get(d, ['a','b','c'])
         self.assertEqual(val, 1)
-        self.assertRaises(KeyError, dict_recursive_get, d, ['a','b','z'])
+        self.assertRaises(LookupError, dict_recursive_get, d, ['a','b','z'])
         
     def test_dict_recrsive_add(self):
         d1={'a':{'b':1}}
@@ -1059,7 +1073,12 @@ class TestModule_functions(unittest.TestCase):
         d2={'a':{'b':2}}
         d1=dict_recursive_add(d1, ['a','b'], 2 )
         self.assertDictEqual(d1, d2)
-        self.assertRaises(KeyError, dict_recursive_set, d1, ['a','c'], 1)
+        self.assertRaises(LookupError, dict_recursive_set, d1, ['a','c'], 1)
+        
+
+        
+        
+        
         
         
 if __name__ == '__main__':

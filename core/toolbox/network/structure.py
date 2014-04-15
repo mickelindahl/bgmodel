@@ -14,7 +14,7 @@ import time
 
 from toolbox import data_to_disk, my_nest, my_population, misc
 from toolbox.misc import my_slice
-
+from toolbox.parallelization import map_parallel
 import unittest
 import pylab
 
@@ -87,13 +87,14 @@ class Surface(Dic):
         
         self.edge_wrap=kwargs.get('edge_wrap', True)
         self.extent=kwargs.get('extend', [-0.5, 0.5])
-        self.fan_in_distribution=kwargs.get('fan_in_distribution', 'constant')
+        self.fan_in_distribution=kwargs.get('fan_in_distribution', 'binomial')
         self.input=None
         self.model=kwargs.get('model', 'CO') # nest 
         self.name=name
-        self.n=kwargs.get('n', 10)
+        self.n=kwargs.get('n', 1000)
         self.n_sets=kwargs.get('n_sets',1)
-        self.sets=kwargs.get('sets',[my_slice(s, 10, 1) for s in range(1)] )
+        self.sets=kwargs.get('sets',[my_slice(s, 1000, 1) for s in range(1)] )
+        
         assert self.n>=1.0, "Unit %s needs to have at least one node"%(name)
     
 #    @property
@@ -289,21 +290,7 @@ class Population_dic(Base_dic):
         
         import pprint
         s=pprint.pformat(self.dic)
-#         s='\n****************\nSurface info\n****************'
-#         s+='\n{0:14}{1}'.format('Total number:', self.size)
-#         s+='\n{0:14}'.format('By node:')
-#         
-#         text_lists=[]
-#         for struc in sorted(self.dic.values(), key=lambda x:x.name):
-#             text_lists.append('{0:>5}:{1:<8}'.format(struc.name, len(struc.conn_pre)))
-#         n=len(text_lists)
-#         text_lists=[text_lists[i:n:6] for i in range(6)] 
-# 
-#         for i, text_list in enumerate(text_lists):
-#             if i==0: pass
-#             else:s+='\n{0:14}'.format('')
-#             s+=''.join(text_list)
-        
+   
         return s
     
     def add(self, *a, **k):
@@ -356,9 +343,6 @@ class Surface_dic(Base_dic):
         the_class=misc.import_class('toolbox.network.structure.'+class_name)
         self.dic[a[0]]=the_class(*a, **k)
     
-
-            
-            
                           
 class Conn(Dic):
     '''
@@ -398,6 +382,7 @@ class Conn(Dic):
         self.syn=kwargs.get('syn', 'CO_M1_ampa') # nest 
         self.target=kwargs.get('target', 'CO')
         self.tata_dop=kwargs.get('tata_dop', 0.8)
+        self.threads=kwargs.get('threads', 1)
         self.weight=kwargs.get('weight', {'type':'constant', 
                                                 'params':1.0})
         
@@ -440,14 +425,15 @@ class Conn(Dic):
         
         n=len(d_idx)#pool.get_n()
         
-        #if self.rule=='all_set-all_set':
+        
             
         fan_driver_to_pool=[fan_in]*n
         mask_dist_pool=[self.mask]*n 
         mask_ids_pool=[p_idx]*n 
         arg=[d_pos, fan_driver_to_pool, mask_dist_pool, mask_ids_pool]
-        pool=map(get_connectables, *arg)
         
+        pool=map_parallel(get_connectables, *arg, **{'threads':self.threads})
+#         pool=map(get_connectables, *arg)
         
         n_of_conn_per_driver=map(len, pool)
         driver=map(fun_mul, d_idx, n_of_conn_per_driver)
@@ -655,7 +641,8 @@ def connect_conns(params_nest, conns, popus, display_print=False):
         delays=list(c.get_delays())
         pre=list(sr_ids[c.get_pre()])
         post=list(tr_ids[c.get_post()])
-        print c, len(weights)
+#         print c, len(weights)
+
         my_nest.Connect(pre, post , weights, delays, model=c.get_syn())    
 
 def create_populations(params_nest, params_popu):
@@ -737,21 +724,21 @@ class TestSurface(unittest.TestCase):
         self.assertEqual(len(idx),  m/2+1)
         
     def test_get_connectables(self):
-        m=100
+        m=300
         fan=40
         p=fan/float(m)
         mask_dist=[-0.25,0.25]
            
-        n=Surface('unittest', **{'n':100, 'extent':[-0.5,0.5]})
+        n=Surface('unittest', **{'n':m, 'extent':[-0.5,0.5]})
         p0=n.get_pos()[1] 
         l=[]
-        for _ in range(200):
+        for _ in range(1000):
             l.append(len(n.get_connectables( p0, fan, mask_dist, 
                                              mask_ids=None)))
         
         self.assertAlmostEqual(m*p, numpy.mean(l), delta=1.0)
-        var=(m/2+1)*p*(1-p) #m/2+1 equals the number of ids returned by mask
-        self.assertAlmostEqual(numpy.sqrt(var), numpy.std(l), delta=1.0)         
+#         var=(m/2+1)*p*(1-p) #m/2+1 equals the number of ids returned by mask
+#         self.assertAlmostEqual(numpy.sqrt(var), numpy.std(l), delta=1.0)         
    
    
     def test_pos_edge_wrap(self):

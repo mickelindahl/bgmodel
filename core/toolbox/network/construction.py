@@ -836,9 +836,9 @@ def plot_plastic_dopa(duds):
 
     ax=pylab.subplot(212)    
          
-    p=duds['n1_n2']['p_i']['y']*duds['n1_n2']['p_j']['y']
-    p=duds['n1_n2']['p_ij']['y']/p
-    p=numpy.log(p)
+    p1=duds['n1_n2']['p_i']['y']*duds['n1_n2']['p_j']['y']
+    p2=duds['n1_n2']['p_ij']['y']/p1
+    p=numpy.log(p2)
     
     c=misc.make_N_colors('jet', 12)
     ax.plot(duds['n1_n2']['p_i']['x'][:,0] , p[:,0], **{'label':'weight', 
@@ -852,7 +852,7 @@ def plot_plastic_dopa(duds):
 
     ax.plot(duds['n1_n2']['k_filtered']['x'][:,0], 
             duds['n1_n2']['k_filtered']['y'][:,0], **{'label':'Dopamine (Kappa)', 
-                                             'color':'k', 'linewidth':2.0})
+                                             'color':'m', 'linewidth':2.0})
     ax.legend()   
     
     #ax.legend(['Bcpnn dopa', 'Bcpnn (Phils code)' ])
@@ -868,10 +868,11 @@ def plot_plastic_dopa(duds):
                 **{'label':v, 'color':c[i], 'linewidth':2.0})
         i+=1
   
-       
+    ax.legend()   
+    
     ax=pylab.subplot(212)    
  
-    for v in [ 'p_i', 'p_j',  'p_ij',]:
+    for v in [ 'p_i', 'p_j',  'p_ij']:
         ax.plot(duds['n1_n2'][v]['x'][:,0],
                 duds['n1_n2'][v]['y'][:,0], 
                 **{'label':v, 'color':c[i], 'linewidth':2.0})
@@ -880,7 +881,30 @@ def plot_plastic_dopa(duds):
 #             duds['n1_n2']['m']['y'][:,0], **{'label':'Dopamine (Kappa)'})
     ax.legend()
         
-         
+    pylab.figure()
+    i=1
+    ax=pylab.subplot(111)     
+ 
+    for v in [ 'p_i', 'p_j',  'p_ij',]:
+        ax.plot(duds['n1_n2'][v]['x'][:,0],
+                duds['n1_n2'][v]['y'][:,0]/max(duds['n1_n2'][v]['y'][:,0]), 
+                **{'label':v, 'color':c[i], 'linewidth':2.0})
+        i+=1
+        
+        
+    
+    ax.plot(duds['n1_n2'][v]['x'][:,0],
+        p1[:,0]/max(p1[:,0]), 
+        **{'label':'p_i*p_j', 'color':c[i], 'linewidth':2.0})
+    
+    ax.plot(duds['n1_n2'][v]['x'][:,0],
+        p2[:,0], 
+        **{'label':'p_i*p_j/p_ij', 'color':c[i+1], 'linewidth':2.0})
+
+#     ax.plot(duds['n1_n2']['m']['x'][:,0], 
+#             duds['n1_n2']['m']['y'][:,0], **{'label':'Dopamine (Kappa)'})
+    ax.legend()
+            
 class TestMixin_1(object):
     pass
 #     def test_1_build(self):
@@ -1199,7 +1223,7 @@ class TestUnittestBcpnnDopa_base(unittest.TestCase):
         self.class_network=Network
         self.class_par=Unittest_bcpnn_dopa
         dic_rep={}
-        dic_rep.update({'simu':{'sim_stop':9000.0,
+        dic_rep.update({'simu':{'sim_stop':3000.0,
                                 'sim_time':100.0,
                                 'threads':1,
                          'mm_params':{'to_file':False, 'to_memory':True},

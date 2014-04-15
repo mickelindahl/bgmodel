@@ -4,7 +4,6 @@ Created on Jun 18, 2013
 @author: lindahlm
 '''
 import csv
-import nest
 import numpy
 import cPickle as pickle # Can be 1000 times faster than pickle
 import os
