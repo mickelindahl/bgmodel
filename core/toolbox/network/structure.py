@@ -13,7 +13,7 @@ import random
 import time
 
 from toolbox import data_to_disk, my_nest, my_population, misc
-from toolbox.misc import my_slice
+from toolbox.misc import my_slice, Base_dic
 from toolbox.parallelization import map_parallel
 import unittest
 import pylab
@@ -26,58 +26,8 @@ from os.path import expanduser
 HOME = expanduser("~")
 HOME_PATH=(HOME+'/results/papers/inhibition')
 
-class Dic(object):
     
-    def __repr__(self):
-        return self.dic
-    
-    def __getitem__(self,a):
-        return self.dic[a]
-    
-    def __len__(self):
-        return len(self.dic.values())  
-
-    def __iter__(self):
-        for d in self.dic:
-            yield d
-    
-class Base_dic(Dic):
-    def __init__(self):
-        
-        self.dic={}   
-        self.attr=None
-          
-    @property
-    def size(self):
-        size=0
-        for val in self.dic.values():
-            size+=val.size
-        return size
-
-    @property
-    def name(self):
-        return str(self.dic.keys())
-        
-    
-    def __iter__(self):
-        l=sorted(self.dic.values(),key=lambda x:x.name)
-        for v in l:
-            yield v
-
-
-    def __repr__(self):
-        return self.__class__.__name__+':'+self.name
-        
-    def generic_iterator(self, *a, **k):
-        for val in self.dic:
-            func=getattr(val, self.attr)
-            func(*a, **k)
-            
-    def add(self, *a, **k):
-        pass
-
-
-class Surface(Dic):
+class Surface(object):
     '''
     As represents either group of input surfs, neuron model surfs, 
     or background surfs. It has different properties that define
@@ -344,7 +294,7 @@ class Surface_dic(Base_dic):
         self.dic[a[0]]=the_class(*a, **k)
     
                           
-class Conn(Dic):
+class Conn(object):
     '''
     A structure object defines the connectivity between a group of source units
     and a group of target units. 
@@ -409,7 +359,7 @@ class Conn(Dic):
         
         # For each driver as set of pool surfs considered depending on
         # driver position and allowed idx. Then the fan governs the probability
-        # of makeing a connection to the set of pool surfs.
+        # of making a connection to the set of pool surfs.
         d_idx=driver.get_idx(d_slice)
         p_idx=pool.get_idx(p_slice)
         d_pos=driver.get_pos(d_slice)
@@ -433,7 +383,7 @@ class Conn(Dic):
         arg=[d_pos, fan_driver_to_pool, mask_dist_pool, mask_ids_pool]
         
         pool=map_parallel(get_connectables, *arg, **{'threads':self.threads})
-#         pool=map(get_connectables, *arg)
+#         pool=map(get_connectables, *arg) #get connectables belong to pool
         
         n_of_conn_per_driver=map(len, pool)
         driver=map(fun_mul, d_idx, n_of_conn_per_driver)
@@ -553,6 +503,17 @@ class Conn(Dic):
             
             post=[driver.get_idx()[0] for _ in range(len(pool.get_idx()))]
             self.pre, self.post= pool.get_idx(), post
+
+        elif self.rule=='divergent':
+            # Each presynaptic node connects to only one postsynaptic node.
+            
+            
+            pre=list(pool.get_idx())*len(driver.get_idx())
+            post=[len(pool.get_idx())*[idx] for idx in driver.get_idx()]
+            post=reduce(lambda x,y:x+y,post)
+            
+#             post=[driver.get_idx()[0] for _ in range(len(pool.get_idx()))]
+            self.pre, self.post= pre, post
         
         elif self.rule =='fan-1':
             if driver.get_n()*fan_in!=pool.get_n(): 
@@ -642,6 +603,7 @@ def connect_conns(params_nest, conns, popus, display_print=False):
         pre=list(sr_ids[c.get_pre()])
         post=list(tr_ids[c.get_post()])
 #         print c, len(weights)
+#         print pre, post 
 
         my_nest.Connect(pre, post , weights, delays, model=c.get_syn())    
 

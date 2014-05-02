@@ -8,7 +8,7 @@ Created on Aug 14, 2013
 #! Imports
 import numpy
 import pylab
-from toolbox.network.construction import Single_units_in_vitro 
+from toolbox.network.engine import Single_units_in_vitro 
 from in_vitro_base import In_vitro
 from toolbox import plot_settings
 

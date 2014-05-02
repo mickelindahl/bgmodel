@@ -18,7 +18,7 @@ import pylab
 from simulate_network import (create_net, create_dic, do, iter_comb, 
                                save_dud)
 from toolbox.network.default_params import Perturbation_list as pl
-from toolbox.network.construction import Network
+from toolbox.network.engine import Network
 from toolbox.network.default_params import Inhibition, Beta
 import toolbox.plot_settings as ps
 import numpy

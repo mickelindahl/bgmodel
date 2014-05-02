@@ -8,7 +8,7 @@ Classes for running models, collect and process data and plot result.
 
 from toolbox import data_to_disk, plot_settings, misc
 from toolbox import signal_processing
-from toolbox.network.construction import Inhibition
+from toolbox.network.engine import Inhibition
 from toolbox.network.data_processing import (Data_unit_spk, Data_units_dic, 
                                              Data_units_relation_dic)
 

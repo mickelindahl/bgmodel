@@ -1,7 +1,7 @@
 #! Imports
 import numpy
 import pylab 
-from toolbox.network.construction import Single_units_in_vitro 
+from toolbox.network.engine import Single_units_in_vitro 
 from toolbox.network.handling_single_units import In_vitro
         
         

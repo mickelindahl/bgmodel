@@ -10,7 +10,7 @@ import scipy.optimize as opt
 from toolbox import data_to_disk, misc
 from toolbox.misc import Stop_stdout, Stopwatch
 import unittest
-from toolbox.network.construction import Network_list
+from toolbox.network.engine import Network_list
 import sys
 
 class Fmin(object):
@@ -190,7 +190,7 @@ def fmin_error_fun_wrap(self, x, *arg):
     return fopt
 
 
-from toolbox.network.construction import Unittest_net
+from toolbox.network.engine import Unittest_net
 class TestFmin(unittest.TestCase):
 
     

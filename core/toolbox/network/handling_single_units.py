@@ -7,7 +7,7 @@ import numpy
 import pylab
 import sys
 import scipy.optimize as opt
-from toolbox.network.construction import Single_units_activity 
+from toolbox.network.engine import Single_units_activity 
 from toolbox import data_to_disk, plot_settings, misc, my_nest
 from toolbox.network.structure import Base_dic
 from toolbox.misc import Stopwatch, Stop_stdout
@@ -708,7 +708,7 @@ class Activity_model_dic(Base_dic):
         
 import unittest
 from copy import deepcopy
-from toolbox.network.construction import Unittest, Network_list
+from toolbox.network.engine import Unittest, Network_list
 class TestModel_wrapper(unittest.TestCase):
 
     def setUp(self):

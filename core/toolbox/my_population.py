@@ -37,6 +37,8 @@ from numpy.random import random_integers
 from toolbox import data_to_disk, misc
 import unittest
 
+import pprint
+pp=pprint.pprint
 #from numpy.random import RandomState
 #random_integers  = RandomState(3).random_integers 
 
@@ -397,16 +399,37 @@ class MyNetworkNode(MyGroup):
     def voltage_signal(self):
         return self._signal('v', 'V_m')
   
+    def is_new_recording(self, flag, recordable):
+        if flag in ['s','spikes']:
+            stop=max(1,my_nest.GetKernelStatus('time')-1)
+        else:
+            stop=my_nest.GetKernelStatus('time')
+        if self.signals[recordable].t_stop==stop:
+            return False
+        else:
+            return True
+  
     def _signal(self, flag, recordable):
         if self.signaled[recordable]:
-            start=self.signals[recordable].t_stop
+            if not self.is_new_recording( flag, recordable):
+                return self.signals[recordable]
+            else:
+                start=self.signals[recordable].t_stop
         else:
             start=0.0
         
         if not start==my_nest.GetKernelStatus('time'):
+            if flag in ['s', 'spikes']:   
+                start=max(0,start-1)
+                #Todo with delay in spike recording I experienced
+                stop=max(1,my_nest.GetKernelStatus('time')-1)
+                 
+            else:
+                stop=my_nest.GetKernelStatus('time')
+                
             signal=self.get_signal(flag, recordable=recordable, 
                                    start=start, 
-                                   stop=my_nest.GetKernelStatus('time')) 
+                                   stop=stop) 
             if flag in ['s', 'spikes']:
                 signal.complete(self.ids)
             self.signals[recordable]=signal
@@ -453,7 +476,7 @@ class MyNetworkNode(MyGroup):
         
         return d 
 
-    def create_raw_spike_signal(self, stop, n_vp, data_path, network_size):
+    def create_raw_spike_signal(self, start, stop, n_vp, data_path, network_size):
     #signal=load:spikes()
         if self.sd['params']['to_file']:
             gid = str(self.sd['id'][0])
@@ -467,8 +490,13 @@ class MyNetworkNode(MyGroup):
             e = my_nest.GetStatus(self.sd['id'])[0]['events'] # get events
             s = e['senders'] # get senders
             t = e['times'] # get spike times
+#             if my_nest.GetKernelStatus()['time']==26:
+#                 print 'j'
+#             if list(t):
+#                 print t
         if stop:
             s, t = s[t < stop], t[t < stop] # Cut out data
+            s, t = s[t >= start], t[t >= start] # Cut out data
         signal = zip(s, t)
         return signal
 
@@ -507,7 +535,8 @@ class MyNetworkNode(MyGroup):
         network_size=str(my_nest.GetKernelStatus(['network_size'])[0])
         # Spike data
         if dataType in ['s', 'spikes']:    
-            signal = self.create_raw_spike_signal(stop, 
+            signal = self.create_raw_spike_signal(start,
+                                                  stop, 
                                                   n_vp, 
                                                   data_path, 
                                                   network_size)                   # create signal 
@@ -600,11 +629,14 @@ class MyNetworkNode(MyGroup):
     
     def get_voltage_signal(self):
         l=list(self.iter_voltage_signals(self.sets))
+#         for ll in l:
+#             print ll.t_start, ll.t_stop
         return VmListMatrix(l)
         
     def iter_spike_signals(self, sets):
         for se in sets:
             ids_sliced=self.ids[se.get_slice()]
+            s=self.spike_signal
             yield self.spike_signal.id_slice(ids_sliced)
                 
     def iter_voltage_signals(self, sets):

@@ -12,7 +12,6 @@ misc
 import collections
 import itertools
 import matplotlib
-import multiprocessing as mp
 import numpy
 import numpy as np
 import os
@@ -27,7 +26,75 @@ import time
 from copy import deepcopy
 from NeuroTools.stgen import StGen
 from numpy import array, concatenate
-from mpi_comm_wrap import comm
+
+class Base_dic(object):
+    
+    def __init__(self, *args, **kwargs):
+        
+        self.dic={}   
+        self.attr=None
+        self._init_extra_attributes(*args, **kwargs)
+        
+    def _init_extra_attributes(self):
+        pass
+        
+    def __getitem__(self,a):
+        return self.dic[a]
+    
+    def __setitem__(self,a, val):
+        self.dic[a]=val
+    
+    def __getstate__(self):
+        #print 'im being pickled'
+        return self.__dict__
+    
+    def __setstate__(self, d):
+        #print 'im being unpickled with these values'
+        self.__dict__ = d
+
+    def __eq__(self, other):
+        return self.dic==other.dic
+
+    def __len__(self):
+        return len(self.dic.values())  
+
+    def __iter__(self):
+        l=sorted(self.dic.values(),key=lambda x:x.name)
+        for v in l:
+            yield v
+
+    def __repr__(self):
+        return self.__class__.__name__+':'+self.name
+
+    def keys(self):
+        return self.dic.keys()
+
+
+    def items(self):
+        return self.dic.items()
+    
+    @property
+    def name(self):
+        return str(self.dic.keys())
+
+    
+    @property
+    def size(self):
+        size=0
+        for val in self.dic.values():
+            size+=val.size
+        return size
+
+    def values(self):
+        return self.dic.values()
+        
+#     def generic_iterator(self, *a, **k):
+#         for val in self.dic:
+#             func=getattr(val, self.attr)
+#             func(*a, **k)
+            
+#     def add(self, *a, **k):
+#         pass
 
 class my_slice(object):
     # can do set manipulations with these
@@ -52,7 +119,10 @@ class my_slice(object):
     def step(self):
         return self.slice.step
     
-
+    @property
+    def size(self):
+        return (self.stop-self.start)/self.step
+        
     def __hash__(self):
         return self.stop+self.start+self.step
     
@@ -304,6 +374,20 @@ def dict_depth(d, depth=1):
     if not isinstance(d, dict) or not d:
         return depth
     return max(dict_depth(v, depth+1) for k, v in d.iteritems())
+
+
+def dict_add_level(d, key):
+    dout={}
+    for k in d.keys():
+        dout[k]={key:d[k]}
+    return dout
+
+def dict_remove_level(d, key):
+    dout={}
+    for k in d.keys():
+        dout[k]=d[k][key]
+    return dout
+    
 
 def dict_haskey(dic, keys):
         

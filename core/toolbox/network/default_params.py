@@ -301,7 +301,15 @@ class Perturbation(object):
         self.op=op 
         self.keys=keys
         self.val=val
-        
+ 
+    def __eq__(self, other):
+        return ((self.keys==other.keys)
+                 *(self.val==other.val)
+                 *(self.op==other.op))
+         
+    def __hash__(self):
+        return hash((tuple(self.keys), self.val, self.op))
+     
     def __repr__(self):
         return  '.'.join(self.keys)+self.op+str(self.val)  
     
@@ -312,19 +320,23 @@ class Perturbation(object):
         self.val=val
         
 class Perturbation_list(object):
-    
-    def __init__(self, name='', iterator=None):
-        self.name=name
-        self.list=[]
-
+                                                                                             
+    def __init__(self, *args, **kwargs):
+        ''' args as (dictionary, operation, dictionary, operation, ...  '''
         
-        if iterator!=None:
-            if not isinstance(iterator[0], list):
-                iterator=[iterator]
+        self.name=kwargs.get('name', '')
+        self.list=[]
+    
+        iterator=[args[i:i+2] for i in range(0,len(args),2)]
+ 
+        for key, val, op in self.iterate(iterator):
+            self.list.append(Perturbation(key, val, op))
             
-            for keys, val, op in iterator:
-                self.list.append(Perturbation(keys, val, op))
-            
+    def __eq__(self, other):
+        return not set(self.list).isdisjoint(set(other.list))
+        
+    
+    
     def __str__(self):
         return  self.name+':'+str(self.list)
 
@@ -333,30 +345,61 @@ class Perturbation_list(object):
     
     def __getitem__(self, val):
         return self.list[val]
+        
+    def __add__(self, other):       
+        new=deepcopy(self)
+        if other.name:
+            if new.name:
+                new.name+='-'+other.name
+            else:new.name=other.name
+        new.list+=other.list
+        return new
     
+    def __radd__(self, other): 
+        new=deepcopy(self)
+        if not isinstance(other, Perturbation_list):
+            return new
+        
+        new.name+='-'+other.name
+        new.list+=other.list
+        return new
+        
     def append(self, p):
         assert type(p) is Perturbation_list,  "Not Perturbation_list object"
+        self.name+='_'+p.name
         self.list+=p.list
     
     def apply_pertubations(self, dic, display=False):
 
-        d={}
         for p in self.list:
-            val=misc.dict_recursive_get(dic, p.keys)
-            d=misc.dict_recursive_add(d,  p.keys, val)
-            d=misc.dict_apply_operation(d, p.keys, p.val, p.op)
-        
-        dic=misc.dict_update(dic, d)
+            dic=misc.dict_apply_operation(dic, p.keys, p.val, p.op)
         
         if display:
             print 'perturbations applied ' 
                    
         return dic        
 
+    def info(self):
+        d={}
+        for p in self.list:
+            d=misc.dict_recursive_add(d, p.keys, p.op+str(p.val))
+            
+        s= self.name+'\n'
+        s+=pprint.pformat(d)
+        return s
+        
+        
+    def iterate(self, iterator):
+        for d, op in iterator:
+            for key, val in misc.dict_iter(d):
+                yield key, val, op
+   
+         
+                
     def set_list(self, val):
         self.list=val
         
-class Base(object):
+class Par_base(object):
     
     def __init__(self, **kwargs):
         
@@ -853,16 +896,16 @@ class Base(object):
         self.dic_dep=self._get_par_dependable()               
 
 
-class Base_mixin_dummy(object):
+class Par_base_mixin_dummy(object):
     def _get_par_constant(self):
         return {}
     def _get_par_dependable(self):
         return {}
     
-class Base_dummy(Base, Base_mixin_dummy):    
+class Par_base_dummy(Par_base, Par_base_mixin_dummy):    
     pass
 
-class Base_mixin(object):
+class Par_base_mixin(object):
     
     def build_setup_mm_params(self):
         mm_p = {'interval':GetSimu('mm_params', 'interval'), 
@@ -947,16 +990,16 @@ class Base_mixin(object):
         
         rule=kwargs.get('rule','1-1')
         
-        kwargs={'size':GetNetw('size', dtype=str),
-                'source':source,
-                'source_n':GetNode(source,'n', dtype=str),
-                'source_n_sets':GetNode(source,'n_sets', dtype=str),
-                'target':target,
-                'target_n':GetNode(target,'n', dtype=str),
-                'target_n_sets':GetNode(target,'n_sets', dtype=str),
-                'beta_fan_in':GetConn(name,'beta_fan_in', dtype=str),
-                'rule':GetConn(name,'rule', dtype=str)}
-        file_name=format_connectionn_save_path(**kwargs)
+        k={'size':GetNetw('size', dtype=str),
+            'source':source,
+            'source_n':GetNode(source,'n', dtype=str),
+            'source_n_sets':GetNode(source,'n_sets', dtype=str),
+            'target':target,
+            'target_n':GetNode(target,'n', dtype=str),
+            'target_n_sets':GetNode(target,'n_sets', dtype=str),
+            'beta_fan_in':GetConn(name,'beta_fan_in', dtype=str),
+            'rule':GetConn(name,'rule', dtype=str)}
+        file_name=format_connectionn_save_path(**k)
         
         sp=GetSimu('path_conn')+file_name
         
@@ -1116,10 +1159,10 @@ class Base_mixin(object):
         return dic
 
 
-class Base_mixin_bcpnn(Base_mixin):
+class Par_base_mixin_bcpnn(Par_base_mixin):
     
     def _get_par_dependable(self):
-        d=super(Base_mixin_bcpnn, self)._get_par_dependable()
+        d=super(Par_base_mixin_bcpnn, self)._get_par_dependable()
 
         d=self.add(d, 'nest', 'delay')           
         d=self.add(d, 'nest', 'weight')    
@@ -1127,10 +1170,10 @@ class Base_mixin_bcpnn(Base_mixin):
         
         return d     
             
-class Base_single_unit(Base):
+class Par_base_single_unit(Par_base):
     def __init__(self, **kwargs ):
         
-        super( Base_single_unit, self ).__init__( **kwargs  )     
+        super( Par_base_single_unit, self ).__init__( **kwargs  )     
         self.network_node=kwargs.get('network_node', 'M1')
         
 class Unittest_base(object):
@@ -1168,7 +1211,7 @@ class Unittest_base(object):
         dic['simu']['path_figure']=df   
         dic['simu']['path_nest']=dn   
         
-        dic['simu']['save_conn']=True
+        dic['simu']['save_conn']=False
     
         dic['netw']={}        
         dic['netw']['attr_popu']=self._get_attr_popu()
@@ -1241,7 +1284,7 @@ class Unittest_base(object):
 
         return dic    
         
-class Unittest(Base, Unittest_base, Base_mixin):
+class Unittest(Par_base, Unittest_base, Par_base_mixin):
     pass              
  
 class Unittest_extend_base(object):
@@ -1360,16 +1403,13 @@ class Unittest_extend_base(object):
 #         dout=self.unittest_return(dic_other, dic)
         return dout
         
-class Unittest_extend(Base, Unittest_extend_base, Base_mixin):
+class Unittest_extend(Par_base, Unittest_extend_base, Par_base_mixin):
     pass 
 
 class Unittest_bcpnn_dopa_base(object):
     def _get_par_constant(self):     
 
         dic_other=self.other.get_dic_con()
-            
-            
-            
         dic={}
         dic['netw']={}
         dic['netw']['size']=52
@@ -1379,18 +1419,19 @@ class Unittest_bcpnn_dopa_base(object):
                 'duration':[800.,100.]+[800,100]*9,
                 'rates':[2000.0, 3500.0]*10,
                 'repetitions':2}
-        
+         
         params2={
                 'duration':[800.,100.]+[800,100]*9,
                 'rates':[2000.0, 3500.0]*10,
                 'repetitions':2}
-        
+         
         params3={
                  'duration':[1000.,200.]+[700.,200.]*9,
                 'rates':([2500.0, 2800.0]*2+[2500.0, 0.0]*1
                          +[2500.0, 2800.0]*1+[2500.0, 0.0]*2
                         +[2500.0, 2800.0]*3+[2500.0, 0.0]*1), 
                 'repetitions':2}
+
         dic['netw']['input']={'i1':{'type':'burst','params':params1},
                               'i2':{'type':'burst','params':params2},
                               'i3':{'type':'burst','params':params3}}
@@ -1580,8 +1621,8 @@ class Unittest_bcpnn_dopa_base(object):
         #m1_v1
         d=self._get_defaults_conn( 'm1_v1', 'm1_v1_nest',
                               **{'conn_type':'constant',
-                                  'rule':'all-all',
-                                  'fan_in0':50.0})         
+                                  'rule':'divergent',
+                                  'fan_in0':1})         
         dic['conn']['m1_v1']=d
 
 
@@ -1594,7 +1635,7 @@ class Unittest_bcpnn_dopa_base(object):
         return misc.dict_update(dic_other, dic)
 
 
-class Unittest_bcpnn_dopa(Base, Unittest_bcpnn_dopa_base, Base_mixin):
+class Unittest_bcpnn_dopa(Par_base, Unittest_bcpnn_dopa_base, Par_base_mixin):
     pass
 
 
@@ -1641,7 +1682,7 @@ class Unittest_stdp_base(object):
         
         return misc.dict_update(dic_other, dic)
     
-class Unittest_stdp(Base, Unittest_stdp_base, Base_mixin):
+class Unittest_stdp(Par_base, Unittest_stdp_base, Par_base_mixin):
     pass
 
 
@@ -1709,7 +1750,7 @@ class Unittest_bcpnn_base(object):
         
         return misc.dict_update(dic_other, dic)
     
-class Unittest_bcpnn(Base, Unittest_bcpnn_base, Base_mixin):
+class Unittest_bcpnn(Par_base, Unittest_bcpnn_base, Par_base_mixin):
     pass
 
 
@@ -1860,10 +1901,10 @@ class Single_unit_base(object):
         
         return dic
     
-class Single_unit(Base, Single_unit_base, Base_mixin):
+class Single_unit(Par_base, Single_unit_base, Par_base_mixin):
     pass
 
-class InhibitionBase(object):
+class InhibitionPar_base(object):
     
     def _get_par_constant(self):
         dic={}
@@ -2616,7 +2657,7 @@ class InhibitionBase(object):
          
         return dic                      
  
-class Inhibition(Base, InhibitionBase, Base_mixin):
+class Inhibition(Par_base, InhibitionPar_base, Par_base_mixin):
     pass      
       
               
@@ -2640,7 +2681,7 @@ class Slow_wave_base(object):
         return dic
 
 
-class Slow_wave(Base, Slow_wave_base, Base_mixin): 
+class Slow_wave(Par_base, Slow_wave_base, Par_base_mixin): 
     pass   
 
 
@@ -2663,7 +2704,7 @@ class Beta_base(object):
         return dic
 
 
-class Beta(Base, Beta_base, Base_mixin): 
+class Beta(Par_base, Beta_base, Par_base_mixin): 
     pass 
 
 class Burst_compete_base(object):
@@ -2713,13 +2754,13 @@ class Burst_compete_base(object):
         return dic
 
 
-class Burst_compete(Base, Burst_compete_base, Base_mixin): 
+class Burst_compete(Par_base, Burst_compete_base, Par_base_mixin): 
     pass   
 
 
 
 
-class ThalamusBase(object):
+class ThalamusPar_base(object):
     
     def _get_par_constant(self):
         dic_other=self.other.get_dic_con()
@@ -2893,7 +2934,7 @@ class ThalamusBase(object):
         dic = misc.dict_update(dic_other, dic)
         return dic               
 
-class Thalamus(Base, ThalamusBase, Base_mixin): 
+class Thalamus(Par_base, ThalamusPar_base, Par_base_mixin): 
     pass   
 
 
@@ -3148,7 +3189,7 @@ class Bcpnn_h0_base(object):
         dic = misc.dict_update(dic_other, dic)
         return dic
 
-class Bcpnn_h0(Base, Bcpnn_h0_base, Base_mixin_bcpnn):
+class Bcpnn_h0(Par_base, Bcpnn_h0_base, Par_base_mixin_bcpnn):
     pass      
       
 class Bcpnn_h1_base(object):
@@ -3269,7 +3310,7 @@ class Bcpnn_h1_base(object):
         return dic
             
 
-class Bcpnn_h1(Base, Bcpnn_h1_base, Base_mixin_bcpnn):
+class Bcpnn_h1(Par_base, Bcpnn_h1_base, Par_base_mixin_bcpnn):
     pass  
 
 
@@ -3398,7 +3439,7 @@ class Bcpnn_learning_base(object):
         # ========================
                 
 
-class Bcpnn_learning(Base, Bcpnn_learning_base, Base_mixin_bcpnn):
+class Bcpnn_learning(Par_base, Bcpnn_learning_base, Par_base_mixin_bcpnn):
     pass      
 def compute_conn_delay_params(delay, delay_type):
     
@@ -3898,9 +3939,10 @@ def dummy_perturbations_lists(flag, conn):
     if flag in ['unittest', 
               'inhibition', 'thalamus', 'slow_wave',
               'bcpnn_h0', 'bcpnn_h1', 'burst_compete']:
-        args.append(Perturbation_list('label1', ['netw.size', 0.5 , '*']))
-        args.append(Perturbation_list('label1', ['conn.'+conn+'.fan_in', 
-                                                 0.5, '*']))
+        args.append(Perturbation_list({'netw':{'size': 0.5}}, '*',
+                                      **{'name':'label1'}))
+        d={'conn':{conn:{'fan_in':0.5}}}
+        args.append(Perturbation_list(d, '*', **{'name':'label1'}))
         
     return args
 
@@ -4044,7 +4086,7 @@ class TestCall(unittest.TestCase):
     def test_addStr(self):
         self.assertEqual((self.h+self.h).do(),'44')
         
-class TestCallSubClassesWithBase(unittest.TestCase):
+class TestCallSubClassesWithPar_base(unittest.TestCase):
     def add(self, *args):
         return self.b.add(*args)
     
@@ -4076,9 +4118,9 @@ class TestCallSubClassesWithBase(unittest.TestCase):
         self.m=misc.import_module('toolbox.network.default_params')
         self.c=[]
         self.cd=[]
-        Base._get_par_constant=self._get_par_constant
-        Base.calc_test2=self.calc_test2
-        self.b=Base_dummy()
+        Par_base._get_par_constant=self._get_par_constant
+        Par_base.calc_test2=self.calc_test2
+        self.b=Par_base_dummy()
         self.c.append(GetNetw('test'))
         self.c.append(GetNode('n1','test')) 
         self.c.append(GetNest('n1','test')) 
@@ -4111,8 +4153,39 @@ class TestCallSubClassesWithBase(unittest.TestCase):
                                                             '3': 1}}}})    
 
     def tearDown(self):
-        del Base._get_par_constant
-        del Base.calc_test2
+        del Par_base._get_par_constant
+        del Par_base.calc_test2
+
+
+
+class TestPerturbations(unittest.TestCase):
+    def setUp(self):
+        
+        pert=[]
+        d1={'netw':{'size': 0.5}}
+        pert.append(Perturbation_list(d1, '*',  **{'name':'label1'}))
+        d2={'conn':{'i1_n1':{'fan_in':0.5}}}
+        pert.append(Perturbation_list(d2, '*', **{'name':'label2'}))
+        d3={'simu':{'start_rec':100}}
+        pert.append(Perturbation_list(d3, '=', **{'name':'label3'}))
+        self.pert_list=pert
+        
+        self.per=Perturbation_list(d1,'*',d2,'*',d3,'=',
+                                   **{'name':'label1_'+'label2_'+'label3'})
+        
+        
+    
+    def test_sum(self):
+
+        p=sum(self.pert_list)
+        self.assertEqual(p, self.per)
+        
+        s=("label1_label2_label3\n"+
+        "{'conn': {'i1_n1': {'fan_in': '*0.5'}},\n"
+        " 'netw': {'size': '*0.5'},\n"
+        " 'simu': {'start_rec': '=100'}}")
+        self.assertEqual(s, p.info())
+
    
 class TestMixinDummy(object):
     def test_dic_dep(self):
@@ -4125,7 +4198,7 @@ class TestMixinDummy(object):
         print_dic_comparison(d1,d3, 'values')      
         self.assertDictEqual(d1, d3)
 
-class TestMixinBase(object):
+class TestMixinPar_base(object):
     def test__get(self):
         first=self.par._get(*['node', self.test_node_model,'type'])
         second=self.par.dic_con['node'][self.test_node_model]['type']
@@ -4372,7 +4445,7 @@ class TestSetup_mixin(object):
         self.C=Call
         self.C.set_obj(self.par)
         
-class TestUnittestBase(unittest.TestCase):
+class TestUnittestPar_base(unittest.TestCase):
     def setUp(self):
         self.dummy=dummy_unittest_small
         self.kwargs={}
@@ -4381,10 +4454,10 @@ class TestUnittestBase(unittest.TestCase):
         self.test_node_model='n1'
         self._setUp()
         
-class TestUnittest(TestUnittestBase, TestMixinBase,TestMixinDummy, TestSetup_mixin ):
+class TestUnittest(TestUnittestPar_base, TestMixinPar_base,TestMixinDummy, TestSetup_mixin ):
     pass
  
-class TestUnittestExtendBase(unittest.TestCase):
+class TestUnittestExtendPar_base(unittest.TestCase):
     def setUp(self):
         self.dummy=dummy_unittest_extend
         self.kwargs={'other':Unittest(),
@@ -4394,11 +4467,11 @@ class TestUnittestExtendBase(unittest.TestCase):
         self.test_node_model='n2'
         self._setUp()
         
-class TestUnittestExtend(TestUnittestExtendBase, TestMixinBase,TestMixinDummy,
+class TestUnittestExtend(TestUnittestExtendPar_base, TestMixinPar_base,TestMixinDummy,
                          TestSetup_mixin ):
     pass                    
 
-class TestUnittestBcpnnDopaBase(unittest.TestCase):
+class TestUnittestBcpnnDopaPar_base(unittest.TestCase):
     def setUp(self):
         self.dummy=dummy_unittest_bcpnn_dopa
         self.kwargs={'other':Unittest(),
@@ -4408,11 +4481,11 @@ class TestUnittestBcpnnDopaBase(unittest.TestCase):
         self.test_node_model='n1'
         self._setUp()
         
-class TestUnittestBcpnnDopa(TestUnittestBcpnnDopaBase, TestMixinBase,TestMixinDummy,
+class TestUnittestBcpnnDopa(TestUnittestBcpnnDopaPar_base, TestMixinPar_base,TestMixinDummy,
                          TestSetup_mixin ):
     pass  
 
-class TestUnittestStdpBase(unittest.TestCase):
+class TestUnittestStdpPar_base(unittest.TestCase):
     def setUp(self):
         self.dummy=dummy_unittest_bcpnn
         self.kwargs={'other':Unittest_bcpnn_dopa(**{'other':Unittest()}),
@@ -4422,11 +4495,11 @@ class TestUnittestStdpBase(unittest.TestCase):
         self.test_node_model='n1'
         self._setUp()
         
-class TestUnittestStdp(TestUnittestStdpBase, TestMixinBase,TestMixinDummy,
+class TestUnittestStdp(TestUnittestStdpPar_base, TestMixinPar_base,TestMixinDummy,
                          TestSetup_mixin ):
     pass         
         
-class TestUnittestBcpnnBase(unittest.TestCase):
+class TestUnittestBcpnnPar_base(unittest.TestCase):
     def setUp(self):
         self.dummy=dummy_unittest_bcpnn_dopa
         self.kwargs={'other':Unittest_bcpnn_dopa(**{'other':Unittest()}),
@@ -4436,11 +4509,11 @@ class TestUnittestBcpnnBase(unittest.TestCase):
         self.test_node_model='n1'
         self._setUp()
         
-class TestUnittestBcpnn(TestUnittestBcpnnBase, TestMixinBase,TestMixinDummy,
+class TestUnittestBcpnn(TestUnittestBcpnnPar_base, TestMixinPar_base,TestMixinDummy,
                          TestSetup_mixin ):
     pass  
 
-class TestInhibitionBase(unittest.TestCase):
+class TestInhibitionPar_base(unittest.TestCase):
     def setUp(self):
         self.kwargs={}
         self.the_class=Inhibition
@@ -4448,10 +4521,10 @@ class TestInhibitionBase(unittest.TestCase):
         self.test_node_model='M1'
         self._setUp()
         
-class TestInhibition(TestInhibitionBase, TestMixinBase, TestSetup_mixin ):
+class TestInhibition(TestInhibitionPar_base, TestMixinPar_base, TestSetup_mixin ):
     pass  
         
-class TestSingleUnitBase(unittest.TestCase):     
+class TestSingleUnitPar_base(unittest.TestCase):     
     def setUp(self):
         self.kwargs={'dic_rep':{'netw':{'single_unit':'FS'}}, 
                      'other':Inhibition()}
@@ -4460,10 +4533,10 @@ class TestSingleUnitBase(unittest.TestCase):
         self.test_node_model='FS'
         self._setUp()       
         
-class TestSingleUnit(TestSingleUnitBase, TestMixinBase, TestSetup_mixin):
+class TestSingleUnit(TestSingleUnitPar_base, TestMixinPar_base, TestSetup_mixin):
     pass
 
-class TestSlowWaveBase(unittest.TestCase):
+class TestSlowWavePar_base(unittest.TestCase):
     def setUp(self):
         self.kwargs={'other':Inhibition(),
                      'unittest':False}
@@ -4472,10 +4545,10 @@ class TestSlowWaveBase(unittest.TestCase):
         self.test_node_model='M1'
         self._setUp()
 
-class TestSlowwave(TestSlowWaveBase, TestMixinBase, TestSetup_mixin):
+class TestSlowwave(TestSlowWavePar_base, TestMixinPar_base, TestSetup_mixin):
     pass
 
-class TestBurstCompeteBase(unittest.TestCase):
+class TestBurstCompetePar_base(unittest.TestCase):
     def setUp(self):
         self.kwargs={'other':Inhibition(),
                      'unittest':False}
@@ -4484,10 +4557,10 @@ class TestBurstCompeteBase(unittest.TestCase):
         self.test_node_model='M1'
         self._setUp()
 
-class TestBurstCompete(TestSlowWaveBase, TestMixinBase, TestSetup_mixin):
+class TestBurstCompete(TestSlowWavePar_base, TestMixinPar_base, TestSetup_mixin):
     pass
 
-class TestThalamusBase(unittest.TestCase):     
+class TestThalamusPar_base(unittest.TestCase):     
     def setUp(self):
         self.kwargs={'other':Inhibition(),
                      'unittest':False}
@@ -4496,10 +4569,10 @@ class TestThalamusBase(unittest.TestCase):
         self.test_node_model='M1'
         self._setUp()      
 
-class TestThalamus(TestThalamusBase,  TestMixinBase, TestSetup_mixin):
+class TestThalamus(TestThalamusPar_base,  TestMixinPar_base, TestSetup_mixin):
     pass
         
-class TestBcpnnH0Base(unittest.TestCase):     
+class TestBcpnnH0Par_base(unittest.TestCase):     
     def setUp(self):
         self.kwargs={'other':Inhibition(),
                      'unittest':False}
@@ -4508,10 +4581,10 @@ class TestBcpnnH0Base(unittest.TestCase):
         self.test_node_model='M1'
         self._setUp()      
 
-class TestBcpnnH0(TestBcpnnH0Base,  TestMixinBase, TestSetup_mixin):
+class TestBcpnnH0(TestBcpnnH0Par_base,  TestMixinPar_base, TestSetup_mixin):
     pass
 
-class TestBcpnnH1Base(unittest.TestCase):     
+class TestBcpnnH1Par_base(unittest.TestCase):     
     def setUp(self):
         self.kwargs={'other':Bcpnn_h0(**{'other':Inhibition()}),
                      'unittest':False}
@@ -4520,7 +4593,7 @@ class TestBcpnnH1Base(unittest.TestCase):
         self.test_node_model='M1'
         self._setUp()      
 
-class TestBcpnnH1(TestBcpnnH1Base,  TestMixinBase, TestSetup_mixin):
+class TestBcpnnH1(TestBcpnnH1Par_base,  TestMixinPar_base, TestSetup_mixin):
     pass
 
 
@@ -4528,15 +4601,16 @@ if __name__ == '__main__':
     
     test_classes_to_run=[
                         TestModuleFuncions,
+                        TestPerturbations,
 #                         TestCall,
-#                         TestCallSubClassesWithBase,
+#                         TestCallSubClassesWithPar_base,
 #                         TestUnittest,
 #                         TestUnittestExtend,
 #                         TestUnittestBcpnn,   
 #                         TestUnittestBcpnnDopa,   
 #                         TestUnittestStdp, 
 #                         TestSingleUnit,
-                        TestInhibition,
+#                         TestInhibition,
 #                         TestThalamus,
 #                         TestSlowwave,
 #                           TestBurstCompete,

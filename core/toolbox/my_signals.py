@@ -26,17 +26,12 @@ from copy import deepcopy
 import numpy
 import pylab
 import unittest
-from toolbox import misc
+from toolbox import misc, my_axes
 from toolbox import signal_processing as sp
 
 # Import StandardPickleFile for saving of spike object
 from NeuroTools.io import StandardPickleFile
 
-# For setting number of ticks
-from matplotlib.ticker import MaxNLocator
-
-
-import plot_settings as ps
 
 from NeuroTools import signals
 from NeuroTools.signals import ConductanceList
@@ -44,6 +39,193 @@ from NeuroTools.signals import CurrentList
 from NeuroTools.signals import VmList
 from NeuroTools.signals import SpikeList
 from NeuroTools.plotting import get_display, set_labels, set_axis_limits
+
+
+class Data_element_base(object):
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            self.__dict__[key] = value
+
+    def __repr__(self):
+        return self.__class__.__name__
+    
+    def __str__(self):
+        return self.__class__.__name__
+
+
+class Data_generic_base(object):
+    def plot(self, ax, **k):
+                
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+  
+        ax.plot(self.x, self.y, **k)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y') 
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+
+class Data_generic(Data_element_base, Data_generic_base):
+    pass        
+class Data_firing_rate_base(object):
+    def plot(self, ax, win=100, t_stop=0, t_start=numpy.inf, **k):
+                
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+            
+        exp=(self.x<t_start)*(self.x>t_stop)
+        x,y=self.x[exp], self.y[exp]
+        y=misc.convolve(y, **{'bin_extent':win, 
+                              'kernel_type':'triangle',
+                              'axis':1})     
+        ax.plot(x, y, **k)
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Frequency (spike/s)') 
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+
+class Data_firing_rate(Data_element_base, Data_firing_rate_base):
+    pass
+
+class Data_IF_curve_base(object):
+    def plot(self, ax, x=[], part='last', **k):
+        if not ax:
+            ax=pylab.subplot(111) 
+        
+        if not x:
+            x=numpy.mean(self.curr,axis=1)
+       
+        if part=='first':isi=self.first
+        if part=='mean':isi=self.mean
+        if part=='last':isi=self.last
+          
+        std=numpy.std(isi,axis=1)
+        
+        m=numpy.mean(isi,axis=1)
+        color=pylab.getp(ax.plot(x, m, marker='o', **k)[0], 'color')    
+        
+        ax.fill_between(x, m-std, m+std, facecolor=color, alpha=0.5)  
+        ax.plot(x, isi , **{'color':color})    
+        ax.set_xlabel('Current (pA)') 
+        ax.set_ylabel('Rate (spike/s)') 
+        ax.legend()
+    
+class Data_IF_curve(Data_element_base, Data_IF_curve_base):
+    pass
+
+class Data_isis_base(object):
+    def hist(self, ax,**k):
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+            
+        k['histtype']=k.get('histtype','step')
+        
+        y=reduce(lambda x,y:list(x)+list(y),self.y)
+        ax.hist(numpy.array(y), **k)
+        ax.set_xlabel('Time (ms)')     
+        ax.set_ylabel('Count (#)')
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+       
+class Data_isis(Data_element_base, Data_isis_base):
+    pass
+
+class Data_IV_curve_base(object):
+    def plot(self, ax=None, x=[], **k):
+                
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+        
+        if list(x):
+            self.x=x 
+            
+        h=ax.plot(self.x, self.y, **k)
+        color=pylab.getp(h[0], 'color')   
+        ax.fill_between(self.x, 
+                        self.y-self.y_std,
+                        self.y+self.y_std, 
+                        facecolor=color, alpha=0.5)  
+        ax.set_xlabel('Current (pA)') 
+        ax.set_ylabel('Membrane potential (mV)') 
+        ax.legend()
+    
+class Data_IV_curve(Data_element_base, Data_IV_curve_base):
+    pass
+
+class Data_mean_rates_base(object):
+    def hist(self, ax, **k):
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+            
+        k['histtype']=k.get('histtype','step')
+            
+        ax.hist(numpy.array(self.y), **k)
+        ax.set_xlabel('Rate (Hz)')     
+        ax.set_ylabel('Count (#)')
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+
+class Data_mean_rates(Data_element_base, Data_mean_rates_base):
+    pass
+
+class Data_mean_rate_parts_base(object):
+    def plot(self, ax,  x=[], **k):
+                
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+        if list(x):
+            self.x=x 
+           
+        h=ax.plot(self.x, self.y, **k)
+        ax.set_xlabel('Stimuli')
+        ax.set_ylabel('Frequency (spike/s)') 
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+        return h
+    
+    def plot_FF(self, *args, **kwargs):
+        ax=args[0]
+        h=self.plot(*args, **kwargs)
+        color=pylab.getp(h[0], 'color')   
+        ax.fill_between(self.x, 
+                        self.y-self.y_std,
+                        self.y+self.y_std, 
+                        facecolor=color, alpha=0.5)
+        ax.set_xlabel('Stimuli (spikes/s)')
+        
+class Data_mean_rate_parts(Data_element_base, Data_mean_rate_parts_base):
+    pass
+
+class Data_mean_rate_slices_base(object):
+    def hist(self):
+        raise NotImplementedError
+    
+class Data_mean_rate_slices(Data_element_base, Data_mean_rate_slices_base):
+    pass
+
+class Data_spike_stat_base(object):
+    pass
+
+class Data_spike_stat(Data_element_base, Data_spike_stat_base):
+    pass
+
+class Data_voltage_traces_base(object):
+    def plot(self, ax, id_list=[0], spike_signal=None,  **k):
+        
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+        
+        
+        for _id in id_list:
+            ax.plot(self.x[_id,:], 
+                    self.y[_id,:], **k)
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Membrane potential (mV)') 
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+    
+class Data_voltage_traces(Data_element_base, Data_voltage_traces_base):
+    pass
 
 class MyConductanceList(ConductanceList):
     '''
@@ -285,6 +467,34 @@ class MyVmList(VmList):
     def __repr__(self):
         return self.__class__.__name__+':'+str(self.id_list()) 
     
+
+    def Factory_voltage_traces(self, normalized=False, **kwargs):
+        t,v=[], []
+        if 'spike_signal' in kwargs.keys():
+            spike_signal=kwargs['spike_signal']
+            self.my_set_spike_peak( 15, spkSignal= spike_signal ) 
+            
+        for i in self.id_list():
+            analog_signal=self.analog_signals[i]
+            
+ 
+            time_axis=numpy.linspace(self.t_start,
+                                         self.t_stop,
+                                         self.signal_length)
+            t.append(time_axis)
+            v.append(analog_signal.signal)
+       
+        x= numpy.array(t)
+        y=numpy.array(v)
+        if y.shape!=x.shape:
+            raise
+            
+        d= {'ids':self.id_list(), 
+            'x':numpy.array(t),
+            'y':numpy.array(v)}
+        
+        return Data_voltage_traces(**d)
+    
     def id_list(self):
         """ 
         OBS in SpikeList this is a property put not for
@@ -315,20 +525,8 @@ class MyVmList(VmList):
         return new_MyVmList
 
     
-    def get_voltage_trace(self, normalized=False, **kwargs):
-        t,v=[], []
-        if 'spike_signal' in kwargs.keys():
-            spike_signal=kwargs['spike_signal']
-            self.my_set_spike_peak( 15, spkSignal= spike_signal ) 
-            
-        for i in self.id_list():
-            analog_signal=self.analog_signals[i]
-            t.append(analog_signal.time_axis(normalized))
-            v.append(analog_signal.signal)
-            
-        return {'ids':self.id_list(), 
-                'x':numpy.array(t),
-                'y':numpy.array(v)}
+    def get_voltage_traces(self, *args, **kwargs):
+        return self.Factory_voltage_traces(*args, **kwargs)
         
     def merge(self, analog_signals):
         """
@@ -465,7 +663,7 @@ class MyVmList(VmList):
                 signal[idx] =peak
                 print 
 
-            
+
     def my_image_plot(self, display = None, kwargs = {}):
         
         if not display: ax = pylab.axes()
@@ -595,6 +793,72 @@ class MySpikeList(SpikeList):
         return (self.__class__.__name__+':'+str(self.id_list)
                 +' '+str(self.t_start)+'-'+str(self.t_stop)) 
 
+
+    def Factory_firing_rate(self,*args, **kwargs): 
+        time_bin=kwargs.get('time_bin', 1 )
+        t_start=kwargs.get('t_start', None)
+        t_stop=kwargs.get('t_stop', None)
+        x=self.time_axis_centerd(time_bin) 
+        y=self.firing_rate(time_bin, **kwargs)
+        if t_start:
+            y=y[x>t_start]
+            x=x[x>t_start]
+        if t_stop:
+            y=y[x<t_stop]
+            x=x[x<t_stop]
+        d={'ids':self.id_list, 'x':x,  'y':y,}    
+        return Data_firing_rate(**d)
+
+    def Factory_isis(self, *args, **kwargs):
+        run=kwargs.get('run',1)
+        y=numpy.array(self.isi(), dtype=object)
+        x=numpy.array([run]*y.shape[0])    
+        d={'ids':self.id_list,
+           'x':x,
+           'y':y}
+        return Data_isis(**d)
+        
+    
+    def Factory_mean_rates(self, *args, **kwargs):
+        run=kwargs.get('run',1)
+        y=numpy.array(self.mean_rates(**kwargs)) 
+        x=numpy.ones(y.shape)*run
+        d= {'ids':self.id_list,  'y':y, 'x':x} 
+        return Data_mean_rates(**d)
+
+    def Factory_mean_rate_slices(self, *args, **kwargs):
+        intervals=kwargs.get('intervals',None)
+        repetitions=kwargs.get('repetitions',1)
+        y=[]
+        for start, stop in intervals:
+            kwargs['t_stop']=stop
+            kwargs['t_start']=start
+            y.append(self.mean_rate(**kwargs)) 
+            fr=self.firing_rate(1)
+        y=numpy.array(y)
+        y=numpy.reshape(y,(repetitions,len(y)/repetitions))
+        y_std=numpy.std(y, axis=0)
+        y_mean=numpy.mean(y, axis=0)
+        x=numpy.ones(len(y))
+        d={'ids':self.id_list,
+           'y':y,
+           'y_mean':y_mean, 
+           'y_std':y_std,
+           'x':x}
+        return Data_mean_rate_slices(**d) 
+
+    def Factory_spike_stat(self, *args, **kwargs):
+        d={'rates':{},'isi':{}}
+        d['rates']['mean']=self.mean_rate(**kwargs)
+        d['rates']['std']=self.mean_rate_std(**kwargs)
+        d['rates']['CV']=d['rates']['std']/d['rates']['mean']
+        
+        isi=numpy.concatenate((self.isi()))
+        d['isi']['mean']=numpy.mean(isi,axis=0)
+        d['isi']['std']=numpy.std(isi,axis=0)
+        d['isi']['CV']=d['isi']['std']/d['isi']['mean']
+        return Data_spike_stat(**d)
+
     @property
     def id_list(self):
         """ 
@@ -650,7 +914,6 @@ class MySpikeList(SpikeList):
         return output
  
     def firing_rate(self, time_bin, **kwargs):
-        
         display=kwargs.get('display', False)
         average=kwargs.get('average', True)
         binary=kwargs.get('binary', False)
@@ -684,66 +947,26 @@ class MySpikeList(SpikeList):
                 'x':x, 
                 'y':y,}
  
- 
-    def get_firing_rate(self, time_bin, **kwargs): 
-        t_start=kwargs.get('t_start', None)
-        t_stop=kwargs.get('t_stop', None)
-        x=self.time_axis_centerd(time_bin) 
-        y=self.firing_rate(time_bin, **kwargs)
-        if t_start:
-            y=y[x>t_start]
-            x=x[x>t_start]
-        if t_stop:
-            y=y[x<t_stop]
-            x=x[x<t_stop]
-        return {'ids':self.id_list,
-                'x':x, 
-                'y':y,}
-                           
-    def get_isi(self, run=1, **kwargs): 
-        y=numpy.array(self.isi(), dtype=object)
-        x=numpy.array([run]*y.shape[0])    
-        return {'ids':self.id_list,
-                'x':x,
-                'y':y}
+    def get_firing_rate(self, *args, **kwargs):
+        return self.Factory_firing_rate(*args, **kwargs)
+    
+    def get_isi(self, *args, **kwargs): 
+        return self.Factory_isis(args, **kwargs)
 
- 
-    def get_mean_rate(self,run=1,  **kwargs):
-       
+    def get_mean_rate(self, run=1,  **kwargs):       
         mr=self.mean_rate(**kwargs)
         x=numpy.ones(mr.shape)*run
         return {'ids':self.id_list, 
                 'x':x,
                 'y':mr, }
+   
+    def get_mean_rate_slices(self, *args, **kwargs):
+        return self.Factory_mean_rate_slices(*args, **kwargs)
+  
 
-     
-    def get_mean_rate_slices(self, **kwargs):
-        intervals=kwargs.get('intervals',None)
-        repetitions=kwargs.get('repetitions',1)
-        y=[]
-        for start, stop in intervals:
-            kwargs['t_stop']=stop
-            kwargs['t_start']=start
-            y.append(self.mean_rate(**kwargs)) 
-            fr=self.firing_rate(1)
-        y=numpy.array(y)
-        y=numpy.reshape(y,(repetitions,len(y)/repetitions))
-        y_std=numpy.std(y, axis=0)
-        y_mean=numpy.mean(y, axis=0)
-        x=numpy.ones(len(y))
-        return {'ids':self.id_list,
-                'y':y,
-                'y_mean':y_mean, 
-                'y_std':y_std,
-                'x':x}   
-
-    def get_mean_rates(self, run=1, **kwargs):
-        
-        y=numpy.array(self.mean_rates(**kwargs)) 
-        x=numpy.ones(y.shape)*run
-        return {'ids':self.id_list,
-                'y':y, 
-                'x':x}   
+    
+    def get_mean_rates(self, *args, **kwargs):
+        return self.Factory_mean_rates(*args, **kwargs)
 
     def get_psd(self, NFFT, fs, **kwargs):
         
@@ -820,21 +1043,9 @@ class MySpikeList(SpikeList):
                 'y':r[1],
                }
     
-
-
-    def get_spike_stats(self, **kwargs):
-        
-        d={'rates':{},'isi':{}}
-        d['rates']['mean']=self.mean_rate(**kwargs)
-        d['rates']['std']=self.mean_rate_std(**kwargs)
-        d['rates']['CV']=d['rates']['std']/d['rates']['mean']
-        
-        isi=numpy.concatenate((self.isi()))
-        d['isi']['mean']=numpy.mean(isi,axis=0)
-        d['isi']['std']=numpy.std(isi,axis=0)
-        d['isi']['CV']=d['isi']['std']/d['isi']['mean']
-            
-        return d       
+    def get_spike_stats(self, *args, **kwargs):
+        return self.Factory_spike_stat(*args, **kwargs)
+     
 
     def mean_rate(self, **kwargs):
         
@@ -1377,8 +1588,7 @@ class BaseListMatrix(object):
     '''
     def __init__(self, o, *args, **kwargs):
         
-        self.m = to_numpy_2darray(o)
-        
+        self.m = to_numpy_2darray(o)       
         self.attr=None 
         self.allowed=kwargs.get('allowed',[])
 
@@ -1387,8 +1597,7 @@ class BaseListMatrix(object):
     def shape(self):
         return self.m.shape
     
-    def __getitem__(self, key):
-        
+    def __getitem__(self, key):   
         m=numpy.matrix(self.m)
         m=m.__getitem__(key)
         if type(m)!=numpy.matrix:
@@ -1462,24 +1671,32 @@ class VmListMatrix(BaseListMatrix):
         super( VmListMatrix, self ).__init__( matrix, *args,
                                                      **kwargs)
         self.allowed=kwargs.get('allowed',['plot', 
-                                           'get_voltage_trace',
+                                           'get_voltage_traces',
                                            ]) 
 
         
-    def get_mean_voltage_parts(self, **kwargs):
-#       w=self.merge(axis=1)    
-        w=self
+    def Factory_IV_curve(self,*args, **kwargs):
+        w=self.merge(axis=1)    
+#         w=self
         x=numpy.zeros(w.m.shape)
         y=numpy.zeros(w.m.shape)
+        y_std=numpy.zeros(w.m.shape)
         id_list=[]
         for i,j, obj in iter2d(w.m):
             x[i,j]=i
             y[i,j]=numpy.mean(obj.mean())
+            y_std[i,j]=numpy.mean(obj.std())
             id_list=set(id_list).union(obj.id_list()) 
             
-        return {'ids':list(id_list),
-                'y':y, 
-                'x':x}  
+        d= {'ids':list(id_list),
+            'y':y.ravel(),
+            'y_std':y_std.ravel(),  
+            'x':x.ravel()}
+        return Data_IV_curve(**d)  
+        
+    def get_IV_curve(self, *args, **kwargs):
+        return self.Factory_IV_curve(*args, **kwargs)
+ 
         
     def merge(self, axis=0, *args, **kwargs):
 
@@ -1497,7 +1714,7 @@ class VmListMatrix(BaseListMatrix):
         a=transpose_if_axis_1(axis, a)
         a=[list(aa) for aa in a]
         
-        return SpikeListMatrix(a)
+        return VmListMatrix(a)
 
 
 
@@ -1510,12 +1727,71 @@ class SpikeListMatrix(BaseListMatrix):
         self.allowed=kwargs.get('allowed', allowed_spike_list_functions())   
     
     
-
+    
+    def Factory_IF_curve(self, *args, **kwargs):
+#         if self.isi_parts['y']==[]:
+#             self.compute_set('isi_parts',*[],**{})
+        d=self.get_isi_parts(*args, **kwargs)
         
+        isi={'curr':[], 'first':[], 'mean':[], 'last':[]}
+#         x, y=self.get('isi_parts', attr_list=['x', 'y'])
+
+        x, y=d['x'], d['y']
+        
+        y=y.ravel()
+        for xx, yy in zip(x,y):
+            #if type(yy)!=list:
+            #    yy=[yy]
+                
+            for yyy in yy:
+                if not yyy.any():
+                    yyy=[1000000.]
+                isi['first'].append( yyy[ 0 ] )           # retrieve first isi
+                isi['mean'].append( numpy.mean( yyy ) )   # retrieve mean isi
+                isi['last'].append( yyy[ -1 ] )           # retrieve last isi
+                isi['curr'].append(xx[0])
+                
+#                 if isi['last'][-1]==0:
+#                     print 'je'
+            n=len(yy)
+           
+        for key in isi.keys():
+            a=numpy.array(isi[key])
+            if a.shape[0]/n>=2:
+                a=a.reshape((a.shape[0]/n, n))
+            
+            
+            if key!='curr':
+                a=1000./a #Convert to firing rate
+            isi[key]=a
+#         return isi['curr'], isi['first'], isi['mean'], isi['last']
+        return Data_IF_curve(**isi)
+    
+    def Factory_mean_rate_parts(self, *args, **kwargs):
+        #OBS merge over axis 1
+        w=self.merge(axis=1)
+        x=numpy.zeros(w.m.shape)
+        y=numpy.zeros(w.m.shape)
+        y_std=numpy.zeros(w.m.shape)
+        id_list=[]
+        for i,j, obj in iter2d(w.m):
+            x[i,j]=i
+            y[i,j]=obj.mean_rate(**kwargs)
+            y_std[i,j]=obj.mean_rate_std(**kwargs)
+            id_list=set(id_list).union(obj.id_list) 
+            
+        d= {'ids':list(id_list),
+            'y_std':y_std.ravel(),
+            'y':y.ravel(), 
+            'x':x.ravel()}
+        return Data_mean_rate_parts(**d)
+     
 #     def __getslice__(self, key):
 #         return SpikeListMatrix(self.m[key])
     def as_spike_list(self):
         return self.merge(axis=0).merge(axis=1).m[0,0]    
+      
+    
       
     def get_raster(self, *args, **kwargs):
         
@@ -1528,6 +1804,10 @@ class SpikeListMatrix(BaseListMatrix):
 #             d['x']+=n
 #             n+=len(d['ids'])
         return l
+    
+    def get_IF_curve(self, *args, **kwargs):
+        return self.Factory_IF_curve(*args, **kwargs) 
+    
     def get_isi_parts(self, run=1, **kwargs): 
         w=self.merge(axis=1)
         x=numpy.zeros(w.m.shape)
@@ -1543,23 +1823,9 @@ class SpikeListMatrix(BaseListMatrix):
                 'x':x,
                 'y':y}
 
-    def get_mean_rate_parts(self, **kwargs):
-        #OBS merge over axis 1
-        w=self.merge(axis=1)
-        x=numpy.zeros(w.m.shape)
-        y=numpy.zeros(w.m.shape)
-        y_std=numpy.zeros(w.m.shape)
-        id_list=[]
-        for i,j, obj in iter2d(w.m):
-            x[i,j]=i
-            y[i,j]=obj.mean_rate(**kwargs)
-            y_std[i,j]=obj.mean_rate_std(**kwargs)
-            id_list=set(id_list).union(obj.id_list) 
-            
-        return {'ids':list(id_list),
-                'y_std':y_std.ravel(),
-                'y':y.ravel(), 
-                'x':x.ravel()}  
+    def get_mean_rate_parts(self, *args, **kwargs):
+        return self.Factory_mean_rate_parts(*args, **kwargs)
+ 
 
     def merge(self, axis=0, *args, **kwargs):
 
@@ -1671,19 +1937,19 @@ def dummy_data(flag, **kwargs):
     V_rest=kwargs.get('V_rest', 60.0)
     ids=range(n_pop)[set_slice.get_slice()]
     if flag=='spike':
-        
-    
-        n_events=(n_events+40*run+20*set)*sim_time/1000.0
+            
+        n_events=(n_events+100*run+50*set)*sim_time/1000.0
         n=numpy.random.randint(int(n_events*0.8), n_events)
 
-        
-        
         i, t=[],[]#numpy.array(sw(ids,n_events))
         #t=numpy.array(sw(range(start, stop), n))
         for j in xrange(n_pop):
             i.append(n*[j])
-            a=range(start, stop)
+            a=numpy.array(range(start, stop))
+            a=a*(1+0.1*numpy.random.random(len(a)))
+            a=a[(a>start)*(a<stop)]
             numpy.random.shuffle(a)
+            
             t.append(a[0:n])
         i=numpy.concatenate(i)
         t=numpy.concatenate(t)
@@ -1697,19 +1963,39 @@ def dummy_data(flag, **kwargs):
         l=MySpikeList( zip(i,t), ids, t_start=start, t_stop=stop)
     
     if flag=='voltage':
-    
-        y=(0.995+0.01*np_rand((n_pop, sim_time)))
+        size=len(range(n_pop)[set_slice.get_slice()])
+        y=(0.995+0.01*np_rand((size, sim_time)))
         for yy in y:
-            yy*=V_rest-numpy.random.rand()*10        
+            yy*=V_rest+run*2+set*2-numpy.random.rand()*1        
         ids_events=numpy.mgrid[0:n_pop, 1+sim_time*run:1+sim_time*(run+1)][0]
         ids_events=numpy.array(ids_events, int)  
+        ids_events=numpy.ravel(ids_events[set_slice.get_slice()])
+        y=numpy.ravel(y)
+        
+        
         signals=zip(numpy.ravel(ids_events), numpy.ravel(y))
- 
+        
         l=MyVmList(signals, ids, 1, t_start=start, t_stop=stop)
         
     return l
 
-
+def dummy_data_matrix(flag, **kwargs):
+    n_sets=4
+    shape=kwargs.get('matrix_shape',(n_sets,4))
+    kwargs['n_sets']=n_sets
+    l=[]
+    for i in range(shape[0]):
+        l.append([])
+        kwargs['run']=i
+        for j in range(shape[1]):
+            kwargs['set']=j
+            l[-1].append(dummy_data( flag, **kwargs))
+    
+    if flag=='spike':
+        return SpikeListMatrix(l)
+    if flag=='voltage':
+        return VmListMatrix(l)    
+    
 def shuffle(*args, **kwargs):
     out=[]
     sample=kwargs.get('sample',1)
@@ -1726,6 +2012,71 @@ def transpose_if_axis_1(axis, m):
         m=m.transpose()
     return m
 
+
+class TestDataElement(unittest.TestCase):
+    def setUp(self):
+        self.sim_time=1000.0
+        self.sl=dummy_data('spike', **{'run':0, 'set':0, 'n_sets':1,
+                                       'sim_time':self.sim_time})
+        self.vl=dummy_data('voltage', **{'run':0, 'set':0, 'n_sets':1,
+                                       'sim_time':self.sim_time})
+    
+    
+    def test_element(self):
+        d={'x':1,'y':2, 'z':3}
+        obj=Data_element_base(**d)
+        for key in d.keys():
+            self.assertTrue(key in dir(obj))
+
+    def test_firing_rate_plot(self):    
+        obj=self.sl.Factory_firing_rate()
+        obj.plot(pylab.subplot(111), win=100.0)
+#       pylab.show()
+    
+    
+    def test_IF_curve_plot(self):
+          
+        self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
+                                       'sim_time':self.sim_time})
+        obj=self.sl.Factory_IF_curve()
+        obj.plot(pylab.subplot(111), part='mean')
+#         pylab.show()
+         
+    def test_IV_curve_plot(self):
+        
+        self.vlm=dummy_data_matrix('voltage', **{'run':0, 'set':0, 'n_sets':1,
+                                       'sim_time':self.sim_time})
+        pylab.figure()
+        obj=self.vlm.Factory_IV_curve()
+        obj.plot(pylab.subplot(111))
+#         pylab.show()         
+         
+    def test_isis_hist(self):    
+        obj=self.sl.Factory_isis()
+        pylab.figure()
+        obj.hist(pylab.subplot(111))
+#         pylab.show()
+ 
+    def test_mean_rates_hist(self):
+        obj=self.sl.Factory_mean_rates()
+        pylab.figure()
+        obj.hist(pylab.subplot(111))
+#         pylab.show(obj)   
+ 
+    def test_mean_rate_parts_plot(self):
+          
+        #OBS merge over axis 1
+        self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
+                                       'sim_time':self.sim_time})
+        obj=self.sl.Factory_mean_rate_parts()
+        obj.plot(pylab.subplot(111))
+#         pylab.show()
+
+    def test_voltage_traces(self):
+        pylab.figure()
+        obj=self.vl.Factory_voltage_traces()
+        obj.plot(pylab.subplot(111))        
+#         pylab.show() 
 
 class TestSpikeList(unittest.TestCase):
     def setUp(self):
@@ -1815,7 +2166,6 @@ class TestSpikeListMatrix(unittest.TestCase):
                ['mean_rates', [], {}], 
                ['merge', [], {}],
                ['my_raster', [], {}],
-              
                ]
         
         slc=SpikeListMatrix(self.spike_lists)
@@ -1823,15 +2173,16 @@ class TestSpikeListMatrix(unittest.TestCase):
         for call, a, k in calls:
             func=getattr(slc, call)
             r.append(func(*a, **k))
-            
-            if call in ['get_firing_rate',
-                        'get_isi',
+            d=r[-1]
+            if call in [
                         'get_mean_rate',
-                        'get_mean_rates'
-                        ]:
-                d=r[-1]
-                self.assertEqual(d['x'].shape, d['y'].shape) 
-        
+                        ]:        
+                self.assertEqual(d['x'].shape, d['y'].shape)
+            if call in ['get_firing_rates',
+                        'get_mean_rates',
+                        'get_isi']:
+                self.assertEqual(d.x.shape, d.y.shape) 
+                
     def test_3_class_methods(self):
         calls=[['get_raster', [],{}]]
         slc=SpikeListMatrix(self.spike_lists)
@@ -1872,11 +2223,8 @@ class TestSpikeListMatrix(unittest.TestCase):
         self.assertEqual((self.n_runs+1,self.n_sets-1), slc01.shape)
         self.assertEqual((self.n_runs,self.n_sets), slc02.shape)
 
-
-        
-class TestVm_list_matrix(unittest.TestCase):
     
-        
+class TestVm_list_matrix(unittest.TestCase):     
     def setUp(self):
         
         self.n_runs=4
@@ -1897,8 +2245,8 @@ class TestVm_list_matrix(unittest.TestCase):
 
     def test_2_calls_wrapped_class(self):
         calls=[
-               ['get_voltage_trace', [], {}],
-               ['get_mean_voltage_parts',[],{}],
+               ['get_voltage_traces', [], {}],
+               ['get_IV_curve',[],{}],
                ]
         
         slc=VmListMatrix(self.vm_lists)
@@ -1911,9 +2259,10 @@ class TestVm_list_matrix(unittest.TestCase):
         
 if __name__ == '__main__':
     test_classes_to_run=[
+                        TestDataElement,
                         TestSpikeList,
                         TestSpikeListMatrix,
-#                          TestVm_list_matrix
+                        TestVm_list_matrix
                          ]
     suites_list = []
     for test_class in test_classes_to_run:

@@ -4,110 +4,43 @@ Created on 25 mar 2014
 @author: mikael
 '''
 
-from simulate_network import (create_net, create_dic, do, iter_comb, 
-                              perturbations, save_dud)
-from toolbox.network.default_params import Perturbation_list as pl
-from toolbox.network.construction import Network
-from toolbox.network.default_params import Inhibition, Burst_compete 
-import toolbox.plot_settings as ps
 import numpy
+import pylab
+import toolbox.plot_settings as ps
+
+from toolbox import misc
+from toolbox.my_signals import Data_generic
+from toolbox.data_to_disk import Storage_dic
+from toolbox.network.manager import compute, run, save, load
+from toolbox.network.manager import Builder_network as Builder
+from toolbox.network.manager import Director_networks as Director
 import pprint
 pp=pprint.pprint
-import pylab
 
-
-
-def perturbation_bursts(use, **kwargs):
+def get_networks(rep):
+    builder = Builder(**{'print_time':False,
+                         'resolution':5, 
+                         'repetitions':rep,
+                         'sim_time':1500.0, 
+                         'sim_stop':1500.*5*rep, 
+                         'size':750.0, 
+                         'start_rec':0.0,  
+                         'stop_rec':1500.*5*rep,
+                         'sub_sampling':10,
+                         'threads':4})
+    director = Director()
+    director.set_builder(builder)
+    info, nets = director.get_networks()
+    intervals=builder.dic['intervals']
+    times=builder.dic['times']
     
-    p1=numpy.linspace(2.3,3,kwargs.get('resolution',5))
-    p1=numpy.array(list(p1)*kwargs.get('repetitions',1))
-#     p2=4-p1
-    p2=p1
-    #p2=1.5*numpy.ones(len(p1))
-    p3=2*numpy.ones(len(p1))
-    p4=2*numpy.ones(len(p1))
-    p5=[1000.+1500*i for i in range(len(p1))]
-    l=[]
-    for a in zip(p1,p2,p3, p4, p5):
-        s=[]
-        start=a[4]
-        if 'C1' in use: 
-            s+=[['netw.input.C1.params.p_amplitude', 
-                     numpy.array([a[0],a[1]]), '*']]
-            s+=[['netw.input.C1.params.start',start, '=']]
-        if 'C2' in use: 
-            s+=[['netw.input.C2.params.p_amplitude', 
-                             numpy.array([a[1],a[0]]), '*']]
-            s+=[['netw.input.C2.params.start',start, '=']]
- 
-        l+=[pl('_'.join(use), s)] 
+    return info, nets, intervals, times
 
-    
-    intervals=[]
-    for t in p5:
-        intervals.append([t,t+100])
+def show_fr(d):
+    _, axs=ps.get_figure(n_rows=7, n_cols=1, w=1000.0, h=800.0, fontsize=10)  
+    for model, i in [['M1',0], ['M2', 1], ['GI',2], ['SN',3]]:
+        d[model]['firing_rate'].plot(ax=axs[i],  **{'label':model})
         
-    return l, intervals, p5
-
-def create_nets(**kwargs):
-    
-    l=[['low'],
-       ['dop'],# 'no_dop'],
-       ['general'],
-       ['sub_sampling_MSN'],
-       [['C1'], 
-        ['C1', 'C2'],
-        ]] 
-    l.append([perturbations()[0]])
-
-    nets=[]
-    i=0
-    for a in iter_comb(*l):
-
-        use=a[4]
-        l,intervals,x=perturbation_bursts(use, **kwargs)
-        
-        name='Burst_comptete_net_'+'_'.join(*([list(a[0:4])+[l[-1].name]]))
-        net=create_net(name, a[0:4], a[-1], **kwargs)
-        net.set_replace_pertubation(l)
-        nets.append(net)
-        
-
-        
-        
-    return nets, intervals,x
-
-def create_net(name, dic_calls, per, **kwargs):
-    d = create_dic(dic_calls, **kwargs)
-        
-    par = Burst_compete(**{'dic_rep':d,
-                           'other':Inhibition(), 
-                           'pertubation':per})
-    
-    net = Network(name, **{'verbose':True, 
-                           'par':par})
-         
-    return net    
-
-def show(duds, nets):
-  
-    
-    for id_dud in range(len(duds)):
-        _, axs=ps.get_figure(n_rows=4, n_cols=1, w=1000.0, h=800.0, fontsize=16)   
-        for i in range(3):
-            axs[0].set_title(nets[id_dud].name)
-            duds[id_dud]['M1'][:,i].plot_firing_rate(ax=axs[0])
-            duds[id_dud]['M2'][:,i].plot_firing_rate(ax=axs[1])
-            
-            duds[id_dud]['GI'][:,i].plot_firing_rate(ax=axs[2])
-            
-            duds[id_dud]['SN'][:,i].plot_firing_rate(ax=axs[3])  
-        #duds[id_dud]['FS'].plot_firing_rate(ax=axs[2])
-        #duds[id_dud]['ST'].plot_firing_rate(ax=axs[4])
-#     pylab.show()
-
-
-
 
 def classify(x, y, threshold):
     if (x < threshold) and (y < threshold):
@@ -123,7 +56,7 @@ def process_data(data, threshold=5):
     
     outs=[]
     for d in data:
-        x,y=d[2][0]['y'],d[2][1]['y'] 
+        x,y=d[2][0]['y'], d[2][1]['y'] 
         outs.append(numpy.abs(x-y))
     return outs
 
@@ -133,50 +66,87 @@ def plot(data):
     for d in data:
         i=0
         for v in d.transpose():
-            axs[i].hist(v,**{ 'histtype':'step', 'bins':20})
+            axs[i].hist(v,**{'histtype':'step', 
+                             'bins':20})
             ylim=list(axs[i].get_ylim())
             ylim[0]=0.0
             axs[i].set_ylim(ylim)
             i+=1
   
 
-def pick_out_mean_rates(duds, intervals,x, repetitions):
+def cmp_mean_rates_intervals(d, intervals, x, repetitions):
     kwargs={'intervals':intervals,
-             'repetitions':repetitions}
-    data=numpy.empty((len(duds),3,2), dtype=object)
-    for id_dud in range(len(duds)):
-        for i, node in enumerate(['M1','M2','SN']):
-            for j in [0,1]:
-                v=duds[id_dud][node][:,j].get_mean_rate_slices(**kwargs)
-                v['x']=x[0:repetitions]
-                data[id_dud,i,j]=v
-    return data
+            'repetitions':repetitions}
+    
+    for keys, val in misc.dict_iter(d):
+        
+        val={}
+        for j in [0,1]:
+            v=val[:,j].get_mean_rate_slices(**kwargs)
+            v.x=x[0: repetitions]
+            val[j]=v
+            
+        d=misc.dict_recursive_add(d, (keys[0:-1]
+                                      +['mean_rates_intervals']), val)
+        
+    return d
 
+def get_kwargs_dic():
+    {'firing_rate':{'time_bin':5}}
+    
 
-if __name__ == '__main__':
+def main():
     rep=3
-    nets, intervals,x=create_nets(**{'sim_time':1500.0, 'sim_stop':1500.*5*rep, 
-                                     'start_rec':0.0,  'size':750.0, 
-                                     'stop_rec':1500.*5*rep,
-                                     'sub_sampling':10,
-                                     'threads':4, 'print_time':False,
-                                     'resolution':5, 'repetitions':rep})
-    pp(nets[0].par.dic_rep)
-    pp(nets[0].replace_perturbation)
     
-    duds=do('sim', nets, [0]*len(nets))
+    from os.path import expanduser
+    home = expanduser("~")  
+    file_name=(home+ '/results/papers/inhibition/network/'
+               +__file__.split('/')[-1][0:-3])
     
-    show(duds, nets)
-    data=pick_out_mean_rates(duds,intervals,x, rep)
+    models=['M1', 'M2', 'SN']
+    
+    info, nets, intervals, x = get_networks()
+
+    sd=Storage_dic.load(file_name)
+    sd.add_info(info)
+    sd.garbage_collect()
+    
+    d={}
+    for net, mode in zip(nets, [0]*2):
+        if mode==0:
+            dd = run(net)       
+            save(sd, dd)
+        elif mode==1:
+            filt=[net.get_name()]+models+[
+                                          'spike_signal',
+                                          ]
+            dd=load(file_name, *filt)
+            kwargs_dic=get_kwargs_dic()
+            dd=compute(dd, models,  ['firing_rate'], **kwargs_dic )  
+
+            dd=cmp_mean_rates_intervals(dd,intervals, x, rep)
+            save(sd, dd)
+        elif mode==2:
+            filt=[net.get_name()]+models+['firing_rate',
+                                          'mean_rates_intervals',
+                                         ]
+            dd=load(file_name, *filt)
+        d=misc.dict_update(d, dd)
+            
+    
+    
+    show_fr(d['net_0'])
+    data=misc.dict_remove_level(d['net_0'], 'mean_rates_intervals')
     print data
-    
-    
-    
     if 1:
         data=process_data(data)
-        
+    print data
     plot(data)
-    pylab.show()  
-    save_dud(*duds)
+    
+    pylab.show()
+ 
+if __name__ == "__main__":
+    # stuff only to run when not called via 'import' here
+    main()
     
     

@@ -210,4 +210,8 @@ def convert_super_to_sub_class(superClass):
         subClass._init_extra_attributes()
         
         return subClass        
+    
+def convert(ax):
+    return convert_super_to_sub_class(ax)
+
 

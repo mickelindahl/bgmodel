@@ -6,7 +6,7 @@ Created on Jul 4, 2013
 
 from copy import deepcopy
 from toolbox.network.default_params import Single_unit, Inhibition
-from toolbox.network.construction import Network
+from toolbox.network.engine import Network
 from toolbox.network.handling_single_units import Activity_model_dic
 from toolbox import misc, data_to_disk
 from toolbox import plot_settings as pl

@@ -128,15 +128,24 @@ def GetConn(soruces, targets):
             c.extend(nest.GetStatus(nest.FindConnections([s], [t])))     
     return c
 
-def GetConnProp(soruces, targets, prop_name):
+def GetConnProp(soruces, targets, prop_name, time):
     c=GetConn(soruces, targets)                                        
-    w=[]
+    x,y={},{}
+    
     for conn in c:
+        model=conn['synapse_model']
+        
+        if not model in y.keys():
+            y[model]=[]
+            x[model]=[]
+            
         if prop_name in conn.keys():
-            w.append(conn[prop_name])
+            y[model].append(conn[prop_name])
         else:
-            w.append(numpy.NaN)
-    return w
+            y[model].append(numpy.NaN)
+            
+        x[model].append(time)
+    return x,y
 
 # def GetDopamine(soruces, targets):
 #     c=GetConn(soruces, targets)                                                 
