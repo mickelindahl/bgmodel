@@ -94,8 +94,8 @@ class Data_fmin_base(object):
         if len(p):
             x=p[-1]._x
             y=p[-1]._y-0.1
-             
-        p=ax.text( x, y, name+':'+str(self.xopt[-1][0])+' Hz', 
+        s=name+':'+str(self.xopt[-1][0])+' Hz fopt:'+str(self.fopt[-1])
+        p=ax.text( x, y, s, 
                    transform=ax.transAxes, 
             fontsize=pylab.rcParams['font.size']-2)
 

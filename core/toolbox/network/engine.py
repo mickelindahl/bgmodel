@@ -395,8 +395,11 @@ class Network_base(object):
         for model in self.fopt:
             ss=d1[model]['spike_signal']
             ss.set_target_rate(d2[model])
-            e.append(ss.get_mean_rate_error())
+            e.append(ss.get_mean_rate_error(**{'t_start':self.get_start_rec()}))
         
+#         print ss.get_mean_rate_error(**{'t_start':self.get_start_rec()})
+#        print ss.get_mean_rate_error(**{'t_stop':self.get_start_rec()})
+       
         for i, val in zip(idx, vals):
             e[i]+=val
         
@@ -528,9 +531,11 @@ class Network(Network_base):
        
         if not os.path.isdir(self.path_nest):
             data_to_disk.mkdir(self.path_nest)
-        
-        with Stop_stdout(not self.verbose), Stopwatch('Simulating...\n',
-                                                      self.stopwatch):        
+        s='Simulating {} ms from {} ms (rec from {} ms): ...'
+        s=s.format(str(self.sim_time),
+                   str(self.sim_time_progress), 
+                   str(self.get_start_rec()))
+        with Stop_stdout(not self.verbose), Stopwatch(s,  self.stopwatch):        
             self.set_kernel_status()
             my_nest.Simulate(self.sim_time)       
 

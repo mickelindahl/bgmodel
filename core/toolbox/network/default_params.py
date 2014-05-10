@@ -2638,7 +2638,7 @@ class InhibitionPar_base(object):
         GA_tr=GetNode('GA', 'rate')
         network['M1'].update({'rate':0.1, 'rate_in_vitro':0.0})
         network['M2'].update({'rate':0.1, 'rate_in_vitro':0.0})
-        network['FS'].update({'rate':5.0, 'rate_in_vitro':0.0})
+        network['FS'].update({'rate':15.0, 'rate_in_vitro':0.0})
         network['ST'].update({'rate':10.0, 'rate_in_vitro':10.0})
         network['GA'].update({'rate':5.0, 'rate_in_vitro':4.0})
         network['GI'].update({'rate':(GP_tr-GA_prop*GA_tr)/(1-GA_prop),

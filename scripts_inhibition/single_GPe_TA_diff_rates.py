@@ -20,6 +20,7 @@ def get_kwargs_builder():
     k.update({'inputs': ['GIp', 'GAp', 'EAp', 'STp'],
               'single_unit':'GA',
               'single_unit_input':'EAp',
+              'start_rec':1000.0,
               'TA_rates':[7.5, 10.0, 15.0, 20.0, 25.0]})
 
     return k
@@ -49,14 +50,18 @@ def get_setup():
     return dinfo, d
  
 def main():   
-    
+    k=get_kwargs_builder()
+    pp(k)
     dinfo, dn = get_setup()
     ds = get_storages(__file__.split('/')[-1][0:-3], dn.keys(), dinfo)
   
     d={}
-    d.update(optimize('opt_rate', dn, [1]*5, ds, **{ 'x0':200.0}))   
-    set_optimization_val(d['opt_rate']['Net_0'], dn['hist']) 
-    d.update(run('hist', dn, [1]*5, ds, 'mean_rates'))                   
+    d.update(optimize('opt_rate', dn, [0]*5, ds, **{ 'x0':200.0}))   
+    
+    for net in dn['hist']: 
+        set_optimization_val(d['opt_rate'][net.get_name()], [net]) 
+    d.update(run('hist', dn, [0]*5, ds, 'mean_rates',
+                           **{'t_start':k['start_rec']}))                   
 
 
     _, axs=pl.get_figure(n_rows=1, n_cols=1, w=1000.0, h=800.0, fontsize=16) 

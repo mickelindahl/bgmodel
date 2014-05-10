@@ -55,6 +55,8 @@ def modify(dn):
 
 def main():   
     
+    k=get_kwargs_builder()
+    
     dinfo, dn = get_setup()
     pp(dinfo)
     dn=modify(dn)
@@ -66,12 +68,13 @@ def main():
     dstim ['FF']=map(float, range(0,1500,100)) #rate
   
     d={}
-    d.update(run_XX('IV', dn, [1]*4, ds, dstim))
-    d.update(run_XX('IF', dn, [1]*4, ds, dstim))
-    d.update(run_XX('FF', dn, [1]*4, ds, dstim))   
-    d.update(optimize('opt_rate', dn, [1]*1, ds, **{ 'x0':900.0}))   
+    d.update(run_XX('IV', dn, [0]*4, ds, dstim))
+    d.update(run_XX('IF', dn, [0]*4, ds, dstim))
+    d.update(run_XX('FF', dn, [0]*4, ds, dstim))   
+    d.update(optimize('opt_rate', dn, [0]*1, ds, **{ 'x0':900.0}))   
     set_optimization_val(d['opt_rate']['Net_0'], dn['hist']) 
-    d.update(run('hist', dn, [1]*2, ds, 'mean_rates'))                   
+    d.update(run('hist', dn, [0]*2, ds, 'mean_rates', 
+                 {'t_start':k['start_rec']}))                   
 
 
     _, axs=pl.get_figure(n_rows=2, n_cols=2, w=1000.0, h=800.0, fontsize=16) 

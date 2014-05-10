@@ -4,6 +4,7 @@ Created on 21 mar 2014
 @author: mikael
 '''
 from copy import deepcopy
+from toolbox import plot_settings
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
 from toolbox.network.manager import compute, save, load
@@ -21,6 +22,16 @@ def _ud(k,d):
     k['kwargs_builder'].update(d)
     return k
             
+
+def beautify_hist(ax, colors, linestyles):
+    for p, c, ls in zip(ax.patches, colors, linestyles):
+        pylab.setp(p, edgecolor=c, linestyle=ls)
+    
+    ylim = list(ax.get_ylim())
+    ylim[0] = 0.0
+    ax.set_ylim(ylim)
+    ax.legend_box_to_line()
+
 def beautify(axs):
     colors=['b', 'b', 'g','g',]
     linestyles=['-','--','-','--']  
@@ -42,12 +53,7 @@ def beautify(axs):
     
     axs[1].legend(loc='upper left')
 
-    for p, c, ls in zip(axs[3].patches, colors, linestyles2):    
-        pylab.setp(p, edgecolor=c, linestyle=ls) 
-    ylim=list(axs[3].get_ylim())
-    ylim[0]=0.0
-    axs[3].set_ylim(ylim)
-    axs[3].legend_box_to_line()
+    beautify_hist(axs[3], colors, linestyles2)
     
 def get_kwargs_builder():
     return {'print_time':False, 
@@ -104,8 +110,8 @@ def get_setup_opt_rate(Builder, k):
 def get_setup_hist(Builder, k):
     a, b = _get_networks(Builder, **_ud(k, {'lesion':False, 
                 'size':k.get('hist_size', 200), 
-                'sim_time':k.get('IF_time', 10000.), 
-                'sim_stop':k.get('IF_time', 10000.), 
+                'sim_time':k.get('hist_time', 10000.), 
+                'sim_stop':k.get('hist_time', 10000.), 
                 'threads':k.get('threads', 50)}))
     return a, b
 
@@ -205,15 +211,19 @@ def reduce_levels(dd, levels):
         dd = misc.dict_remove_level(dd, level)
     return dd
 
-def _run(storage_dic, d, net, from_disk, attr):
+def _run(storage_dic, d, net, from_disk, attr, **kwargs):
     model = net.get_single_unit()
-
+    kwargs_dic={attr:kwargs}
     if not from_disk:
 
         dd = {net.get_name(): net.simulation_loop()}
-        dd = compute(dd, [model], [attr])
+        dd = compute(dd, [model], [attr], **kwargs_dic)
         save(storage_dic, dd)
     elif from_disk:
+#         filt = [net.get_name()] + [model] + ['spike_signal']
+#         dd = load(storage_dic, *filt)
+#         dd = compute(dd, [model], [attr], **kwargs_dic)
+#         save(storage_dic, dd)
         filt = [net.get_name()] + [model] + [attr]
         dd = load(storage_dic, *filt)
         
@@ -222,12 +232,12 @@ def _run(storage_dic, d, net, from_disk, attr):
     return d
      
        
-def run(flag, dn, from_disks, ds, attr):
+def run(flag, dn, from_disks, ds, attr, **kwargs_dic):
     d={}
     nets=dn[flag]
     storage_dic=ds[flag]
     for net, from_disk in zip(nets, from_disks):
-        d=_run(storage_dic, d, net, from_disk, attr)
+        d=_run(storage_dic, d, net, from_disk, attr, **kwargs_dic)
     return {flag:d}
 
 def _run_XX(flag, storage_dic, stim, d, net, from_disk):
@@ -315,6 +325,9 @@ def show_opt_hist(d, axs, name):
     for key in sorted(d['hist'].keys()):
         data=d['hist'][key]
         data.hist(axs[0])
-    
+    colors=misc.make_N_colors('jet',len(d['opt_rate'].keys()))
+    linestyles=['solid']*len(colors)
+    beautify_hist(axs[0], colors, linestyles)   
+     
 #     beautify(axs)
     pylab.show()

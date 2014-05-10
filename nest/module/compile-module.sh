@@ -1,9 +1,12 @@
 #!/bin/sh
-#Input: Take module-DATE and nest-version as input
+#Input: Take module-DATE, nest-version, nest-install-dir and nest-source-models-dir as input
 # OBS need to define directory in were nest is installed.
 
 # Directory where nest have been installed
-export NEST_INSTALL_DIR="$HOME/opt/NEST/dist/install-$2"
+export NEST_INSTALL_DIR="$3"
+export NEST_MODELS_DIR="$4" #directory for of soruce code for models. Needed in Makefile.am
+
+#export NEST_INSTALL_DIR="$HOME/opt/NEST/dist/install-$2"
 #export NEST_INSTALL_DIR="/home/mikael/opt/NEST/dist/install-$2"
 echo "Nest instalation dir: $NEST_INSTALL_DIR"
 

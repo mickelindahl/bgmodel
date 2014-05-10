@@ -25,7 +25,8 @@ libdir= @libdir@/nest
 lib_LTLIBRARIES=      ml_module.la libml_module.la
 
 # Need to set this to correct directory!
-NEST_MODELS_DIR := $(shell echo $(HOME))/opt/NEST/dist/nest-2.2.2/models
+#NEST_MODELS_DIR := $(shell echo $(HOME))/opt/NEST/dist/nest-2.2.2/models
+NEST_MODELS_DIR := $(shell echo $(NEST_MODELS_DIR))
 #NEST_MODELS_DIR="/home/mikael/opt/NEST/dist/nest-2.2.2/models"
 # Can not have comments between lines when defining ml_module_la_SOURCES
 # Also can not have backslash after comment (maybe only if comment is last

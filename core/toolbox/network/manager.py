@@ -385,8 +385,8 @@ def IF_curve(data):
 def load(storage_dic, keys, *args):
     return storage_dic.load_dic(keys, *args)
 
-def mean_rates(data):
-    return data.get_mean_rates()
+def mean_rates(data, **k):
+    return data.get_mean_rates(**k)
 
 def run(net):
     d=net.simulation_loop()

@@ -78,7 +78,7 @@ def get_kwargs_builder():
 def get_kwargs_engine():
     return {'verbose':True}
 
-def get_metworks():
+def get_networks():
     return manager.get_networks(Builder, 
                                 get_kwargs_builder(), 
                                 get_kwargs_engine())
@@ -87,18 +87,23 @@ def get_metworks():
 
 
 def main():
+    k=get_kwargs_builder()
+    
     from os.path import expanduser
     home = expanduser("~")
 
     attr=[ 'firing_rate', 
            'mean_rates', 
            'spike_statistic']  
+    
+    kwargs_dic={'mean_rates': {'t_stop':k['start_rec']},
+                'spike_statistic': {'t_stop':k['start_rec']},}
     file_name=(home+ '/results/papers/inhibition/network/'
                +__file__.split('/')[-1][0:-3])
     
     models=['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN']
     
-    info, nets = get_networks(Builder, get_kwargs_builder(), get_kwargs_engine())
+    info, nets = get_networks()
 
     sd=Storage_dic.load(file_name)
     sd.add_info(info)
@@ -108,11 +113,11 @@ def main():
     for net, from_disk in zip(nets, [1]*2):
         if not from_disk:
             dd = run(net)  
-            dd = compute(dd, models,  attr )      
+            dd = compute(dd, models,  attr, **kwargs_dic)      
             save(sd, dd)
         elif from_disk:
             filt=[net.get_name()]+models+attr
-            dd=load(file_name, *filt)
+            dd=load(sd, *filt)
         d=misc.dict_update(d, dd)
                      
     
