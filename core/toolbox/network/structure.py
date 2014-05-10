@@ -92,8 +92,24 @@ class Surface(object):
     def __repr__(self):
         return self.__class__.__name__+':'+self.name
 
-    def _apply_mask(self, p0, mask_dist=None, mask_ids=None):
-        '''
+
+    def _apply_boundary_conditions(self):
+        ''' self is the pool, the surface nodes are chosen from for each 
+        node in the driver'''
+        if self.edge_wrap:
+            idx=self.idx_edge_wrap
+            pos=self.pos_edge_wrap
+
+        else:
+            idx=numpy.array(self.idx)
+            pos=numpy.array(self.pos)
+        return idx, pos
+
+    def _apply_mask(self, idx, pos, p0, mask_dist=None, mask_ids=None):
+        ''' 
+        self is the pool, the surface nodes are chosen from for each 
+        node in the driver
+        
         Picks out the indecies from the unit that are constrained by
         distance from point p and mask_ids idx  
         
@@ -103,15 +119,7 @@ class Surface(object):
         mask_distance - max distance from p to pick idx for the poos
         mask_ids - mask_ids index of the pool '''
            
-        if self.edge_wrap:
-            idx=self.idx_edge_wrap
-            pos=self.pos_edge_wrap
 
-        else:
-            idx=numpy.array(self.idx)
-            pos=numpy.array(self.pos)
-        
-        
         if not mask_dist: r=(self.extent[1]-self.extent[0])/2.
         else: r=(mask_dist[1]-mask_dist[0])/2.
               
@@ -125,6 +133,9 @@ class Surface(object):
      
     def _apply_kernel(self, idx, fan):
         '''
+        self is the pool, the surface nodes are chosen from for each 
+        node in the driver
+        
         Pickes out n surfs from the pool such that it approximately equals the
         fan. 
         idx - the set of pool the idx to considered
@@ -159,7 +170,8 @@ class Surface(object):
 
     def get_connectables(self, p0, fan, mask_dist=None, mask_ids=None):
         
-        idx=self._apply_mask(p0, mask_dist, mask_ids)
+        idx, pos=self._apply_boundary_conditions()
+        idx=self._apply_mask(idx, pos, p0, mask_dist, mask_ids)
         idx=self._apply_kernel(idx, fan)
         return idx
     
@@ -326,6 +338,7 @@ class Conn(object):
         self.rule=kwargs.get('rule','all-all')
 
         self.save=kwargs.get('save', {'active':False,
+                                      'overwrite':False,
                                       'path':''})
         self.sets=[]    
         self.source=kwargs.get('source', 'C0')
@@ -355,44 +368,56 @@ class Conn(object):
                          flag='Convergent'):
         '''
         For each node driver not surfs from the pool is considered 
+        
+        d_slice - slice for drivers (should be target=convergent connect). 
+                  Drivers if the surface in which each
+                  node is considered. Thus for each node in driver a set of 
+                  pool nodes are chosen. get_connectables is applied on
+                  each driver node.
         '''
         
         # For each driver as set of pool surfs considered depending on
         # driver position and allowed idx. Then the fan governs the probability
         # of making a connection to the set of pool surfs.
         d_idx=driver.get_idx(d_slice)
-        p_idx=pool.get_idx(p_slice)
         d_pos=driver.get_pos(d_slice)
-        
+        d_n=len(d_idx)#pool.get_n()        
         
         # Short cuts for speed up
-        get_connectables=pool.get_connectables
+        pool_get_connectables=pool.get_connectables
         fun_sum=lambda x,y: list(x)+list(y)
         fun_mul=lambda x,y: (x,)*y 
 
-        #surfs=[gc(pool.get_pos(v), *a, **k) for v in p_idx]
+        # All of length d_n    
+        pool_fan_driver_to=[fan_in]*d_n
+        pool_mask_dist=[self.mask]*d_n 
+        pool_mask_ids=[pool.get_idx(p_slice)]*d_n 
         
+        # arg consists of list of length of driver nodes. Thus 
+        # get_connectables is applied to each driver with arguments from the
+        # lists
+        arg=[d_pos, pool_fan_driver_to, pool_mask_dist, pool_mask_ids]
+        arg=zip(arg)    
+
+#         pool_conn=[]
+#         for a in arg:
+#             pool_conn.append(pool_get_connectables(*a))
+        # For each driver nod get_connectales is applied
+        pool_conn=map(pool_get_connectables, *arg) #get connectables belong to pool
         
-        n=len(d_idx)#pool.get_n()
+#         pool_conn=map_parallel(pool_get_connectables, 
+#                           *arg, **{'threads':self.threads})
         
-        
-            
-        fan_driver_to_pool=[fan_in]*n
-        mask_dist_pool=[self.mask]*n 
-        mask_ids_pool=[p_idx]*n 
-        arg=[d_pos, fan_driver_to_pool, mask_dist_pool, mask_ids_pool]
-        
-        pool=map_parallel(get_connectables, *arg, **{'threads':self.threads})
-#         pool=map(get_connectables, *arg) #get connectables belong to pool
-        
-        n_of_conn_per_driver=map(len, pool)
-        driver=map(fun_mul, d_idx, n_of_conn_per_driver)
+        # For each driver get number of pool neurons that have been chosen
+        # and then expand d_idx accordingly to get 
+        n_of_conn_per_driver=map(len, pool_conn)
+        driver_conn=map(fun_mul, d_idx, n_of_conn_per_driver)
         
         n1=len(self.pre)
         if flag=='Convergent':
-            pre, post=pool, driver
+            pre, post=pool_conn, driver_conn
         if flag=='Divergent':
-            pre, post=pool, driver            
+            pre, post=driver_conn, pool_conn            
             
         self.pre+=reduce(fun_sum, pre)
         self.post+=reduce(fun_sum, post) 
@@ -459,12 +484,14 @@ class Conn(object):
         # The for each node driver not surfs from the pool is considered
         
         # Divergent connections when driver = source and  pool = target.
-        # The for each node driver not surfs from the pool is considered
+        # Then for each node driver not surfs from the pool is considered
         driver=surfs[self.target]
         pool=surfs[self.source]
-#         pool=surfs[self.target]
-#         driver=surfs[self.source]        
-        if self.save['active'] and os.path.isfile(self.save['path'] +'.pkl'): 
+        
+        
+        if (self.save['active'] 
+            and not self.save['overwrite']
+            and os.path.isfile(self.save['path'] +'.pkl')): 
             d=data_to_disk.pickle_load(self.save['path'] )
             self.pre, self.post, self.sets=d
         
@@ -479,7 +506,7 @@ class Conn(object):
             s='Conn: {0:18} Connections: {1:8} Fan pool:{2:6} Time:{3:5} sec'
             a=[self.name, 
                len(self.pre), 
-               round(float(len(self.pre))/pool.get_n(),0),
+               round(float(len(self.pre))/driver.get_n(),0),
                round(t,2)]
             print s.format(*a)
             
@@ -507,10 +534,10 @@ class Conn(object):
         elif self.rule=='divergent':
             # Each presynaptic node connects to only one postsynaptic node.
             
+            post=list(driver.get_idx())*len(pool.get_idx())
+            pre=[len(driver.get_idx())*[idx] for idx in pool.get_idx()]
+            pre=reduce(lambda x,y:x+y,pre)
             
-            pre=list(pool.get_idx())*len(driver.get_idx())
-            post=[len(pool.get_idx())*[idx] for idx in driver.get_idx()]
-            post=reduce(lambda x,y:x+y,post)
             
 #             post=[driver.get_idx()[0] for _ in range(len(pool.get_idx()))]
             self.pre, self.post= pre, post
@@ -528,6 +555,7 @@ class Conn(object):
             pool_sets=pool.get_sets(self.rule.split('-')[0]) 
             for slice_dr, slice_po in zip(driver_sets, pool_sets):     
                 self._add_connections(slice_dr, slice_po, *args)
+
          
         assert isinstance(self.pre, list)            
         assert isinstance(self.post, list) 
@@ -584,7 +612,7 @@ def connect(popus, surfs, params_nest, params_conn, display_print=False):
         my_nest.MyCopyModel( params_nest[name], name)
         my_nest.SetDefaults(name, {'vt':source.ids[0]}) 
     
-    conns=create_connections(surfs, params_conn, display_print=False)
+    conns=create_connections(surfs, params_conn, display_print)
     connect_conns(params_nest, conns, popus, display_print)
     return conns
 
@@ -627,7 +655,7 @@ def create_connections(surfs, params_conn, display_print=False):
         
         conns.add(k, **v)
         
-        conns[k].set(surfs, display_print=False)
+        conns[k].set(surfs, display_print)
     return conns      
       
 def create_surfaces(params_surf):
@@ -666,6 +694,18 @@ class TestSurface(unittest.TestCase):
         self.assertEqual(len(s[1][0]),4)
         self.assertEqual(len(s[2]),m*m)
     
+    def test_apply_boundary_conditions(self):
+        m=100
+        n=Surface('unittest', **{'edge_wrap':True, 'n':m})
+        idx, pos=n._apply_boundary_conditions()
+        self.assertEqual(len(idx),m*2)
+        self.assertEqual(len(pos),m*2)
+        
+        n=Surface('unittest', **{'edge_wrap':False, 'n':m})
+        idx, pos=n._apply_boundary_conditions()
+        self.assertEqual(len(idx),m)
+        self.assertEqual(len(pos),m)
+        
     def test_apply_kernel(self):
         n=Surface('unittest', **{})
         fan=40
@@ -681,7 +721,8 @@ class TestSurface(unittest.TestCase):
     def test_apply_mask(self):
         m=100
         n=Surface('unittest', **{'n':100, 'extent':[-0.5,0.5]})
-        idx=n._apply_mask(n.get_pos()[1] , mask_dist=[-0.25,0.25], 
+        idx, pos=n._apply_boundary_conditions()
+        idx=n._apply_mask(idx, pos, n.get_pos()[1] , mask_dist=[-0.25,0.25], 
                           mask_ids=None)
         self.assertEqual(len(idx),  m/2+1)
         
@@ -690,19 +731,19 @@ class TestSurface(unittest.TestCase):
         fan=40
         p=fan/float(m)
         mask_dist=[-0.25,0.25]
-           
+            
         n=Surface('unittest', **{'n':m, 'extent':[-0.5,0.5]})
         p0=n.get_pos()[1] 
         l=[]
         for _ in range(1000):
             l.append(len(n.get_connectables( p0, fan, mask_dist, 
                                              mask_ids=None)))
-        
+         
         self.assertAlmostEqual(m*p, numpy.mean(l), delta=1.0)
 #         var=(m/2+1)*p*(1-p) #m/2+1 equals the number of ids returned by mask
 #         self.assertAlmostEqual(numpy.sqrt(var), numpy.std(l), delta=1.0)         
-   
-   
+     
+    
     def test_pos_edge_wrap(self):
         n=Surface('unittest', **{'n':100, 'extent':[-0.5,0.5]})
        
@@ -725,10 +766,14 @@ class TestConn(unittest.TestCase):
         sets=[my_slice(s, 100, 2) for s in range(2)]
         self.n_sets=len(sets)
         nd=Surface_dic()
-        nd.add('n1', **{'n':100, 'n_sets':2, 'sets':sets })
+        nd.add('i1', **{'n':100, 'n_sets':2, 'sets':sets })
+        nd.add('i2', **{'n':200, 'n_sets':2, 'sets':sets })
+        nd.add('i3', **{'n':50, 'n_sets':2, 'sets':sets })
         nd.add('n2', **{'n':100, 'n_sets':2, 'sets':sets})
         self.surfs=nd
-        self.source=nd['n1']
+        self.source=nd['i1']
+        self.source2=nd['i2']
+        self.source3=nd['i3']
         self.target=nd['n2']
         self.path_conn=HOME+'/results/unittest/conn/'
         self.path_learned=HOME+'/results/unittest/learned.pkl'
@@ -738,26 +783,41 @@ class TestConn(unittest.TestCase):
 
     
     def test_set_con(self):
-        rules=['1-1', 'all-all', 'set-set', 'set-not_set', 'all_set-all_set']     
+        rules=[ 'all-all',  '1-1', 'set-set', 'set-not_set', 'all_set-all_set',
+               'divergent']     
         l=[]
-
+        fan_in=15
         for rule in rules:
-            c=Conn('n1_n2', **{'fan_in':10.0, 'rule':rule})
-            c._set(self.source, self.target)
+            c=Conn('n1_n2', **{'fan_in':fan_in, 'rule':rule})
+            
             l.append(c)
             self.assertEqual(len(c.pre), len(c.post))
            
             if rule=='1-1':
+                c._set(self.source, self.target)
                 self.assertEqual(len(c.pre), self.target.get_n())
+            elif rule=='divergent':
+                c._set(self.source2, self.target)
+                self.assertEqual(len(c.pre), 
+                                 self.target.get_n()*self.source2.get_n())
             else:
-                self.assertAlmostEquals(len(c.pre), self.target.get_n()*10, delta=70)
-#            colors=['b','g','r','m']*10
+
+                c._set(self.target, self.source2)
+                self.assertAlmostEquals(fan_in, 
+                                        float(len(c.pre))/self.target.get_n(), 
+                                        delta=3)
+                c=Conn('n1_n2', **{'fan_in':fan_in, 'rule':rule})
+                c._set(self.target, self.source3)
+                self.assertAlmostEquals(fan_in, 
+                                        float(len(c.pre))/self.target.get_n(), 
+                                        delta=3)            
 #            for i, s in enumerate(c.sets):
 #                pylab.plot(c.pre[s], c.post[s], colors[i], marker='*',ls='')
 #            pylab.show()
 #            
     def test_set_save_load(self):
-        rules=['1-1', 'all-all', 'set-set', 'set-not_set', 'all_set-all_set']     
+        rules=['1-1', 'all-all', 'set-set', 'set-not_set', 'all_set-all_set',
+               'divergent']     
         k={'fan_in':10.0}
         l1=[]
         l2=[]
@@ -766,6 +826,7 @@ class TestConn(unittest.TestCase):
                       'source':self.source.get_name(),
                       'target':self.target.get_name(),
                       'save':{'active':True,
+                              'overwrite':False,
                              'path':self.path_conn+rule}})
             c1=Conn('n1_n2', **k)
             c1.set(self.surfs, display_print=False)
@@ -787,9 +848,9 @@ class TestConn(unittest.TestCase):
         c2=Conn('n1_n2', **{'weight':{'params':{'min':m-0.5,
                                                          'max':m+0.5}, 
                                               'type':'uniform'}})      
-        
+         
         create_dummy_learned_weights(self.path_learned, self.n_sets )
-        
+         
         c3=Conn('n1_n2', **{'weight':{'params':1, 
                                              'type':'learned', 
                                              'path':(self.path_learned)}})   
@@ -799,11 +860,11 @@ class TestConn(unittest.TestCase):
         d1=c1.get_weights()
         d2=c2.get_weights()
         d3=c3.get_weights()
-        
+         
         self.assertAlmostEqual(numpy.mean(d1), m, 10)
         self.assertAlmostEqual(numpy.mean(d2), m, 1)  
         self.assertAlmostEqual(numpy.std(d2), numpy.sqrt(1/12.), delta=0.02)
-
+ 
     def test_get_delays(self):
         m=1.
         c1=Conn('n1_n2', **{'delay':{'params':m, 
@@ -815,11 +876,11 @@ class TestConn(unittest.TestCase):
         c2._set(self.source, self.target) 
         d1=c1.get_delays()
         d2=c2.get_delays()
-        
+         
         self.assertAlmostEqual(numpy.mean(d1), m, 10)
         self.assertAlmostEqual(numpy.mean(d2), m, 1)  
         self.assertAlmostEqual(numpy.std(d2), numpy.sqrt(1/12.), delta=0.02)  
-      
+       
 class TestConn_dic(unittest.TestCase):
     def test_add(self):
         cd=Conn_dic()

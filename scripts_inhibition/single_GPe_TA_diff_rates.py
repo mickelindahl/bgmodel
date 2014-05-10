@@ -7,21 +7,20 @@ Created on Mar 19, 2014
 import single
 import toolbox.plot_settings as pl
 
-from single import (get_storages, optimize, run, run_XX, 
-                    set_optimization_val, show)
-from toolbox.network.manager import Builder_single_rest as Builder
+from single import (get_storages, optimize, run,  
+                    set_optimization_val, show_opt_hist)
+from toolbox.network.manager import Builder_single_GA_GI as Builder
 
 import pprint
 pp=pprint.pprint
 
-NAMES=['$GPe_{+d}^{TA}$',
-       '$GPe_{-d}^{TA}$']
 
 def get_kwargs_builder():
     k=single.get_kwargs_builder()
     k.update({'inputs': ['GIp', 'GAp', 'EAp', 'STp'],
               'single_unit':'GA',
-              'single_unit_input':'EAp'})
+              'single_unit_input':'EAp',
+              'TA_rates':[7.5, 10.0, 15.0, 20.0, 25.0]})
 
     return k
 
@@ -44,35 +43,25 @@ def get_setup():
        'hist_size':50.0,
        }
     
-    return single.get_setup(Builder,**k)
-
-def modify(dn):
-    dn['opt_rate']=[dn['opt_rate'][0]]
-    return dn
-    
+    dinfo, d={}, {}
+    dinfo['opt_rate'],d['opt_rate']=single.get_setup_opt_rate(Builder, k)
+    dinfo['hist'],d['hist']=single.get_setup_hist(Builder, k) 
+    return dinfo, d
+ 
 def main():   
     
     dinfo, dn = get_setup()
-    dn=modify(dn)
     ds = get_storages(__file__.split('/')[-1][0:-3], dn.keys(), dinfo)
-
-    dstim={}
-    dstim ['IV']=map(float, range(-300,300,100)) #curr
-    dstim ['IF']=map(float, range(0,500,100)) #curr
-    dstim ['FF']=map(float, range(0,1500,100)) #rate
   
     d={}
-    d.update(run_XX('IV', dn, [1]*4, ds, dstim))
-    d.update(run_XX('IF', dn, [1]*4, ds, dstim))
-    d.update(run_XX('FF', dn, [1]*4, ds, dstim))   
-    d.update(optimize('opt_rate', dn, [1]*1, ds, **{ 'x0':200.0}))   
+    d.update(optimize('opt_rate', dn, [1]*5, ds, **{ 'x0':200.0}))   
     set_optimization_val(d['opt_rate']['Net_0'], dn['hist']) 
-    d.update(run('hist', dn, [1]*2, ds, 'mean_rates'))                   
+    d.update(run('hist', dn, [1]*5, ds, 'mean_rates'))                   
 
 
-    _, axs=pl.get_figure(n_rows=2, n_cols=2, w=1000.0, h=800.0, fontsize=16) 
+    _, axs=pl.get_figure(n_rows=1, n_cols=1, w=1000.0, h=800.0, fontsize=16) 
 
-    show(dstim, d, axs, NAMES)
+    show_opt_hist(d, axs, '$GPe_{+d}^{TA}$',)
     
 
 if __name__ == "__main__":

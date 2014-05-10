@@ -156,41 +156,41 @@ class Mixin_spk(object):
         
 
                
-    def get_IF_curve(self):
-        
-        if self.isi_parts['y']==[]:
-            self.compute_set('isi_parts',*[],**{})
-        
-        isi={'curr':[], 'first':[], 'mean':[], 'last':[]}
-        x, y=self.get('isi_parts', attr_list=['x', 'y'])
-        
-        y=y.ravel()
-        for xx, yy in zip(x,y):
-            #if type(yy)!=list:
-            #    yy=[yy]
-                
-            for yyy in yy:
-                if not yyy.any():
-                    yyy=[1000000.]
-                isi['first'].append( yyy[ 0 ] )            # retrieve first isi
-                isi['mean'].append( numpy.mean( yyy ) )   # retrieve mean isi
-                isi['last'].append( yyy[ -1 ] )           # retrieve last isi
-                isi['curr'].append(xx[0])
-                
-                if isi['last'][-1]==0:
-                    print 'je'
-            n=len(yy)
-           
-        for key in isi.keys():
-            a=numpy.array(isi[key])
-            if a.shape[0]/n>=2:
-                a=a.reshape((a.shape[0]/n, n))
-            
-            
-            if key!='curr':
-                a=1000./a #Convert to firing rate
-            isi[key]=a
-        return isi['curr'], isi['first'], isi['mean'], isi['last']
+#     def get_IF_curve(self):
+#         
+#         if self.isi_parts['y']==[]:
+#             self.compute_set('isi_parts',*[],**{})
+#         
+#         isi={'curr':[], 'first':[], 'mean':[], 'last':[]}
+#         x, y=self.get('isi_parts', attr_list=['x', 'y'])
+#         
+#         y=y.ravel()
+#         for xx, yy in zip(x,y):
+#             #if type(yy)!=list:
+#             #    yy=[yy]
+#                 
+#             for yyy in yy:
+#                 if not yyy.any():
+#                     yyy=[1000000.]
+#                 isi['first'].append( yyy[ 0 ] )            # retrieve first isi
+#                 isi['mean'].append( numpy.mean( yyy ) )   # retrieve mean isi
+#                 isi['last'].append( yyy[ -1 ] )           # retrieve last isi
+#                 isi['curr'].append(xx[0])
+#                 
+#                 if isi['last'][-1]==0:
+#                     print 'je'
+#             n=len(yy)
+#            
+#         for key in isi.keys():
+#             a=numpy.array(isi[key])
+#             if a.shape[0]/n>=2:
+#                 a=a.reshape((a.shape[0]/n, n))
+#             
+#             
+#             if key!='curr':
+#                 a=1000./a #Convert to firing rate
+#             isi[key]=a
+#         return isi['curr'], isi['first'], isi['mean'], isi['last']
    
  
     def get_mean_rate_error(self, *args, **kwargs):
@@ -248,11 +248,11 @@ class Mixin_vm(object):
         Wraps SpikeListMatrix and VmListMatrix. Use dependency injection
         as design pattern.
         '''
-    
-        d={'voltage_trace':{'ids':[], 'x':[], 'y':[]},
-           'mean_voltage_parts':{'ids':[], 'x':[], 'y':[]},
-            }
-        self.data=d    
+        pass
+#         d={'voltage_trace':{'ids':[], 'x':[], 'y':[]},
+#            'mean_voltage_parts':{'ids':[], 'x':[], 'y':[]},
+#             }
+#         self.data=d    
    
     def plot_IV_curve(self, ax=None, sets=[], x=[], **k):
         if not self.isrecorded('mean_voltage_parts'):

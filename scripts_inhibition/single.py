@@ -3,236 +3,318 @@ Created on 21 mar 2014
 
 @author: mikael
 '''
-from toolbox.network.default_params import Single_unit, Inhibition
-from toolbox.network.engine import Network
+from copy import deepcopy
+from toolbox.data_to_disk import Storage_dic
+from toolbox.network import manager
+from toolbox.network.manager import compute, save, load
 from toolbox.network.optimization import Fmin
-from toolbox import misc, data_to_disk
-import pylab
-import numpy
+from toolbox import misc
 
+import pylab
+
+
+from os.path import expanduser
+home = expanduser("~")
+
+def _ud(k,d):
+    k=deepcopy(k)
+    k['kwargs_builder'].update(d)
+    return k
+            
 def beautify(axs):
     colors=['b', 'b', 'g','g',]
     linestyles=['-','--','-','--']  
+    linewidth=[2,2,2,2]  
     linestyles2=['solid','dashed','solid','dashed'] 
     
     for i in [0,2]:
-        for c, ls, l in zip(colors, linestyles, axs[i].get_lines()):
-            pylab.setp(l,color=c, linestyle=ls)
+        for c, ls, l,lw in zip(colors, linestyles, axs[i].get_lines(),
+                            linewidth):
+            pylab.setp(l,color=c, linestyle=ls, linewidth=lw)
             pylab.setp(axs[i].collections, color=c)
         axs[i].legend(loc='upper left')
-    
-    
-    for c, ls, i in zip(colors, linestyles, range(len(axs[1].collections))):
-        pylab.setp(axs[1].get_lines()[i*10:(i+1)*10],color=c, linestyle=ls)
+  
+    for c, ls, i, lw in zip(colors, linestyles, range(len(axs[1].collections)),
+                        linewidth):
+        pylab.setp(axs[1].get_lines()[i*10:(i+1)*10],color=c, linestyle=ls,
+                   linewidth=lw)
         pylab.setp(axs[1].collections, color=c)
     
     axs[1].legend(loc='upper left')
-    
+
     for p, c, ls in zip(axs[3].patches, colors, linestyles2):    
         pylab.setp(p, edgecolor=c, linestyle=ls) 
     ylim=list(axs[3].get_ylim())
     ylim[0]=0.0
     axs[3].set_ylim(ylim)
-          
-def build_general(**kwargs):
-    d={'simu':{
-               'mm_params':{'to_file':False, 'to_memory':True},
-               'print_time':False,
-               'save_conn':False,
-               'sd_params':{'to_file':False, 'to_memory':True},
-               'sim_stop':kwargs.get('sim_stop', 41000.0),
-               'sim_time':kwargs.get('sim_time', 41000.0),
-               'start_rec':kwargs.get('start_rec', 1000.0),
-               'stop_rec':kwargs.get('stop_rec',numpy.inf),
-               
-               'threads':kwargs.get('threads', 1),
-               },
-        'netw':{'rand_nodes':{'C_m':False, 'V_th':False, 'V_m':False},
-                }
-}
+    axs[3].legend_box_to_line()
+    
+def get_kwargs_builder():
+    return {'print_time':False, 
+            'rand_nodes':{'C_m':False, 'V_th':False, 'V_m':False},
+            'save_conn':{'overwrite':True},
+            'sim_stop': 5000.0,
+            'sim_time': 5000.0, 
+            'size':9.0, 
+            'start_rec':1000.0,
+            'threads':1}    
+    
+def _get_networks(Builder, **kwargs):
+    info, nets=manager.get_networks(Builder, 
+                         kwargs['kwargs_builder'], 
+                         kwargs['kwargs_engine'])
+    
+    return info, nets   
+
+
+ 
+
+def get_setup_IV(Builder, k):
+    a, b = _get_networks(Builder, **_ud(k, {'lesion':True, 
+                'mm':True, 
+                'sim_time':k.get('IV_time', 5000.), 
+                'size':k.get('IV_size', 9)}))
+    return a, b
+
+
+def get_setup_IF(Builder, k):
+    a, b = _get_networks(Builder, **_ud(k, {'lesion':True, 
+                'sim_time':k.get('IF_time', 5000.), 
+                'size':k.get('IF_size', 9)}))
+    return a, b
+
+
+def get_setup_FF(Builder, k):
+    a, b = _get_networks(Builder, **_ud(k, {'lesion':False, 
+                'size':k.get('FF_size', 50), 
+                'sim_time':k.get('FF_time', 5000.), 
+                'threads':k.get('threads', 50)}))
+    return a, b
+
+
+def get_setup_opt_rate(Builder, k):
+    a, b = _get_networks(Builder, **_ud(k, {'lesion':False, 
+                'size':k.get('FF_size', 50), 
+                'sim_time':k.get('opt_rate_time', 10000.), 
+                'sim_stop':k.get('opt_rate_time', 10000.), 
+                'threads':k.get('threads', 50)}))
+    return a, b
+
+
+def get_setup_hist(Builder, k):
+    a, b = _get_networks(Builder, **_ud(k, {'lesion':False, 
+                'size':k.get('hist_size', 200), 
+                'sim_time':k.get('IF_time', 10000.), 
+                'sim_stop':k.get('IF_time', 10000.), 
+                'threads':k.get('threads', 50)}))
+    return a, b
+
+def get_setup(Builder, **k):
+    '''
+    kwargs can contain 
+    'kwargs_builder' which is parameters set in the builder
+    'kwargs_engine' which is parameres for network
+    and  the forexample
+    'FF_size' which is a short cut to setting the size of FF simulation
+    population. This value is updated in the kwargs_builder by update
+    function
+    
+    '''
+
+    d={}
+    dinfo={}
+    
+    dinfo['IV'],d['IV']=get_setup_IV(Builder, k)
+    dinfo['IF'],d['IF']=get_setup_IF(Builder, k)
+    dinfo['FF'],d['FF']=get_setup_FF(Builder, k)  
+    dinfo['opt_rate'],d['opt_rate']=get_setup_opt_rate(Builder, k)
+    dinfo['hist'],d['hist']=get_setup_hist(Builder, k) 
+     
+    return dinfo, d
+
+def get_file_names(suffix, data_names):
+    file_name0=main_path()+suffix
+    file_names=[]
+    for s in data_names:
+        file_names.append(file_name0+'/'+s)
+    return file_names
+
+def get_storages(suffix, data_names, dinfo):
+    file_names=get_file_names(suffix, data_names) 
+    d= {}
+    for fn, dn in zip(file_names, data_names):
+        d[dn]=Storage_dic.load(fn)
+        d[dn].add_info(dinfo[dn])
+        d[dn].garbage_collect()
+
     return d
 
-def create_list_dop(su):
-    l = [{'netw':{'tata_dop':0.8}, 'node':{su:{'model':su}}}]
-    l += [{'netw':{'tata_dop':0.0}, 
-            'node':{su:{'model':su}}}]
+def main_path():
+    return home+ '/results/papers/inhibition/single/'
 
-    return l
+def _optimize(flag, net, storage_dic, d, from_disk, **kwargs):
 
-def create_list_dop_high_low(su):
-    l = [{'netw':{'tata_dop':0.8}, 'node':{su:{'model':su + '_low'}}}]
-    l += [{'netw':{'tata_dop':0.0}, 
-            'node':{su:{'model':su + '_low'}}}]
-    l += [{'netw':{'tata_dop':0.8}, 
-            'node':{su:{'model':su + '_high'}}}]
-    l += [{'netw':{'tata_dop':0.0}, 
-            'node':{su:{'model':su + '_high'}}}]
-    return l
-
-def creat_dic_specific(kwargs, su, inputs):
-    d = {'netw':{'size':kwargs.get('size', 9), 
-            'single_unit':su}, 
-        'node':{su:{'mm':{'active':kwargs.get('mm', False)}, 
-                'sd':{'active':True}, 
-                'n_sets':1}}}
-    for inp in inputs:
-        d['node'][inp] = {'lesion':kwargs.get('lesion', False)}
+    model = net.get_single_unit() 
+    inp = net.get_single_unit_input()  
+    attr='fmin'
+    f=[model]
+    if flag=='opt_rate':
+        x=['node.'+inp+'.rate']
+    if flag=='opt_curr':
+        x=['node.' + model + '.nest_params.I_e']
     
-    return d
-
-def create_nets(l, d, names):
-    nets = []
-    for name, e in zip(names, l):
-        dd = misc.dict_update(e, d)
-        par = Single_unit(**{'dic_rep':dd, 'other':Inhibition()})
-        net = Network(name, **{'verbose':True, 'par':par})
-        nets.append(net)
+    x0=kwargs.get('x0',900.)
     
-    return nets
-        
-def do(method, nets, loads, **kwargs):
-    module= __import__(__name__)
-    call=getattr(module, method)
-    if type(loads)!=list: 
-        loads=[loads for _ in nets]
-    
-    l=[]
-    for net, load in zip(nets, loads):
-        l.append(call(net, load, **kwargs))
-    return l
-
-def evaluate(obj, method, load, **k):
-    fileName=obj.get_path_data()+obj.get_name()+'_'+method
-    if load:
-        return data_to_disk.pickle_load(fileName)
-    else:
-        call=getattr(obj, method)
-        duds=call(**k)
-        data_to_disk.pickle_save(duds, fileName)
-        return duds
-
-def save_dud(*args):
-    for a in args:
-        data_to_disk.pickle_save(a, a.get_file_name())
-        
-    
-
-def optimize(net, load,  ax=None, opt=None, **kwargs):
-    if ax==None:
-        ax=pylab.subplot(111)
-    f=kwargs.get('f', ['FS'])
-    x=kwargs.get('x', ['node.CFp.rate'])
-    x0=kwargs.get('x0', 'CFp')
     opt={'netw':{'optimization':{'f':f,
                                 'x':x,
                                 'x0':x0}}}    
     net.par.update_dic_rep(opt)
     
-    kwargs={'model':net,
-            'call_get_x0':'get_x0',
-            'call_get_error':'sim_optimization', 
-            'verbose':True}
+    kwargs_fmin={'model':net,
+                 'call_get_x0':'get_x0',
+                 'call_get_error':'sim_optimization', 
+                 'verbose':True}
     
-    f=Fmin(net.name, **kwargs)
+    if not from_disk: 
+        f=Fmin(net.name, **kwargs_fmin)
+        dd={net.get_name():{model:{attr:f.fmin()}}}    
+        print dd 
+        save(storage_dic, dd)
+    elif from_disk:
+        filt = [net.get_name()] + [model] + [attr]
+        dd = load(storage_dic, *filt) 
 
-    data=evaluate(f, 'fmin', load,  **{})
+    dd=reduce_levels(dd,  [model] + [attr])
 
-    p,x,y=ax.texts, 0.02,0.9
-    if len(p):
-        x=p[-1]._x
-        y=p[-1]._y-0.1
-        
-        
-               
-    p=ax.text( x, y, net.get_name()+':'+str(data['xopt'][-1][0])+' Hz', 
-               transform=ax.transAxes, 
-        fontsize=pylab.rcParams['font.size']-2)
+    d = misc.dict_update(d, dd)
+     
+    return d 
+
+def optimize(flag, dn, from_disks, ds, **k):
+    d={} 
+    nets=dn[flag]
+    storage_dic=ds[flag]
     
-    return data 
-
-def plot_IV_curve(net, load, ax=None, **kwargs):
-    if ax==None:
-        ax=pylab.subplot(111)
-    curr=kwargs.get('curr',range(-200,300,100))
-    node=kwargs.get('node', 'FS')
-    k={'stim':curr,
-       'stim_name':'node.'+node+'.nest_params.I_e',
-       'stim_time':kwargs.get('sim_time',net.get_sim_time()),
-       'model':node}
-
-    dud=evaluate(net, 'sim_IV_curve', load, **k)['voltage_signal'] 
-    dud[node].plot_IV_curve(ax=ax, x=curr, **{'label':net.name, 
-                                              'marker':'o',
-                                              'linewidth':3.0}) 
+    for net, from_disk in zip(nets, from_disks):
+        d = _optimize(flag, net, storage_dic, d, from_disk, **k)
+    return {flag:d}    
 
 
-def plot_IF_curve(net, load, ax=None, **kwargs):
-    if ax==None:
-        ax=pylab.subplot(111)
-    curr=kwargs.get('curr',range(0,500,100))
-    node=kwargs.get('node', 'FS')
-    k={'stim':curr,
-       'stim_name':'node.'+node+'.nest_params.I_e',
-       'stim_time':kwargs.get('sim_time', net.get_sim_time()),
-       'model':node}
+def reduce_levels(dd, levels):
+    for level in levels:     
+        dd = misc.dict_remove_level(dd, level)
+    return dd
 
-    dud=evaluate(net, 'sim_IF_curve', load, **k)['spike_signal'] 
-    dud[node].plot_IF_curve(ax=ax, x=curr, **{'label':net.name, 
-                                              'linewidth':3.0}) 
+def _run(storage_dic, d, net, from_disk, attr):
+    model = net.get_single_unit()
 
-def plot_FF_curve(net, load, ax=None, **kwargs):
-    if ax==None:
-        ax=pylab.subplot(111)
-    rate=kwargs.get('rate',range(0,500,100))
-    node=kwargs.get('node', 'FS')
-    input=kwargs.get('input', 'CFp')
-    k={'stim':rate,
-       'stim_name':'node.'+input+'.rate',
-       'stim_time':kwargs.get('sim_time', net.get_sim_time()),
-       'model':node}
+    if not from_disk:
 
-    dud=evaluate(net, 'sim_FF_curve', load, **k)['spike_signal'] 
-    dud[node].plot_FF_curve(ax=ax, x=rate, **{'label':net.name, 
-                                              'linewidth':3.0}) 
-
-def plot_hist_isis(net, load, ax=None, **kwargs):
-    node=kwargs.get('node', 'FS')
-    dud=evaluate(net, 'simulation_loop', load, **{})['spike_signal']
-    dud[node].plot_hist_isis(ax=ax, **{'label':net.name, 'histtype':'step'})
-
-def plot_hist_rates(net, load, ax=None, **kwargs):
-    node=kwargs.get('node', 'FS')
-    dud=evaluate(net, 'simulation_loop', load, **{})['spike_signal']
-    st=dud[node].get_spike_stats()
-    st['rates']={'mean':round(st['rates']['mean'],2),
-                'std':round(st['rates']['std'],2),
-                'CV':round(st['rates']['CV'],2)}
-    dud[node].plot_hist_rates(ax=ax, t_start=net.get_start_rec(),
-                              t_stop=net.get_sim_stop(), 
-                              **{'label':net.name+' '+str(st['rates']), 'histtype':'step',
-                                 'bins':20})
-
-def sim(net, load, ax=None, **kwargs):
-    dud=evaluate(net, 'simulation_loop', load, **{})['spike_signal']
-    return dud
-
-# def plot_firing_rate(dud, load, ax=None, **kwargs):
-#     node=kwargs.get('node', 'FS')
-#     dud[node].plot_firing_rate(ax=ax, t_start=net.get_start_rec(),
-#                               t_stop=net.get_sim_stop(), 
-#                               **{'label':node})    
-#     
-# def plot_firing_rates(dud, load, ax=None, **kwargs):
-#     nodes=kwargs['nodes']
-#     for _ax, models in zip(ax, nodes):
-#         for name in models:
-#             kwargs['node']=name
-#             plot_firing_rate(dud, load, ax=_ax, **kwargs)
+        dd = {net.get_name(): net.simulation_loop()}
+        dd = compute(dd, [model], [attr])
+        save(storage_dic, dd)
+    elif from_disk:
+        filt = [net.get_name()] + [model] + [attr]
+        dd = load(storage_dic, *filt)
         
-        
+    dd=reduce_levels(dd,  [model] + [attr])
+    d = misc.dict_update(d, dd)
+    return d
+     
+       
+def run(flag, dn, from_disks, ds, attr):
+    d={}
+    nets=dn[flag]
+    storage_dic=ds[flag]
+    for net, from_disk in zip(nets, from_disks):
+        d=_run(storage_dic, d, net, from_disk, attr)
+    return {flag:d}
+
+def _run_XX(flag, storage_dic, stim, d, net, from_disk):
+    model = net.get_single_unit()
+    inp = net.get_single_unit_input()
     
-def set_optimization_val(datas, nets, **kwargs):
-    for d, n in zip(datas, nets):
-        x=kwargs.get('x', ['node.CFp.rate'])
-        dic=misc.dict_recursive_add({}, x[0].split('.'), d['xopt'][-1][0])
-        n.update_dic_rep(dic)
+    if flag=='IV':
+        attr='IV_curve'
+        stim_name='node.' + model + '.nest_params.I_e'
+        call=getattr(net, 'sim_IV_curve') 
+        
+    if flag=='IF':
+        attr='IF_curve'
+        stim_name='node.' + model + '.nest_params.I_e'
+        call=getattr(net, 'sim_IF_curve')     
+ 
+    if flag=='FF':
+        attr='FF_curve'
+        stim_name='node.'+inp+'.rate'
+        call=getattr(net, 'sim_FF_curve')             
+    
+    if not from_disk:
+        k = {'stim':stim, 
+             'stim_name':stim_name, 
+             'stim_time':net.get_sim_time(), 
+             'model':model} 
+         
+        dd = {net.get_name(): call(**k)}
+        dd = compute(dd, [model], [attr])
+        save(storage_dic, dd)
+    elif from_disk:
+        filt = [net.get_name()] + [model] + [attr]
+        dd = load(storage_dic, *filt)
+        
+    dd=reduce_levels(dd,  [model] + [attr])
+    d = misc.dict_update(d, dd)
+    return d
+
+
+def run_XX(flag, dn, from_disks, ds, dstim):
+    
+    d={} 
+    nets=dn[flag]
+    storage_dic=ds[flag]
+    stim=dstim[flag]
+    for net, from_disk in zip(nets, from_disks):
+        d = _run_XX(flag, storage_dic, stim, d, net, from_disk)
+                
+    return {flag:d}
+
+   
+def set_optimization_val(data, nets):
+    for net in nets:
+        inp = net.get_single_unit_input()
+        x='node.'+inp+'.rate' #kwargs.get('x', ['node.CFp.rate'])
+        dic=misc.dict_recursive_add({}, x.split('.'), data.xopt[-1][0])
+        net.update_dic_rep(dic)
+        
+        
+def show(dstim, d, axs, names):
+    for model, ax in zip(['IV', 'IF', 'FF'], axs):
+        for key, name in zip(sorted(d[model].keys()), names):
+            data=d[model][key]
+            
+            data.plot(ax, x=dstim[model], **{'label':name})
+    
+    for key in d['opt_rate'].keys():
+        data=d['opt_rate'][key]
+        data.plot(axs[3], names[0])
+    
+    for key, name in zip(sorted(d['hist'].keys()), names):
+        data=d['hist'][key]
+        data.hist(axs[3], **{'label':name})
+    
+    beautify(axs)
+    pylab.show()
+
+
+def show_opt_hist(d, axs, name):
+    
+    for key in sorted(d['opt_rate'].keys()):
+        data=d['opt_rate'][key]
+        data.plot(axs[0], name)
+    
+    for key in sorted(d['hist'].keys()):
+        data=d['hist'][key]
+        data.hist(axs[0])
+    
+#     beautify(axs)
+    pylab.show()

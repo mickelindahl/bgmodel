@@ -8,9 +8,10 @@ import toolbox.plot_settings as ps
 
 from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
+from toolbox.network import manager
 from toolbox.network.manager import compute, run, save, load
 from toolbox.network.manager import Builder_network as Builder
-from toolbox.network.manager import Director_networks as Director
+from toolbox.network.manager import Director
 import pprint
 pp=pprint.pprint
     
@@ -18,12 +19,13 @@ pp=pprint.pprint
 
 def show_fr(d):
     _, axs=ps.get_figure(n_rows=7, n_cols=1, w=1000.0, h=800.0, fontsize=10)  
-    labels=['Dop','No dop']*2
-    colors=['b', 'b', 'g', 'g']
-    linestyles=['--','-']*2
+    labels=['Dop','No dop']
+    colors=['b', 'g']
+    linestyles=['-','-']
     
     j=0
-    for k, v in d.items():
+    for k in sorted(d.keys()):
+        v=d[k]
 #         axs[0].set_title(k)
         for model, i in [['M1',0], ['M2', 1], ['FS',2],['GA',3], ['GI',4],
                          ['ST',5],['SN',6]]:
@@ -35,12 +37,13 @@ def show_fr(d):
             
 def show_hr(d):
     _, axs=ps.get_figure(n_rows=7, n_cols=1, w=1000.0, h=800.0, fontsize=10)   
-    labels=['Dop','No dop']*2
-    colors=['b', 'b', 'g', 'g']
-    linestyles=['solid','dashed']*2
+    labels=['Dop','No dop']
+    colors=['b', 'g']
+    linestyles=['solid','solid']
     j=0
-    for k, v in d.items():
-        
+    
+    for k in sorted(d.keys()):
+        v=d[k]
 #         axs[0].set_title(k)
         for model, i in [['M1',0], ['M2', 1], ['FS',2],['GI',3], ['GA',4],
                          ['ST',5],['SN',6]]:
@@ -62,18 +65,25 @@ def show_hr(d):
             axs[i].set_ylim(ylim)
         j+=1 
 
-def get_networks():
-    builder = Builder(**{'print_time':True, 
-                         'threads':4, 
-                         'sim_time':5000.0, 
-                         'sim_stop':5000.0, 
-                         'size':10000.0, 
-                         'start_rec':0.0, 
-                         'sub_sampling':1})
-    director = Director()
-    director.set_builder(builder)
-    info, nets = director.get_networks()
-    return info, nets
+def get_kwargs_builder():
+    return {'print_time':True, 
+            'threads':4, 
+            'save_conn':{'overwrite':True},
+            'sim_time':5000.0, 
+            'sim_stop':5000.0, 
+            'size':10000.0, 
+            'start_rec':0.0, 
+            'sub_sampling':1}
+
+def get_kwargs_engine():
+    return {'verbose':True}
+
+def get_metworks():
+    return manager.get_networks(Builder, 
+                                get_kwargs_builder(), 
+                                get_kwargs_engine())
+
+
 
 
 def main():
@@ -88,16 +98,15 @@ def main():
     
     models=['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN']
     
-    info, nets = get_networks()
+    info, nets = get_networks(Builder, get_kwargs_builder(), get_kwargs_engine())
 
     sd=Storage_dic.load(file_name)
     sd.add_info(info)
     sd.garbage_collect()
     
     d={}
-    for net, from_disk in zip(nets, [0]*2):
+    for net, from_disk in zip(nets, [1]*2):
         if not from_disk:
-#             storage_dic=Storage_dic.load(file_name)
             dd = run(net)  
             dd = compute(dd, models,  attr )      
             save(sd, dd)

@@ -7,11 +7,11 @@ Created on Jan 23, 2014
 
 import numpy
 import scipy.optimize as opt
-from toolbox import data_to_disk, misc
-from toolbox.misc import Stop_stdout, Stopwatch
 import unittest
+
+from toolbox.my_signals import Data_fmin
+from toolbox.misc import Stop_stdout, Stopwatch
 from toolbox.network.engine import Network_list
-import sys
 
 class Fmin(object):
     
@@ -63,7 +63,7 @@ class Fmin(object):
     def fmin(self):
                         
         self._fmin()    
-        return self.data
+        return Data_fmin(**self.data)
                        
     def _fmin(self):
         '''

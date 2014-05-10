@@ -322,16 +322,25 @@ class Perturbation(object):
 class Perturbation_list(object):
                                                                                              
     def __init__(self, *args, **kwargs):
-        ''' args as (dictionary, operation, dictionary, operation, ...  '''
+        ''' 
+        args as (dictionary, operation, dictionary, 
+        operation, ...  
+        '''
         
         self.name=kwargs.get('name', '')
-        self.list=[]
-    
+#         self.list=[]
+        self.dic={}
         iterator=[args[i:i+2] for i in range(0,len(args),2)]
  
-        for key, val, op in self.iterate(iterator):
-            self.list.append(Perturbation(key, val, op))
-            
+        for keys, val, op in self.iterate(iterator):
+            p=Perturbation(keys, val, op)     
+            key='.'.join(keys+[op])
+            self._add_to_dic(key, p)
+    
+    @property
+    def list(self):
+        return self.dic.values() 
+
     def __eq__(self, other):
         return not set(self.list).isdisjoint(set(other.list))
         
@@ -348,11 +357,7 @@ class Perturbation_list(object):
         
     def __add__(self, other):       
         new=deepcopy(self)
-        if other.name:
-            if new.name:
-                new.name+='-'+other.name
-            else:new.name=other.name
-        new.list+=other.list
+        new.append(other)
         return new
     
     def __radd__(self, other): 
@@ -360,25 +365,52 @@ class Perturbation_list(object):
         if not isinstance(other, Perturbation_list):
             return new
         
-        new.name+='-'+other.name
-        new.list+=other.list
+        new.append(other)
         return new
+    
+    def _add_to_dic(self, key, val):
+        if key in self.dic:
+            raise RuntimeError('Perturbation {} already exist')
         
-    def append(self, p):
-        assert type(p) is Perturbation_list,  "Not Perturbation_list object"
-        self.name+='_'+p.name
-        self.list+=p.list
+        self.dic[key]=val
+      
+    def append(self, other):
+        assert type(other) is Perturbation_list,  "Not Perturbation_list object"
+        if other.name:
+            if self.name:
+                self.name+='-'+other.name
+            else:self.name=other.name
+        
+        for p in other.list:
+            key='.'.join(p.keys+[p.op])
+            self._add_to_dic(key, p)
+
     
     def apply_pertubations(self, dic, display=False):
 
         for p in self.list:
-            dic=misc.dict_apply_operation(dic, p.keys, p.val, p.op)
-        
+            if not misc.dict_haskey(dic, p.keys):
+                continue
+            
+            try:
+                dic=misc.dict_apply_operation(dic, p.keys, p.val, p.op)
+            except Exception as e:
+                s=('\nTrying to apply perturbation {} \n'+
+                   'with keys {} with current value\n{}')
+                s=s.format(p, p.keys, misc.dict_recursive_get(dic, p.keys))
+                raise type(e)(e.message + s), None, sys.exc_info()[2]
+                
         if display:
             print 'perturbations applied ' 
                    
         return dic        
+    
+    def has(self, key):
+        return key in self.dic.keys()
 
+    def get(self, key):
+        return self.dic[key].val
+    
     def info(self):
         d={}
         for p in self.list:
@@ -394,10 +426,18 @@ class Perturbation_list(object):
             for key, val in misc.dict_iter(d):
                 yield key, val, op
    
-         
-                
-    def set_list(self, val):
-        self.list=val
+    def update_single(self, val):
+        key='.'.join(val.keys+[val.op])
+        self.dic[key]=val
+        
+        
+    def update_list(self, val):
+        for p in val:
+            key='.'.join(p.keys+[p.op])
+            self.dic[key]=p
+        
+     
+
         
 class Par_base(object):
     
@@ -647,6 +687,11 @@ class Par_base(object):
     def calc_tata_dop(self, *args):
         return self._get('netw','tata_dop')-self._get('netw','tata_dop0')   
          
+         
+    def _dep_update(self, keys, val, _id):
+        misc.dict_recursive_add(self.dep, keys+['val'], val)
+        misc.dict_recursive_add(self.dep, keys+['id'], _id)
+         
     def _dep(self, *args):
         ''' 
         Exampel:
@@ -658,11 +703,28 @@ class Par_base(object):
         '''
         if type(args)!=list:
             args=list(args)
+            
+            
+        args1=args[:-1]
+        if type(args1)!=list:
+            args1=list(args)
+                    
+        keys=args1+ [args[-1][5:]]
+
+        obj=misc.dict_recursive_get(self.dic_con, keys) 
+          
+        call=Call(args[-1], args[-2])
         if not misc.dict_haskey(self.dep, args):
-            val=Call(args[-1], args[-2]).do(self)
-            misc.dict_recursive_add(self.dep, args, val)
+            val=call.do(self)
+            self._dep_update(args, val, id(obj))
+#             misc.dict_recursive_add(self.dep, args, val)
         
-        return misc.dict_recursive_get(self.dep, args)
+        _id = misc.dict_recursive_get(self.dep, args+['id'])
+        if _id!=id(obj):
+            val=call.do(self)
+            self._dep_update(args, val, id(obj))             
+
+        return misc.dict_recursive_get(self.dep, args+['val'])
 
     def dic_print_change(self, s, d1, d2):
         
@@ -846,48 +908,65 @@ class Par_base(object):
                 yield conn, syn, model    
  
     def set_print_time(self, val):
-        self.update_dic_rep( {'simu':{'print_time':val}})
+        d= {'simu':{'print_time':val}}
+        self.update_perturbations(Perturbation_list(d,  '='))
+#         self.update_dic_rep( {'simu':{'print_time':val}})
  
     def set_sim_time(self, val):
-        self.update_dic_rep( {'simu':{'sim_time':val}})
+        d={'simu':{'sim_time':val}}
+        self.update_perturbations(Perturbation_list(d,  '='))
+        
+#         self.update_dic_rep( {'simu':{'sim_time':val}})
  
     def set_sim_stop(self, val): 
-        self.update_dic_rep({'simu':{'sim_stop':val}})
-        self.update_dic_rep( {'simu':{'stop_rec':val}})
+        
+        d={'simu':{'sim_stop':val,
+                   'stop_rec':val}}
+        self.update_perturbations(Perturbation_list(d,  '='))
+        
+#         self.update_dic_rep({'simu':{'sim_stop':val}})
+#         self.update_dic_rep( {'simu':{'stop_rec':val}})
 
-    def clear_dep(self, val):
+
+        
+    def clear_dep(self):
         self.dep={}
     
     def set_perturbation_list(self, val):
-        self.clear_dep(val)       
-        self.per=val        
+        self.per.update_list(val)    
+#         self.per=val        
         self.trigger_dic_update()    
 
-    def set_dic_rep(self, d): 
-        self.clear_dep(d)       
+    def set_dic_rep(self, d):      
         self.dic_rep=d
         self.trigger_dic_update()
 
     def trigger_dic_update(self):
+#         self.clear_dep() 
         self.update_dic_con()
         self.update_dic_dep()
         self.update_dic()
         
+    
     def update_dic(self):
         d={}
         d=misc.dict_update(d, self.dic_con)
-
         self.dic=misc.dict_update(d, self.dic_dep)
            
-    def update_dic_rep(self, d):
-        self.clear_dep(d)       
+    def update_dic_rep(self,d):     
         self.dic_rep=misc.dict_update(self.dic_rep, d) 
         self.trigger_dic_update()
  
     def update_dic_con(self):
         dic=self._get_par_constant()     
         for keys, val in misc.dict_iter(self.dic_rep):
-            dic=misc.dict_recursive_set(dic, keys, val)   
+            try:
+                dic=misc.dict_recursive_set(dic, keys, val)
+            except Exception as e:
+                s=('\nTrying to set dic_con at key {} with current'+
+                   ' value\n{} to {}')
+                s=s.format(keys, misc.dict_recursive_get(dic, keys), val )
+                raise type(e)(e.message + s), None, sys.exc_info()[2]
                          
         self.apply_pertubations(dic)     
         self.dic_con=dic
@@ -895,7 +974,14 @@ class Par_base(object):
     def update_dic_dep(self):                
         self.dic_dep=self._get_par_dependable()               
 
-
+    def update_perturbation(self, perturbation):
+        self.per.update_single(perturbation)
+        self.trigger_dic_update() 
+        
+    def update_perturbations(self, perturbation_list):
+        self.per.update_list(perturbation_list)
+        self.trigger_dic_update()        
+    
 class Par_base_mixin_dummy(object):
     def _get_par_constant(self):
         return {}
@@ -1012,8 +1098,9 @@ class Par_base_mixin(object):
             'lesion':False, 
             'mask':[-0.5, 0.5], 
             'rule':rule, 
-            'save':{'active':GetSimu('save_conn'),
-                    'path':sp}, 
+            'save':{'active':GetSimu('save_conn', 'active'),
+                    'overwrite':GetSimu('save_conn', 'overwrite'),
+                     'path':sp}, 
             'source':source,
             'syn':syn, 
             'target':target,
@@ -1194,6 +1281,7 @@ class Unittest_base(object):
         
         dic['simu']['print_time']=False
         dic['simu']['threads']=4
+        dic['simu']['save_conn']={'active':False, 'overwrite':False}
         dic['simu']['start_rec']=0.0
         dic['simu']['stop_rec']=numpy.Inf
         dic['simu']['sim_time']=stop
@@ -1211,7 +1299,6 @@ class Unittest_base(object):
         dic['simu']['path_figure']=df   
         dic['simu']['path_nest']=dn   
         
-        dic['simu']['save_conn']=False
     
         dic['netw']={}        
         dic['netw']['attr_popu']=self._get_attr_popu()
@@ -1620,7 +1707,7 @@ class Unittest_bcpnn_dopa_base(object):
 
         #m1_v1
         d=self._get_defaults_conn( 'm1_v1', 'm1_v1_nest',
-                              **{'conn_type':'constant',
+                                **{'conn_type':'constant',
                                   'rule':'divergent',
                                   'fan_in0':1})         
         dic['conn']['m1_v1']=d
@@ -1755,6 +1842,12 @@ class Unittest_bcpnn(Par_base, Unittest_bcpnn_base, Par_base_mixin):
 
 
 class Single_unit_base(object):
+  
+    def get_single_unit(self):
+        return self.dic['netw']['single_unit']
+
+    def get_single_unit_input(self):
+        return self.dic['netw']['single_unit_input']
     
     def _get_par_constant(self):
     
@@ -1764,6 +1857,9 @@ class Single_unit_base(object):
         if misc.dict_haskey(self.dic_rep, ['netw', 'single_unit']):
             single_unit=misc.dict_recursive_get(self.dic_rep, 
                                             ['netw', 'single_unit'])
+        if self.per.has('.'.join(['netw', 'single_unit', '='])):
+            single_unit=self.per.get('.'.join(['netw', 'single_unit', '=']))
+            
         else:
             for key in dic_other['node'].keys():
                 if dic_other['node'][key]['type']=='network':
@@ -1797,6 +1893,7 @@ class Single_unit_base(object):
         dic['netw']['input']={}
         dic['netw']['n_nuclei']={single_unit:1.}
         dic['netw']['single_unit']=single_unit
+        dic['netw']['single_unit_input']=None
         dic['netw']['sub_sampling']={}
 #       
         dic['node']={}
@@ -1894,8 +1991,9 @@ class Single_unit_base(object):
          
             sp=GetSimu('path_conn')+GetNetw('size', dtype=str)+'_'+file_name
             
-            vc['save']={'active':GetSimu('save_conn'),
-                        'path':sp}
+            vc['save']={'active':GetSimu('save_conn', 'active'),
+                         'overwrite':GetSimu('save_conn', 'overwrite'),
+                         'path':sp}
                     
             dic['conn'][new_conn]=vc
         
@@ -1933,7 +2031,7 @@ class InhibitionPar_base(object):
         dic['simu']['path_figure']=df
         dic['simu']['path_nest']=dn
         dic['simu']['print_time']=True
-        dic['simu']['save_conn']=True
+        dic['simu']['save_conn']={'active':True, 'overwrite':False}
         dic['simu']['sd_params']={'to_file':False, 'to_memory':True}
         dic['simu']['sim_time']=2000.0
         dic['simu']['sim_stop']=2000.0
@@ -1966,9 +2064,9 @@ class InhibitionPar_base(object):
         
         dic['netw']['n_actions']=3
            
-        dic['netw']['n_nuclei']={'M1':2791000/2.,
-                                 'M2':2791000/2.,
-                                 'FS': 0.02*2791000, # 2 % if MSN population
+        dic['netw']['n_nuclei']={'M1':2791000*0.425,
+                                 'M2':2791000*0.425,
+                                 'FS':2791000* 0.02, # 2 % if MSN population
                                  'ST': 13560.,
                                  'GI': 45960.*(1.-GetNetw('GA_prop')),
                                  'GA': 45960.*GetNetw('GA_prop'),
@@ -2052,15 +2150,19 @@ class InhibitionPar_base(object):
         
         # MSN-MSN    
         dic['nest']['M1_M1_gaba'] = {}
-        dic['nest']['M1_M1_gaba']['weight']   =  0.2    # Koos 2004 %Taverna 2004
+        dic['nest']['M1_M1_gaba']['weight']   =  0.6    # Taverna 2008
         dic['nest']['M1_M1_gaba']['delay']    =  1.7    # Taverna 2004          
         dic['nest']['M1_M1_gaba']['type_id'] = 'static_synapse'
         dic['nest']['M1_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_2']
         
         dic['nest']['M1_M2_gaba'] = deepcopy(dic['nest']['M1_M1_gaba'])
-        dic['nest']['M2_M1_gaba'] = deepcopy(dic['nest']['M1_M1_gaba'])
-        dic['nest']['M2_M2_gaba'] = deepcopy(dic['nest']['M1_M1_gaba'])
+        dic['nest']['M1_M2_gaba']['weight']   =  1.5    # Taverna 2008
         
+        dic['nest']['M2_M1_gaba'] = deepcopy(dic['nest']['M1_M1_gaba'])
+        dic['nest']['M2_M1_gaba']['weight']   =  1.8    # Taverna 2008
+
+        dic['nest']['M2_M2_gaba'] = deepcopy(dic['nest']['M1_M1_gaba'])
+        dic['nest']['M2_M2_gaba']['weight']   =  1.4    # Taverna 2008
         
         # FSN-MSN
         dic['nest']['FS_M1_gaba']={}
@@ -2078,12 +2180,13 @@ class InhibitionPar_base(object):
         
         # GPE-MSN    
         dic['nest']['GA_M1_gaba']={}
-        dic['nest']['GA_M1_gaba']['weight']   = 1.  # n.d. inbetween MSN and FSN GABAergic synapses    
+        dic['nest']['GA_M1_gaba']['weight']   = 2.  # Glajch 2013
         dic['nest']['GA_M1_gaba']['delay']    = 1.7 
         dic['nest']['GA_M1_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GA_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']   
         
         dic['nest']['GA_M2_gaba'] = deepcopy(dic['nest']['GA_M1_gaba'])
+        dic['nest']['GA_M2_gaba']['weight']   = 2.*2  ## Glajch 2013
        
             
         # CTX-STN
@@ -2276,7 +2379,7 @@ class InhibitionPar_base(object):
         dic['nest']['MS']['GABAA_1_Tau_decay'] =GetNest('FS_M1_gaba', 'tau_psc')
         
         # From GPE
-        dic['nest']['MS']['GABAA_3_Tau_decay'] = 8.          
+        dic['nest']['MS']['GABAA_3_Tau_decay'] = 24.          
         dic['nest']['MS']['GABAA_3_E_rev']     = -74. # n.d. set as for MSN and FSN
     
         dic['nest']['MS']['tata_dop'] = DepNetw('calc_tata_dop')
@@ -2341,7 +2444,7 @@ class InhibitionPar_base(object):
         dic['nest']['FS']['GABAA_1_Tau_decay']= GetNest('FS_FS_gaba','tau_psc')
           
         # From GPe
-        dic['nest']['FS']['GABAA_2_Tau_decay'] =   6.  # n.d. set as for FSN
+        dic['nest']['FS']['GABAA_2_Tau_decay'] =  24.  
         dic['nest']['FS']['GABAA_2_E_rev']    = -74.  # n.d. set as for MSNs
           
 #         dic['nest']['FS']['beta_E_L'] = 0.078
@@ -2585,7 +2688,13 @@ class InhibitionPar_base(object):
         GP_fi=GetNetw('GP_fan_in')
         GA_pfi=GetNetw('GP_fan_in_prop_GA')
         
-        MS_MS=int(round(2800*0.1/2.0))
+        M1_M1=int(round(2800*0.13))
+        M1_M2=int(round(2800*0.03))
+        M2_M1=int(round(2800*0.14))
+        M2_M2=int(round(2800*0.18))
+        
+        FS_M1=int(round(60*0.27))
+        FS_M2=int(round(60*0.18))
         
         GA_XX=GP_fi*GA_pfi
         GI_XX=GP_fi*(1-GA_pfi)
@@ -2596,14 +2705,14 @@ class InhibitionPar_base(object):
         d={'M1_SN_gaba':{'fan_in0': M1_SN, 'rule':'set-set' },
            'M2_GI_gaba':{'fan_in0': M2_GI, 'rule':'set-set' },
                    
-           'M1_M1_gaba':{'fan_in0': MS_MS, 'rule':'set-not_set' },
-           'M1_M2_gaba':{'fan_in0': MS_MS, 'rule':'set-not_set' },                     
-           'M2_M1_gaba':{'fan_in0': MS_MS, 'rule':'set-not_set' },
-           'M2_M2_gaba':{'fan_in0': MS_MS, 'rule':'set-not_set' },                     
+           'M1_M1_gaba':{'fan_in0': M1_M1, 'rule':'set-not_set' },
+           'M1_M2_gaba':{'fan_in0': M1_M2, 'rule':'set-not_set' },                     
+           'M2_M1_gaba':{'fan_in0': M2_M1, 'rule':'set-not_set' },
+           'M2_M2_gaba':{'fan_in0': M2_M2, 'rule':'set-not_set' },                     
           
-           'FS_M1_gaba':{'fan_in0': 10, 'rule':'all-all' },
-           'FS_M2_gaba':{'fan_in0': 10, 'rule':'all-all' },                       
-           'FS_FS_gaba':{'fan_in0': 10, 'rule':'all-all' },
+           'FS_M1_gaba':{'fan_in0': FS_M1, 'rule':'all-all' },
+           'FS_M2_gaba':{'fan_in0': FS_M2, 'rule':'all-all' },                       
+           'FS_FS_gaba':{'fan_in0': 9, 'rule':'all-all' },
          
            'ST_GA_ampa':{'fan_in0': 30, 'rule':'all-all' },
            'ST_GI_ampa':{'fan_in0': 30, 'rule':'all-all' },
@@ -4180,10 +4289,11 @@ class TestPerturbations(unittest.TestCase):
         p=sum(self.pert_list)
         self.assertEqual(p, self.per)
         
-        s=("label1_label2_label3\n"+
+        s=("label1-label2-label3\n"+
         "{'conn': {'i1_n1': {'fan_in': '*0.5'}},\n"
         " 'netw': {'size': '*0.5'},\n"
         " 'simu': {'start_rec': '=100'}}")
+
         self.assertEqual(s, p.info())
 
    
@@ -4203,28 +4313,28 @@ class TestMixinPar_base(object):
         first=self.par._get(*['node', self.test_node_model,'type'])
         second=self.par.dic_con['node'][self.test_node_model]['type']
         self.assertEqual(first, second)
-     
+      
     def test__get_list_add(self):
         l=['node', self.test_node_model]
         first=self.par._get(l+['type'])
         second=self.par.dic_con['node'][self.test_node_model]['type']
         self.assertEqual(first, second)
-     
-            
+      
+             
     def test_call_with__get(self):
         c1=self.C(*['_get','node', self.test_node_model,'type'])
         c2=self.par.dic_con['node'][self.test_node_model]['type']
         self.assertEqual(c1.do(), c2)
-            
+             
     def test__get_with_call(self):        
         c1=self.C(*['_get', 'node', self.test_node_model, 'model'])
         c2=self.par.dic_con['node'][self.test_node_model]['model']
         first=self.par._get(*['nest', c1,'C_m'])
         second=self.par.dic_con['nest'][c2]['C_m']
         self.assertEqual(first,second)
-                
+                 
     def test__get_functions(self):
-            
+             
         keys=dir(self.par)
         for key in keys:
             if key[0:3]=='_get':
@@ -4232,7 +4342,7 @@ class TestMixinPar_base(object):
                 args=[]  
                 call=getattr(self.par, key)
                 call(*args)
-    
+     
     def test_get_funtions(self):
         keys=dir(self.par)
         for key in keys:
@@ -4240,37 +4350,37 @@ class TestMixinPar_base(object):
                 #print key
                 call=getattr(self.par, key)
                 call(*[])
-           
- 
+            
+  
     def test_dic_integrity(self):
         d1=self.par._get_par_constant()
         d2=self.par._get_par_dependable()
-         
+          
         s='' 
         for keys, val in misc.dict_iter(d1):
             if not isinstance(val, Call):
                 continue
- 
+  
             if not misc.dict_haskey(d2, keys):
                 s+='dic_dep is missing key {}\n'.format(keys)
                 continue
-              
+               
             val2=misc.dict_recursive_get(d2, keys)
             if not val.do()==val2:
                 s+='dic_con:{} != dic_dep:{} at {}'.format(val,val2, keys)
-        
+         
         if s:
             print s
-              
+               
         self.assertFalse(s)        
-          
+           
     def test_change_val(self):
         sim_stop=self.par['simu']['sim_stop']
         self.par['simu']['sim_stop']=sim_stop*2
         self.par.dic_rep['simu']={'stop_rec':1000.0}
         self.assertFalse(sim_stop==self.par['simu']['sim_stop'])
-  
-        
+   
+         
     def test_input_par_added(self):
         '''
         Test that par is updated with par_rep for both constant
@@ -4278,14 +4388,14 @@ class TestMixinPar_base(object):
         '''
         dic_rep={'netw':{'size':20000.0}, # constant value    
                  'node':{self.test_node_model:{'n':100*3}}} # dependable value
-            
+             
         self.par.update_dic_rep(dic_rep)
         dic_post=self.par.dic
         dic_post_dep=self.par.dic_dep
         dic_post_con=self.par.dic_con
         dic_netw=self.par['netw'] #Test that get item works
         dic_node=self.par['node'] 
-            
+             
         l1=([dic_rep['netw']['size']]*3
             +[dic_rep['node'][self.test_node_model]['n']]*2)
         l2=[dic_post['netw']['size'], 
@@ -4294,13 +4404,13 @@ class TestMixinPar_base(object):
             dic_post['node'][self.test_node_model]['n'],
             dic_node[self.test_node_model]['n'],]
         self.assertListEqual(l1, l2)
-            
+             
         # Assert 'n' is not present in dependable dict any more
         if self.test_node_model in dic_post_dep['node'].keys():
             d=dic_post_dep['node'][self.test_node_model]
             self.assertFalse('n' in d.keys())
-    
-            
+     
+             
     def test_pertubations(self):
         l=self.pert
             
@@ -4609,7 +4719,7 @@ if __name__ == '__main__':
 #                         TestUnittestBcpnn,   
 #                         TestUnittestBcpnnDopa,   
 #                         TestUnittestStdp, 
-#                         TestSingleUnit,
+                        TestSingleUnit,
 #                         TestInhibition,
 #                         TestThalamus,
 #                         TestSlowwave,

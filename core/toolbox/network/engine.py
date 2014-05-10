@@ -3,33 +3,30 @@ Created on Jun 18, 2013
 
 @author: lindahlm
 '''
-from toolbox.network import structure
-from toolbox.network.data_processing import (Data_unit_spk,
-                                             Data_unit_vm,
-                                             Data_units_dic, 
-                                             Dud_list)
-from toolbox import my_nest, data_to_disk , misc
-from toolbox.my_population import MyPoissonInput, MyInput
-from toolbox.misc import Stopwatch, Stop_stdout
-import toolbox
-from toolbox.my_signals import Data_generic
-
-from copy import deepcopy
-from toolbox.network.default_params import (Inhibition, Slow_wave, Bcpnn_h0,  
-                                            Bcpnn_h1, Single_unit, 
-                                            Unittest, Unittest_extend, 
-                                            Perturbation_list,
-                                            Unittest_bcpnn_dopa, Unittest_stdp,
-                                            Unittest_bcpnn)
-import nest # Can not be first then I get segmentation Fault
 import numpy
+import os
 import pylab
-import time
 import unittest
-import os, sys
+import sys
 import pprint
 pp=pprint.pprint
 
+from copy import deepcopy
+
+from toolbox import my_nest, data_to_disk , misc
+from toolbox.misc import Stopwatch, Stop_stdout
+from toolbox.my_signals import Data_generic
+from toolbox.network import structure
+from toolbox.network.data_processing import (Data_unit_spk,
+                                             Data_unit_vm,
+                                             Dud_list)
+from toolbox.network.default_params import (Inhibition, Slow_wave, Bcpnn_h0,  
+                                            Bcpnn_h1, Single_unit, 
+                                            Unittest, Unittest_extend, 
+                                            Perturbation,
+                                            Perturbation_list,
+                                            Unittest_bcpnn_dopa, Unittest_stdp,
+                                            Unittest_bcpnn)
 
 
 
@@ -216,6 +213,8 @@ class Network_base(object):
     def get_name(self):
         return self.name
 
+    def get_print_time(self):
+        return self.par['simu']['print_time']
     def get_path_data(self):
         return self.path_data
 
@@ -234,6 +233,15 @@ class Network_base(object):
     def get_pertubation_list(self):
         return self.perturbation
 
+    def get_perturbations_optimization(self,x0):
+        l=[]
+        for x, val in zip(self.xopt, x0):
+            keys=x.split('.')
+            p=Perturbation(keys, val, '=')
+            l.append(p)
+            
+        return l
+
     def set_replace_pertubation(self, val):
         self.replace_perturbation=val
 
@@ -247,6 +255,22 @@ class Network_base(object):
     def get_sim_stop(self):
         return self.par.get_sim_stop()
     
+    def get_single_unit(self):
+        try:
+            return self.par.get_single_unit()
+        except Exception as e:
+            s='\nparameter class {} do not have single_unit'
+            s=s.format(self.par)
+            raise type(e)(e.message + s), None, sys.exc_info()[2]
+
+    def get_single_unit_input(self):
+        try:
+            return self.par.get_single_unit_input()
+        except Exception as e:
+            s='\nparameter class {} do not have single_unit'
+            s=s.format(self.par)
+            raise type(e)(e.message + s), None, sys.exc_info()[2]
+        
     def get_xopt_length(self):
         return len(self.xopt)
 
@@ -254,17 +278,11 @@ class Network_base(object):
         return self.x0opt
 
 
-    def init_optimization(self, x0):
+    def init_optimization(self):
         self.record=['spike_signal']
         self.reset=True
-        args=[]
-        for x, val in zip(self.xopt, x0):
-            keys=x.split('.')
-            d=misc.dict_recursive_add({}, keys, val)
-            args.extend([d,'='])
         
-        p=Perturbation_list(*args, **{'name':'_'.join(self.xopt)})    
-        self.set_perturbation_list(p)
+
             
     def set_kernel_status(self):
         #@todo: add with stop_stdpout here 
@@ -272,7 +290,7 @@ class Network_base(object):
             msg='No such directory. Need to create {}'.format(self.path_nest)
             raise IOError(msg)
         
-        my_nest.SetKernelStatus({'print_time':self.par['simu']['print_time'],
+        my_nest.SetKernelStatus({'print_time':self.get_print_time(),
                                  'data_path':self.path_nest, 
                                  'overwrite_files': True})    
  
@@ -326,10 +344,10 @@ class Network_base(object):
         self.set_print_time(False)
         self.reset=False
           
-        dud=self.simulation_loop()        
+        d=self.simulation_loop()        
 #         dud['spike_signal']['GI'].plot_firing_rate(win=1000)
 #         pylab.show()
-        return dud
+        return d
 
     def sim_IV_curve(self, **kwargs):
         if 'op' not in kwargs.keys():
@@ -347,19 +365,29 @@ class Network_base(object):
         return self._sim_XX_curve(flag='FF', **kwargs)
 
     def sim_optimization(self, x0):
-        
+
         if self.run_counter==0:
-            self.init_optimization(x0)
-        else:
-            for p, val in zip(self.par.per, x0):
-                p.set_val(val)
-                self.set_perturbation_list(self.par.per)
+            self.init_optimization()
+            
+        idx=[]
+        vals=[]
+        for i in range(len(x0)):
+            if x0[i]>=0:
+                continue
+            
+            idx.append(i)
+            vals.append(x0[i])
+            x0[i]=0.
+        print x0
+        l=self.get_perturbations_optimization(x0)
+        
+        for p in l:
+            self.update_perturbation(p)
                   
         if self.sim_time!=self.sim_stop:
             raise RuntimeError(('simulation time and simulation stop needs',
                                 ' to be equal'))
         
-#         dud=self.simulation_loop()['spike_signal']
         d1=self.simulation_loop()
         d2=self.pops.get('target_rate')
         
@@ -368,18 +396,21 @@ class Network_base(object):
             ss=d1[model]['spike_signal']
             ss.set_target_rate(d2[model])
             e.append(ss.get_mean_rate_error())
- 
-        #@todo let computations be done here
-        #obj=dud.cmp('mean_rate', **{'t_start':self.get_start_rec()})
-#         dud.compute_set('mean_rate', **{'t_start':self.get_start_rec()})
         
-        # ore here
-#         e=dud.get_mean_rate_error(**{'models':self.fopt})
+        for i, val in zip(idx, vals):
+            e[i]+=val
+        
 #         self.clear_dud(Data_unit_spk) 
         return e
     
     def set_par_perturbations(self, val):
         self.par.set_perturbation_list(val)
+
+    def update_perturbation(self, perturbation):
+        self.par.update_perturbation(perturbation)
+
+    def update_perturbations(self, perturbation_list):
+        self.par.update_perturbations(perturbation_list)
         
     def update_dic_rep(self, dic_rep):
         self.par.update_dic_rep(dic_rep)
@@ -460,7 +491,7 @@ class Network(Network_base):
         Possibility to change par.
         '''
         
-        with Stop_stdout(not self.verbose), Stopwatch('Calibrating...',
+        with Stop_stdout(not self.verbose), Stopwatch('Calibrating...\n',
                                                       self.stopwatch):
             pass
         
@@ -470,7 +501,7 @@ class Network(Network_base):
         properties and populations holds the nest representation.
         '''
           
-        with Stop_stdout(not self.verbose), Stopwatch('Building...',
+        with Stop_stdout(not self.verbose), Stopwatch('Building...\n',
                                                       self.stopwatch):
             my_nest.ResetKernel(threads=self.threads, print_time=False)  
 #             print self.par['simu']['sd_params']      
@@ -483,11 +514,11 @@ class Network(Network_base):
     def _do_connect(self):
         '''Connect all nodes in the model'''
      
-        with Stop_stdout(not self.verbose), Stopwatch('Connecting...',
+        with Stop_stdout(not self.verbose), Stopwatch('Connecting...\n',
                                                       self.stopwatch):        
 #             print self.params_conn
             args=[self.pops, self.surfs, self.params_nest, 
-                  self.params_conn, True]
+                  self.params_conn, self.verbose]
             
             self.conns=structure.connect(*args)
 
@@ -498,7 +529,7 @@ class Network(Network_base):
         if not os.path.isdir(self.path_nest):
             data_to_disk.mkdir(self.path_nest)
         
-        with Stop_stdout(not self.verbose), Stopwatch('Simulating...',
+        with Stop_stdout(not self.verbose), Stopwatch('Simulating...\n',
                                                       self.stopwatch):        
             self.set_kernel_status()
             my_nest.Simulate(self.sim_time)       
@@ -522,7 +553,7 @@ class Network(Network_base):
                 
             if self.replace_perturbation:
                 self.set_par_perturbations(self.replace_perturbation[0])
-                print self.replace_perturbation[0]
+#                 print self.replace_perturbation[0]
                 del self.replace_perturbation[0]
             
             if self.pops:           
@@ -943,7 +974,7 @@ class TestMixin_2(object):
         return replace_perturbation  
     
     def test_5_simulation_loop(self):
-               
+                
         d={'node':{self.node:{'nest_params':{'I_e':400.0}}}}
         network=self.class_network(self.name, **self.kwargs)  
         network.update_dic_rep(d)
@@ -951,10 +982,10 @@ class TestMixin_2(object):
         network.set_sim_stop(1000.0)     
         d=network.simulation_loop()
         spk=d[self.node]['spike_signal']  
-        
+         
         pylab.figure()
         ax=pylab.subplot(111)   
-
+ 
         spk.cmp('firing_rate').plot(ax,**{'win':100, 'label':'Mean'})  
         spk[:,0].cmp('firing_rate').plot(ax,**{'win':100, 'label':'Set 1'}) 
         spk[:,1].cmp('firing_rate').plot(ax,**{'win':100, 'label':'Set 2'}) 
@@ -972,20 +1003,20 @@ class TestMixin_2(object):
         ax=pylab.subplot(221)
         spk.cmp('firing_rate').plot(ax, **{'win':100, 'label':'Mean'})
         spk[:,0].cmp('firing_rate').plot(ax, **{'win':100, 'label':'Set 1'})
-                 
+                  
         kwargs.update({'update_par_rep':self.update_par_rep(self.node)})
         network=self.class_network(self.name, **kwargs)  
         network.reset=True
         d=network.simulation_loop()
         spk=d[self.node]['spike_signal']      
-    
+     
         ax=pylab.subplot(222)
         spk[0,:].cmp('firing_rate').plot(ax,**{'win':100, 'label':'Run 1'})
         spk[1,:].cmp('firing_rate').plot(ax,**{'win':100, 'label':'Run 2'})
         spk[2,:].cmp('firing_rate').plot(ax,**{'win':100, 'label':'Run 3'}) 
         spk.cmp('isi').hist(pylab.subplot(223))
 #         pylab.show() 
-         
+          
 #   
     def test_7_simulation_loop_x3_replace_pertubations(self):
         kwargs=deepcopy(self.kwargs)
@@ -997,8 +1028,8 @@ class TestMixin_2(object):
         pylab.figure()
         ax=pylab.subplot(221)
         spk.cmp('firing_rate').plot(ax, **{'win':100})
-                  
-                  
+                   
+                   
         kwargs.update({'replace_perturbation':self.replace_perturbation()})
         network=self.class_network(self.name, **kwargs)  
         network.reset=True
@@ -1025,7 +1056,7 @@ class TestMixin_2(object):
         vm.cmp('IV_curve').plot(ax, x=self.curr_IV,
                                      **{'label':'Mean', 'marker':'o'})
 #         pylab.show() 
-                       
+                        
     def test_90_IF_curve(self):
         network=self.class_network(self.name, **self.kwargs)  
         kwargs={'stim':self.curr,
@@ -1040,7 +1071,7 @@ class TestMixin_2(object):
         spk.cmp('IF_curve').plot(ax, part='first',**{'linewidth':3.0, 
                                                       'color':'g'})#       
 #         pylab.show() 
-                             
+                              
     def test_91_FF_curve(self):
         dic_rep={'simu':{'sd_params':{'to_file':False, 'to_memory':True}},
                          'netw':{'size':36.}}
@@ -1062,12 +1093,12 @@ class TestMixin_2(object):
 # 
     def test_92_voltage_trace(self):
         dic_rep=deepcopy(self.dic_rep)
-          
+           
         dic_rep['node'][self.node]['mm']['active']=True
         d={'node':{self.node:{'nest_params':{'I_e':400.0}}}}
-          
+           
         dic_rep=misc.dict_update(dic_rep,d)
-          
+           
         kwargs=deepcopy(self.kwargs)
         par=Unittest(**{'dic_rep':dic_rep})
         kwargs.update({ 'par':par,
@@ -1080,14 +1111,14 @@ class TestMixin_2(object):
         vm=d[self.node]['voltage_signal']
         spk=d[self.node]['spike_signal']
         pylab.figure()
-                
+                 
         obj=spk.wrap.as_spike_list()
         ax=pylab.subplot(111)
         obj=vm.cmp('voltage_traces', **{ 'spike_signal':obj})      
         obj.plot(ax, **{'id_list':[0]})
-                
+                 
 #         pylab.show()
-# 
+ 
     def test_93_optimization(self):
         dic_rep=deepcopy(self.dic_rep)
           
@@ -1103,7 +1134,7 @@ class TestMixin_2(object):
    
         e1=network.sim_optimization(x0)
         e2=network.sim_optimization([3000.0+200.0])
-          
+#         print e1,e2
         self.assertAlmostEqual(e1[0], 18, delta=3)
         self.assertAlmostEqual(e2[0], 28, delta=2)
 #         #pylab.show()

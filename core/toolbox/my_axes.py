@@ -1,7 +1,10 @@
 # coding:latin
 from matplotlib.axes import Axes 
 from matplotlib.ticker import MaxNLocator
-
+import numpy
+import pylab
+# import toolbox.plot_settings as pl
+import unittest
 
 class MyAxes(Axes):
     
@@ -103,8 +106,19 @@ class MyAxes(Axes):
     
     def _init_extra_attributes(self, fig=None):  
         if fig: fig.add_axes(self)  
+        
+    def legend_box_to_line(self):
     
-      
+        handels, labels=self.get_legend_handles_labels()
+        artist=[]
+        for hh in handels:
+            color=hh._edgecolor
+            linestyle=hh._linestyle
+            obj=pylab.Line2D((0,1),(0,0), color=color, linestyle=linestyle)
+            artist.append(obj)
+
+        self.legend(artist, labels)    
+          
     def my_push_axis(self, xaxis=True, yaxis=True ):
         '''
         Push x and/or y axis  out from plot 10 points. 
@@ -215,3 +229,34 @@ def convert(ax):
     return convert_super_to_sub_class(ax)
 
 
+
+class TestAxes(unittest.TestCase):
+    
+    
+    def test_legend_box_to_line(self):
+#         _, axs=pl.get_figure(n_rows=1, n_cols=1, w=1000.0, h=800.0, fontsize=16) 
+        fig = pylab.figure( facecolor = 'w' )
+        ax=MyAxes(fig, [ 0.1,  0.1,  0.5,0.5 ] )
+  
+        r=numpy.random.random(100)
+        ax.hist(r, **{'histtype':'step', 'label':'test 1'})
+        r=numpy.random.random(100)
+        ax.hist(r, **{'histtype':'step', 'label':'test 2', 'linestyle':'dashed'})
+        
+        ax.legend_box_to_line()
+#         pylab.show()
+    
+if __name__ == '__main__':
+    test_classes_to_run=[
+                         TestAxes
+                         ]
+    suites_list = []
+    for test_class in test_classes_to_run:
+        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+        suites_list.append(suite)
+
+    big_suite = unittest.TestSuite(suites_list)
+
+    unittest.TextTestRunner(verbosity=2).run(big_suite)
+    
+    #unittest.main() 

@@ -93,6 +93,9 @@ class Storage_dic(Base_dic):
             files1.append(storage.get_data_path())
         
         mypath=self.directory
+        if not os.path.isdir(mypath):
+            return
+            
         files2=[ os.path.join(mypath,f) for f in os.listdir(mypath) 
                if os.path.isfile(os.path.join(mypath,f)) ]
         
@@ -117,19 +120,18 @@ class Storage_dic(Base_dic):
         else:
             return Storage_dic(file_name)
     
-    @classmethod
-    def load_dic(cls, file_name, *filt):
+#     @classmethod
+    def load_dic(self, *filt):
               
-        s=cls.load(file_name)
         d={}
-        for keys, storage in misc.dict_iter(s):
+        for keys, storage in misc.dict_iter(self):
             if filt==():
                 pass
-            elif not keys[0] in filt:
-                continue
-            elif not keys[1] in filt:
-                continue
-            elif not keys[2] in filt:
+            a=False
+            for key in keys:
+                if key not in filt:
+                    a=True
+            if a:
                 continue
                        
             val=storage.load_data()

@@ -87,6 +87,21 @@ class Data_firing_rate_base(object):
 class Data_firing_rate(Data_element_base, Data_firing_rate_base):
     pass
 
+
+class Data_fmin_base(object):
+    def plot(self, ax, name, **k):
+        p,x,y=ax.texts, 0.02,0.9
+        if len(p):
+            x=p[-1]._x
+            y=p[-1]._y-0.1
+             
+        p=ax.text( x, y, name+':'+str(self.xopt[-1][0])+' Hz', 
+                   transform=ax.transAxes, 
+            fontsize=pylab.rcParams['font.size']-2)
+
+class Data_fmin(Data_element_base, Data_fmin_base):
+    pass
+
 class Data_IF_curve_base(object):
     def plot(self, ax, x=[], part='last', **k):
         if not ax:
@@ -1672,6 +1687,7 @@ class VmListMatrix(BaseListMatrix):
                                                      **kwargs)
         self.allowed=kwargs.get('allowed',['plot', 
                                            'get_voltage_traces',
+                                           'get_IV_curve'
                                            ]) 
 
         
@@ -1849,6 +1865,7 @@ def allowed_spike_list_functions():
     l=[
        'firing_rate',
        'get_firing_rate',
+       'get_IF_curve',
        'get_isi',
        'get_isi_IF',
        'get_mean_coherence',
