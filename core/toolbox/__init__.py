@@ -35,6 +35,7 @@ import my_population
 import my_signals
 import my_topology
 import plot_settings
+import pylab
 
 
 # def get_data_root_path(flag):

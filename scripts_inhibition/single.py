@@ -4,18 +4,18 @@ Created on 21 mar 2014
 @author: mikael
 '''
 from copy import deepcopy
-from toolbox import plot_settings
+
+from toolbox import pylab, misc
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
 from toolbox.network.manager import compute, save, load
 from toolbox.network.optimization import Fmin
-from toolbox import misc
-
-import pylab
-
 
 from os.path import expanduser
 home = expanduser("~")
+
+import pprint
+pp=pprint.pprint
 
 def _ud(k,d):
     k=deepcopy(k)
@@ -23,9 +23,9 @@ def _ud(k,d):
     return k
             
 
-def beautify_hist(ax, colors, linestyles):
-    for p, c, ls in zip(ax.patches, colors, linestyles):
-        pylab.setp(p, edgecolor=c, linestyle=ls)
+def beautify_hist(ax, colors, linestyles, linewidth):
+    for p, c, ls, ln in zip(ax.patches, colors, linestyles, linewidth):
+        pylab.setp(p, edgecolor=c, linestyle=ls, linewidth=ln)
     
     ylim = list(ax.get_ylim())
     ylim[0] = 0.0
@@ -53,8 +53,16 @@ def beautify(axs):
     
     axs[1].legend(loc='upper left')
 
-    beautify_hist(axs[3], colors, linestyles2)
-    
+    beautify_hist(axs[3], colors, linestyles2, linewidth)
+
+
+def get_if_argv(val, index, argv, data_type):
+    if len(argv) > index:
+        return data_type(argv[index])
+    else:
+        return val
+
+
 def get_kwargs_builder():
     return {'print_time':False, 
             'rand_nodes':{'C_m':False, 'V_th':False, 'V_m':False},
@@ -66,7 +74,7 @@ def get_kwargs_builder():
             'threads':1}    
     
 def _get_networks(Builder, **kwargs):
-    info, nets=manager.get_networks(Builder, 
+    info, nets, _=manager.get_networks(Builder, 
                          kwargs['kwargs_builder'], 
                          kwargs['kwargs_engine'])
     
@@ -78,6 +86,9 @@ def _get_networks(Builder, **kwargs):
 def get_setup_IV(Builder, k):
     a, b = _get_networks(Builder, **_ud(k, {'lesion':True, 
                 'mm':True, 
+               'rand_nodes':{'C_m':False, 
+                            'V_th':False, 
+                            'V_m':False},
                 'sim_time':k.get('IV_time', 5000.), 
                 'size':k.get('IV_size', 9)}))
     return a, b
@@ -85,6 +96,9 @@ def get_setup_IV(Builder, k):
 
 def get_setup_IF(Builder, k):
     a, b = _get_networks(Builder, **_ud(k, {'lesion':True, 
+                'rand_nodes':{'C_m':False, 
+                              'V_th':False, 
+                              'V_m':False},
                 'sim_time':k.get('IF_time', 5000.), 
                 'size':k.get('IF_size', 9)}))
     return a, b
@@ -94,7 +108,7 @@ def get_setup_FF(Builder, k):
     a, b = _get_networks(Builder, **_ud(k, {'lesion':False, 
                 'size':k.get('FF_size', 50), 
                 'sim_time':k.get('FF_time', 5000.), 
-                'threads':k.get('threads', 50)}))
+                'threads':k.get('threads', 4)}))
     return a, b
 
 
@@ -103,7 +117,7 @@ def get_setup_opt_rate(Builder, k):
                 'size':k.get('FF_size', 50), 
                 'sim_time':k.get('opt_rate_time', 10000.), 
                 'sim_stop':k.get('opt_rate_time', 10000.), 
-                'threads':k.get('threads', 50)}))
+                'threads':k.get('threads', 4)}))
     return a, b
 
 
@@ -112,7 +126,7 @@ def get_setup_hist(Builder, k):
                 'size':k.get('hist_size', 200), 
                 'sim_time':k.get('hist_time', 10000.), 
                 'sim_stop':k.get('hist_time', 10000.), 
-                'threads':k.get('threads', 50)}))
+                'threads':k.get('threads', 4)}))
     return a, b
 
 def get_setup(Builder, **k):
@@ -126,7 +140,18 @@ def get_setup(Builder, **k):
     function
     
     '''
-
+    k.update({'IV_time':5000.0,
+               'IV_size':9.0,       
+               'IF_time':5000.0,
+               'IF_size':9.0,
+               'FF_time':5000.0,
+               'FF_size':50.0,
+               'opt_rate_time':10000.0,
+               'opt_rate_size':50.0,
+               'hist_time':10000.0,
+               'hist_size':50.0,
+               'threads':16})
+    
     d={}
     dinfo={}
     
@@ -135,6 +160,7 @@ def get_setup(Builder, **k):
     dinfo['FF'],d['FF']=get_setup_FF(Builder, k)  
     dinfo['opt_rate'],d['opt_rate']=get_setup_opt_rate(Builder, k)
     dinfo['hist'],d['hist']=get_setup_hist(Builder, k) 
+    dinfo['fig'],d['fig']='figure',{}
      
     return dinfo, d
 
@@ -142,7 +168,11 @@ def get_file_names(suffix, data_names):
     file_name0=main_path()+suffix
     file_names=[]
     for s in data_names:
-        file_names.append(file_name0+'/'+s)
+        if s=='fig':
+            file_names.append(main_path()+'fig_'+suffix) 
+        else:
+            file_names.append(file_name0+'/'+s)
+    pp(file_names)
     return file_names
 
 def get_storages(suffix, data_names, dinfo):
@@ -271,7 +301,8 @@ def _run_XX(flag, storage_dic, stim, d, net, from_disk):
     elif from_disk:
         filt = [net.get_name()] + [model] + [attr]
         dd = load(storage_dic, *filt)
-        
+    
+    pp(dd)
     dd=reduce_levels(dd,  [model] + [attr])
     d = misc.dict_update(d, dd)
     return d
@@ -313,21 +344,20 @@ def show(dstim, d, axs, names):
         data.hist(axs[3], **{'label':name})
     
     beautify(axs)
-    pylab.show()
-
+    
 
 def show_opt_hist(d, axs, name):
-    
+    colors=misc.make_N_colors('jet',len(d['opt_rate'].keys()))
+    i=0
     for key in sorted(d['opt_rate'].keys()):
         data=d['opt_rate'][key]
-        data.plot(axs[0], name)
-    
+        data.plot(axs[0], name, **{'color':colors[i]})
+        i+=1
     for key in sorted(d['hist'].keys()):
         data=d['hist'][key]
         data.hist(axs[0])
-    colors=misc.make_N_colors('jet',len(d['opt_rate'].keys()))
+    
     linestyles=['solid']*len(colors)
-    beautify_hist(axs[0], colors, linestyles)   
-     
-#     beautify(axs)
-    pylab.show()
+    linewidth=[2]*len(colors)  
+    beautify_hist(axs[0], colors, linestyles, linewidth)   
+

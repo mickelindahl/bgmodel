@@ -901,7 +901,7 @@ def plot_plastic_dopa(d):
     ax.legend()   
     
     pylab.figure()
-    ax=pylab.subplot(211)    
+    ax=pylab.subplot(311)    
     i=1
     for v in ['z_i', 'z_j', 'z_j_c', 'e_i', 'e_j', 
               'e_ij', 'e_j_c', 'e_ij_c',]:
@@ -910,17 +910,17 @@ def plot_plastic_dopa(d):
   
     ax.legend()   
      
-    ax=pylab.subplot(212)    
+    ax=pylab.subplot(312)    
   
     for v in [ 'p_i', 'p_j',  'p_ij']:
         dc[v].plot(ax, **{'label':v, 'color':c[i], 'linewidth':2.0}) 
         i+=1
 
-    ax.legend()
+#     ax.legend()
          
-    pylab.figure()
+#     pylab.figure()
     i=1
-    ax=pylab.subplot(111)     
+    ax=pylab.subplot(313)     
   
     for v in [ 'p_i', 'p_j',  'p_ij',]:     
         ax.plot(dc[v].x,dc[v].y/max(dc[v].y), 
@@ -1267,8 +1267,8 @@ class TestUnittestBcpnnDopa_base(unittest.TestCase):
         self.class_par=Unittest_bcpnn_dopa
         dic_rep={}
 #         ['n_nuclei']={'n1':1, 'n2':1, 'm1':50}
-        dic_rep.update({'simu':{'sim_stop':5000.0,
-                                'sim_time':100.0,
+        dic_rep.update({'simu':{'sim_stop':1000.0,
+                                'sim_time':10.0,
                                 'threads':1,
                          'mm_params':{'to_file':False, 'to_memory':True},
                          'sd_params':{'to_file':False, 'to_memory':True}},

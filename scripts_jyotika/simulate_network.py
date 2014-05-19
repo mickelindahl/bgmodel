@@ -3,226 +3,83 @@ Created on Jun 27, 2013
 
 @author: lindahlm
 '''
-from copy import deepcopy
-import itertools
-import numpy
-import pylab  
-from toolbox.network.construction import Network
-from toolbox.network.default_params import Perturbation_list as pl
-from toolbox.network.default_params import Inhibition 
-from toolbox import misc, data_to_disk
-import toolbox.plot_settings as ps
+import os
+import pylab
 
+from scripts_inhibition.network import show_fr, show_hr
+from toolbox import misc
+from toolbox.data_to_disk import Storage_dic
+from toolbox.network import manager
+from toolbox.network.manager import compute, run, save, load
+from manager import Builder_network as Builder
 import pprint
 pp=pprint.pprint
-
-
-def create_dic(dic_calls, **kwargs):
-    d = {}
-    for method in dic_calls:
-        module = __import__(__name__)
-        call = getattr(module, method)
-        d = misc.dict_update(d, call(**kwargs))
     
-    return d
+DISPLAY=os.environ.get('DISPLAY')
 
-def create_net(name, dic_calls, per, **kwargs):
-    d = create_dic(dic_calls, **kwargs)
-        
-    par = Inhibition(**{'dic_rep':d, 
-                        'pertubation':per})
-    net = Network(name, **{'verbose':True, 
-                           'par':par})
-         
-    return net
+def get_kwargs_builder():
+    return {'print_time':False, 
+            'threads':12, 
+            'save_conn':{'overwrite':False},
+            'sim_time':5000.0, 
+            'sim_stop':5000.0, 
+            'size':3000.0, 
+            'start_rec':0.0, 
+            'sub_sampling':1}
 
-def create_nets(**kwargs):
-    
-    cc1=kwargs.get('call_rev',['low'])
-    cc2=kwargs.get('call_dop',['dop', 'no_dop'])    
-    cc3=kwargs.get('call_general',['general']) 
-    cc4=kwargs.get('call_sub_sampling',['sub_sampling_MSN']) 
-    cc5=kwargs.get('call_lesion',['lesion']) 
-    pl=kwargs.get('pl',[perturbations()[0]])
-    
-    nets=[]
-    for c1, c2, c3, c4, c5, p in iter_comb(cc1,cc2,cc3,cc4,cc5, pl):
-        name='Test_net_'+'_'.join([c1, c2, p.name])
-        net=create_net(name, [c1,c2, c3, c4, c5], p, **kwargs)
-        nets.append(net)
-    return nets
+def get_kwargs_engine():
+    return {'verbose':True}
 
-def general(**kwargs):
-    d={'simu':{
-               'mm_params':{'to_file':False, 'to_memory':True},
-               'print_time':kwargs.get('print_time', True),
-               'sd_params':{'to_file':False, 'to_memory':True},
-               'sim_stop':kwargs.get('sim_stop', 2000.0),
-               'sim_time':kwargs.get('sim_time', 2000.0),
-               'start_rec':kwargs.get('start_rec', 1000.0),
-               'stop_rec':kwargs.get('stop_rec', numpy.inf),
-                
-               'threads':kwargs.get('threads', 2),
-               },
-       'netw':{'size':kwargs.get('size',500.0)}}
-    return d
+def get_networks():
+    return manager.get_networks(Builder, 
+                                get_kwargs_builder(), 
+                                get_kwargs_engine())
 
-def low(**kwargs):
-    return {'node':{'M1':{'model':'M1_low'},
-                    'M2':{'model':'M2_low'},
-                    'FS':{'model':'FS_low'}}}
-          
-def high(**kwargs):
-    return {'node':{'M1':{'model':'M1_high'},
-                    'M2':{'model':'M2_high'},
-                    'FS':{'model':'FS_high'}}}
-def dop(**kwargs):
-    return {'netw':{'tata_dop':0.8}}
-
-def no_dop(**kwargs):
-    return {'netw':{'tata_dop':0.0}}
-
-def sub_sampling_MSN(**kwargs):
-    d={'netw':{'sub_sampling':{'M1':kwargs.get('sub_sampling',200),
-                               'M2':kwargs.get('sub_sampling',200)}}}
-    return d
-
-
-def lesion(**kwargs):
-    conns=kwargs.get('lesion_conns',[])
-    d={}
-    for c in conns:
-        d=misc.dict_update(d, {'conn':{c:{'lesion':True}}})
-
-    
-    nodes=kwargs.get('lesion_nodes',[])
-    for n in nodes:
-        d=misc.dict_update(d, {'nodes':{n:{'lesion':True}}})
-
-
-    return d
-    
-def perturbations():
-    
-    l=[]
-    l+=[pl()]
-    l+=[pl('Size-'+str(val), ['netw.size',  val, '*']) 
-        for val in [0.5, 1.0, 1.5]] 
-    l+=[pl('M2r-' +str(val), ['node.C2.rate', val, '*']) 
-        for val in [1.3, 1.2, 1.1, 0.9, 0.8]] 
-    l+=[pl('GAr-' +str(val), ['node.EA.rate', val, '*']) 
-        for val in [0.8, 0.6, 0.4, 0.2]] 
-    l+=[pl('GISTd-0.5', ['nest.GI_ST_gaba.delay', 0.5, '*'])]    # from GPe type I to STN  
-    l+=[pl('STGId-0.5', ['nest.ST_GA_ampa.delay', 0.5, '*'])]     # from STN to GPe type I and A  
-    l+=[pl('Bothd-0.5', [['nest.GI_ST_gaba.delay',0.5, '*'], 
-                         ['nest.ST_GA_ampa.delay',0.5, '*']])]
-    l+=[pl('V_th-0.5', ['netw.V_th_sigma',0.5, '*'])]
-    l+=[pl('GAfan-'+str(val), ['netw.prop_fan_in_GPE_A', val, '*' ]) 
-        for val in [2, 4, 6]]
-    l+=[pl('GArV-0.5', [['netw.V_th_sigma',0.5, '*'], 
-                        ['nest.GI_ST_gaba.delay', 0.5, '*']])]
-    
-    return l
-
-
-
-def iter_comb(*args):
-    l=list(itertools.product(*args))
-    for a in l:
-        yield a
-    
-def sim(obj, load, *args, **kwargs):
-    fileName=obj.get_path_data()+obj.get_name()
-    if load:
-        return data_to_disk.pickle_load(fileName)
-    else:
-        dud=evaluate('simulation_loop', obj, *args, **kwargs)['spike_signal']
-        dud.set_file_name(fileName)
-        save_dud(dud)
-        
-    return dud
-
-def do(method, *args, **kwargs):
-    
-    module= __import__(__name__)
-    call=getattr(module, method)
-       
-    l=[]
-    for a in zip(*args):
-        l.append(call(*a, **kwargs))
-    return l
-
-def evaluate(method, obj, **k):
-    call=getattr(obj, method)
-    duds=call(**k)
-    return duds
-
-def save_dud(*args):
-    for a in args:
-        data_to_disk.pickle_save(a, a.get_file_name())
-
-def plot_firing_rate(net, dud, ax=None, **kwargs):
-    node=kwargs.get('node', 'FS')
-    dud[node].plot_firing_rate(ax=ax, t_start=net.get_start_rec(),
-                              t_stop=net.get_sim_stop(), 
-                              **{'label':node})    
-    
-def plot_firing_rates(*args, **kwargs):
-    nodes=kwargs['nodes']
-    for name in nodes:
-        kwargs['node']=name
-        plot_firing_rate(*args, **kwargs)
-
-
-def show_fr(duds, nets):
-    for id_dud in range(len(duds)):
-        _, axs=ps.get_figure(n_rows=6, n_cols=1, w=1000.0, h=800.0, fontsize=16)   
-        axs[0].set_title(nets[id_dud].name)
-        for model, i in [['M1',0], ['M2', 1], ['FS',2],['GA',3], ['GI',3],
-                         ['ST',4],['SN',5]]:
-            duds[id_dud][model].plot_firing_rate(ax=axs[i], **{'label':model}) 
-            
-def show_hr(duds, nets):
-    for id_dud in range(len(duds)):
-        _, axs=ps.get_figure(n_rows=6, n_cols=1, w=1000.0, h=800.0, fontsize=16)   
-        axs[0].set_title(nets[id_dud].name)
-        for model, i in [['M1',0], ['M2', 1], ['FS',2],['GI',3], ['GA',3],
-                         ['ST',4],['SN',5]]:
-            st=duds[id_dud][model].get_spike_stats()
-            st['rates']={'mean':round(st['rates']['mean'],2),
-                            'std':round(st['rates']['std'],2),
-                            'CV':round(st['rates']['CV'],2)}
-            h=duds[id_dud][model].plot_hist_rates(ax=axs[i],
-                                                **{'label':model+' '+str(st['rates']),
-                                                    
-                                                   'histtype':'step',
-                                                   'bins':20}) 
-            
-            ylim=list(axs[i].get_ylim())
-            ylim[0]=0.0
-            axs[i].set_ylim(ylim)
-        
-
-            
 def main():
+    k=get_kwargs_builder()
     
-    p=perturbations()
-    nets=create_nets(**{'size':5000.0, 
-                        'threads':4,
-                        'sim_time':2000.0, 
-                        'sim_stop':2000.0,
-                        'start_rec':0.0, 
-                        'print_time':True,
-                        'sub_sampling':1})
-    pp(nets[0].par.dic_rep)
-    print nets[0].par
+    from os.path import expanduser
+    home = expanduser("~")
+
+    attr=[ 'firing_rate', 
+           'mean_rates', 
+           'spike_statistic']  
     
+    kwargs_dic={'mean_rates': {'t_start':k['start_rec']},
+                'spike_statistic': {'t_start':k['start_rec']},}
+    file_name=(home+ '/results/papers/inhibition/network/jyotika'
+               +__file__.split('/')[-1][0:-3])
     
-    duds=do('sim', nets, [1]*2)
-    show_fr(duds, nets)
-    show_hr(duds, nets)
-    #save_dud(*duds)
+    models=['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN']
+    
+    info, nets, _ = get_networks()
+
+    sd=Storage_dic.load(file_name)
+    sd.add_info(info)
+    sd.garbage_collect()
+    
+    d={}
+    for net, from_disk in zip(nets, [1]*2):
+        if not from_disk:
+            dd = run(net)  
+            dd = compute(dd, models,  attr, **kwargs_dic)      
+            save(sd, dd)
+        elif from_disk:
+            filt=[net.get_name()]+models+attr
+            dd=load(sd, *filt)
+        d=misc.dict_update(d, dd)
+                                         
+    figs=[]
+
+    figs.append(show_fr(d, models, **{'labels':['Normal', 'Double STN-GPe TI']}))
+    figs.append(show_hr(d, models, **{'labels':['Normal', 'Double STN-GPe TI']}))
+    
+    sd.save_figs(figs)
+    
+    if DISPLAY: pylab.show()     
+
     pylab.show()
+ 
     
 
 if __name__ == "__main__":

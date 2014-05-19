@@ -3,91 +3,235 @@ Created on Aug 12, 2013
 
 @author: lindahlm
 '''
-from copy import deepcopy
 import numpy
-import pylab
-import simulate_network as sni
-from toolbox import plot_settings 
-# from toolbox.default_params import Perturbation_list as pl
-# from toolbox.default_params import Par_slow_wave
-
-# from toolbox.network_handling import Network_model, Network_models_dic
-from toolbox.my_axes import MyAxes 
+import os
 import pylab
 
-from simulate_network import (create_net, create_dic, do, iter_comb, 
-                               save_dud)
-from toolbox.network.default_params import Perturbation_list as pl
-from toolbox.network.engine import Network
-from toolbox.network.default_params import Inhibition, Slow_wave 
-import toolbox.plot_settings as ps
-import numpy
+from network import show_fr, show_hr, show_psd, show_coherence, show_phase_diff
+from toolbox import misc
+from toolbox.data_to_disk import Storage_dic
+from toolbox.network import manager
+from toolbox.network.data_processing import Data_units_relation
+from toolbox.network.manager import compute, run, save, load
+from toolbox.network.manager import Builder_slow_wave as Builder
+
 import pprint
 pp=pprint.pprint
-
-def create_nets(**kwargs):
     
-    l=[['low'],
-       ['dop', 'no_dop'],
-       ['general']]
-    l.append([perturbations()[0]])
+DISPLAY=os.environ.get('DISPLAY')
+THREADS=20
+def get_kwargs_builder(**k_in):
+    return {'print_time':True, 
+            'threads':THREADS, 
+            'save_conn':{'overwrite':False},
+            'sim_time':k_in.get('sim_time'), 
+            'sim_stop':k_in.get('sim_time'), 
+            'size':k_in.get('size'), 
+            'start_rec':0.0, 
+            'sub_sampling':1}
 
-    nets=[]
-    for a in iter_comb(*l):
-        name='_net_'+'_'.join(*([list(a[0:3])+[a[-1].name]]))
-        net=create_net(name, a[0:3], a[-1], **kwargs)
-        nets.append(net)
-        
-        
-    return nets
+def get_kwargs_engine():
+    return {'verbose':True}
+
+def get_networks(**k_in):
+    return manager.get_networks(Builder, 
+                                get_kwargs_builder(**k_in), 
+                                get_kwargs_engine())
 
 
-def create_net(name, dic_calls, per, **kwargs):
-    d = create_dic(dic_calls, **kwargs)
-        
-    par = Slow_wave(**{'dic_rep':d,
-                           'other':Inhibition(), 
-                           'pertubation':per})
+
+def compute_psd(d_pds, models, dd):
+    for key1 in dd.keys():
+        for model in models:
+            psd=dd[key1][model]['firing_rate'].get_psd(**d_pds)
+            dd[key1][model]['psd'] = psd
     
-    net = Network(name, **{'verbose':True, 
-                           'par':par})
-         
-    return net
 
-def perturbations():
+
+def create_relations(models_coher, dd):
+    for key in dd.keys():
+        for model in models_coher:
+            k1, k2 = model.split('_')
+            dd[key][model] = {}
+            obj = Data_units_relation(model, dd[key][k1]['spike_signal'], 
+                dd[key][k2]['spike_signal'])
+            dd[key][model]['spike_signal'] = obj
+
+def main(from_disk=2,
+         script_name=__file__.split('/')[-1][0:-3],
+         sim_time=40000.0,
+         size=20000.0):
     
-    l=sni.perturbations()
-    l+=[pl('p_mod-'+str(val), ['netw.input.oscillation.p_amplitude_mod',  val, '*']) for val in [0.8, 0.85, 0.9, 0.95]] 
-    return l
+    k=get_kwargs_builder()
+    from os.path import expanduser
+    home = expanduser("~")
 
-
-def show(duds, nets):
-  
+    d_pds={'NFFT':1024*4,
+           'fs': 1000.,
+           'noverlap':1024*2,
+           'threads':THREADS}
+    d_cohere={'fs':1000.0,
+              'NFFT':1024*4,
+              'noverlap':int(1024*2,),
+              'sample':10.,
+                      }
+    d_phase_diff={'lowcut':0.,
+                  'highcut':2.0,
+                  'order':3,
+                  'fs':1000.0,
+                  'bin_extent':10.,
+                  'kernel_type':'gaussian',
+                  'params':{'std_ms':5.,
+                            'fs': 1000.0}}
+    attr=[ 'firing_rate', 
+           'mean_rates', 
+           'spike_statistic']  
+    attr_coher=['mean_coherence',
+                'phase_diff']
     
-    for id_dud in range(len(duds)):
-        _, axs=ps.get_figure(n_rows=6, n_cols=1, w=1000.0, h=800.0, fontsize=16)   
-        axs[0].set_title(nets[id_dud].name)
-        duds[id_dud]['M1'].plot_firing_rate(ax=axs[0])
-        duds[id_dud]['M2'].plot_firing_rate(ax=axs[1])
-        duds[id_dud]['FS'].plot_firing_rate(ax=axs[2])
-        duds[id_dud]['GA'].plot_firing_rate(ax=axs[3])
-        duds[id_dud]['GI'].plot_firing_rate(ax=axs[3])
-        duds[id_dud]['ST'].plot_firing_rate(ax=axs[4])
-        duds[id_dud]['SN'].plot_firing_rate(ax=axs[5])  
+    kwargs_dic={'firing_rate':{'threads':THREADS},
+                'mean_rates': {'t_start':k['start_rec']+1000.},
+                'mean_coherence':d_cohere,
+                'phase_diff':d_phase_diff,
+                'spike_statistic': {'t_start':k['start_rec']+1000.},}
+    file_name=(home+ '/results/papers/inhibition/network/'
+               +script_name)
+    
+    models=['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN']
+    models_coher=['GI_GI', 'GI_GA', 'GA_GA', 'GA_ST','GI_ST' ]
+    
+    info, nets, _ = get_networks(**{'size':size, 'sim_time':sim_time})
+
+    sd=Storage_dic.load(file_name)
+    sd.add_info(info)
+    sd.garbage_collect()
+    
+    d={}
+    from_disks=[from_disk]*2
+    for net, fd in zip(nets, from_disks):
+        if fd==0:
+            dd = run(net)  
+            dd = compute(dd, models,  attr, **kwargs_dic)      
+            save(sd, dd)
             
-    
-    pylab.show()
+        elif fd==1:
+            filt=[net.get_name()]+models+['spike_signal']
+            dd=load(sd, *filt)
+            create_relations(models_coher, dd)       
+            dd = compute(dd, models_coher, attr_coher, **kwargs_dic)  
+            save(sd, dd)
 
-import pylab
-if __name__ == '__main__':
-    nets=create_nets(**{'sim_time':10000.0, 'sim_stop':10000.0, 'start_rec':1000.0,
-                        'size':10000.0, 'threads':4, 'print_time':True})
-    pp(nets[0].par.dic_rep)
-    pp(nets[0].replace_perturbation)
+        elif fd==2:
+            filt=[net.get_name()]+models+models_coher+['spike_signal']+attr+attr_coher
+            dd=load(sd, *filt)
+            
+            dd = compute(dd, models,  ['firing_rate'], **kwargs_dic)  
+            compute_psd(d_pds, models, dd)
+        d=misc.dict_update(d, dd)
+
     
-    duds=do('sim', nets, [1]*len(nets))
-    show(duds, nets)
-    save_dud(*duds)
+    if numpy.all(numpy.array(from_disks)==2):                     
+        figs=[]
+    
+        figs.append(show_fr(d, models))
+        figs.append(show_hr(d, models))
+        figs.append(show_psd(d, models=models))
+        figs.append(show_coherence(d, models=models_coher))
+        figs.append(show_phase_diff(d, models=models_coher))
+        
+        sd.save_figs(figs)
+    
+    if DISPLAY: pylab.show()  
+
+if __name__ == "__main__":
+    # stuff only to run when not called via 'import' here
+    main()
+    
+# from copy import deepcopy
+# import numpy
+# import pylab
+# import simulate_network as sni
+# from toolbox import plot_settings 
+# # from toolbox.default_params import Perturbation_list as pl
+# # from toolbox.default_params import Par_slow_wave
+# 
+# # from toolbox.network_handling import Network_model, Network_models_dic
+# from toolbox.my_axes import MyAxes 
+# import pylab
+# 
+# from simulate_network import (create_net, create_dic, do, iter_comb, 
+#                                save_dud)
+# from toolbox.network.default_params import Perturbation_list as pl
+# from toolbox.network.engine import Network
+# from toolbox.network.default_params import Inhibition, Slow_wave 
+# import toolbox.plot_settings as ps
+# import numpy
+# import pprint
+# pp=pprint.pprint
+# 
+# def create_nets(**kwargs):
+#     
+#     l=[['low'],
+#        ['dop', 'no_dop'],
+#        ['general']]
+#     l.append([perturbations()[0]])
+# 
+#     nets=[]
+#     for a in iter_comb(*l):
+#         name='_net_'+'_'.join(*([list(a[0:3])+[a[-1].name]]))
+#         net=create_net(name, a[0:3], a[-1], **kwargs)
+#         nets.append(net)
+#         
+#         
+#     return nets
+# 
+# 
+# def create_net(name, dic_calls, per, **kwargs):
+#     d = create_dic(dic_calls, **kwargs)
+#         
+#     par = Slow_wave(**{'dic_rep':d,
+#                            'other':Inhibition(), 
+#                            'pertubation':per})
+#     
+#     net = Network(name, **{'verbose':True, 
+#                            'par':par})
+#          
+#     return net
+# 
+# def perturbations():
+#     
+#     l=sni.perturbations()
+#     l+=[pl('p_mod-'+str(val), ['netw.input.oscillation.p_amplitude_mod',  val, '*']) for val in [0.8, 0.85, 0.9, 0.95]] 
+#     return l
+# 
+# 
+# def show(duds, nets):
+#   
+#     
+#     for id_dud in range(len(duds)):
+#         _, axs=ps.get_figure(n_rows=6, n_cols=1, w=1000.0, h=800.0, fontsize=16)   
+#         axs[0].set_title(nets[id_dud].name)
+#         duds[id_dud]['M1'].plot_firing_rate(ax=axs[0])
+#         duds[id_dud]['M2'].plot_firing_rate(ax=axs[1])
+#         duds[id_dud]['FS'].plot_firing_rate(ax=axs[2])
+#         duds[id_dud]['GA'].plot_firing_rate(ax=axs[3])
+#         duds[id_dud]['GI'].plot_firing_rate(ax=axs[3])
+#         duds[id_dud]['ST'].plot_firing_rate(ax=axs[4])
+#         duds[id_dud]['SN'].plot_firing_rate(ax=axs[5])  
+#             
+#     
+#     pylab.show()
+# 
+# import pylab
+# if __name__ == '__main__':
+#     nets=create_nets(**{'sim_time':10000.0, 'sim_stop':10000.0, 'start_rec':1000.0,
+#                         'size':10000.0, 'threads':4, 'print_time':True})
+#     pp(nets[0].par.dic_rep)
+#     pp(nets[0].replace_perturbation)
+#     
+#     duds=do('sim', nets, [1]*len(nets))
+#     show(duds, nets)
+#     save_dud(*duds)
 
 
 

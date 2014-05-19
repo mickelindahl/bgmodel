@@ -1,6 +1,7 @@
 #!/bin/sh
 #Input: Take module-DATE, nest-version, nest-install-dir and nest-source-models-dir as input
-# OBS need to define directory in were nest is installed.
+#Example: 
+# mikael@supermicro:~/opt/NEST/module$ 
 
 # Directory where nest have been installed
 export NEST_INSTALL_DIR="$3"

@@ -31,6 +31,8 @@ BCPNNDopaCommonProperties::BCPNNDopaCommonProperties() :
    gain_dopa_(1.0),
    k_pow_(1.0),
    K_(1.0),
+   min_bias_(0.00001),
+   min_weight_(0.00001),
    reverse_(1.0),
    sigmoid_(false),
    sigmoid_mean_(.5),
@@ -63,15 +65,17 @@ void BCPNNDopaCommonProperties::get_status(DictionaryDatum & d) const
 	def<nest::double_t>(d, "gain_dopa", gain_dopa_);
 	def<nest::double_t>(d, "k_pow", k_pow_);
 	def<nest::double_t>(d, "K", K_);
+	def<nest::double_t>(d, "min_bias", min_bias_);
+	def<nest::double_t>(d, "min_weight", min_weight_);
 	def<nest::double_t>(d, "reverse", reverse_);
+	def<bool>(d, "sigmoid", sigmoid_);
+	def<nest::double_t>(d, "sigmoid_mean", sigmoid_mean_);
+	def<nest::double_t>(d, "sigmoid_slope", sigmoid_slope_);
 	def<nest::double_t>(d, "tau_i", taui_);
 	def<nest::double_t>(d, "tau_j", tauj_);
 	def<nest::double_t>(d, "tau_e", taue_);
 	def<nest::double_t>(d, "tau_p", taup_);
 	def<nest::double_t>(d, "tau_n", tau_n_);
-	def<bool>(d, "sigmoid", sigmoid_);
-	def<nest::double_t>(d, "sigmoid_mean", sigmoid_mean_);
-	def<nest::double_t>(d, "sigmoid_slope", sigmoid_slope_);
 
 }
 
@@ -98,15 +102,18 @@ void BCPNNDopaCommonProperties::set_status(const DictionaryDatum & d,
   updateValue<nest::double_t>(d, "gain_dopa", gain_dopa_);
   updateValue<nest::double_t>(d, "k_pow", k_pow_);
   updateValue<nest::double_t>(d, "K", K_);
+  updateValue<nest::double_t>(d, "min_bias", min_bias_);
+  updateValue<nest::double_t>(d, "min_weight", min_weight_);
   updateValue<nest::double_t>(d, "reverse", reverse_);
+  updateValue<bool>(d, "sigmoid", sigmoid_);
+  updateValue<nest::double_t>(d, "sigmoid_mean", sigmoid_mean_);
+  updateValue<nest::double_t>(d, "sigmoid_slope", sigmoid_slope_);
   updateValue<nest::double_t>(d, "tau_i", taui_);
   updateValue<nest::double_t>(d, "tau_j", tauj_);
   updateValue<nest::double_t>(d, "tau_e", taue_);
   updateValue<nest::double_t>(d, "tau_p", taup_);
   updateValue<nest::double_t>(d, "tau_n", tau_n_);
-  updateValue<bool>(d, "sigmoid", sigmoid_);
-  updateValue<nest::double_t>(d, "sigmoid_mean", sigmoid_mean_);
-  updateValue<nest::double_t>(d, "sigmoid_slope", sigmoid_slope_);
+
 }
 
 nest::Node* BCPNNDopaCommonProperties::get_node()

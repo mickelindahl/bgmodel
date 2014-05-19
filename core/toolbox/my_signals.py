@@ -28,7 +28,7 @@ import pylab
 import unittest
 from toolbox import misc, my_axes
 from toolbox import signal_processing as sp
-
+from toolbox.parallelization import map_parallel
 # Import StandardPickleFile for saving of spike object
 from NeuroTools.io import StandardPickleFile
 
@@ -40,6 +40,8 @@ from NeuroTools.signals import VmList
 from NeuroTools.signals import SpikeList
 from NeuroTools.plotting import get_display, set_labels, set_axis_limits
 
+import pprint
+pp=pprint.pprint
 
 class Data_element_base(object):
     def __init__(self, **kwargs):
@@ -66,7 +68,30 @@ class Data_generic_base(object):
         ax.legend()
 
 class Data_generic(Data_element_base, Data_generic_base):
-    pass        
+    pass  
+
+
+class Data_phase_diff_base(object):
+    def hist(self, ax,  num=100.0, **k):
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+            
+        k['histtype']=k.get('histtype','step')
+        
+        
+        bins=numpy.linspace(-numpy.pi, numpy.pi, num)
+#         y=reduce(lambda x,y:list(x)+list(y),self.y)
+        ax.hist(numpy.array(self.y), bins,  **k)
+        ax.set_xlim(-numpy.pi, numpy.pi)
+        ax.set_xlabel('Angle (Rad)') 
+        ax.set_ylabel('Count') 
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+
+        
+class Data_phase_diff(Data_element_base, Data_phase_diff_base):
+    pass
+      
 class Data_firing_rate_base(object):
     def plot(self, ax, win=100, t_stop=0, t_start=numpy.inf, **k):
                 
@@ -84,6 +109,13 @@ class Data_firing_rate_base(object):
         ax.my_set_no_ticks(xticks=6, yticks=6)
         ax.legend()
 
+    def get_psd(self, **kwargs):
+        y,x=sp.psd(deepcopy(self.y), **kwargs)
+        d={'x':x, 'y':y}
+        return Data_psd(**d)
+
+        
+        
 class Data_firing_rate(Data_element_base, Data_firing_rate_base):
     pass
 
@@ -94,10 +126,10 @@ class Data_fmin_base(object):
         if len(p):
             x=p[-1]._x
             y=p[-1]._y-0.1
-        s=name+':'+str(self.xopt[-1][0])+' Hz fopt:'+str(self.fopt[-1])
+        s=name+':'+str(self.xopt[-1][0])+' Hz fopt:'+str(self.fopt[-1])[:6]
         p=ax.text( x, y, s, 
                    transform=ax.transAxes, 
-            fontsize=pylab.rcParams['font.size']-2)
+            fontsize=pylab.rcParams['font.size']-2, **k)
 
 class Data_fmin(Data_element_base, Data_fmin_base):
     pass
@@ -155,6 +187,7 @@ class Data_IV_curve_base(object):
             self.x=x 
             
         h=ax.plot(self.x, self.y, **k)
+        
         color=pylab.getp(h[0], 'color')   
         ax.fill_between(self.x, 
                         self.y-self.y_std,
@@ -167,13 +200,34 @@ class Data_IV_curve_base(object):
 class Data_IV_curve(Data_element_base, Data_IV_curve_base):
     pass
 
+class Data_mean_coherence_base(object):
+    def plot(self, ax,  x=[], **k):
+                
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+        if list(x):
+            self.x=x 
+           
+        h=ax.plot(self.x[2:], self.y[2:], **k)
+        ax.set_xlabel('Frequency (Hz)') 
+        ax.set_ylabel('Coherence') 
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+        return h
+
+        
+class Data_mean_coherence(Data_element_base, Data_mean_coherence_base):
+    pass
+
 class Data_mean_rates_base(object):
     def hist(self, ax, **k):
         if not isinstance(ax,my_axes.MyAxes):
             ax=my_axes.convert(ax)
             
         k['histtype']=k.get('histtype','step')
-            
+        
+        k['label']=k.get('label','')+' '+str(numpy.mean(self.y))[:4]
+        
         ax.hist(numpy.array(self.y), **k)
         ax.set_xlabel('Rate (Hz)')     
         ax.set_ylabel('Count (#)')
@@ -212,11 +266,42 @@ class Data_mean_rate_parts(Data_element_base, Data_mean_rate_parts_base):
     pass
 
 class Data_mean_rate_slices_base(object):
-    def hist(self):
-        raise NotImplementedError
+    def plot(self, ax=None, x=[], **k):
+                
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+        
+        if list(x):
+            self.x=x 
+            
+        h=ax.plot(self.x, self.y, **k)
+        
+        color=pylab.getp(h[0], 'color')   
+        ax.fill_between(self.x, 
+                        self.y-self.y_std,
+                        self.y+self.y_std, 
+                        facecolor=color, alpha=0.5)  
+        ax.set_xlabel('Current (pA)') 
+        ax.set_ylabel('Membrane potential (mV)') 
+        ax.legend()
     
 class Data_mean_rate_slices(Data_element_base, Data_mean_rate_slices_base):
     pass
+
+class Data_psd_base(object):
+    def plot(self, ax, **k):
+                
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+  
+        ax.plot(self.x[2:], self.y[2:], **k)
+        ax.set_xlabel('Frequency (Hz)')
+        ax.set_ylabel('Psd') 
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+
+class Data_psd(Data_element_base, Data_psd_base):
+    pass  
 
 class Data_spike_stat_base(object):
     pass
@@ -811,6 +896,9 @@ class MySpikeList(SpikeList):
 
     def Factory_firing_rate(self,*args, **kwargs): 
         time_bin=kwargs.get('time_bin', 1 )
+        if 'time_bin' in kwargs.keys():
+            del kwargs['time_bin']
+        
         t_start=kwargs.get('t_start', None)
         t_stop=kwargs.get('t_stop', None)
         x=self.time_axis_centerd(time_bin) 
@@ -824,6 +912,30 @@ class MySpikeList(SpikeList):
         d={'ids':self.id_list, 'x':x,  'y':y,}    
         return Data_firing_rate(**d)
 
+    def Factory_phase_diff(self, *args, **kwargs):
+        '''
+        Returns the phase of the population firing rate filters in the band
+        lowcut to highcut. 
+        '''
+        fs=kwargs.get('fs')
+        time_bin=int(1000/fs)
+        other=kwargs.get('other', None)
+        
+        assert other!=None, 'need to provide other spike list'
+        
+        signal1=self.firing_rate(time_bin, average=True, **kwargs)
+        signal2=other.firing_rate(time_bin, average=True, **kwargs)        
+        
+#         args=[lowcut, highcut, order, fs]
+        y=sp.phase_diff(signal1, signal2, kwargs)
+ 
+        d= {'ids1':self.id_list,
+            'ids2':other.id_list,
+            'x':self.time_axis_centerd(time_bin) , 
+            'y':y}
+
+        return Data_phase_diff(**d)
+
     def Factory_isis(self, *args, **kwargs):
         run=kwargs.get('run',1)
         y=numpy.array(self.isi(), dtype=object)
@@ -832,7 +944,32 @@ class MySpikeList(SpikeList):
            'x':x,
            'y':y}
         return Data_isis(**d)
+
+    def Factory_mean_coherence(self, *args, **kwargs):
+        fs=kwargs.get('fs',1000.0)
+        kwargs['fs']=fs
+        other=kwargs.get('other', None)
+        sample=kwargs.get('sample',10)
         
+        assert other!=None, 'need to provide other spike list'
+        
+        time_bin=int(1000/fs)
+        
+        ids1, ids2=shuffle(*[self.id_list, other.id_list],
+                           **{'sample':sample})
+               
+        sl1=self.id_slice(ids1)
+        sl2=other.id_slice(ids2)
+        
+        signals1=sl1.firing_rate(time_bin, average=False, **kwargs)
+        signals2=sl2.firing_rate(time_bin, average=False, **kwargs) 
+        
+        x, y=sp.mean_coherence(signals1, signals2, **kwargs)
+        d={'ids1':ids1,
+                'ids2':ids2, 
+                'x':x, 
+                'y':y,} 
+        return Data_mean_coherence(**d)       
     
     def Factory_mean_rates(self, *args, **kwargs):
         run=kwargs.get('run',1)
@@ -851,16 +988,30 @@ class MySpikeList(SpikeList):
             y.append(self.mean_rate(**kwargs)) 
             fr=self.firing_rate(1)
         y=numpy.array(y)
-        y=numpy.reshape(y,(repetitions,len(y)/repetitions))
+        y=numpy.reshape(y,(repetitions, len(y)/repetitions))
         y_std=numpy.std(y, axis=0)
         y_mean=numpy.mean(y, axis=0)
-        x=numpy.ones(len(y))
+        x=numpy.array(range(len(y_mean)))
         d={'ids':self.id_list,
-           'y':y,
-           'y_mean':y_mean, 
+           'y_raw_data':y,
+           'y':y_mean, 
            'y_std':y_std,
            'x':x}
         return Data_mean_rate_slices(**d) 
+
+    def Factory_psd(self, *args, **kwargs):
+        
+        NFFT=kwargs.get('NFFT', 256)
+        fs=kwargs.get('fs',1000)
+        noverlap=kwargs.get('noverlap',int(NFFT/2))
+        time_bin=int(1000/fs)
+        
+        signal=self.firing_rate(time_bin, average=True, **kwargs) 
+        y,x=sp.psd(signal, **kwargs)
+        d= {'ids':self.id_list,
+             'x':x , 
+             'y':y}
+        return Data_psd(**d)
 
     def Factory_spike_stat(self, *args, **kwargs):
         d={'rates':{},'isi':{}}
@@ -873,6 +1024,8 @@ class MySpikeList(SpikeList):
         d['isi']['std']=numpy.std(isi,axis=0)
         d['isi']['CV']=d['isi']['std']/d['isi']['mean']
         return Data_spike_stat(**d)
+
+
 
     @property
     def id_list(self):
@@ -927,40 +1080,80 @@ class MySpikeList(SpikeList):
                     output[numpy.int_(numpy.round( (j-start)/res ))]+=1
                 
         return output
- 
+    
+
+
+
+#     def spike_histogram(self, time_bin, normalized=True, binary=False, display=False, **kwargs):
+#         """
+#         Generate an array with all the spike_histograms of all the SpikeTrains
+#         objects within the SpikeList.
+#          
+#         Inputs:
+#             time_bin   - the time bin used to gather the data
+#             normalized - if True, the histogram are in Hz (spikes/second), otherwise they are
+#                          in spikes/bin
+#             display    - if True, a new figure is created. Could also be a subplot. The averaged
+#                          spike_histogram over the whole population is then plotted
+#             binary     - if True, a binary matrix of 0/1 is returned
+#             kwargs     - dictionary contening extra parameters that will be sent to the plot 
+#                          function
+#          
+#         See also
+#             firing_rate, time_axis
+#         """
+#         
+#         nbins      = self.time_axis(time_bin)
+# #         N          = len(self)
+# #         M          = len(nbins)
+#         spike_hist=[]
+# #         if newnum:
+# #             M -= 1
+# #         if binary:
+# #             spike_hist = numpy.zeros((N, M), numpy.int)
+# #         else:
+# #             spike_hist = numpy.zeros((N, M), numpy.float32)
+# #         subplot    = get_display(display)
+# #  
+# #         def fun(): 
+# 
+# 
+#         n=len(self.id_list)
+#         args=[[self.spiketrains[_id].spike_times for _id in self.id_list],
+#               [time_bin]*n, 
+#               [normalized]*n,
+#               [binary]*n, 
+#               [nbins]*n, 
+#               self.id_list]
+#         spike_hist=map_parallel(spike_histogram_fun, *args, 
+#                                 **{'threads': kwargs.get('threads',1)})
+# #         for idx, id in enumerate(self.id_list):
+# #  
+# #             self.fun(time_bin, normalized, binary, nbins, spike_hist, id)
+#          
+#         return numpy.array(spike_hist, dtype=numpy.float32)
+
+       
+            
+            
+             
     def firing_rate(self, time_bin, **kwargs):
         display=kwargs.get('display', False)
         average=kwargs.get('average', True)
         binary=kwargs.get('binary', False)
-        kwargs=kwargs.get('kwargs',{})
+
         call=super(MySpikeList, self)
-        
+#         result = self.spike_histogram(time_bin, **kwargs)
+#         if average:
+#             return numpy.mean(result, axis=0)
+#         else:
+#             return result  
+        kwargs=kwargs.get('kwargs',{})
         return call.firing_rate(time_bin, display, average, binary, kwargs)
 
-    def get_mean_coherence(self,**kwargs):
-        fs=kwargs.get('fs',1000.0)
-        kwargs['fs']=fs
-        other=kwargs.get('other', None)
-        sample=kwargs.get('sample',10)
-        
-        assert other!=None, 'need to provide other spike list'
-        
-        time_bin=int(1000/fs)
-        
-        ids1, ids2=shuffle(*[self.id_list, other.id_list],
-                           **{'sample':sample})
-               
-        sl1=self.id_slice(ids1)
-        sl2=other.id_slice(ids2)
-        
-        signals1=sl1.firing_rate(time_bin, average=False, **kwargs)
-        signals2=sl2.firing_rate(time_bin, average=False, **kwargs) 
-        
-        x, y=sp.mean_coherence(signals1, signals2, **kwargs)
-        return {'ids1':ids1,
-                'ids2':ids2, 
-                'x':x, 
-                'y':y,}
+    def get_mean_coherence(self,*args, **kwargs):
+        return self.Factory_mean_coherence(*args, **kwargs)
+
  
     def get_firing_rate(self, *args, **kwargs):
         return self.Factory_firing_rate(*args, **kwargs)
@@ -983,17 +1176,12 @@ class MySpikeList(SpikeList):
     def get_mean_rates(self, *args, **kwargs):
         return self.Factory_mean_rates(*args, **kwargs)
 
-    def get_psd(self, NFFT, fs, **kwargs):
-        
-        noverlap=kwargs.get('noverlap',int(NFFT/2))
-        time_bin=time_bin=int(1000/fs)
-        
-        signal=self.firing_rate(time_bin, average=True, **kwargs) 
-        y,x=sp.psd(signal, NFFT, fs, noverlap, **kwargs)
-        return {'ids':self.id_list,
-                 'x':x , 
-                 'y':y}
 
+
+
+    def get_psd(self, *args, **kwargs):
+        return self.Factory_psd(*args, **kwargs)
+    
     def get_phase(self, lowcut, highcut, order,  fs, **kwargs):       
         
         '''
@@ -1003,35 +1191,18 @@ class MySpikeList(SpikeList):
         time_bin=int(1000/fs)
         
         signal=self.firing_rate(time_bin, average=True, **kwargs)        
-        y=sp.phase(signal, lowcut, highcut, order, fs, **kwargs)
+        y=sp.phase(signal, **kwargs)
 
         return {'ids':self.id_list,
                 'x':self.time_axis_centerd(time_bin) , 
                 'y':y}
 
 
-    def get_phase_diff(self, lowcut, highcut, order,  fs, 
-                             **kwargs):       
-        
-        '''
-        Returns the phase of the population firing rate filters in the band
-        lowcut to highcut. 
-        '''
-        time_bin=int(1000/fs)
-        other=kwargs.get('other', None)
-        
-        assert other!=None, 'need to provide other spike list'
-        
-        signal1=self.firing_rate(time_bin, average=True, **kwargs)
-        signal2=other.firing_rate(time_bin, average=True, **kwargs)        
-        
-        args=[lowcut, highcut, order, fs]
-        y=sp.phase_diff(signal1, signal2, *args, **kwargs)
- 
-        return {'ids1':self.id_list,
-                'ids2':other.id_list,
-                'x':self.time_axis_centerd(time_bin) , 
-                'y':y}
+
+
+    def get_phase_diff(self, *args, **kwargs):       
+        return self.Factory_phase_diff(*args, **kwargs)
+
 
 
     def get_phases(self, lowcut, highcut, order,  fs, **kwargs):       
@@ -1043,7 +1214,7 @@ class MySpikeList(SpikeList):
         time_bin=int(1000/fs)
         
         signals=self.firing_rate(time_bin, average=False, **kwargs)        
-        y=sp.phases(signals, lowcut, highcut, order, fs, **kwargs)
+        y=sp.phases(signals, **kwargs)
 
         x=numpy.array(self.time_axis_centerd(time_bin)*len(signals))
         return {'ids':self.id_list,
@@ -1142,240 +1313,6 @@ class MySpikeList(SpikeList):
         self.ids.extend(spikelist.ids)
         self.ids.sort()
     
-
-    
-    def my_firing_rate_sliding_window(self, bin=100, display=True, id_list=[], step=1, stop=None, kwargs={}):
-        ''' 
-        Calculate spike rates at ``sample_step`` using s sliding rectangular 
-        window.
-        
-        Arguments:
-        bin           Bin size of sliding window
-        display       If True, a new figure is created. Could also be a subplot
-        id_list       List of ids to calculate firing rate for
-        step          Step size for moving sliding window (ms)
-        stop          End of spike train
-        kwargs        Additional plot arguments
-          
-        Here the window is centered over over each time point at sampe_step with 
-        window size equalling bin_size. Takes spike times, number of 
-        neurons no_neurons, bin_size and sample_step as input argument.
-        '''  
-        
-        ax = get_display(display)
-        
-        if stop is None: stop = self.t_stop
-        if not any(id_list): id_list = self.ids    
-        
-        spikes = {}     # dictionary with spike times   
-        for id in id_list: 
-            spikes[ id ] = self.spiketrains[ id ].spike_times.copy()                   
-        
-        n  = int( (stop - bin )/step )          # number of windows
-        f = bin/2                               # first window at bin/2
-        l = step*n + bin/2                      # last window at bin*n - bin/2 
- 
-        # Time axis for sliding windows, n_win + 1 due to end points 
-        # [ 0, 1, 2] -> two windows and tre timings
-        timeAxis = numpy.linspace(f, l, n + 1)           
-        
-        
-        firingRates = []                          # sliding time window data  
-        dataSpk   = []
-        
-        #! Calculate number of spikes in ms bins and then sliding window rates 
-        for id in id_list:
-                    
-            spk = spikes[id] 
-            dataSpk.append(spk)
-
-            i = 0
-            j = bin/2
-            j_max  = stop
-            rates = []
-                 
-            #! For each ms i in 0 to stop at step intervals 
-            for tPoint in timeAxis:                                    
-                
-                sum = numpy.sum( ( tPoint - bin/2 <= spk ) * ( spk < tPoint + bin/2 ) )
-                rates.append( 1000.0 * sum/float( bin ) )
-                  
-
-            firingRates.append(rates)
-        
-        firingRates = numpy.array(firingRates)        # Convert to np array
-   
-        meanFiringRates = numpy.mean( firingRates, axis = 0 )
-       
-        ax.plot(timeAxis, meanFiringRates,**kwargs)
-        ax.set_xlabel( 'Time (ms)' )
-        ax.set_ylabel( 'Frequency (spike/s)' )
-        
-        return timeAxis, firingRates, dataSpk   
-        
- 
-    def my_image_firing_rate_slide_window(self, bin=100, id_list=[], step=1, stop=None, display=True, kwargs={}):
-        '''
-        Function that create an image with bin size sliding window firing rate as 
-        calculated at step intervals. kwargs - dictionary contening extra 
-        parameters that will be sent to the plot function    
-        
-        Arguments:
-        bin           Bin size of sliding window
-        display       If True, a new figure is created. Could also be a subplot
-        id_list       List of ids to calculate firing rate for
-        step          Step size for moving sliding window (ms)
-        stop          End of spike train
-        kwargs        Additional plot arguments
-        
-        '''
-        ax = get_display(display)
-        
-        if not any(id_list): id_list = self.ids
-        
-        t, r, spk = self.my_firing_rate_sliding_window(bin, display, id_list, 
-                                                    step, stop, kwargs)
-               
-        kwargs.update( { 'origin' : 'lower', } )
-        image = ax.imshow(r, extent=[t[0],t[-1],self.ids[0],self.ids[-1]], 
-                          **kwargs)
-        ax.set_xlabel('Time (ms)')
-        ax.set_ylabel('Neuron #')
-        ax.set_aspect(aspect='auto')
-
-        return image
-
-    def my_spike_histogram_n_rep(self, bin=10, id_list=[], n_rep=1, normalized=True):
-        '''
-        Generate an array with all the spike_histograms of all the SpikeTrains. 
-        Each time series should be n_rep repeated simulations. Histogram is then
-        generated for one simulation period repeated n_rep times. It is thus
-        possible to supply several similar simulations and get the 
-        mean firing statistics for all of them. 
-        
-        Inputs:
-            bin        - the time bin used to gather the data
-            id_list    - list with ids to use for creation of histogram
-            n_rep      - number of experimental repetitions with same 
-                         stimulation. E.g. if n_runs=3
-            normalized - if True, the histogram are in Hz (spikes/second), 
-                         otherwise they are in spikes/bin
-
-        
-        In neurophysiology, this is similar to a peristimulus time histogram 
-        and poststimulus time histogram, both abbreviated PSTH or PST histogram, 
-        are histograms of the times at which neurons fire. These histograms are 
-        used to visualize the rate and timing of neuronal spike discharges in 
-        relation to an external stimulus or event. The peristimulus time 
-        histogram is sometimes called perievent time histogram, and 
-        post-stimulus and peri-stimulus are often hyphenated.
-        
-        To make a PSTH, a spike train recorded from a single neuron is aligned 
-        with the onset, or a fixed phase point, of an identical stimulus 
-        repeatedly presented to an animal. The aligned sequences are 
-        superimposed in time, and then used to construct a histogram.[2] 
-        
-        Construction procedure
-        For each spike train i
-        
-        1. Align spike sequences with the onset of stimuli that repeated n 
-           times. For periodic stimuli, wrap the response sequence back to 
-           time zero after each time period T, and count n (n_rep) as the 
-           total number of periods of data.
-        2. Divide the stimulus period or observation period T into N bins 
-           of size Δ seconds ( bin ).
-        3. Count the number of spikes k_i_j from all n sequences that 
-           fall in the bin j.
-        4. Calculate  i_j given by k_i_j/( n*Δ ) in units of estimated 
-           spikes per second at time j * Δ.
-
-        The optimal bin size Δ is a minimizer of the formula, (2k-v)/Δ2, where
-        k and v are mean and variance of k_i. [3]  
-                                                                       
-        '''
-        
-        if not any(id_list): id_list = self.ids
-        
-        spkList = self.id_slice( id_list )      # Retrieve spike trains 
-        
-        # Short cuts
-        start    = spkList.t_start 
-        period   = spkList.t_stop/float(n_rep) 
-        
-        spike_train_hist = {}       # Create data table for histogram
-           
-        # Add spikes to data
-        for id, spk in spkList.spiketrains.iteritems():
-            
-            
-            # First take modulus t_period of spike times ending up with a vector
-            # with spike times between 0 and period    
-            spikes_mod_period = spk.spike_times % period                                        
-            
-            # Create sequence of bins edges, histogram between 0 and period
-            bin_sequence = numpy.arange( start, period + bin, bin )    
-            
-            # Create histogram over bin sequence and convert to spikes per bin 
-            hist_n_rep, edges = numpy.histogram( spikes_mod_period, bin_sequence)
-            hist_n_rep        = hist_n_rep/float( n_rep )     
-        
-            spike_train_hist[ id ] = hist_n_rep     # Add to dictionary                                              
- 
-        # Create np array with all spike trains histograms   
-        histograms = numpy.array( spike_train_hist.values() )                                      
-        
-        # Convert data to spike rates
-        if normalized: histograms *= 1000.0/bin                                            
-
-        # Center time axis over bin mid points 
-        timeAxis = numpy.linspace(bin_sequence[0]+bin/2., 
-                                  bin_sequence[-1]-bin/2., 
-                                  len(bin_sequence)-1)
-        return timeAxis, histograms
-                                           
-    def my_image_spike_histogram(self, bin=10, display=True, id_list=[], n_rep=1, normalized=True, kwargs = {} ):
-        '''
-        Plot an image of all the spike_histograms generated by 
-        spike_histogram_n_rep
-    
-        
-        Arguments:
-        bin        - the time bin used to gather the data
-        display    - If True, a new figure is created. Could also be a subplot
-        id_list    - list with ids to use for creation of histogram
-        n_rep      - Number of experimental repetitions with same stimulation. 
-                     E.g. if n_runs=3 then it is assumed that three 
-                     experimental runs is recorded and the data will be 
-                     sliced up into three time intervals.
-        normalized - if True, the histogram are in Hz (spikes/second), 
-                     otherwise they are in spikes/bin
-        kwargs     . Additional plot arguments
-        '''        
-        
-        ax = get_display(display)
-        
-        timeAxis, histograms = self.spike_histogram_n_rep( bin, id_list, 
-                                                            n_rep, normalized )
-             
-        kwargs.update( { 'origin' : 'lower', } )
-        image = ax.imshow( histograms, **kwargs )
-        ax.set_xlabel( 'Time (ms)'     )
-        ax.set_ylabel( 'Neuron #'      )
-        ax.set_aspect( aspect = 'auto' )
-        
-        
-        n_points=len(timeAxis)
-        xticks = numpy.arange( 0, n_points, n_points*0.2)
-        xticklabels = numpy.arange( 0, timeAxis[-1], timeAxis[-1]*0.2)
-        ax.set_xticks( xticks )
-        ax.set_xticklabels( [ str( l ) for l in xticklabels ] )
-        
-        n_ids=len(id_list)
-        yticks =  numpy.arange( 0, n_ids, n_ids*0.2)
-        ax.set_yticks( yticks)
-        ax.set_yticklabels( id_list[ yticks ] )
-    
-        return image
            
     def my_plot_spike_histogram(self, bin=10, display=True, id_list=[], n_rep=1, normalized=True, kwargs = {} ):    
         '''
@@ -1594,6 +1531,15 @@ class MySpikeList(SpikeList):
         x=self.time_axis(time_bin) 
         
         return numpy.linspace(x[0]+time_bin/2., x[-1]-time_bin/2., len(x)-1)
+
+def spike_histogram_fun(spike_times, time_bin, normalized, binary, nbins, _id):
+    hist, edges = numpy.histogram(spike_times, nbins)
+    hist = hist.astype(float)
+    if normalized: # what about normalization if time_bin is a sequence?
+        hist *= 1000.0 / float(time_bin)
+    if binary:
+        hist = hist.astype(bool)
+    return hist
     
 class BaseListMatrix(object):
     ''' 
@@ -2048,52 +1994,52 @@ class TestDataElement(unittest.TestCase):
     def test_firing_rate_plot(self):    
         obj=self.sl.Factory_firing_rate()
         obj.plot(pylab.subplot(111), win=100.0)
-#       pylab.show()
+        pylab.show()
     
     
-    def test_IF_curve_plot(self):
-          
-        self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
-                                       'sim_time':self.sim_time})
-        obj=self.sl.Factory_IF_curve()
-        obj.plot(pylab.subplot(111), part='mean')
-#         pylab.show()
-         
-    def test_IV_curve_plot(self):
-        
-        self.vlm=dummy_data_matrix('voltage', **{'run':0, 'set':0, 'n_sets':1,
-                                       'sim_time':self.sim_time})
-        pylab.figure()
-        obj=self.vlm.Factory_IV_curve()
-        obj.plot(pylab.subplot(111))
-#         pylab.show()         
-         
-    def test_isis_hist(self):    
-        obj=self.sl.Factory_isis()
-        pylab.figure()
-        obj.hist(pylab.subplot(111))
-#         pylab.show()
- 
-    def test_mean_rates_hist(self):
-        obj=self.sl.Factory_mean_rates()
-        pylab.figure()
-        obj.hist(pylab.subplot(111))
-#         pylab.show(obj)   
- 
-    def test_mean_rate_parts_plot(self):
-          
-        #OBS merge over axis 1
-        self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
-                                       'sim_time':self.sim_time})
-        obj=self.sl.Factory_mean_rate_parts()
-        obj.plot(pylab.subplot(111))
-#         pylab.show()
-
-    def test_voltage_traces(self):
-        pylab.figure()
-        obj=self.vl.Factory_voltage_traces()
-        obj.plot(pylab.subplot(111))        
-#         pylab.show() 
+#     def test_IF_curve_plot(self):
+#           
+#         self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
+#                                        'sim_time':self.sim_time})
+#         obj=self.sl.Factory_IF_curve()
+#         obj.plot(pylab.subplot(111), part='mean')
+# #         pylab.show()
+#          
+#     def test_IV_curve_plot(self):
+#         
+#         self.vlm=dummy_data_matrix('voltage', **{'run':0, 'set':0, 'n_sets':1,
+#                                        'sim_time':self.sim_time})
+#         pylab.figure()
+#         obj=self.vlm.Factory_IV_curve()
+#         obj.plot(pylab.subplot(111))
+# #         pylab.show()         
+#          
+#     def test_isis_hist(self):    
+#         obj=self.sl.Factory_isis()
+#         pylab.figure()
+#         obj.hist(pylab.subplot(111))
+# #         pylab.show()
+#  
+#     def test_mean_rates_hist(self):
+#         obj=self.sl.Factory_mean_rates()
+#         pylab.figure()
+#         obj.hist(pylab.subplot(111))
+# #         pylab.show(obj)   
+#  
+#     def test_mean_rate_parts_plot(self):
+#           
+#         #OBS merge over axis 1
+#         self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
+#                                        'sim_time':self.sim_time})
+#         obj=self.sl.Factory_mean_rate_parts()
+#         obj.plot(pylab.subplot(111))
+# #         pylab.show()
+# 
+#     def test_voltage_traces(self):
+#         pylab.figure()
+#         obj=self.vl.Factory_voltage_traces()
+#         obj.plot(pylab.subplot(111))        
+# #         pylab.show() 
 
 class TestSpikeList(unittest.TestCase):
     def setUp(self):
@@ -2117,7 +2063,7 @@ class TestSpikeList(unittest.TestCase):
 
         NFFT, Fs=256, 1000.0
         d=self.sl.get_psd( NFFT, Fs)
-        self.assertEqual(d['x'].shape, d['y'].shape)        
+        self.assertEqual(d.x.shape, d.y.shape)        
         
 class TestSpikeListMatrix(unittest.TestCase):
     
@@ -2167,16 +2113,25 @@ class TestSpikeListMatrix(unittest.TestCase):
                ['get_mean_rate_slices',[], {'intervals':[[i*500, i*500+100]
                                                          for i in range(6)],
                                             'repetitions':3}], 
-               ['get_psd', [256,1000.0],{}],
-               ['get_phase', [10,20,3,1000.0],{}],
-               ['get_phases', [10,20,3,1000.0],{}],
-               ['get_phase_diff', 
-                [10,20,3,1000.0],
-                {'bin_extent':10.,
-                 'kernel_type':'gaussian',
-                 'other':other,
-                 'params':{'std_ms':5.,
-                           'fs': 1000.0},
+               ['get_psd', [], {'NFFT':256,
+                                'fs':1000.0}],
+               ['get_phase', [],{'lowcut':10,
+                              'highcut':20,
+                              'order':3,
+                              'fs':1000.0}],
+               ['get_phases', [],{'lowcut':10,
+                              'highcut':20,
+                              'order':3,
+                              'fs':1000.0}],
+               ['get_phase_diff',[],{'lowcut':10,
+                              'highcut':20,
+                              'order':3,
+                              'fs':1000.0,
+                              'bin_extent':10.,
+                              'kernel_type':'gaussian',
+                              'other':other,
+                              'params':{'std_ms':5.,
+                                        'fs': 1000.0},
                  }],
                ['get_spike_stats', [],{}],
                ['mean_rate', [], {'t_start':250, 't_stop':4000}], 
@@ -2197,6 +2152,7 @@ class TestSpikeListMatrix(unittest.TestCase):
                 self.assertEqual(d['x'].shape, d['y'].shape)
             if call in ['get_firing_rates',
                         'get_mean_rates',
+                        'get_mean_coherence',
                         'get_isi']:
                 self.assertEqual(d.x.shape, d.y.shape) 
                 

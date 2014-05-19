@@ -72,7 +72,6 @@ class Storage_dic(Base_dic):
     def add_storage(self, keys):
         val=self.Factory_storage()
         self.dic=misc.dict_recursive_add(self.dic, keys, val)
-    
         
     def clear(self):
         if os.path.isfile(self.file_name+'.pkl'):
@@ -104,7 +103,16 @@ class Storage_dic(Base_dic):
                 continue
             else:
                 os.remove(f)
-                
+     
+    def save_fig(self, fig, extension=''):
+        with misc.Stopwatch('Saving figure...'):
+            fig.savefig( self.file_name +extension+'.svg', format = 'svg') 
+    
+    def save_figs(self, figs, extension=''):
+        with misc.Stopwatch('Saving figures...'):
+            for i, fig in enumerate(figs):
+                fig.savefig( self.file_name +extension
+                             +'_'+str(i)+'.svg', format = 'svg')              
     
     @classmethod
     def load(cls, file_name):
@@ -127,12 +135,17 @@ class Storage_dic(Base_dic):
         for keys, storage in misc.dict_iter(self):
             if filt==():
                 pass
-            a=False
-            for key in keys:
-                if key not in filt:
-                    a=True
-            if a:
-                continue
+            else:
+                a=False
+                i=0
+                for key in keys:
+                    if key not in filt:
+                        a=True
+                    i+=1
+                    if i==3:
+                        break
+                if a:
+                    continue
                        
             val=storage.load_data()
             d=misc.dict_recursive_add(d, keys, val)
@@ -481,7 +494,7 @@ class TestStorage_dic(unittest.TestCase):
         self.s.save_dic(d1)
         self.s.save_dic(d2)
         
-        d3=self.s.load_dic(self.file_name)
+        d3=self.s.load_dic()
         
         self.assertDictEqual(d2, d3)
         
@@ -539,8 +552,15 @@ class TestStorage_dic(unittest.TestCase):
         self.s.save_dic(self.data)
         self.assertTrue(os.path.isfile(self.file_name+'.pkl'))
     
-        
-
+    
+    def test_save_fig(self):
+        import pylab
+        fig=pylab.figure()
+        self.s=Storage_dic(self.file_name)
+        self.s.save_fig(fig, extension='')
+        self.assertTrue(os.path.isfile(self.file_name+'.svg'))
+        os.remove(self.file_name+'.svg')  
+   
     def tearDown(self):
         if os.path.isfile(self.file_name+'.pkl'):
             os.remove(self.file_name+'.pkl')        

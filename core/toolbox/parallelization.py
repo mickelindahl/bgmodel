@@ -12,8 +12,10 @@ import math
 import threading
 import unittest
 
+from multiprocessing import Pool
 
 class comm(object):
+    
     '''dependancy injection'''
     obj=MPI.COMM_WORLD
     
@@ -62,11 +64,28 @@ class Barrier():
         if self.display:
             print 'Exiting barrier'
 
+
+class Wrap(object):
+    
+    def __init__(self, fun):
+        self.fun=fun
+    
+    def use(self, args):
+        return self.fun(*args)
+        
+        
+
 def execute(fun, worker,  *args, **kwargs):
     if comm.is_mpi_used():
         return _mpi(fun, worker, *args, **kwargs)
     else:
-        return _threading(fun, worker, *args, **kwargs) 
+
+        pool = Pool(processes=kwargs.get('threads',2))
+
+        fun=Wrap(fun)
+        args=zip(*args)
+        return pool.map(fun.use, args)
+        
 
 
 def _fun_worker(fun, chunksize, i, outs, *args, **kwargs):
@@ -121,33 +140,33 @@ def _mpi(fun, worker, *args, **kwargs):
     return data
 
 
-def _threading(fun, worker, *args, **kwargs):
-    # Each thread will get 'chunksize' nums and its own output dict
-    nthreads=kwargs.get('threads',2)
-    if 'threads' in kwargs.keys():del kwargs['threads']
-    chunksize = int(math.ceil(len(args[0]) / float(nthreads)))
-    threads = []
-    outs = [{} for i in range(nthreads)]
-    
-    for i_thread in range(nthreads):
-        # Create each thread, passing it its chunk of numbers to factor
-        # and output dict.
-        defaults=[fun, chunksize, i_thread, outs[i_thread]]
-        t = threading.Thread( target=worker,
-                              args=tuple(defaults+list(args)) ,
-                              kwargs=kwargs)
-        threads.append(t)
-        t.start()
-
-    # Wait for all threads to finish
-    for t in threads:
-        t.join()
-
-    # Merge all partial output dicts into a single dict and return it
-    #for key in outs
-    
-    d={k: v for out_d in outs for k, v in out_d.iteritems()}
-    return reduce(lambda x,y:x+y, [d[i] for i in range(nthreads)])
+# def _threading(fun, worker, *args, **kwargs):
+#     # Each thread will get 'chunksize' nums and its own output dict
+#     nthreads=kwargs.get('threads',2)
+#     if 'threads' in kwargs.keys():del kwargs['threads']
+#     chunksize = int(math.ceil(len(args[0]) / float(nthreads)))
+#     threads = []
+#     outs = [{} for i in range(nthreads)]
+#     
+#     for i_thread in range(nthreads):
+#         # Create each thread, passing it its chunk of numbers to factor
+#         # and output dict.
+#         defaults=[fun, chunksize, i_thread, outs[i_thread]]
+#         t = threading.Thread( target=worker,
+#                               args=tuple(defaults+list(args)) ,
+#                               kwargs=kwargs)
+#         threads.append(t)
+#         t.start()
+# 
+#     # Wait for all threads to finish
+#     for t in threads:
+#         t.join()
+# 
+#     # Merge all partial output dicts into a single dict and return it
+#     #for key in outs
+#     
+#     d={k: v for out_d in outs for k, v in out_d.iteritems()}
+#     return reduce(lambda x,y:x+y, [d[i] for i in range(nthreads)])
         
 
 class TestModule_functions(unittest.TestCase):

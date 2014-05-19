@@ -397,7 +397,7 @@ class Conn(object):
         # get_connectables is applied to each driver with arguments from the
         # lists
         arg=[d_pos, pool_fan_driver_to, pool_mask_dist, pool_mask_ids]
-        arg=zip(arg)    
+       # arg=zip(*arg)    
 
 #         pool_conn=[]
 #         for a in arg:
@@ -432,7 +432,7 @@ class Conn(object):
             if fan_in<1:
                 raise Exception(('For rule "all_set-all_set" the fan in has'
                                  +'to be bigger than number driver sets'))
-        return fan_in
+        return int(fan_in)
 
                  
     def get_delays(self):
@@ -503,10 +503,11 @@ class Conn(object):
                    
         t=time.time()-t
         if display_print:
-            s='Conn: {0:18} Connections: {1:8} Fan pool:{2:6} Time:{3:5} sec'
+            s='Conn: {0:18} Connections: {1:8} Fan pool:{2:6} ({2:6}) Time:{3:5} sec'
             a=[self.name, 
                len(self.pre), 
                round(float(len(self.pre))/driver.get_n(),0),
+               self.fan_in,
                round(t,2)]
             print s.format(*a)
             
@@ -543,6 +544,7 @@ class Conn(object):
             self.pre, self.post= pre, post
         
         elif self.rule =='fan-1':
+            
             if driver.get_n()*fan_in!=pool.get_n(): 
                 raise Exception(('number of pre surfs needs to'
                                  + 'equal number of post'))
@@ -651,8 +653,8 @@ def create_populations(params_nest, params_popu):
 
 def create_connections(surfs, params_conn, display_print=False):
     conns=Conn_dic()
-    for k,v in params_conn.iteritems(): 
-        
+    for k in sorted(params_conn.keys()): 
+        v=params_conn[k]
         conns.add(k, **v)
         
         conns[k].set(surfs, display_print)

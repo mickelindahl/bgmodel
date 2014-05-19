@@ -389,6 +389,7 @@ class Perturbation_list(object):
     def apply_pertubations(self, dic, display=False):
 
         for p in self.list:
+#             print p.keys
             if not misc.dict_haskey(dic, p.keys):
                 continue
             
@@ -942,7 +943,7 @@ class Par_base(object):
         self.trigger_dic_update()
 
     def trigger_dic_update(self):
-#         self.clear_dep() 
+        self.clear_dep() 
         self.update_dic_con()
         self.update_dic_dep()
         self.update_dic()
@@ -1503,21 +1504,21 @@ class Unittest_bcpnn_dopa_base(object):
         dic['netw']['n_nuclei']={'n1':1, 'n2':1, 'm1':50}
         
         params1={
-                'duration':[800.,100.]+[800,100]*9,
+                'duration':[120.,100.]+[190,100]*9,
                 'rates':[2000.0, 3500.0]*10,
-                'repetitions':2}
+                'repetitions':70}
          
         params2={
-                'duration':[800.,100.]+[800,100]*9,
+                'duration':[120.,100.]+[190,100]*9,
                 'rates':[2000.0, 3500.0]*10,
-                'repetitions':2}
+                'repetitions':70}
          
         params3={
-                 'duration':[1000.,200.]+[700.,200.]*9,
-                'rates':([2500.0, 2800.0]*2+[2500.0, 0.0]*1
+                 'duration':[220.,70.]+[220.,70.]*9,
+                 'rates':([2500.0, 2800.0]*2+[2500.0, 0.0]*1
                          +[2500.0, 2800.0]*1+[2500.0, 0.0]*2
                         +[2500.0, 2800.0]*3+[2500.0, 0.0]*1), 
-                'repetitions':2}
+                 'repetitions':70}
 
         dic['netw']['input']={'i1':{'type':'burst','params':params1},
                               'i2':{'type':'burst','params':params2},
@@ -1525,6 +1526,7 @@ class Unittest_bcpnn_dopa_base(object):
         # ========================
         # Default nest parameters 
         # ========================
+        f=.5
         d={'bias':0.0,   #ANN interpretation. Only calculated here to demonstrate match to rule. 
                            # Will be eliminated in future versions, where bias will be calculated postsynaptically       
            'b':-0.4,
@@ -1545,10 +1547,10 @@ class Unittest_bcpnn_dopa_base(object):
            'p_j':0.01,
            'p_ij':0.0001,
            'reverse':-1., 
-           'tau_i':10.,     #Primary trace presynaptic time constant
-           'tau_j':10.,      #Primary trace postsynaptic time constant
-           'tau_e':100.,      #Secondary trace time constant
-           'tau_p':1000.,     #Tertiarty trace time constant
+           'tau_i':5.*f,     #Primary trace presynaptic time constant
+           'tau_j':5.*f,      #Primary trace postsynaptic time constant
+           'tau_e':50.*f,      #Secondary trace time constant
+           'tau_p':500.*f,     #Tertiarty trace time constant
            'tau_n':100.,
            'type_id':'bcpnn_dopamine_synapse',
            'weight':10.0,
@@ -2180,13 +2182,13 @@ class InhibitionPar_base(object):
         
         # GPE-MSN    
         dic['nest']['GA_M1_gaba']={}
-        dic['nest']['GA_M1_gaba']['weight']   = 2.  # Glajch 2013
+        dic['nest']['GA_M1_gaba']['weight']   = 1.  # Glajch 2013
         dic['nest']['GA_M1_gaba']['delay']    = 1.7 
         dic['nest']['GA_M1_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GA_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']   
         
         dic['nest']['GA_M2_gaba'] = deepcopy(dic['nest']['GA_M1_gaba'])
-        dic['nest']['GA_M2_gaba']['weight']   = 2.*2  ## Glajch 2013
+        dic['nest']['GA_M2_gaba']['weight']   = 1.*2  ## Glajch 2013
        
             
         # CTX-STN
@@ -2608,12 +2610,12 @@ class InhibitionPar_base(object):
     
         
         # Model inputs
-        inputs={'C1': { 'target':'M1', 'rate':530.-20.0},
-                'C2': { 'target':'M2', 'rate':690.-20.0}, 
-                'CF': { 'target':'FS', 'rate':624.},
+        inputs={'C1': { 'target':'M1', 'rate':560.}, #530.-20.0},
+                'C2': { 'target':'M2', 'rate':740.}, #690.-20.0}, 
+                'CF': { 'target':'FS', 'rate':830.}, #624.},
                 'CS': { 'target':'ST', 'rate':200.0}, #160.},#295 
                 'EA': { 'target':'GA', 'rate':0.},
-                'EI': { 'target':'GI', 'rate':1500.0},#1130.},
+                'EI': { 'target':'GI', 'rate':1300.0},#1130.},
                 'ES': { 'target':'SN', 'rate':1800.}}#295 
         
         for key, val in inputs.items():         
@@ -2730,7 +2732,7 @@ class InhibitionPar_base(object):
            'GI_SN_gaba':{'fan_in0': 32, 'rule':'set-set' }}  
         
         conns.update(d)
-        
+#         pp(d)
         
         # Add extend to conn
         for k in sorted(conns.keys()): 
@@ -2769,6 +2771,83 @@ class InhibitionPar_base(object):
 class Inhibition(Par_base, InhibitionPar_base, Par_base_mixin):
     pass      
       
+
+class Inhibition_striatum_base(object):
+
+    def _get_par_constant(self):
+        
+        
+        dic_other=self.other.get_dic_con()
+        
+        C1={'amplitudes':[1.],
+            'duration':[200],
+            'rate':dic_other['node']['C1']['rate'],
+            'repetitions':1}
+         
+        C2={'amplitudes':[1.],
+            'duration':[200],
+            'rate':dic_other['node']['C2']['rate'],
+            'repetitions':1}
+        
+        CF={'amplitudes':[1.],
+            'duration':[200],
+            'rate':dic_other['node']['CF']['rate'],
+            'repetitions':1}         
+        CS={'amplitudes':[1.],
+            'duration':[200],
+            'rate':dic_other['node']['CS']['rate'],
+            'repetitions':1}   
+        
+        dic={'netw':{'input':{}}}
+        dic['netw']['input']={'C1':{'type':'burst2','params':C1},
+                              'C2':{'type':'burst2','params':C2},
+                              'CF':{'type':'burst2','params':CF},
+                              'CS':{'type':'burst2','params':CS}}
+        
+        dic = misc.dict_update(dic_other, dic)
+        return dic
+
+
+class Inhibition_striatum(Par_base, Inhibition_striatum_base, Par_base_mixin): 
+    pass 
+
+
+class MSN_cluster_compete_base(object):
+
+    def _get_par_constant(self):
+        
+        
+        dic_other=self.other.get_dic_con()
+        max_n_set_pre=20
+        
+        dic={}
+        dd={'type':'burst3',
+            'params':{
+                      'repetitions':2},
+                      }
+        params_sets={}
+        
+        for inp, rate in [['C1', dic_other['node']['C1']['rate']],
+                          ['C2', dic_other['node']['C2']['rate']]]:
+        
+            dd['params']['n_set_pre']=dic_other['node'][inp]['n_sets']
+            for i in range(max_n_set_pre):
+                d={str(i):{'active':False,
+                           'amplitudes':[1.0,],
+                           'durations':[100.0],
+                           'proportion_connected':1,
+                           'rate':rate,
+                      }}
+                params_sets.update(d)
+            dd['params'].update({'params_sets':params_sets})
+            dic=misc.dict_update(dic, {'netw':{'input':{inp:dd}}})
+
+        dic = misc.dict_update(dic_other, dic)
+        return dic
+
+
+class MSN_cluster_compete(Par_base, MSN_cluster_compete_base, Par_base_mixin): 
+    pass 
               
 class Slow_wave_base(object):
 
@@ -2781,7 +2860,7 @@ class Slow_wave_base(object):
         dic={'netw':{'input':{}}}
         
         d={'type':'oscillation', 
-             'params':{'p_amplitude_mod':0.9,
+             'params':{'p_amplitude_mod':0.8,
                      'freq': 1.}} 
         for key in ['C1', 'C2', 'CF', 'CS']: 
             dic['netw']['input'][key]=d      
@@ -3656,6 +3735,55 @@ def calc_spike_setup(n, params, rate ,start, stop, typ):
                  'idx':idx,
                  't_stop':stop}]
         
+    if typ=='burst2': 
+        
+    
+        t=numpy.array(params['duration'])
+        r=params['rate']
+        amp=params['amplitudes']   
+        rep=params['repetitions']
+        
+        idx=range(n)
+        times=numpy.array([[0]+list(numpy.cumsum(t)[0:-1])
+                          +i*numpy.sum(t) for i in range(rep) ])
+        times=list(times.ravel())
+        
+        rates=list(r*numpy.array(amp))*rep
+        setup+=[{'rates':rates, 
+                 'times':times, 
+                 'idx':idx,
+                 't_stop':stop}] 
+ 
+ 
+    if typ=='burst3': 
+        n_set_pre=params['n_set_pre']
+        params_sets=params['params_sets']
+        rep=params['repetitions']
+        
+        for k in sorted(params_sets.keys()):
+            d=params_sets[k]
+            k=int(k)
+            if not d['active']:
+                continue
+            proportion_connected=d['proportion_connected']
+            m=int(n*proportion_connected)
+            idx=list(range(k,m, n_set_pre))
+                
+            t=numpy.array(d['durations'])
+            r=d['rate']
+            amp=d['amplitudes']   
+            
+        
+            times=numpy.array([[0]+list(numpy.cumsum(t)[0:-1])
+                          +i*numpy.sum(t) for i in range(rep) ])
+            times=list(times.ravel())
+        
+            rates=list(r*numpy.array(amp))*rep
+            setup+=[{'rates':rates, 
+                     'times':times, 
+                     'idx':idx,
+                     't_stop':stop}] 
+               
     if typ=='oscillation':
         ru=rate*(2-params['p_amplitude_mod'])
         rd=rate*params['p_amplitude_mod']
@@ -3777,6 +3905,42 @@ def dummy_args(flag, **kwargs):
                      'times': [0.0, 100.0, 600.0,  
                                800.0, 900.0, 1400]}]) 
     
+        #BURST3
+        params={'n_set_pre':3,
+                'repetitions':2,
+                'params_sets':{'0':{'active':True,
+                                    'amplitudes':[3.0,],
+                                  'durations':[100.0],
+                                  'proportion_connected':1,
+                                  'rate':10.0,
+                                  },
+                               '1':{'active':True,
+                                    'amplitudes':[2.0,],
+                                  'durations':[200.0],
+                                  'proportion_connected':0.25,
+                                  'rate':10.0,
+                                  },
+                               '2':{'active':True,
+                                    'amplitudes':[1.0,1.5],
+                                  'durations':[100.0, 100.0],
+                                  'proportion_connected':0.5,
+                                  'rate':10.0,
+                                  }}}
+        args.append([12, params, 25.0, 100.0, 1500.0, 'burst3'])                       
+        out.append([{'idx': [0, 3, 6, 9],
+                      'rates': [30.0, 30.0],
+                      't_stop': 1500.0,
+                      'times': [0.0, 100.0]},
+                     {'idx': [1], 
+                      'rates': [20.0, 20.0], 
+                      't_stop': 1500.0, 
+                      'times': [0.0, 200.0]},
+                     {'idx': [2, 5],
+                      'rates': [10.0, 15.0, 10.0, 15.0],
+                      't_stop': 1500.0,
+                      'times': [0.0, 100.0, 200.0, 300.0]}]) 
+        
+        
         #BURST COMPETE
         params={'duration':100.0,
                 'idx_sets':[0, 2],
@@ -4133,6 +4297,7 @@ class TestModuleFuncions(unittest.TestCase):
                        ]:
             call=getattr(self.m,method)
             for a, o in zip(*dummy_args(method)):
+#                 pp(call(*a))
                 self.assertEqual(call(*a),o)
 
 
@@ -4658,6 +4823,34 @@ class TestSlowWavePar_base(unittest.TestCase):
 class TestSlowwave(TestSlowWavePar_base, TestMixinPar_base, TestSetup_mixin):
     pass
 
+
+class TestInhibitionStriatumPar_base(unittest.TestCase):
+    def setUp(self):
+        self.kwargs={'other':Inhibition(),
+                     'unittest':False}
+        self.the_class=Inhibition_striatum
+        self.pert=dummy_perturbations_lists('slow_wave', 'C1_M1_ampa')
+        self.test_node_model='M1'
+        self._setUp()
+
+class TestInhibitionStriatum(TestInhibitionStriatumPar_base, TestMixinPar_base, TestSetup_mixin):
+    pass
+
+
+
+class TestMSNClusterCompetePar_base(unittest.TestCase):
+    def setUp(self):
+        self.kwargs={'other':Inhibition(),
+                     'unittest':False}
+        self.the_class=MSN_cluster_compete
+        self.pert=dummy_perturbations_lists('slow_wave', 'C1_M1_ampa')
+        self.test_node_model='M1'
+        self._setUp()
+
+class TestMSNClusterCompetePar(TestMSNClusterCompetePar_base, TestMixinPar_base, TestSetup_mixin):
+    pass
+
+
 class TestBurstCompetePar_base(unittest.TestCase):
     def setUp(self):
         self.kwargs={'other':Inhibition(),
@@ -4710,8 +4903,8 @@ class TestBcpnnH1(TestBcpnnH1Par_base,  TestMixinPar_base, TestSetup_mixin):
 if __name__ == '__main__':
     
     test_classes_to_run=[
-                        TestModuleFuncions,
-                        TestPerturbations,
+#                         TestModuleFuncions,
+#                         TestPerturbations,
 #                         TestCall,
 #                         TestCallSubClassesWithPar_base,
 #                         TestUnittest,
@@ -4719,8 +4912,10 @@ if __name__ == '__main__':
 #                         TestUnittestBcpnn,   
 #                         TestUnittestBcpnnDopa,   
 #                         TestUnittestStdp, 
-                        TestSingleUnit,
+#                         TestSingleUnit,
+#                         TestInhibitionStriatum
 #                         TestInhibition,
+                        TestMSNClusterCompetePar
 #                         TestThalamus,
 #                         TestSlowwave,
 #                           TestBurstCompete,

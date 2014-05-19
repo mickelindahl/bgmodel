@@ -75,10 +75,10 @@ class Data_unit_base(object):
                  
 
     def cmp(self, attr, *args, **kwargs):      
-        d=self._compute(attr, *args, **kwargs)
+        d=self._cmp(attr, *args, **kwargs)
         return d
 
-    def _compute(self, attr, *args, **kwargs):
+    def _cmp(self, attr, *args, **kwargs):
         call=getattr(self.wrap, 'get_'+attr)
         return call(*args, **kwargs) 
 
@@ -96,6 +96,9 @@ class Data_unit_base(object):
             args.append(self.data[attr][key])
                             
         return args   
+
+    def get_wrap(self):
+        return self.wrap
 
     def isrecorded(self, name):
         return self.recorded[name]
@@ -414,15 +417,28 @@ class Data_units_relation(object):
         self.du1=du1 
         self.du2=du2
         self.name=name
+
+    def __getitem__(self, key):        
+        du1=self.du1.__getitem__(key)   
+        du2=self.du2.__getitem__(key)      
+        return self.__class__(self.name, du1, du2)
         
-    def compute(self, attr, *args, **kwargs):
-        kwargs['other']=self.du2.get_wrap(kwargs.get('wrap_type','s'))
-        d=self.du1.compute(attr, *args, **kwargs)
+    def cmp(self, attr, *args, **kwargs):
+        kwargs['other']=self.du2.get_wrap()
+        d=self.du1._cmp(attr, *args, **kwargs)
         return d
     
-    def compute_set(self, attr, *args, **kwarg):
-        d=self.compute(attr, *args, **kwarg)
-        self.set(attr, d)
+    def get_mean_coherence(self,  *args, **kwargs):
+        attr='mean_coherence'
+        return self.cmp(attr, *args, **kwargs)
+
+    def get_phase_diff(self,  *args, **kwargs):
+        attr='phase_diff'
+        return self.cmp(attr, *args, **kwargs)
+    
+#     def compute_set(self, attr, *args, **kwarg):
+#         d=self.compute(attr, *args, **kwarg)
+#         self.set(attr, d)
 
     def get(self, attr, *args, **kwargs):
         keys=kwargs.get('attr_list', self.data[attr].keys())
@@ -432,46 +448,46 @@ class Data_units_relation(object):
         return args  
 
 
-    def plot_mean_coherence(self, ax=None, sets=[], rem_first=True,  **k):
-        if not ax:
-            ax=pylab.subplot(111)
+#     def plot_mean_coherence(self, ax=None, sets=[], rem_first=True,  **k):
+#         if not ax:
+#             ax=pylab.subplot(111)
+# 
+#         x, y=self.get('mean_coherence', attr_list=['x','y'])
+#         x,y=to_2d_array(*[x,y])
+#         x,y=x.transpose(), y.transpose()
+#         x, y=get_sets_or_single('mean_coherence', sets, *[ x, y])
+#    
+#         add_labels(sets, k)
+#         
+#         if rem_first:
+#             x,y=x[1:],y[1:]
+#                 
+#         plot(ax, x, y, **k)
+#         ax.set_xlabel('Frequency (Hz)') 
+#         ax.set_ylabel('Coherence') 
+#         ax.legend()
 
-        x, y=self.get('mean_coherence', attr_list=['x','y'])
-        x,y=to_2d_array(*[x,y])
-        x,y=x.transpose(), y.transpose()
-        x, y=get_sets_or_single('mean_coherence', sets, *[ x, y])
-   
-        add_labels(sets, k)
-        
-        if rem_first:
-            x,y=x[1:],y[1:]
-                
-        plot(ax, x, y, **k)
-        ax.set_xlabel('Frequency (Hz)') 
-        ax.set_ylabel('Coherence') 
-        ax.legend()
-
-    def plot_phase_diff(self, ax=None, num=100, sets=[], rem_first=True,  **k):
-        if not ax:
-            ax=pylab.subplot(111)
-
-        y,=self.get('phase_diff', attr_list=['y'])
-        y,=to_2d_array(*[y])
-        
-        y,=get_sets_or_single('phase_diff', sets, *[ y])
-   
-        bins=numpy.linspace(-numpy.pi, numpy.pi, num)
-        add_labels(sets, k)
-        
-        if rem_first:
-            y=y[1:]
-                
-        ax.hist(y, bins, **k)
-        ax.set_xlim(-numpy.pi, numpy.pi)
-        ax.set_xlabel('Angle (Rad)') 
-        ax.set_ylabel('Count') 
-        ax.legend()
-    
+#     def plot_phase_diff(self, ax=None, num=100, sets=[], rem_first=True,  **k):
+#         if not ax:
+#             ax=pylab.subplot(111)
+# 
+#         y,=self.get('phase_diff', attr_list=['y'])
+#         y,=to_2d_array(*[y])
+#         
+#         y,=get_sets_or_single('phase_diff', sets, *[ y])
+#    
+#         bins=numpy.linspace(-numpy.pi, numpy.pi, num)
+#         add_labels(sets, k)
+#         
+#         if rem_first:
+#             y=y[1:]
+#                 
+#         ax.hist(y, bins, **k)
+#         ax.set_xlim(-numpy.pi, numpy.pi)
+#         ax.set_xlabel('Angle (Rad)') 
+#         ax.set_ylabel('Count') 
+#         ax.legend()
+#     
     
     def set(self, attr, val):   
         
@@ -735,75 +751,90 @@ class TestData_unit_spk(unittest.TestCase):
                            ['isi', [],{}],
                            ['mean_rate', [],{}],
                            ['mean_rates',[],{}],
-                           ['psd',[256,1000.0],{}],
-                           ['phase',[10,20,3,1000.0],{}],
-                           ['phases',[10,20,3,1000.0],{}],
+                           ['psd',[], {'NFFT':256,
+                                       'fs':1000.0}],
+                           ['phase',[],{'lowcut':10,
+                                        'highcut':20,
+                                        'order':3,
+                                        'fs':1000.0}],
+                           ['phases',[],{'lowcut':10,
+                                        'highcut':20,
+                                        'order':3,
+                                        'fs':1000.0}],
                            ['raster',[], {}],
 #                            ['voltage_trace', [], {}],
                            ]:
-   
+#    
             self.obj.cmp(attr,*a,**k)            
 #             self.obj.get(attr)
- 
- 
+  
+#  
     def test_2_plot_firing_rate(self):
-             
+              
         self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':False})
-     
+      
         pylab.figure()
         ax=pylab.subplot(211)
         self.obj.cmp('firing_rate').plot(ax, **{'label':'Mean'})
         self.obj[:,0].cmp('firing_rate').plot(ax, **{'label':'Set 1'})
         self.obj[:,1].cmp('firing_rate').plot(ax, **{'label':'Set 2'})     
- 
-    
+  
+     
         self.obj, _=dummy_data_du(**{'n_runs':self.n_runs, 'reset':True})
         ax=pylab.subplot(212)
         self.obj[0,:].cmp('firing_rate').plot(ax, **{'label':'Run 1'})
         self.obj[1,:].cmp('firing_rate').plot(ax, **{'label':'Run 2'})
         self.obj[2,:].cmp('firing_rate').plot(ax, **{'label':'Run 3'})  
-#         pylab.show()                
-   
-    def test_3_plot_hist_isis(self):
-   
-        pylab.figure()
-        ax=pylab.subplot(111)
-        self.obj.cmp('isi').hist(ax,**{'label':'Mean'})    
-        self.obj[:,0].cmp('isi').hist(ax, **{'label':'Set 1'}) 
-#         pylab.show()
-   
-    def test_4_plot_mean_rate_parts(self):
-        x= [100,200, 300]
-        pylab.figure() 
-        ax=pylab.subplot(111)
-        self.obj.cmp('mean_rate_parts').plot(ax, x=x, **{'label':'Mean'})
-        self.obj[:,0].cmp('mean_rate_parts').plot(ax, x=x, **{'label':'Set 1'})           
-#         pylab.show()
+        pylab.show()                
+#    
+#     def test_3_plot_hist_isis(self):
+#    
+#         pylab.figure()
+#         ax=pylab.subplot(111)
+#         self.obj.cmp('isi').hist(ax,**{'label':'Mean'})    
+#         self.obj[:,0].cmp('isi').hist(ax, **{'label':'Set 1'}) 
+# #         pylab.show()
+#    
+#     def test_4_plot_mean_rate_parts(self):
+#         x= [100,200, 300]
+#         pylab.figure() 
+#         ax=pylab.subplot(111)
+#         self.obj.cmp('mean_rate_parts').plot(ax, x=x, **{'label':'Mean'})
+#         self.obj[:,0].cmp('mean_rate_parts').plot(ax, x=x, **{'label':'Set 1'})           
+# #         pylab.show()
+# 
+#     def test_5_plot_IF_curve(self):
+#         pylab.figure()  
+#         x=[100,200,300]   
+#         ax=pylab.subplot(111) 
+#         self.obj.cmp('IF_curve').plot(ax, x=x, part='mean')#**{'color':'b'})
+#         ax.set_title('Mean')
+#             
+#         self.obj[:,0].cmp('IF_curve').plot(ax,x=x, part='mean')#**{'color':'b'})
+#         ax.set_title('Set 1')
+# #         pylab.show()
+#   
+#     def test_6_plot_FF_curve(self):
+#         pylab.figure()      
+#         ax=pylab.subplot(111) 
+#         self.obj.cmp('mean_rate_parts').plot_FF(ax, **{'label':'Mean'})#**{'color':'b'})
+#         self.obj[:,0].cmp('mean_rate_parts').plot_FF(ax, **{'label':'Set 1'})
+# #         pylab.show()#        d1, d2={}, {}
+#  
+#     def test_7_comput_spike_stats(self):
+#         d=self.obj.cmp('spike_stats',*[],**{})
+# #         for k1,v in d.items():
+# #             self.assertTrue(k1 in ['isi', 'rates'])
+# #             for k2 in v.keys():
+# #                 self.assertTrue(k2 in ['std', 'mean', 'CV'])
 
-    def test_5_plot_IF_curve(self):
-        pylab.figure()  
-        x=[100,200,300]   
-        ax=pylab.subplot(111) 
-        self.obj.cmp('IF_curve').plot(ax, x=x, part='mean')#**{'color':'b'})
-        ax.set_title('Mean')
-            
-        self.obj[:,0].cmp('IF_curve').plot(ax,x=x, part='mean')#**{'color':'b'})
-        ax.set_title('Set 1')
-#         pylab.show()
-  
-    def test_6_plot_FF_curve(self):
-        pylab.figure()      
-        ax=pylab.subplot(111) 
-        self.obj.cmp('mean_rate_parts').plot_FF(ax, **{'label':'Mean'})#**{'color':'b'})
-        self.obj[:,0].cmp('mean_rate_parts').plot_FF(ax, **{'label':'Set 1'})
+#     def test_8_plot_psd(self):
+#         pylab.figure()      
+#         ax=pylab.subplot(111) 
+#         self.obj.cmp('psd').plot(ax, **{'label':'Mean'})#**{'color':'b'})
+#         self.obj[:,0].cmp('psd').plot(ax, **{'label':'Set 1'})
 #         pylab.show()#        d1, d2={}, {}
- 
-    def test_7_comput_spike_stats(self):
-        d=self.obj.cmp('spike_stats',*[],**{})
-        for k1,v in d.items():
-            self.assertTrue(k1 in ['isi', 'rates'])
-            for k2 in v.keys():
-                self.assertTrue(k2 in ['std', 'mean', 'CV'])
+
 
 class TestData_unit_vm(unittest.TestCase):
     def setUp(self):
@@ -879,57 +910,73 @@ class TestData_unit_relation(unittest.TestCase):
                 'n_runs':self.n_runs}
 
         kwargs['name']='u1'
-        du1=dummy_data_du(**kwargs)
+        du1,_=dummy_data_du(**kwargs)
         kwargs['name']='u2'
         kwargs['shift']=1.
-        du2=dummy_data_du(**kwargs)
-        self.dur=Data_units_relation('u1_u2', du1, du2)
-    def test_1_compute_set_get(self):
+        du2,_=dummy_data_du(**kwargs)
+        self.obj=Data_units_relation('u1_u2', du1, du2)
+        
+        
+    def test_1_cmp(self):
         for attr, a, k in [['mean_coherence',[],{'fs':1000.0,
                                                  'NFFT':256,
                                                  'noverlap':int(256/2),
-                                                 'sample':2.}], 
+                                                 'sample':2.,
+                                                 'threads':2}], 
                            ['phase_diff', 
-                            [10,20,3,1000.0],
-                            {'bin_extent':10.,
+                            [],
+                            {'lowcut': 15,
+                             'highcut': 25,
+                             'order':3,
+                             'fs':1000.0,
+                             'bin_extent':10.,
                              'kernel_type':'gaussian',
                              'params':{'std_ms':5.,
                              'fs': 1000.0}}],
                            ]:
-
-            self.dur.compute_set(attr,*a,**k)
-            self.dur.get(attr)        
+   
+            self.obj.cmp(attr,*a,**k)            
+        
             
     def test_2_plot_mean_coherence(self):
-        self.dur.set('merge_runs', True)
-        self.dur.compute_set('mean_coherence',*[],**{'fs':1000.0,
-                                                 'NFFT':256,
-                                                 'noverlap':int(256/2),
-                                                 'sample':2.} )
         pylab.figure()
-        self.dur.plot_mean_coherence()    
-        self.dur.plot_mean_coherence(sets=range(3))  
-        #pylab.show()
+        ax=pylab.subplot(111)
+        k={'fs':1000.0,
+           'NFFT':256,
+           'noverlap':int(256/2),
+           'sample':2.,
+           'threads':4}
+ 
+        self.obj.cmp('mean_coherence', **k ).plot(ax, **{'label':'Mean'})
+        self.obj[:,0].cmp('mean_coherence',**k ).plot(ax, **{'label':'Set 1'})
 
-    def test_3_plot_phase_difft(self):
-        self.dur.set('merge_runs', True)
-        self.dur.compute_set('phase_diff',*[10,20,3,1000.0],
-                                                **{'bin_extent':10.,
-                                             'kernel_type':'gaussian',
-                                             'params':{'std_ms':5.,
-                                             'fs': 1000.0}} )
+#         pylab.show()
+ 
+    def test_3_plot_phase_diff(self):
         pylab.figure()
-        self.dur.plot_phase_diff()    
-        #self.dur.plot_mean_coherence(sets=range(3))  
-        #pylab.show()
+        ax=pylab.subplot(111)
+        
+        fs=1000.0
+        k={'bin_extent':10.,
+           'lowcut': 15,
+           'highcut': 25,
+           'order':3,
+           'fs':fs,
+           'kernel_type':'gaussian',
+           'params':{'std_ms':5.,
+                     'fs': 1000.0}} 
+        self.obj.cmp('phase_diff', **k ).hist(ax, **{'label':'Mean'})
+        self.obj[:,0].cmp('phase_diff',**k ).hist(ax, **{'label':'Set 1'})
+
+#         pylab.show()
             
 if __name__ == '__main__':
     test_classes_to_run=[
                         TestData_unit_spk,
-                        TestData_unit_vm, 
+#                         TestData_unit_vm, 
                          #TestData_units_dic,
                          #TestDud_list,
-                         #TestData_unit_relation,
+#                         TestData_unit_relation,
                          ]
     suites_list = []
     for test_class in test_classes_to_run:

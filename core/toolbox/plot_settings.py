@@ -6,8 +6,13 @@
 
 import math
 import numpy
-import pylab
+
 from my_axes import MyAxes
+from toolbox import pylab
+
+import pprint
+pp=pprint.pprint
+
 # Symbols
 symbols = ['-','--','-.',':','.',',','o','^','v','<','>','s','+','x','D','d','1','2','3','4','h','H','p']
 # Symbols + line
@@ -220,7 +225,15 @@ def set_figsize(fig_width_pt):
 
 
 def get_figure( n_rows, n_cols, w, h, fontsize, order='col'):
+#     import os
+#     if not os.environ.get('DISPLAY'):
+#         pylab.ioff()
+    
     set_mode(pylab, 'by_fontsize', w, h, fontsize)
+#     pylab.rcParams.update({'backend':'Agg'})
+#     pp(pylab.rcParams)
+#     import matplotlib
+#     matplotlib.use('Agg')
     fig = pylab.figure( facecolor = 'w' )
     
     hight=1./n_rows*0.7

@@ -109,6 +109,8 @@ private:
 	nest::double_t gain_dopa_;
 	nest::double_t k_pow_;
 	nest::double_t K_;
+	nest::double_t min_bias_;
+	nest::double_t min_weight_;
 	nest::double_t tau_n_;
 	nest::double_t taui_;
 	nest::double_t tauj_;
@@ -377,11 +379,12 @@ inline void BCPNNDopaConnection::progress_state_variables(
 
 	/*cout << 200 << endl;*/
 
-	bias_ = std::log(pj_);
+	//bias_ = std::log(pj_);
+	bias_ = ((pj_<=cp.min_bias_) ? std::log(cp.min_bias_) : std::log(pj_));
 
 	nest::double_t w =pij_ / (pi_ * pj_);
 
-	weight_ = cp.gain_ * ((w<0) ? std::log(0.0001) : std::log(w));
+	weight_ = cp.gain_ * ((w<=cp.min_weight_) ? std::log(cp.min_weight_) : std::log(w));
 
 	/*Reset variables*/
 	post_spiketimes_.clear();

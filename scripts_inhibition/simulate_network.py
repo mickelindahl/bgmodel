@@ -3,72 +3,24 @@ Created on Jun 27, 2013
 
 @author: lindahlm
 '''
+import os
 import pylab
-import toolbox.plot_settings as ps
 
+from network import show_fr, show_hr
 from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
 from toolbox.network.manager import compute, run, save, load
 from toolbox.network.manager import Builder_network as Builder
-from toolbox.network.manager import Director
 import pprint
 pp=pprint.pprint
     
-
-
-def show_fr(d):
-    _, axs=ps.get_figure(n_rows=7, n_cols=1, w=1000.0, h=800.0, fontsize=10)  
-    labels=['Dop','No dop']
-    colors=['b', 'g']
-    linestyles=['-','-']
-    
-    j=0
-    for k in sorted(d.keys()):
-        v=d[k]
-#         axs[0].set_title(k)
-        for model, i in [['M1',0], ['M2', 1], ['FS',2],['GA',3], ['GI',4],
-                         ['ST',5],['SN',6]]:
-            v[model]['firing_rate'].plot(ax=axs[i], 
-                                         **{'label':model+' '+labels[j],
-                                            'linestyle':linestyles[j],
-                                            'color':colors[j]})
-        j+=1 
-            
-def show_hr(d):
-    _, axs=ps.get_figure(n_rows=7, n_cols=1, w=1000.0, h=800.0, fontsize=10)   
-    labels=['Dop','No dop']
-    colors=['b', 'g']
-    linestyles=['solid','solid']
-    j=0
-    
-    for k in sorted(d.keys()):
-        v=d[k]
-#         axs[0].set_title(k)
-        for model, i in [['M1',0], ['M2', 1], ['FS',2],['GI',3], ['GA',4],
-                         ['ST',5],['SN',6]]:
-            st=v[model]['spike_statistic']
-            st.rates={'mean':round(st.rates['mean'],2),
-                      'std':round(st.rates['std'],2),
-                      'CV':round(st.rates['CV'],2)}
-            h=v[model]['mean_rates'].hist(ax=axs[i],
-                                          **{'label':(model+' '
-                                                      +labels[j]+' '
-                                                      +str(st.rates)),
-                                             'histtype':'step',
-                                             'bins':20,
-                                              'linestyle':linestyles[j],
-                                              'color':colors[j]}) 
-            
-            ylim=list(axs[i].get_ylim())
-            ylim[0]=0.0
-            axs[i].set_ylim(ylim)
-        j+=1 
+DISPLAY=os.environ.get('DISPLAY')
 
 def get_kwargs_builder():
     return {'print_time':True, 
-            'threads':4, 
-            'save_conn':{'overwrite':True},
+            'threads':12, 
+            'save_conn':{'overwrite':False},
             'sim_time':5000.0, 
             'sim_stop':5000.0, 
             'size':10000.0, 
@@ -96,14 +48,14 @@ def main():
            'mean_rates', 
            'spike_statistic']  
     
-    kwargs_dic={'mean_rates': {'t_stop':k['start_rec']},
-                'spike_statistic': {'t_stop':k['start_rec']},}
+    kwargs_dic={'mean_rates': {'t_start':k['start_rec']},
+                'spike_statistic': {'t_start':k['start_rec']},}
     file_name=(home+ '/results/papers/inhibition/network/'
                +__file__.split('/')[-1][0:-3])
     
     models=['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN']
     
-    info, nets = get_networks()
+    info, nets, _ = get_networks()
 
     sd=Storage_dic.load(file_name)
     sd.add_info(info)
@@ -119,10 +71,15 @@ def main():
             filt=[net.get_name()]+models+attr
             dd=load(sd, *filt)
         d=misc.dict_update(d, dd)
-                     
+                                         
+    figs=[]
+
+    figs.append(show_fr(d, models))
+    figs.append(show_hr(d, models))
     
-    show_fr(d)
-    show_hr(d)
+    sd.save_figs(figs)
+    
+    if DISPLAY: pylab.show()     
 
     pylab.show()
     

@@ -7,13 +7,13 @@ Created on 25 mar 2014
 import numpy
 import pylab
 import toolbox.plot_settings as ps
-
+from network import cmp_mean_rates_intervals
 from toolbox import misc
-from toolbox.my_signals import Data_generic
+
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network.manager import compute, run, save, load
-from toolbox.network.manager import Builder_network as Builder
-from toolbox.network.manager import Director_networks as Director
+from toolbox.network.manager import Builder_burst_compete as Builder
+from toolbox.network.manager import Director
 import pprint
 pp=pprint.pprint
 
@@ -28,13 +28,14 @@ def get_networks(rep):
                          'stop_rec':1500.*5*rep,
                          'sub_sampling':10,
                          'threads':4})
+    builder = Builder(**kwargs_builder)
     director = Director()
     director.set_builder(builder)
-    info, nets = director.get_networks()
+    info, nets = director.get_networks(**kwargs_engine)
     intervals=builder.dic['intervals']
-    times=builder.dic['times']
+    rep=builder.dic['repetitions']
     
-    return info, nets, intervals, times
+    return info, nets, intervals, rep
 
 def show_fr(d):
     _, axs=ps.get_figure(n_rows=7, n_cols=1, w=1000.0, h=800.0, fontsize=10)  
@@ -74,22 +75,7 @@ def plot(data):
             i+=1
   
 
-def cmp_mean_rates_intervals(d, intervals, x, repetitions):
-    kwargs={'intervals':intervals,
-            'repetitions':repetitions}
-    
-    for keys, val in misc.dict_iter(d):
-        
-        val={}
-        for j in [0,1]:
-            v=val[:,j].get_mean_rate_slices(**kwargs)
-            v.x=x[0: repetitions]
-            val[j]=v
-            
-        d=misc.dict_recursive_add(d, (keys[0:-1]
-                                      +['mean_rates_intervals']), val)
-        
-    return d
+
 
 def get_kwargs_dic():
     {'firing_rate':{'time_bin':5}}

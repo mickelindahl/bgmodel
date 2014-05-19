@@ -7,13 +7,13 @@ from __future__ import division
 import numpy
 from numpy import mean, hanning, cov
 from numpy import zeros, ones, diagonal, transpose, matrix
-from numpy import resize, sqrt, divide, array, concatenate
-from numpy import convolve, dot, conjugate, absolute, arange, reshape #matrixmultiply, \
+from numpy import resize, sqrt, divide, array
+from numpy import dot, conjugate, absolute, arange #matrixmultiply, \
 Float=numpy.float64 
 Complex=numpy.complex 
      
 from numpy.fft import fft
-
+from toolbox.parallelization import map_parallel
 from scipy.signal import butter, lfilter, hilbert, filtfilt
 
 from toolbox import misc
@@ -123,7 +123,11 @@ def csd(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
     freqs = fs/NFFT*arange(0,numFreqs)
     return Pxy, freqs
 
-def cohere(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
+def cohere_wrap_parallel(args):
+    return cohere(*args)
+
+def cohere(x, y, kwargs):
+    
     """
     cohere the coherence between x and y.  Coherence is the normalized
     cross spectral density
@@ -136,19 +140,26 @@ def cohere(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
     well as the methods used to compute Pxy, Pxx and Pyy.
 
     """
+
+    fs=kwargs.get('fs', 2)
+    NFFT=kwargs.get('NFFT', 256)
+    noverlap=kwargs.get('noverlap', 0)
+    
     window=kwargs.get('window',window_hanning )
     detrend=kwargs.get('detrend',detrend_none )
     
-    Pxx,f = psd(x, NFFT=NFFT, fs=fs, detrend=detrend,
+    Pxx, f = psd(x, NFFT=NFFT, fs=fs, detrend=detrend,
               window=window, noverlap=noverlap)
+
     #print 'Pxx'
     Pyy,f = psd(y, NFFT=NFFT, fs=fs, detrend=detrend,
               window=window, noverlap=noverlap)
-    #print 'Pyy'
+#     print Pyy[-1]
     Pxy,f = csd(x, y, NFFT=NFFT, fs=fs, detrend=detrend,
               window=window, noverlap=noverlap)
     
     #print 'Pxy'
+#     print len(Pxy),  len(Pxx), len(Pyy),len(x), len(y)
     Cxy = divide(absolute(Pxy)**2, Pxx*Pyy)
     
     #Null nans
@@ -189,7 +200,10 @@ def corrcoef(*args):
 def coherences(signals1, signals2, **kwargs):
 
 
-    l=[cohere(s1,s2, **kwargs) for s1, s2 in iter_double(signals1, signals2)]   
+    args=[[s1,s2, kwargs] for s1, s2 in iter_double(signals1, signals2)] 
+    args=zip(*args)
+#     l=map_parallel(cohere, *args, **{'threads': kwargs.get('threads',1)})
+    l=map(cohere, *args)
     l=numpy.array(l,dtype=float)
     Cxy, f=l[:,0,:], l[:,1,:]
     
@@ -257,8 +271,13 @@ def norm(x):
     return sqrt(dot(x,x))
 
 
-def phase(x, lowcut, highcut, order,  fs, **kwargs):
+def phase(x, **kwargs):
 
+    lowcut=kwargs.get('lowcut', 10)
+    highcut=kwargs.get('highcut', 20)
+    order=kwargs.get('order',3)
+    fs=kwargs.get('fs', 1000.0) 
+       
     d={}
     d['raw']=x
     d['con']= misc.convolve(d['raw'], no_mean=True, **kwargs)
@@ -281,17 +300,17 @@ def phase(x, lowcut, highcut, order,  fs, **kwargs):
 
     return d['phase']
 
-def phases(signals, *args, **kwargs):
+def phases(signals, **kwargs):
 
-    a=[phase(s,*args, **kwargs) for s in signals]
+    a=[phase(s, **kwargs) for s in signals]
     return numpy.array(a)
 
-def phase_diff(signal1, signal2, *args, **kwargs):
+def phase_diff(signal1, signal2, kwargs={}):
     
     inspect=kwargs.get('inspect', False)
     kwargs['inspect']=False
-    a=phase(signal1,  *args, **kwargs)
-    b=phase(signal2,  *args, **kwargs)
+    a=phase(signal1,  **kwargs)
+    b=phase(signal2,  **kwargs)
 
     x=a-b
 
@@ -312,13 +331,17 @@ def phase_diff(signal1, signal2, *args, **kwargs):
     
     
 
-def phases_diff(signal1s, signal2s, *args, **kwargs):
+def phases_diff(signals1, signals2, **kwargs):
 
     inspect=kwargs.get('inspect', False)
     kwargs['inspect']=False
-    l=[phase_diff(s1, s2, *args, **kwargs) 
-       for s1,s2 in iter_double(signal1s, signal2s)]
-    
+#     l=[phase_diff(s1, s2, *args, **kwargs) 
+#        for s1,s2 in iter_double(signals1, signals2)]
+#     
+    args=[[s1,s2, kwargs] 
+          for s1, s2 in iter_double(signals1, signals2)] 
+    args=zip(*args)
+    l=map_parallel(phase_diff, *args, **{'threads': kwargs.get('threads',1)})
     x=numpy.array(l).ravel()
     
     if inspect:
@@ -357,10 +380,10 @@ def psd(x, NFFT=256, fs=2,  noverlap=0, normalize=True, **kwargs):
     detrend=kwargs.get('detrend',detrend_none )
     
     #No signal
-    if not numpy.mean(x):
-        return [[0],[0]]
+#     if not numpy.mean(x):
+#         return zeros((numFreqs,n), Float)
             
-    if normalize:
+    if normalize and numpy.mean(x):
         x/=numpy.mean(x)
         
     if NFFT % 2:
@@ -392,17 +415,19 @@ def psd(x, NFFT=256, fs=2,  noverlap=0, normalize=True, **kwargs):
 
     # Scale the spectrum by the norm of the window to compensate for
     # windowing loss; see Bendat & Piersol Sec 11.5.2
+    
     if n>1: Pxx = mean(Pxx,1)
+#     print len(Pxx)
     Pxx = divide(Pxx, norm(windowVals)**2)
     freqs = fs/NFFT*arange(0,numFreqs)
-    
+#     print len(Pxx)
     if kwargs.get('inspect', False):
         pylab.subplot(111).plot(freqs[2:], Pxx[2:])    
         pylab.xlabel('freqs')
         pylab.ylabel('Pxx')
         #pylab.ylim((0,numpy.mean(Pxx)))
         pylab.show() 
-    
+
     return Pxx, freqs
 
 
@@ -456,7 +481,11 @@ class Test_signal_processing(unittest.TestCase):
     def test_1_phase(self):
         fs=250.0
         lowcut, highcut, order,  fs,=10,20,3,fs
-        kwargs={'bin_extent':10.,
+        kwargs={'lowcut':10,
+                'highcut':20,
+                'order':3,
+                'fs':fs,
+                'bin_extent':10.,
                 'inspect':False,
                 'kernel_type':'gaussian',
                 'params':{'std_ms':5.,
@@ -464,11 +493,11 @@ class Test_signal_processing(unittest.TestCase):
         a=dummy_data_pop(self.n_pop, **{'fs':fs,
                                         'sim_time':self.sim_time})
         mean_a=numpy.mean(a, axis=0)
-        p1=phase(mean_a, lowcut, highcut, order,  fs, **kwargs)
-        p2=phases(a, lowcut, highcut, order,  fs, **kwargs)  
+        p1=phase(mean_a,  **kwargs)
+        p2=phases(a,  **kwargs)  
         self.assertEqual(mean_a.shape, p1.shape)
         self.assertEqual(a.shape, p2.shape)      
-        
+         
     def test_2_pds(self):
         m=4
         kwargs={'fs':1000.,
@@ -477,29 +506,36 @@ class Test_signal_processing(unittest.TestCase):
                 'noverlap':int(256/2*m),
                 'normalize':True}
         a=dummy_data_pop(100, **{'scale':1,'sim_time':40000.0})
-
+ 
         mean_a=numpy.mean(a, axis=0)
         p,f=psd(mean_a, **kwargs)
         self.assertEqual(p.shape, f.shape)
-      
+       
     def test_3_coherences(self):
         m=2
         kwargs={'fs':1000,
                 'inspect':False,
                 'NFFT':256*m,
-                'noverlap':int(256/2*m),}
-        n_pop, sim_time=10, 5000.0 
+                'noverlap':int(256/2*m),
+                'threads':8}
+        n_pop, sim_time=25, 5000.0 
         x=dummy_data_pop(n_pop, **{'scale':1,'sim_time':sim_time})
         y=dummy_data_pop(n_pop, **{'scale':1,'sim_time':sim_time,
                                    'shift':25})
+ 
         c1=coherences(x,y,**kwargs)
-        #kwargs['inspect']=True
+            #kwargs['inspect']=True
+         
         c2=mean_coherence(x,y,**kwargs)
-        
-    def test_4_phase_shift(self):
+             
+    def test_4_phase_diff(self):
+
         fs=1000.0
-        lowcut, highcut, order,  fs,=15,25,3,fs
-        kwargs={'bin_extent':10.,
+        kwargs={'lowcut': 15,
+                'highcut': 25,
+                'order':3,
+                'fs':fs,
+                'bin_extent':10.,
                 'kernel_type':'gaussian',
                 'params':{'std_ms':5.,
                           'fs': fs}}
@@ -513,10 +549,9 @@ class Test_signal_processing(unittest.TestCase):
         mean_x=numpy.mean(x, axis=0)
         
         mean_y=numpy.mean(y, axis=0)
-        args= lowcut, highcut, order, fs
         kwargs['inspect']=False
-        p1=phase_diff(mean_x, mean_y,  *args, **kwargs)
-        n_pop, sim_time=5, 500.0 
+        p1=phase_diff(mean_x, mean_y,  kwargs)
+        n_pop, sim_time=10, 500.0 
         
         
         x=dummy_data_pop(n_pop, **{'fs':fs,
@@ -525,7 +560,8 @@ class Test_signal_processing(unittest.TestCase):
                                    'scale':0.5,'sim_time':sim_time,
                                    'shift':0.})
         kwargs['inspect']=False
-        p2=phases_diff(x,y, *args, **kwargs)  
+        kwargs['threads']=8
+        p2=phases_diff(x, y,  **kwargs)    
 
         
                      
