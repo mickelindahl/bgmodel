@@ -5,7 +5,8 @@ Created on 21 mar 2014
 '''
 from copy import deepcopy
 
-from toolbox import pylab, misc
+from toolbox import pylab
+from toolbox import  misc
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
 from toolbox.network.manager import compute, save, load
@@ -209,7 +210,7 @@ def _optimize(flag, net, storage_dic, d, from_disk, **kwargs):
     kwargs_fmin={'model':net,
                  'call_get_x0':'get_x0',
                  'call_get_error':'sim_optimization', 
-                 'verbose':True}
+                 'verbose':kwargs.get('verbose',True)}
     
     if not from_disk: 
         f=Fmin(net.name, **kwargs_fmin)
@@ -231,7 +232,8 @@ def optimize(flag, dn, from_disks, ds, **k):
     nets=dn[flag]
     storage_dic=ds[flag]
     
-    for net, from_disk in zip(nets, from_disks):
+    for key, from_disk in zip(sorted(nets.keys()), from_disks):
+        net=nets[key]
         d = _optimize(flag, net, storage_dic, d, from_disk, **k)
     return {flag:d}    
 
@@ -266,7 +268,9 @@ def run(flag, dn, from_disks, ds, attr, **kwargs_dic):
     d={}
     nets=dn[flag]
     storage_dic=ds[flag]
-    for net, from_disk in zip(nets, from_disks):
+    for key, from_disk in zip(sorted(nets.keys()), from_disks):
+        net=nets[key]
+#     for net, from_disk in zip(nets, from_disks):
         d=_run(storage_dic, d, net, from_disk, attr, **kwargs_dic)
     return {flag:d}
 

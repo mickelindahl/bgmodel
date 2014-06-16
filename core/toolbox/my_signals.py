@@ -55,42 +55,205 @@ class Data_element_base(object):
         return self.__class__.__name__
 
 
-class Data_generic_base(object):
+class Data_activity_histogram_base(object):
     def plot(self, ax, **k):
-                
+           
+#         width=(self.x[1]-self.x[0])*0.8        
         if not isinstance(ax,my_axes.MyAxes):
             ax=my_axes.convert(ax)
   
+        #h=ax.bar(self.x, self.y, width, yerr=self.y_std, **k)
+#         k['histtype']=k.get('histtype','step')
+        
+        
+#         bins=numpy.arange(14)
+#         y=reduce(lambda x,y:list(x)+list(y),self.y)
         ax.plot(self.x, self.y, **k)
-        ax.set_xlabel('x')
-        ax.set_ylabel('y') 
+        
+        
+        
+        ax.set_xlabel('Time (ms)')
+        ax.set_ylabel('Firing rate (Hz') 
         ax.my_set_no_ticks(xticks=6, yticks=6)
         ax.legend()
+         
+    def get_activity_histogram_stat(self, **kwargs):
+        average=kwargs.get('average',True)
+        if not average:
+            y=map_parallel(statistical_test, *list([self.y_raw]), **kwargs)
+            
+        else:
+            y=statistical_test(self.y)
+        
+        return Data_activity_histogram_stat(**{'y':y})
+    
+def statistical_test(y):
+    from scipy.stats import chisquare, binom_test
+    y_mean=numpy.mean(y)
+    n_obs=len(y)
+    
+    if y_mean<10:
+        l=list(y_mean>y[:n_obs/2])+list(y_mean<y[n_obs/2:])
+        success=sum(l)
+        failures=n_obs-success
+        p=binom_test(numpy.array([success, failures]), 0.5)
 
-class Data_generic(Data_element_base, Data_generic_base):
-    pass  
+    
+    else:
+        _, p=chisquare(
+                        y, 
+                        numpy.ones(n_obs)*y_mean,
+                        )
+    
+    return p
+    
+
+class Data_activity_histogram(Data_element_base, 
+                              Data_activity_histogram_base):
+    pass
 
 
-class Data_phase_diff_base(object):
-    def hist(self, ax,  num=100.0, **k):
+class Data_activity_histogram_stat_base(object):
+    def hist(self, ax,  num=20.0, **k):
         if not isinstance(ax,my_axes.MyAxes):
             ax=my_axes.convert(ax)
             
         k['histtype']=k.get('histtype','step')
         
         
-        bins=numpy.linspace(-numpy.pi, numpy.pi, num)
+        bins=numpy.linspace(0, 1)
 #         y=reduce(lambda x,y:list(x)+list(y),self.y)
+        ax.hist(numpy.array(self.y), bins,  **k)
+        ax.set_xlim(0, 1)
+        ax.set_xlabel('p value') 
+        ax.set_ylabel('Count') 
+        ax.my_set_no_ticks(xticks=10, yticks=6)
+        ax.legend()
+
+class Data_activity_histogram_stat(Data_element_base, 
+                                   Data_activity_histogram_stat_base):
+    pass
+
+class Data_bar_base(object):
+    
+    def autolabel(self, ax, rects):
+        # attach some text labels
+        for rect in rects:
+            height = rect.get_height()
+            ax.text(rect.get_x()+rect.get_width()/2., 
+                    1.05*height, 
+                    '{}'.format(round(height,2)),
+                ha='center', va='bottom')
+    
+    def bar(self, ax , **k):
+                 
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+                
+            
+        N=len(self.y)
+        
+        ind=numpy.arange(N)
+        width=0.8
+        
+        if hasattr(self, 'y_std'):
+            h=ax.bar(0+ind, self.y, width, yerr=self.y_std, **k )
+        else: 
+            h=ax.bar(0+ind, self.y, width, **k )
+            
+        self.autolabel(ax, h)
+
+        colors=misc.make_N_colors('jet', len(h))
+        for i, b in enumerate(h):
+            b.set_color(colors[i])
+
+        ax.set_ylabel('y')
+        ax.set_xticks(ind+width/2)
+
+
+    
+class Data_bar(Data_element_base,Data_bar_base):
+    pass
+
+class Data_generic_base(object):
+    def plot(self, ax, **k):
+                
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+  
+        h=ax.plot(self.x, self.y, **k)
+        
+        if hasattr(self, 'y_std'):
+            color=pylab.getp(h[0], 'color')   
+            ax.fill_between(self.x, 
+                            self.y-self.y_std,
+                            self.y+self.y_std, 
+                            facecolor=color, alpha=0.5)  
+        
+        ax.set_xlabel('x')
+        ax.set_ylabel('y') 
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.legend()
+        
+
+
+class Data_generic(Data_element_base, Data_generic_base):
+    pass  
+
+
+class Data_phase_diff_base(object):
+    
+    def hist(self, ax,  num=100.0, **k):
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+            
+        k['histtype']=k.get('histtype','step')
+            
+        bins=numpy.linspace(-numpy.pi, numpy.pi, num)
+        
+#         y=reduce(lambda x,y:list(x)+list(y),self.y)
+
         ax.hist(numpy.array(self.y), bins,  **k)
         ax.set_xlim(-numpy.pi, numpy.pi)
         ax.set_xlabel('Angle (Rad)') 
         ax.set_ylabel('Count') 
-        ax.my_set_no_ticks(xticks=6, yticks=6)
+        ax.my_set_no_ticks(xticks=10, yticks=6)
         ax.legend()
 
         
 class Data_phase_diff(Data_element_base, Data_phase_diff_base):
     pass
+
+
+class Data_phases_diff_with_cohere_base(object):
+    def hist(self, ax,  num=100.0, **k):
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+            
+        k['histtype']=k.get('histtype','step')
+        k['normed']=1
+        k['linestyle']='dashed'
+        bins=numpy.linspace(-numpy.pi, numpy.pi, num)
+#         y=reduce(lambda x,y:list(x)+list(y),self.y)
+        h=ax.hist(numpy.array(self.y.ravel()), bins,  **k)
+        
+        color=pylab.getp(h[2][0], 'edgecolor')   
+        
+        k['linestyle']='solid'
+        k['color']=color
+        idx=self.idx_sorted[self.coherence[self.idx_sorted]>self.p_conf95]
+        ax.hist(numpy.array(self.y[idx,:].ravel()), bins,  **k)
+        
+        ax.set_xlim(-numpy.pi, numpy.pi)
+        ax.set_xlabel('Angle (Rad)') 
+        ax.set_ylabel('Count') 
+        ax.my_set_no_ticks(xticks=10, yticks=6)
+        ax.legend()
+        
+class Data_phases_diff_with_cohere(Data_element_base,
+                                   Data_phases_diff_with_cohere_base):
+    pass
+
       
 class Data_firing_rate_base(object):
     def plot(self, ax, win=100, t_stop=0, t_start=numpy.inf, **k):
@@ -98,7 +261,7 @@ class Data_firing_rate_base(object):
         if not isinstance(ax,my_axes.MyAxes):
             ax=my_axes.convert(ax)
             
-        exp=(self.x<t_start)*(self.x>t_stop)
+        exp=(self.x>t_start)*(self.x<t_stop)
         x,y=self.x[exp], self.y[exp]
         y=misc.convolve(y, **{'bin_extent':win, 
                               'kernel_type':'triangle',
@@ -114,10 +277,77 @@ class Data_firing_rate_base(object):
         d={'x':x, 'y':y}
         return Data_psd(**d)
 
+    def get_activity_histogram(self, *args, **kwargs):
+   
         
+        if kwargs.get('average', True):
+            y=self.y
+            bins=kwargs.get('bins', 14)
+            p=kwargs.get('period', 100.0)
+            y_mean, y_std, x = get_activity_historgram(y, bins, p)
+            d = {'y':y_mean, 'y_std':y_std, 'x':x}
+        else:
+            
+            y=self.y_raw
+            bins=[kwargs.get('bins', 14)]*y.shape[0]
+            p=[kwargs.get('period', 100.0)]*y.shape[0]
+            d=map_parallel(get_activity_historgram,*[y, bins, p])
+        
+            y_raw=numpy.array(d)[:,0,:]
+            y=numpy.mean(y_raw, axis=0)
+            y_std=numpy.std(y_raw, axis=0)
+            
+            x=numpy.array(d)[0,2,:]
+            d = {'y':y, 'y_std':y_std, 'y_raw':y_raw,'x':x}
+               
+        return Data_activity_histogram(**d)
         
 class Data_firing_rate(Data_element_base, Data_firing_rate_base):
     pass
+
+
+class Data_firing_rates_base(object):
+
+    def get_activity_histogram(self, *args, **kwargs):
+        y=self.y
+        bins=[kwargs.get('bins', 14)]*y.shape[0]
+        p=[kwargs.get('period', 100.0)]*y.shape[0]
+        
+        d=map_parallel(get_activity_historgram,*[y, bins, p])
+        
+        y_raw=numpy.array(d)[:,0,:]
+        y=numpy.mean(y_raw, axis=0)
+        y_std=numpy.std(y_raw, axis=0)
+        
+        x=numpy.array(d)[0,0,:]
+        
+        d = {'y':y, 'y_std':y_std, 'y_raw':y_raw,'x':x}
+        
+        return Data_activity_histogram(**d)
+        
+class Data_firing_rates(Data_element_base, Data_firing_rates_base):
+    pass
+
+def get_activity_historgram(y, bins, p):
+    n = int(len(y) / p)
+    y = y[:n * p]
+    y = numpy.reshape(y, [n, p])
+    y = numpy.mean(y, axis=0)
+    m = int(numpy.ceil(p / bins))
+    n_nans = int(m * bins - p)
+    j = m - 1
+    for _ in range(n_nans):
+        y = numpy.insert(y, j, numpy.NaN)
+        j += m
+    
+    assert len(y) == m * bins, 'not equal'
+    y = numpy.reshape(y, [bins, m])
+    import scipy.stats
+    y_mean = scipy.stats.nanmean(y, axis=1)
+    y_std = scipy.stats.nanstd(y, axis=1)
+    x = numpy.linspace(0, p, bins)
+
+    return y_mean, y_std, x
 
 
 class Data_fmin_base(object):
@@ -208,9 +438,14 @@ class Data_mean_coherence_base(object):
         if list(x):
             self.x=x 
            
-        h=ax.plot(self.x[2:], self.y[2:], **k)
+        h=ax.plot(self.x, self.y, **k)
+        
+        if hasattr(self, 'p_conf95'):
+            ax.plot(self.x, self.p_conf95, **{'color':'k'}) 
+           
         ax.set_xlabel('Frequency (Hz)') 
         ax.set_ylabel('Coherence') 
+        ax.set_ylim([0,1])
         ax.my_set_no_ticks(xticks=6, yticks=6)
         ax.legend()
         return h
@@ -365,7 +600,7 @@ class MyConductanceList(ConductanceList):
         # method of a base class(also called a superclass). The first argument 
         # in the function call, 'MyConductanceList', says I want to invoke a 
         # method of the superclass (or base class) of MyConductanceList which 
-        # is ConductanceList. The next argument. seöf, passes a reference to 
+        # is ConductanceList. The next argument. sef, passes a reference to 
         # the object so that ConductanceList can get to the object and add 
         # its attributes to it. The next part of the statement __init__(
         # signals, id_list, dt, t_start, t_stop, dims) tells python I want to
@@ -761,7 +996,7 @@ class MyVmList(VmList):
                 #idx=spikes
                 idx=idx[idx<len(signal)]
                 signal[idx] =peak
-                print 
+#                 print 
 
 
     def my_image_plot(self, display = None, kwargs = {}):
@@ -901,16 +1136,28 @@ class MySpikeList(SpikeList):
         
         t_start=kwargs.get('t_start', None)
         t_stop=kwargs.get('t_stop', None)
+        
+        
         x=self.time_axis_centerd(time_bin) 
         y=self.firing_rate(time_bin, **kwargs)
-        if t_start:
-            y=y[x>t_start]
-            x=x[x>t_start]
-        if t_stop:
-            y=y[x<t_stop]
-            x=x[x<t_stop]
-        d={'ids':self.id_list, 'x':x,  'y':y,}    
+        
+        if kwargs.get('average', True):
+            if t_start: y=y[x>t_start]
+            if t_stop: y=y[x<t_stop]        
+            y_raw=None    
+        else:
+            if t_start:y=y[:,x>t_start]
+            if t_stop:y=y[:, x<t_stop]
+            y_raw=y
+            y=numpy.mean(y, axis=0)
+        
+        if t_start: x=x[x>t_start]
+        if t_stop: x=x[x<t_stop]
+        
+        
+        d={'ids':self.id_list, 'x':x,  'y':y, 'y_raw':y_raw}    
         return Data_firing_rate(**d)
+
 
     def Factory_phase_diff(self, *args, **kwargs):
         '''
@@ -935,6 +1182,52 @@ class MySpikeList(SpikeList):
             'y':y}
 
         return Data_phase_diff(**d)
+
+
+    def Factory_phases_diff_with_cohere(self, *args, **kwargs):
+        '''
+        Returns the phase of the population firing rate filters in the band
+        lowcut to highcut. 
+        '''
+        fs=kwargs.get('fs')
+        low=kwargs.get('lowcut', 0.5)
+        high=kwargs.get('highcut', 1.5)
+        time_bin=int(1000/fs)
+        other=kwargs.get('other', None)
+        sample=kwargs.get('sample',10)
+        
+        assert other!=None, 'need to provide other spike list'
+        
+        ids1, ids2=shuffle(*[self.id_list, other.id_list],
+                           **{'sample':sample})
+               
+        sl1=self.id_slice(ids1)
+        sl2=other.id_slice(ids2)
+        
+        signals1=sl1.firing_rate(time_bin, average=False, **kwargs)
+        signals2=sl2.firing_rate(time_bin, average=False, **kwargs)       
+        
+#         args=[lowcut, highcut, order, fs]
+        y=sp.phases_diff(signals1, signals2, **kwargs)
+        x2, y2=sp.coherences(signals1, signals2, **kwargs)
+        
+        idx, v =sp.sort_coherences(x2, y2, low, high)
+ 
+        L=float(len(signals1[0])/kwargs.get('NFFT'))
+        p_conf95=numpy.ones(len(x2))*(1-0.05**(1/(L-1)))  
+ 
+        
+        d= {'ids1':self.id_list,
+            'ids2':other.id_list,
+            'x':self.time_axis_centerd(time_bin) , 
+            'y':y,
+            'coherence':v,
+            'idx_sorted':idx,
+            'p_conf95':p_conf95}
+
+        return Data_phases_diff_with_cohere(**d)
+
+
 
     def Factory_isis(self, *args, **kwargs):
         run=kwargs.get('run',1)
@@ -965,11 +1258,21 @@ class MySpikeList(SpikeList):
         signals2=sl2.firing_rate(time_bin, average=False, **kwargs) 
         
         x, y=sp.mean_coherence(signals1, signals2, **kwargs)
+
+        L=float(len(signals1[0])/kwargs.get('NFFT'))
+        p_conf95=numpy.ones(len(x))*(1-0.05**(1/(L-1)))  
+        
         d={'ids1':ids1,
-                'ids2':ids2, 
-                'x':x, 
-                'y':y,} 
+            'ids2':ids2, 
+            'x':x, 
+            'y':y,
+            'p_conf95':p_conf95} 
+        
+        
         return Data_mean_coherence(**d)       
+    
+    
+        
     
     def Factory_mean_rates(self, *args, **kwargs):
         run=kwargs.get('run',1)
@@ -987,16 +1290,20 @@ class MySpikeList(SpikeList):
             kwargs['t_start']=start
             y.append(self.mean_rate(**kwargs)) 
             fr=self.firing_rate(1)
+        
         y=numpy.array(y)
-        y=numpy.reshape(y,(repetitions, len(y)/repetitions))
+        if not y.shape==(1,):
+            y=numpy.reshape(y,(repetitions, len(y)/repetitions))
         y_std=numpy.std(y, axis=0)
         y_mean=numpy.mean(y, axis=0)
         x=numpy.array(range(len(y_mean)))
+        
         d={'ids':self.id_list,
            'y_raw_data':y,
            'y':y_mean, 
            'y_std':y_std,
            'x':x}
+        
         return Data_mean_rate_slices(**d) 
 
     def Factory_psd(self, *args, **kwargs):
@@ -1021,6 +1328,7 @@ class MySpikeList(SpikeList):
         
         isi=numpy.concatenate((self.isi()))
         d['isi']['mean']=numpy.mean(isi,axis=0)
+        d['isi']['1000/mean']=1000./numpy.mean(isi,axis=0)
         d['isi']['std']=numpy.std(isi,axis=0)
         d['isi']['CV']=d['isi']['std']/d['isi']['mean']
         return Data_spike_stat(**d)
@@ -1203,7 +1511,8 @@ class MySpikeList(SpikeList):
     def get_phase_diff(self, *args, **kwargs):       
         return self.Factory_phase_diff(*args, **kwargs)
 
-
+    def get_phases_diff_with_cohere(self, *args, **kwargs):       
+        return self.Factory_phases_diff_with_cohere(*args, **kwargs)
 
     def get_phases(self, lowcut, highcut, order,  fs, **kwargs):       
         
@@ -1574,6 +1883,8 @@ class BaseListMatrix(object):
             self.attr=name
             return self._caller
         else:
+#             for s in sorted(self.allowed):
+#                 print s
             raise AttributeError(name)
 
     def __getstate__(self):
@@ -1615,8 +1926,8 @@ class BaseListMatrix(object):
         #if type(a)==list:
         #    a=to_numpy_2darray(a)
         
-        s='Wrong length. List need to be {}'
-        assert a.shape[1]==m.shape[1], s.format(m.shape[1])
+        s='Wrong length. List need to be {} is {}'
+        assert a.shape[1]==m.shape[1], s.format(m.shape[1], a.shape[1])
         
 #         a = to_numpy_2darray(a)
         m=numpy.concatenate((m,a.m), axis=0)
@@ -1806,7 +2117,17 @@ class SpikeListMatrix(BaseListMatrix):
         a=[list(aa) for aa in a]
         
         return SpikeListMatrix(a)
-    
+
+    def merge_matricies(self, other):
+        new=deepcopy(self)
+
+        for i,j, obj1 in iter2d(new.m):
+            obj2=deepcopy(other.m[i,j])
+            
+            obj1.merge(obj2)
+            
+        return new
+        
 def allowed_spike_list_functions():
     l=[
        'firing_rate',
@@ -1823,6 +2144,7 @@ def allowed_spike_list_functions():
        'get_phase',
        'get_phase_diff',
        'get_phases',
+       'get_phases_diff_with_cohere',
        'get_psd',
        'get_spike_stats',
        'mean_rate',
@@ -1878,9 +2200,12 @@ def dummy_data(flag, **kwargs):
     np_rand=numpy.random.random
     sin=numpy.sin
     
+    
+    modulated=kwargs.get('modulated', True) 
     n_events=kwargs.get('n_events', 50)    
     n_pop=kwargs.get('n_pop', 10)
     n_sets=kwargs.get('n_sets', 3)
+    id_start=kwargs.get('id_start',0)
     reset=kwargs.get('reset',False)
     run=kwargs.get('run',0)
     scale=kwargs.get('scale',2)
@@ -1898,7 +2223,7 @@ def dummy_data(flag, **kwargs):
         stop=int(sim_time)
         
     V_rest=kwargs.get('V_rest', 60.0)
-    ids=range(n_pop)[set_slice.get_slice()]
+    ids=range(id_start, n_pop+id_start)[set_slice.get_slice()]
     if flag=='spike':
             
         n_events=(n_events+100*run+50*set)*sim_time/1000.0
@@ -1907,7 +2232,7 @@ def dummy_data(flag, **kwargs):
         i, t=[],[]#numpy.array(sw(ids,n_events))
         #t=numpy.array(sw(range(start, stop), n))
         for j in xrange(n_pop):
-            i.append(n*[j])
+            i.append(n*[j+id_start])
             a=numpy.array(range(start, stop))
             a=a*(1+0.1*numpy.random.random(len(a)))
             a=a[(a>start)*(a<stop)]
@@ -1920,8 +2245,13 @@ def dummy_data(flag, **kwargs):
         i, t=numpy.take(i, ind), numpy.take(t, ind)
         
         jitter= numpy.random.normal(loc=0,  scale=scale, size=(len(t)))
-        p_events=numpy.sin(t*2*numpy.pi/50-numpy.pi*shift)+jitter
-        i,t=i[p_events>0.3],t[p_events>0.3]
+        if modulated:
+            v=numpy.sin(t*2*numpy.pi/100-numpy.pi*shift)
+        else:
+            v=0
+            
+        p_events=v+jitter
+        i,t=i[p_events>0.6],t[p_events>0.6]
         
         l=MySpikeList( zip(i,t), ids, t_start=start, t_stop=stop)
     
@@ -1976,27 +2306,77 @@ def transpose_if_axis_1(axis, m):
     return m
 
 
+
 class TestDataElement(unittest.TestCase):
     def setUp(self):
-        self.sim_time=1000.0
+        self.sim_time=5000.0
         self.sl=dummy_data('spike', **{'run':0, 'set':0, 'n_sets':1,
-                                       'sim_time':self.sim_time})
-        self.vl=dummy_data('voltage', **{'run':0, 'set':0, 'n_sets':1,
-                                       'sim_time':self.sim_time})
+                                       'sim_time':self.sim_time,
+                                       'scale':0.1})
+        self.slnm=dummy_data('spike', **{'run':0, 'set':0, 'n_sets':1,
+                                       'sim_time':self.sim_time,
+                                       'scale':1, 'modulated':False})
+        
+        self.vl=dummy_data('voltage', **{'run':0, 
+                                         'set':0, 
+                                         'n_sets':1,
+                                         'sim_time':self.sim_time})
     
     
-    def test_element(self):
-        d={'x':1,'y':2, 'z':3}
-        obj=Data_element_base(**d)
-        for key in d.keys():
-            self.assertTrue(key in dir(obj))
+#     def test_element(self):
+#         d={'x':1,'y':2, 'z':3}
+#         obj=Data_element_base(**d)
+#         for key in d.keys():
+#             self.assertTrue(key in dir(obj))
+# 
+#     def test_firing_rate_plot(self):    
+#         obj=self.sl.Factory_firing_rate()
+#         obj.plot(pylab.subplot(111), win=20.0)
+# #         pylab.show()
+# 
+#     def test_activity_histogram(self):
+#         obj1=self.sl.Factory_firing_rate()
+#         obj2=obj1.get_activity_histogram()
+#         self.assertAlmostEqual(obj2.get_activity_histogram_stat().y, 
+#                                0.0, delta=0.001) 
+#         
+#         obj1=self.slnm.Factory_firing_rate()
+#         obj2=obj1.get_activity_histogram()
+#         self.assertAlmostEqual(obj2.get_activity_histogram_stat().y, 
+#                                1.0, delta=0.05) 
+#         
+#         obj1=self.sl.Factory_firing_rate(**{'average':False})
+#         obj2=obj1.get_activity_histogram(**{'average':False})
+#         
+#         self.assertAlmostEqual(numpy.mean(obj2.get_activity_histogram_stat(**{'average':False}).y), 
+#                                0.0, delta=0.001) 
 
-    def test_firing_rate_plot(self):    
-        obj=self.sl.Factory_firing_rate()
-        obj.plot(pylab.subplot(111), win=100.0)
+        
+    def test_phases_diff_cohere_plot(self):
+        
+        other=self.sl
+        kwargs={
+                'NTFF':256,
+                'fs':1000.0,
+                'NFFT':256,
+                'noverlap':int(256/2),
+                'other':other,
+                'sample':10.,   
+                
+                'lowcut':10,
+                'highcut':20,
+                'order':3,
+                'bin_extent':10.,
+                'kernel_type':'gaussian',
+                'params':{'std_ms':5.,
+                          'fs': 1000.0}
+      
+                }
+                
+        obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
+        obj.hist(pylab.subplot(111))
         pylab.show()
-    
-    
+
 #     def test_IF_curve_plot(self):
 #           
 #         self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
@@ -2072,15 +2452,29 @@ class TestSpikeListMatrix(unittest.TestCase):
         
         self.n_runs=4
         self.n_sets=4
-        l=[]=[]
+        self.n_pop=10
+        l,l2=[],[]
         for run in xrange(self.n_runs):
             l.append([])
-            for set in xrange(self.n_sets-1):               
+            l2.append([])
+            for set in xrange(self.n_sets):               
                 msl=dummy_data('spike', **{'run':run, 
-                                            'set':set,
-                                            'n_sets':self.n_sets})
-                l[run].append(msl)  
+                                           'set':set,
+                                           'n_sets':self.n_sets,
+                                           'n_pop':self.n_pop})
+                l[run].append(msl) 
+                
+                msl=dummy_data('spike', **{'id_start':self.n_pop,
+                                           'run':run, 
+                                           'set':set,
+                                           'n_sets':self.n_sets,
+                                           'n_pop':self.n_pop})
+                l2[run].append(msl)  
+ 
         self.spike_lists=l
+        self.spike_lists2=l2
+
+
     
         
     def test_1_create(self):
@@ -2095,7 +2489,7 @@ class TestSpikeListMatrix(unittest.TestCase):
         self.assertEqual(slc[0,0].shape, (1,1))
 
     def test_2_calls_wrapped_class(self):
-        other=SpikeListMatrix(self.spike_lists)
+        other=SpikeListMatrix(self.spike_lists2)
         calls=[
                ['firing_rate', [100], {'average':True}],
 
@@ -2138,6 +2532,7 @@ class TestSpikeListMatrix(unittest.TestCase):
                ['mean_rates', [], {}], 
                ['merge', [], {}],
                ['my_raster', [], {}],
+               ['merge_matricies', [other],{}]
                ]
         
         slc=SpikeListMatrix(self.spike_lists)
@@ -2169,20 +2564,20 @@ class TestSpikeListMatrix(unittest.TestCase):
         slc=SpikeListMatrix(self.spike_lists)
         slc1=slc.merge(axis=0)
         slc2=slc.merge(axis=1)
-        self.assertEqual((1,self.n_sets-1), slc1.shape)
+        self.assertEqual((1,self.n_sets), slc1.shape)
         self.assertEqual((self.n_runs,1), slc2.shape)
 
     def test_5_concatenate(self):
         
         slc1=[]
         slc2=[]
-        for set in xrange(self.n_sets-1):
+        for set in xrange(self.n_sets):
             slc1.append(dummy_data('spike', **{'run':self.n_runs, 
                                                 'set':set, 
                                                 'n_sets':self.n_sets}))
         for run in xrange(self.n_runs):
             slc2.append(dummy_data('spike', **{'run':run, 
-                                                'set':self.n_sets-1,
+                                                'set':self.n_sets,
                                                 'n_sets':self.n_sets
                                                  }))
             
@@ -2193,8 +2588,8 @@ class TestSpikeListMatrix(unittest.TestCase):
         slc01.concatenate(SpikeListMatrix(slc1), axis=0)
         slc02.concatenate(SpikeListMatrix(slc2), axis=1)
         
-        self.assertEqual((self.n_runs+1,self.n_sets-1), slc01.shape)
-        self.assertEqual((self.n_runs,self.n_sets), slc02.shape)
+        self.assertEqual((self.n_runs+1,self.n_sets), slc01.shape)
+        self.assertEqual((self.n_runs,self.n_sets+1), slc02.shape)
 
     
 class TestVm_list_matrix(unittest.TestCase):     
@@ -2233,9 +2628,9 @@ class TestVm_list_matrix(unittest.TestCase):
 if __name__ == '__main__':
     test_classes_to_run=[
                         TestDataElement,
-                        TestSpikeList,
-                        TestSpikeListMatrix,
-                        TestVm_list_matrix
+#                         TestSpikeList,
+#                         TestSpikeListMatrix,
+#                         TestVm_list_matrix
                          ]
     suites_list = []
     for test_class in test_classes_to_run:

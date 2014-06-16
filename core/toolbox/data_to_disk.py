@@ -85,6 +85,9 @@ class Storage_dic(Base_dic):
                 os.remove(p)
             os.rmdir(path)
     
+    def delete(self, k):
+        del self.dic[k]
+    
     def garbage_collect(self):
         
         files1=[self.file_name_info]
@@ -104,18 +107,24 @@ class Storage_dic(Base_dic):
             else:
                 os.remove(f)
      
-    def save_fig(self, fig, extension=''):
+    def save_fig(self, fig, extension='', format='svg'):
         with misc.Stopwatch('Saving figure...'):
-            fig.savefig( self.file_name +extension+'.svg', format = 'svg') 
+            fig.savefig( self.file_name +extension+'.'+format, 
+                         format = format) 
     
-    def save_figs(self, figs, extension=''):
+    def save_figs(self, figs, extension='', format='svg'):
+        
+        path='/'.join(self.file_name .split('/')[0:-1])
+        if not os.path.isdir(path):
+            mkdir(path)
+        
         with misc.Stopwatch('Saving figures...'):
             for i, fig in enumerate(figs):
-                fig.savefig( self.file_name +extension
-                             +'_'+str(i)+'.svg', format = 'svg')              
+                fig.savefig( self.file_name +extension+'_'+str(i)+'.'+format, 
+                             format = format)              
     
     @classmethod
-    def load(cls, file_name):
+    def load(cls, file_name, nets=None):
         '''It makes perfect sense that you should use foo=Foo.load(), 
         and not foo=Foo();foo.load(). for example, if Foo has some 
         variables that MUST be passed in to the init, you would need 
@@ -124,10 +133,17 @@ class Storage_dic(Base_dic):
         it would be for nothing. '''
         
         if os.path.isfile(file_name+'.pkl'):        
-            return pickle_load(file_name)
+            d= pickle_load(file_name)
+            if nets:
+                for k in d.keys():
+                    if k in nets:
+                        continue
+                    d.delete(k)
+            return d
         else:
             return Storage_dic(file_name)
-    
+
+                    
 #     @classmethod
     def load_dic(self, *filt):
               

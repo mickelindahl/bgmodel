@@ -6,7 +6,7 @@ Created on Jun 27, 2013
 import os
 import pylab
 
-from scripts_inhibition.network import show_fr, show_hr
+from scripts_inhibition.simulate import show_fr, show_hr
 from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
@@ -59,7 +59,7 @@ def main():
     sd.garbage_collect()
     
     d={}
-    for net, from_disk in zip(nets, [1]*2):
+    for net, from_disk in zip(nets, [0]*2):
         if not from_disk:
             dd = run(net)  
             dd = compute(dd, models,  attr, **kwargs_dic)      
@@ -71,7 +71,8 @@ def main():
                                          
     figs=[]
 
-    figs.append(show_fr(d, models, **{'labels':['Normal', 'Double STN-GPe TI']}))
+    figs.append(show_fr(d, models, **{'labels':['Normal', 
+                                                'Double STN-GPe TI']}))
     figs.append(show_hr(d, models, **{'labels':['Normal', 'Double STN-GPe TI']}))
     
     sd.save_figs(figs)

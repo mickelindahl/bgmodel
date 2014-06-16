@@ -8,11 +8,12 @@ import os
 if not os.environ.get('DISPLAY'):
     import matplotlib
     matplotlib.use('Agg')
-    
+    print 'hej'
     import matplotlib.pylab as plt
     plt.ioff()
 
 from matplotlib.pylab import *
+
 import matplotlib.pylab
 __doc__ = matplotlib.pylab.__doc__
 

@@ -503,12 +503,13 @@ class Conn(object):
                    
         t=time.time()-t
         if display_print:
-            s='Conn: {0:18} Connections: {1:8} Fan pool:{2:6} ({2:6}) Time:{3:5} sec'
+            s='Conn: {0:18} Connections: {1:8} Fan pool:{2:6} ({3:6}) Time:{4:5} sec Rule:{5}'
             a=[self.name, 
                len(self.pre), 
                round(float(len(self.pre))/driver.get_n(),0),
                self.fan_in,
-               round(t,2)]
+               round(t,2),
+               self.rule]
             print s.format(*a)
             
     
@@ -552,9 +553,9 @@ class Conn(object):
          
         elif self.rule in ['all-all', 'set-set', 
                            'set-not_set', 'all_set-all_set']:
-            
+     
             driver_sets=driver.get_sets(self.rule.split('-')[0]) 
-            pool_sets=pool.get_sets(self.rule.split('-')[0]) 
+            pool_sets=pool.get_sets(self.rule.split('-')[1]) 
             for slice_dr, slice_po in zip(driver_sets, pool_sets):     
                 self._add_connections(slice_dr, slice_po, *args)
 
@@ -646,7 +647,8 @@ def create_populations(params_nest, params_popu):
         my_nest.MyCopyModel( params_nest[model], model)
       
         args=[name]
-        kwargs=deepcopy(params_popu[name])                            
+        kwargs=deepcopy(params_popu[name])   
+#         print name                         
         popus.add(*args, **kwargs)
             
     return popus
@@ -694,6 +696,8 @@ class TestSurface(unittest.TestCase):
         self.assertEqual(len(s[0]),m)
         self.assertEqual(len(s[1]),m)
         self.assertEqual(len(s[1][0]),4)
+        for i, l in enumerate(s[1]):
+            self.assertTrue(not my_slice(i, 10, m) in l)
         self.assertEqual(len(s[2]),m*m)
     
     def test_apply_boundary_conditions(self):
@@ -765,13 +769,14 @@ class TestSurface_dic(unittest.TestCase):
 class TestConn(unittest.TestCase):
         
     def setUp(self):
-        sets=[my_slice(s, 100, 2) for s in range(2)]
+        n_sets=3
+        sets=[my_slice(s, 100, n_sets) for s in range(n_sets)]
         self.n_sets=len(sets)
         nd=Surface_dic()
-        nd.add('i1', **{'n':100, 'n_sets':2, 'sets':sets })
-        nd.add('i2', **{'n':200, 'n_sets':2, 'sets':sets })
-        nd.add('i3', **{'n':50, 'n_sets':2, 'sets':sets })
-        nd.add('n2', **{'n':100, 'n_sets':2, 'sets':sets})
+        nd.add('i1', **{'n':100, 'n_sets':n_sets, 'sets':sets })
+        nd.add('i2', **{'n':200, 'n_sets':n_sets, 'sets':sets })
+        nd.add('i3', **{'n':50, 'n_sets':n_sets, 'sets':sets })
+        nd.add('n2', **{'n':100, 'n_sets':n_sets, 'sets':sets})
         self.surfs=nd
         self.source=nd['i1']
         self.source2=nd['i2']
@@ -803,7 +808,7 @@ class TestConn(unittest.TestCase):
                 self.assertEqual(len(c.pre), 
                                  self.target.get_n()*self.source2.get_n())
             else:
-
+#                 print rule
                 c._set(self.target, self.source2)
                 self.assertAlmostEquals(fan_in, 
                                         float(len(c.pre))/self.target.get_n(), 
@@ -812,7 +817,20 @@ class TestConn(unittest.TestCase):
                 c._set(self.target, self.source3)
                 self.assertAlmostEquals(fan_in, 
                                         float(len(c.pre))/self.target.get_n(), 
-                                        delta=3)            
+                                        delta=3)          
+                
+                if rule=='set-not_set':
+                    l=[]
+                    for pre, post in zip(c.pre, c.post):
+                        n_sets=self.target.get_n_sets()
+                        self.assertTrue(pre % n_sets != post % n_sets)
+                if rule=='set-set':
+                    l=[]
+                    for pre, post in zip(c.pre, c.post):
+                        n_sets=self.target.get_n_sets()
+                        self.assertTrue(pre % n_sets == post % n_sets)
+
+                  
 #            for i, s in enumerate(c.sets):
 #                pylab.plot(c.pre[s], c.post[s], colors[i], marker='*',ls='')
 #            pylab.show()

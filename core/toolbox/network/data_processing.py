@@ -9,6 +9,7 @@ import pylab
 import random
 import unittest
 
+from copy import deepcopy
 from toolbox import misc
 from toolbox.my_signals import SpikeListMatrix, VmListMatrix 
 from toolbox.my_signals import dummy_data as dd
@@ -99,6 +100,13 @@ class Data_unit_base(object):
 
     def get_wrap(self):
         return self.wrap
+
+
+    def merge(self, other):
+        new=deepcopy(self)
+        new.wrap=new.wrap.merge_matricies(other.wrap)
+        return new
+
 
     def isrecorded(self, name):
         return self.recorded[name]
@@ -434,6 +442,10 @@ class Data_units_relation(object):
 
     def get_phase_diff(self,  *args, **kwargs):
         attr='phase_diff'
+        return self.cmp(attr, *args, **kwargs)
+
+    def get_phases_diff_with_cohere(self,  *args, **kwargs):
+        attr='phases_diff_with_cohere'
         return self.cmp(attr, *args, **kwargs)
     
 #     def compute_set(self, attr, *args, **kwarg):

@@ -86,7 +86,8 @@ HOME = expanduser("~")
 
 #MODULE_PATH=  (HOME+'/tools/NEST/dist/'+
 #               'install-nest-2.2.2/lib/nest/ml_module')
-MODULE_PATH= (HOME+'/opt/NEST/dist/install-nest-2.2.2/lib/nest/ml_module')
+#MODULE_PATH= (HOME+'/opt/NEST/dist/install-nest-2.2.2/lib/nest/ml_module')
+MODULE_PATH= ('ml_module')
     
 #@todo: change name on Node to Surface
 class Call(object):
@@ -1085,7 +1086,9 @@ class Par_base_mixin(object):
             'target_n':GetNode(target,'n', dtype=str),
             'target_n_sets':GetNode(target,'n_sets', dtype=str),
             'beta_fan_in':GetConn(name,'beta_fan_in', dtype=str),
-            'rule':GetConn(name,'rule', dtype=str)}
+            'rule':GetConn(name,'rule', dtype=str),
+            'fan_in':GetConn(name,'fan_in', dtype=str)}
+        
         file_name=format_connectionn_save_path(**k)
         
         sp=GetSimu('path_conn')+file_name
@@ -2064,7 +2067,7 @@ class InhibitionPar_base(object):
         for key in ['C1', 'C2', 'CF', 'CS','EA', 'EI', 'ES']: 
             dic['netw']['input'][key]=deepcopy(d)        
         
-        dic['netw']['n_actions']=3
+        dic['netw']['n_actions']=1
            
         dic['netw']['n_nuclei']={'M1':2791000*0.425,
                                  'M2':2791000*0.425,
@@ -2124,7 +2127,7 @@ class InhibitionPar_base(object):
         
         # GPe A-FSN
         dic['nest']['GA_FS_gaba']={}
-        dic['nest']['GA_FS_gaba']['weight']   = 1.     # n.d. inbetween MSN and FSN GABAergic synapses
+        dic['nest']['GA_FS_gaba']['weight']   = 1./5     # n.d. inbetween MSN and FSN GABAergic synapses
         dic['nest']['GA_FS_gaba']['delay']    = 7.  # n.d. same as MSN to GPE Park 1982
         dic['nest']['GA_FS_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GA_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_2']
@@ -2178,17 +2181,25 @@ class InhibitionPar_base(object):
         dic['nest']['FS_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_1']   
         
         dic['nest']['FS_M2_gaba'] = deepcopy(dic['nest']['FS_M1_gaba'])
+
+        # FSN-MSN static
+        dic['nest']['FS_M1_gaba_s']={}
+        dic['nest']['FS_M1_gaba_s']['weight']  =6.
+        dic['nest']['FS_M1_gaba_s']['delay']   = 1.7    # Taverna 2004   
+        dic['nest']['FS_M1_gaba_s']['type_id'] = 'static_synapse'  
+        dic['nest']['FS_M1_gaba_s']['receptor_type'] = self.rec['izh']['GABAA_1']   
         
+        dic['nest']['FS_M2_gaba_s'] = deepcopy(dic['nest']['FS_M1_gaba_s'])
         
         # GPE-MSN    
         dic['nest']['GA_M1_gaba']={}
-        dic['nest']['GA_M1_gaba']['weight']   = 1.  # Glajch 2013
+        dic['nest']['GA_M1_gaba']['weight']   = 1./5  # Glajch 2013
         dic['nest']['GA_M1_gaba']['delay']    = 1.7 
         dic['nest']['GA_M1_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GA_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']   
         
         dic['nest']['GA_M2_gaba'] = deepcopy(dic['nest']['GA_M1_gaba'])
-        dic['nest']['GA_M2_gaba']['weight']   = 1.*2  ## Glajch 2013
+        dic['nest']['GA_M2_gaba']['weight']   = 1.*2/5  ## Glajch 2013
        
             
         # CTX-STN
@@ -2381,7 +2392,7 @@ class InhibitionPar_base(object):
         dic['nest']['MS']['GABAA_1_Tau_decay'] =GetNest('FS_M1_gaba', 'tau_psc')
         
         # From GPE
-        dic['nest']['MS']['GABAA_3_Tau_decay'] = 24.          
+        dic['nest']['MS']['GABAA_3_Tau_decay'] = 12*5.          
         dic['nest']['MS']['GABAA_3_E_rev']     = -74. # n.d. set as for MSN and FSN
     
         dic['nest']['MS']['tata_dop'] = DepNetw('calc_tata_dop')
@@ -2446,7 +2457,7 @@ class InhibitionPar_base(object):
         dic['nest']['FS']['GABAA_1_Tau_decay']= GetNest('FS_FS_gaba','tau_psc')
           
         # From GPe
-        dic['nest']['FS']['GABAA_2_Tau_decay'] =  24.  
+        dic['nest']['FS']['GABAA_2_Tau_decay'] =  12.*5  
         dic['nest']['FS']['GABAA_2_E_rev']    = -74.  # n.d. set as for MSNs
           
 #         dic['nest']['FS']['beta_E_L'] = 0.078
@@ -2552,6 +2563,7 @@ class InhibitionPar_base(object):
         dic['nest']['GP']['tata_dop'] = DepNetw('calc_tata_dop')
         
         dic['nest']['GA']  = deepcopy(dic['nest']['GP'])
+#         dic['nest']['GA']['a_1']  = 0.5
         dic['nest']['GI']  = deepcopy(dic['nest']['GP'])
         
         #MSN D2-GPe
@@ -2612,10 +2624,10 @@ class InhibitionPar_base(object):
         # Model inputs
         inputs={'C1': { 'target':'M1', 'rate':560.}, #530.-20.0},
                 'C2': { 'target':'M2', 'rate':740.}, #690.-20.0}, 
-                'CF': { 'target':'FS', 'rate':830.}, #624.},
+                'CF': { 'target':'FS', 'rate':950.}, #624.},
                 'CS': { 'target':'ST', 'rate':200.0}, #160.},#295 
-                'EA': { 'target':'GA', 'rate':0.},
-                'EI': { 'target':'GI', 'rate':1300.0},#1130.},
+                'EA': { 'target':'GA', 'rate':200.},
+                'EI': { 'target':'GI', 'rate':1100.0},#1130.},
                 'ES': { 'target':'SN', 'rate':1800.}}#295 
         
         for key, val in inputs.items():         
@@ -2626,9 +2638,9 @@ class InhibitionPar_base(object):
         dic['node']=misc.dict_merge(dic['node'], inputs)
         
            
-        network={'M1':{'model':'M1_low', 'I_vitro':0.0, 'I_vivo':0.0,  },
+        network={'M1':{'model':'M1_low', 'I_vitro':0.0, 'I_vivo':0.0, },
                  'M2':{'model':'M2_low', 'I_vitro':0.0, 'I_vivo':0.0, },
-                 'FS':{'model':'FS_low', 'I_vitro':0.0, 'I_vivo':0.0,  },
+                 'FS':{'model':'FS_low', 'I_vitro':0.0, 'I_vivo':0.0, },
                  'ST':{'model':'ST',     'I_vitro':6.0, 'I_vivo':6.0,  },
                  'GA':{'model':'GA',     'I_vitro':5.0, 'I_vivo':-3.6, }, #23, -8
                  'GI':{'model':'GI',     'I_vitro':5.0, 'I_vivo':4.5,  }, #51, 56
@@ -2707,10 +2719,10 @@ class InhibitionPar_base(object):
         d={'M1_SN_gaba':{'fan_in0': M1_SN, 'rule':'set-set' },
            'M2_GI_gaba':{'fan_in0': M2_GI, 'rule':'set-set' },
                    
-           'M1_M1_gaba':{'fan_in0': M1_M1, 'rule':'set-not_set' },
-           'M1_M2_gaba':{'fan_in0': M1_M2, 'rule':'set-not_set' },                     
-           'M2_M1_gaba':{'fan_in0': M2_M1, 'rule':'set-not_set' },
-           'M2_M2_gaba':{'fan_in0': M2_M2, 'rule':'set-not_set' },                     
+           'M1_M1_gaba':{'fan_in0': M1_M1, 'rule':'all-all' },
+           'M1_M2_gaba':{'fan_in0': M1_M2, 'rule':'all-all' },                     
+           'M2_M1_gaba':{'fan_in0': M2_M1, 'rule':'all-all' },
+           'M2_M2_gaba':{'fan_in0': M2_M2, 'rule':'all-all' },                     
           
            'FS_M1_gaba':{'fan_in0': FS_M1, 'rule':'all-all' },
            'FS_M2_gaba':{'fan_in0': FS_M2, 'rule':'all-all' },                       
@@ -2811,42 +2823,74 @@ class Inhibition_striatum_base(object):
 class Inhibition_striatum(Par_base, Inhibition_striatum_base, Par_base_mixin): 
     pass 
 
+def setup_burst3(dic_other, max_n_set_pre,  inps):
+    dic={}    
 
-class MSN_cluster_compete_base(object):
+    
+    l = []
+    for inp in inps:
+        l.append([inp, dic_other['node'][inp]['rate']])
+    
+    
+    for inp, rate in l:
+        d={'type':'burst3',
+           'params':{
+                     'repetitions':2},
+                     }
+        params_sets={}
+        d['params']['n_set_pre'] = dic_other['node'][inp]['n_sets']
+        for i in range(max_n_set_pre):
+            dd = {str(i):{'active':False, 
+                    'amplitudes':[1.0], 
+                    'durations':[100.0], 
+                    'proportion_connected':1, 
+                    'rate':rate}}
+            params_sets.update(dd)
+        
+        d['params'].update({'params_sets':params_sets})
+        dic = misc.dict_update(dic, {'netw':{'input':{inp:d}}})
+    
+    return dic
+
+class Compete_base(object):
 
     def _get_par_constant(self):
         
         
         dic_other=self.other.get_dic_con()
-        max_n_set_pre=20
+        max_n_set_pre=80
+        inps=['C1', 'C2']
         
-        dic={}
-        dd={'type':'burst3',
-            'params':{
-                      'repetitions':2},
-                      }
-        params_sets={}
-        
-        for inp, rate in [['C1', dic_other['node']['C1']['rate']],
-                          ['C2', dic_other['node']['C2']['rate']]]:
-        
-            dd['params']['n_set_pre']=dic_other['node'][inp]['n_sets']
-            for i in range(max_n_set_pre):
-                d={str(i):{'active':False,
-                           'amplitudes':[1.0,],
-                           'durations':[100.0],
-                           'proportion_connected':1,
-                           'rate':rate,
-                      }}
-                params_sets.update(d)
-            dd['params'].update({'params_sets':params_sets})
-            dic=misc.dict_update(dic, {'netw':{'input':{inp:dd}}})
+        dic = setup_burst3(dic_other, max_n_set_pre, inps)
 
         dic = misc.dict_update(dic_other, dic)
         return dic
 
 
-class MSN_cluster_compete(Par_base, MSN_cluster_compete_base, Par_base_mixin): 
+class MSN_cluster_compete(Par_base, Compete_base, Par_base_mixin): 
+    pass 
+
+
+class Go_NoGo_compete(Par_base, Compete_base, Par_base_mixin): 
+    pass 
+
+
+class FSN_effect_base(object):
+
+    def _get_par_constant(self):
+        
+        
+        dic_other=self.other.get_dic_con()
+        max_n_set_pre=80
+        inps=['CF']
+        
+        dic = setup_burst3(dic_other, max_n_set_pre, inps)
+
+        dic = misc.dict_update(dic_other, dic)
+        return dic
+
+
+class FSN_effect(Par_base, FSN_effect_base, Par_base_mixin): 
     pass 
               
 class Slow_wave_base(object):
@@ -2860,7 +2904,7 @@ class Slow_wave_base(object):
         dic={'netw':{'input':{}}}
         
         d={'type':'oscillation', 
-             'params':{'p_amplitude_mod':0.8,
+           'params':{'p_amplitude_mod':0.8,
                      'freq': 1.}} 
         for key in ['C1', 'C2', 'CF', 'CS']: 
             dic['netw']['input'][key]=d      
@@ -2882,9 +2926,10 @@ class Beta_base(object):
         
         dic={'netw':{'input':{}}}
         
-        d={'type':'oscillation', 
-             'params':{'p_amplitude_mod':0.9,
-                     'freq': 20.}} 
+        d={'type':'oscillation2', 
+             'params':{'p_amplitude_mod':0.1,
+                       'p_amplitude0':1.0,
+                       'freq': 20.}} 
         for key in ['C1', 'C2', 'CF', 'CS']: 
             dic['netw']['input'][key]=d      
         
@@ -2894,59 +2939,6 @@ class Beta_base(object):
 
 class Beta(Par_base, Beta_base, Par_base_mixin): 
     pass 
-
-class Burst_compete_base(object):
-
-    def _get_par_constant(self):
-        dic_other=self.other.get_dic_con()
-        
-        #self._dic_con['node']['M1']['n']
-        dic={}
-        duration=100.0
-        d={'duration':duration,
-            'idx_sets':[0, 1],
-            'n_set_pre':3,
-            'p_amplitude':numpy.array([1,1]),
-            'start':1000.0,}
-        dic.update({'C1':{'type':'burst_compete',
-                          'params':d}})
-        
-        d={'duration':duration,
-            'idx_sets':[0, 1],
-            'n_set_pre':3,
-            'p_amplitude':numpy.array([1,1]),
-            'start':1000.0,}
-        dic.update({'C2':{'type':'burst_compete',
-                          'params':d}})   
-        
-        
-        d={'duration':duration,
-            'idx_sets':[0],
-            'n_set_pre':1,
-            'p_amplitude':numpy.array([1]),
-            'start':1000.0,}
-        dic.update({'CF':{'type':'burst_compete',
-                          'params':d}}) 
-          
-        d={'duration':duration,
-            'idx_sets':[0],
-            'n_set_pre':1,
-            'p_amplitude':numpy.array([1,1]),
-            'start':1000.0,}
-        dic.update({'CS':{'type':'burst_compete',
-                          'params':d}})           
-        
-        dic={'netw':{'input':dic}}
-           
-        dic = misc.dict_update(dic_other, dic)
-        return dic
-
-
-class Burst_compete(Par_base, Burst_compete_base, Par_base_mixin): 
-    pass   
-
-
-
 
 class ThalamusPar_base(object):
     
@@ -3760,11 +3752,13 @@ def calc_spike_setup(n, params, rate ,start, stop, typ):
         params_sets=params['params_sets']
         rep=params['repetitions']
         
-        for k in sorted(params_sets.keys()):
-            d=params_sets[k]
-            k=int(k)
+        for k in range(n_set_pre):
+#             print k
+            d=params_sets[str(k)]
+            
             if not d['active']:
                 continue
+            
             proportion_connected=d['proportion_connected']
             m=int(n*proportion_connected)
             idx=list(range(k,m, n_set_pre))
@@ -3799,6 +3793,21 @@ def calc_spike_setup(n, params, rate ,start, stop, typ):
                  'idx':idx, 
                  't_stop':stop}]
 
+
+    if typ=='oscillation2':
+        ru=rate*(params['p_amplitude0']+params['p_amplitude_mod'])
+        rd=rate*(params['p_amplitude0']-params['p_amplitude_mod'])
+
+        step=1000/2/params['freq']
+        cycles=int(stop/(2*step))
+        rates=[rd, ru]*cycles
+        times=list(numpy.arange(0, 2.*cycles*step, step))
+        idx=range(n)
+
+        setup+=[{'rates':rates, 
+                 'times':times, 
+                 'idx':idx, 
+                 't_stop':stop}]
 
     if typ=='burst_compete':
         p=params['p_amplitude']
@@ -3876,6 +3885,20 @@ def dummy_args(flag, **kwargs):
                      't_stop': 2000.0, 
                      'idx': [0, 1, 2, 3], 
                      'times': [    0.,   500.,  1000.,  1500.]}])
+
+
+        #OSCILLATION2
+        params={'p_amplitude_mod':0.1,
+                'p_amplitude0':1.0,
+                'freq': 1.}
+        args.append([4, params, 25.0,100.0, 2000.0, 'oscillation2'])
+        out.append([{'rates': [22.5, 27.500000000000004, 
+                               22.5, 27.500000000000004], 
+                     't_stop': 2000.0, 
+                     'idx': [0, 1, 2, 3], 
+                     'times': [    0.,   500.,  1000.,  1500.]}])
+
+
         
         #BCPNN
         params={'time':950.0, 
@@ -4230,10 +4253,11 @@ def format_connectionn_save_path(**kwargs):
     target_n_sets=kwargs.get('target_n_sets','X') 
     beta_fan_in=kwargs.get('beta_fan_in','X') 
     rule=kwargs.get('rule','X') 
+    fan_in=kwargs.get('fan_in','X')
 
     s=(size+'_'+source+'-n'+source_n+'s'+source_n_sets+'_'
        +target+'-n'+target_n+'s'+target_n_sets+'_bfi-'
-       +beta_fan_in+'_r-'+rule)
+       +beta_fan_in+'_r-'+rule+'_fi'+fan_in)
     
     return s
 
@@ -4851,16 +4875,16 @@ class TestMSNClusterCompetePar(TestMSNClusterCompetePar_base, TestMixinPar_base,
     pass
 
 
-class TestBurstCompetePar_base(unittest.TestCase):
+class TestGo_NoGo_compete_base(unittest.TestCase):
     def setUp(self):
         self.kwargs={'other':Inhibition(),
                      'unittest':False}
-        self.the_class=Burst_compete
+        self.the_class=Go_NoGo_compete
         self.pert=dummy_perturbations_lists('burst_compete', 'C1_M1_ampa')
         self.test_node_model='M1'
         self._setUp()
 
-class TestBurstCompete(TestSlowWavePar_base, TestMixinPar_base, TestSetup_mixin):
+class TestGo_NoGo_compete(TestGo_NoGo_compete_base, TestMixinPar_base, TestSetup_mixin):
     pass
 
 class TestThalamusPar_base(unittest.TestCase):     
@@ -4903,7 +4927,7 @@ class TestBcpnnH1(TestBcpnnH1Par_base,  TestMixinPar_base, TestSetup_mixin):
 if __name__ == '__main__':
     
     test_classes_to_run=[
-#                         TestModuleFuncions,
+                        TestModuleFuncions,
 #                         TestPerturbations,
 #                         TestCall,
 #                         TestCallSubClassesWithPar_base,
@@ -4915,10 +4939,10 @@ if __name__ == '__main__':
 #                         TestSingleUnit,
 #                         TestInhibitionStriatum
 #                         TestInhibition,
-                        TestMSNClusterCompetePar
+#                         TestMSNClusterCompetePar
 #                         TestThalamus,
 #                         TestSlowwave,
-#                           TestBurstCompete,
+#                         TestGo_NoGo_compete,
 #                         TestBcpnnH0,
 #                         TestBcpnnH1,
 

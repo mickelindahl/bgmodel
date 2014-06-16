@@ -5,25 +5,26 @@ Created on Jun 27, 2013
 '''
 import numpy
 import os
-from network import show_fr, show_mr, cmp_mean_rates_intervals
+
 from toolbox import misc, pylab
+from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
 from toolbox.network.manager import (add_perturbations, compute, 
                                      run, save, load, get_storage)
-
 from toolbox.network.manager import Builder_inhibition_striatum as Builder
-from toolbox.network.manager import Director
+from simulate import (show_fr, show_mr, cmp_mean_rates_intervals,
+                      get_file_name, get_file_name_figs)
 import pprint
 pp=pprint.pprint
     
 DISPLAY=os.environ.get('DISPLAY')
 
 def get_kwargs_builder():
-    return {'print_time':True, 
-            'threads':12, 
+    return {'print_time':False, 
+            'threads':8, 
             'save_conn':{'overwrite':False},
-            'sim_time':5000.0, 
-            'sim_stop':5000.0, 
+            'sim_time':8000.0, 
+            'sim_stop':8000.0, 
             'size':3000.0, 
             'start_rec':0.0, 
             'sub_sampling':1}
@@ -42,7 +43,7 @@ def get_networks():
     
     return info, nets, intervals, rates, rep
 
-    
+
 def main(from_disk=2,
          perturbation_list=None,
          script_name=__file__.split('/')[-1][0:-3]):
@@ -52,9 +53,10 @@ def main(from_disk=2,
     home = expanduser("~")
 
     
-    file_name=(home+ '/results/papers/inhibition/network/'+script_name)
+    file_name = get_file_name(script_name, home)
+    file_name_figs=get_file_name_figs(script_name, home)
     
-    models=['M1', 'M2']#, 'FS', 'GI', 'GA', 'ST', 'SN']
+    models=['M1', 'M2','FS', 'GI', 'GA', 'ST', 'SN']
     
     info, nets, intervals, amplitudes, rep = get_networks()
     add_perturbations(perturbation_list, nets)
@@ -62,8 +64,8 @@ def main(from_disk=2,
     sd = get_storage(file_name, info)
     
     d={}
-    from_disks=[2]*10
-    for net, mode in zip(nets, from_disks):
+    from_disks=[1]*12
+    for net, mode in zip(nets.values(), from_disks):
         if mode==0:
             dd = run(net)    
             save(sd, dd)
@@ -84,19 +86,21 @@ def main(from_disk=2,
                                          ]
             dd=load(sd, *filt)
         d=misc.dict_update(d, dd)
+        
+    sd_figs=Storage_dic.load(file_name_figs)
+#     if numpy.all(numpy.array(from_disks)==2):                     
+    figs=[]                      
+    labels=['All', 
+            'Only MSN-MSN',
+            'Only FSN-MSN',
+            'Only FSN-MSN-static',
+            'Only GPe TA-MSN',
+            'No inhibition']
     
-    if numpy.all(numpy.array(from_disks)==2):                     
-        figs=[]                      
-        labels=['All', 
-                'Only MSN-MSN',
-                'Only FSN-MSN',
-                'Only GPe TA-MSN',
-                'No inhibition']
-        
-        figs.append(show_fr(d, models, **{'labels':labels}))
-        figs.append(show_mr(d, models, **{'labels':labels}))
-        
-        sd.save_figs(figs)
+    figs.append(show_fr(d, models, **{'labels':labels}))
+    figs.append(show_mr(d, models, **{'labels':labels}))
+    
+    sd_figs.save_figs(figs)
         
 #     show_hr(d, models)
 

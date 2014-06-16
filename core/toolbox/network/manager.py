@@ -12,12 +12,15 @@ from toolbox.data_to_disk import Storage_dic
 from toolbox.network.data_processing import (dummy_data_du, Data_unit_spk,
                                              Data_unit_base, Data_units_relation)
 from toolbox.network.default_params import Perturbation_list as pl
-from toolbox.network.default_params import (Par_base, 
+from toolbox.network.default_params import (Beta,
+                                            Go_NoGo_compete,
                                             Inhibition, 
                                             Inhibition_striatum,
                                             MSN_cluster_compete,
+                                            Par_base, 
                                             Single_unit, 
                                             Slow_wave)
+
 from toolbox.network.engine import Network, Network_base
 from toolbox import misc
 
@@ -38,14 +41,14 @@ class Director(object):
         
         per=self.builder.get_perturbations()
         
-        nets=[]
+        nets={}
         info=''
         for i, p in enumerate(per):
             name='Net_'+str(i)
             info+='Net_'+str(i)+':'+ p.name+'\n'
             par=self.builder.get_parameters(p)
             net=self.builder.get_network(name, par, **kwargs)
-            nets.append(net)
+            nets[net.get_name()]=net
         return info, nets
 
 def set_networks_names(names, nets):
@@ -93,7 +96,8 @@ class Mixin_reversal_potential_M1(object):
     def _high(self):
         d={'node':{'M1':{'model':'M1_high'}}}
         return pl(d,'=', **{'name':'high'})
-    
+
+ 
 class Mixin_reversal_potential_M2(object):
     def _low(self):
         d={'node':{'M2':{'model':'M2_low'}}}
@@ -227,24 +231,25 @@ class Builder_MSN_cluster_compete_base(Builder_abstract):
     
     def _variable(self):
         
-        n_sets_spec=[5, 10, 20, 40, 80]
-        n_sets_unspec=[1 for _ in range(len(n_sets_spec))]
-        prop_unspec=[1./v for v in n_sets_spec ]
-        prop_spec=[1 for _ in range(len(n_sets_spec))]
-        n_sets=n_sets_unspec+n_sets_spec
-        prop=prop_unspec+prop_spec
+        n_sets0=[5, 10, 20, 40, 80]
+        n_sets=n_sets0*2
+        rules=['all-all']*5+['set-not_set']*5
         
         durations=[500., 500.]
-        amplitudes=[1.,2.]
+        amplitudes=[1.,1.75]
         rep=5
         
         l=[]
-        for n,p in zip(n_sets, prop):
+        for n,rule in zip(n_sets, rules):
             d={}
+            for node in ['M1', 'M2']:
+                d=misc.dict_update(d, {'node':{node:{'n_sets':n}}})
+                
+            for name in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']: 
+                d=misc.dict_update(d, {'conn':{name:{'rule':rule}}})
+           
             for inp in ['C1', 'C2']:
                 d=misc.dict_update(d, {'node':{inp:{'n_sets':n}}})        
-                
-            
                 
                 params={'type':'burst3',
                         'params':{'n_set_pre':n,
@@ -256,21 +261,34 @@ class Builder_MSN_cluster_compete_base(Builder_abstract):
                 d_sets.update({str(0):{'active':True,
                                           'amplitudes':amplitudes,
                                   'durations':durations,
-                                  'proportion_connected':p,
+                                  'proportion_connected':1,
                                   }})
                 params['params'].update({'params_sets':d_sets})
    
                 d=misc.dict_update(d, {'netw':{'input':{inp:params}}})
-            pp(d)
-            l+=[pl(d, '=', **{'name':'n_sets_'+str(n)+'_prop_'+str(prop)})] 
+#             pp(d)
+            l+=[pl(d, '=', **{'name':'n_sets_'+str(n)+'_prop_'+rule})] 
             
-        intervals=[d*i for i,d in enumerate(durations)]
+        intervals=[d*i for i,d in enumerate(durations*rep)]
         intervals.append(intervals[-1]+500.0)
         intervals=[[d,d+500] for d in intervals[1::2]]
         
         self.dic['intervals']=intervals  
         self.dic['repetitions']=rep      
+        self.dic['percents']=[100/v for v in n_sets0]
+        
+        for i in range(len(l)):
+            l[i]+=pl({'conn':{'FS_M1_gaba':{'lesion': True },
+                                'FS_M2_gaba':{'lesion': True  },
+                                'GA_M1_gaba':{'lesion': True },
+                                'GA_M2_gaba':{'lesion': True }}},
+                               '=',
+                               **{'name':'only MSN-MSN'})
+        
         return l
+ 
+    def _get_dopamine_levels(self):
+        return [self._dop()]  
     
     def _get_striatal_reversal_potentials(self):
         return [self._low()]    
@@ -307,6 +325,18 @@ class Builder_inhibition_striatum_base(Builder_network_base):
                         'GA_M2_gaba':{'lesion': True }}},
                        '=',
                **{'name':'only FS-MSN'})]
+        
+        l+=[pl({'conn':{'M1_M1_gaba':{'lesion': True },
+                        'M1_M2_gaba':{'lesion': True },                     
+                        'M2_M1_gaba':{'lesion': True },
+                        'M2_M2_gaba':{'lesion': True },
+                        'GA_M1_gaba':{'lesion': True },
+                        'GA_M2_gaba':{'lesion': True },
+                        'FS_M1_gaba':{'syn':'FS_M1_gaba_s'},
+                        'FS_M2_gaba':{'syn':'FS_M2_gaba_s'}}},
+                       '=',
+               **{'name':'only FS-MSN-static'})]
+        
         l+=[pl({'conn':{'M1_M1_gaba':{'lesion': True },
                         'M1_M2_gaba':{'lesion': True },                     
                         'M2_M1_gaba':{'lesion': True },
@@ -326,8 +356,8 @@ class Builder_inhibition_striatum_base(Builder_network_base):
                        '=',
                **{'name':'no inhibition'})]
    
-        duration=[500.,500.]*10
-        amps0=numpy.linspace(1,2, len(duration)/2)
+        duration=[500.,500.]*14
+        amps0=numpy.linspace(1, 2, len(duration)/2)
         amps=[[1, amp] for amp in amps0]
         amps=numpy.array(reduce(lambda x,y:x+y, amps))
         rep=1
@@ -393,56 +423,109 @@ class Builder_slow_wave(Builder_slow_wave_base,
                       Mixin_reversal_potential_striatum):
     pass
 
-    
-class Builder_burst_compete_base(Builder_network):    
-    
-    def _variable(self):
-        
-        kwargs=self.kwargs
-        res=kwargs.get('resolution',5)
-        v=numpy.linspace(2.3, 3, res)
-        use=kwargs.get('use', ['C1'])
-        x, y=numpy.meshgrid(v,v)
-        x, y=x.ravel(), y.ravel()                
-              
-        p0=numpy.array(list(v)*kwargs.get('repetitions', 1))
-        p1=numpy.array(list(v)*kwargs.get('repetitions', 1))
-        
-            
-        #p2=1.5*numpy.ones(len(p1))
+ 
+ 
+class Builder_beta_base(Builder_abstract):    
+      
+    def _get_striatal_reversal_potentials(self):
+        return [self._low()]    
 
-        p2=[1000.+1500*i for i in range(len(p1))]
-        l=[]
-        for a in zip(p0, p1, p2):
-            s=[]
-            start=a[2]
-            if 'C1' in use:
-                v=numpy.array([a[0],a[1]]) 
-                s+=[['netw.input.C1.params.p_amplitude', v, '*']]
-                s+=[['netw.input.C1.params.start',start, '=']]
-                
-            if 'C2' in use: 
-                v=numpy.array([a[1],a[0]])
-                s+=[['netw.input.C2.params.p_amplitude',v , '*']]
-                s+=[['netw.input.C2.params.start',start, '=']]
+    def get_parameters(self, per):
+        return Beta(**{'other':Inhibition(),
+                       'perturbations':per})
      
-            l+=[pl('_'.join(use), *s)] 
-    
-        
-        intervals=[]
-        for t in p2:
-            intervals.append([t,t+100])
-        
-        self.dic['intervals']=intervals
-        self.dic['times']=p2    
-        
-        return l    
-
-class Builder_burst_compete(Builder_burst_compete_base, 
+class Builder_beta(Builder_beta_base, 
                       Mixin_dopamine, 
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass
+ 
+ 
+def get_intervals(rep, durations, d, sequence):
+    accum = 0
+    intervals = []
+    out=[]
+    for d in durations * rep:
+        intervals.append(accum)
+        accum += d
+    
+    intervals.append(accum)
+    for i in range(sequence):
+        out.append([[d1, d2] for d1, d2 in zip(intervals[i::sequence], intervals[i+1::sequence])])
+    return out
+   
+class Builder_Go_NoGo_compete_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+
+
+    def _variable(self):
+        
+        kwargs=self.kwargs
+        res=kwargs.get('resolution',5)
+        rep=kwargs.get('repetition',5)
+        v=numpy.linspace(2.3, 3, res)
+
+        x, y=numpy.meshgrid(v,v)
+        x, y=x.ravel(), y.ravel()                
+              
+        p0=reduce(lambda x,y:x+y, [[1,p] for p in y])
+        p1=reduce(lambda x,y:x+y, [[1,p] for p in x])    
+        
+        durations=[900., 100.]*res*res
+        
+        l=[]
+        for inp_list in [['C1'],
+                         ['C1', 'C2']]:
+            d={}
+      
+            for inp in inp_list:
+                d=misc.dict_update(d, {'node':{inp:{'n_sets':2}}})        
+                
+                params={'type':'burst3',
+                        'params':{'n_set_pre':2,
+                                  'repetitions':rep}}
+                
+                d_sets={}
+                d_sets.update({str(0):{'active':True,
+                                       'amplitudes':p0,
+                                       'durations':durations,
+                                       'proportion_connected':1,
+                                  },
+                               str(1):{'active':True,
+                                       'amplitudes':p1,
+                                       'durations':durations,
+                                       'proportion_connected':1,
+                                  }})
+                params['params'].update({'params_sets':d_sets})
+   
+                d=misc.dict_update(d, {'netw':{'input':{inp:params}}})
+            
+        l+=[pl(d, '=', **{'name':'_'.join(inp_list)})]        
+        
+        sequence=2
+        intervals = get_intervals(rep, durations, d, sequence)
+
+        self.dic['intervals']=intervals  
+        self.dic['repetitions']=rep      
+
+        return l    
+
+
+
+
+class Builder_Go_NoGo_compete(Builder_Go_NoGo_compete_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
+
+
+
 
 class Builder_single_base(Builder_abstract):   
     
@@ -496,11 +579,48 @@ class Builder_single_GA_GI(Builder_single_GA_GI_base,
     pass
 
 
+class Builder_single_MS_weights_base(Builder_single_base): 
+ 
+    def _get_striatal_reversal_potentials(self):
+        return [self._low()]    
+      
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+   
+        l=[]
+        
+        for v in self.kwargs.get('conductance_scale'):
+            d={'nest':{'GA_M1_gaba':{'weight':v},
+                       'GA_M2_gaba':{'weight':v},
+                       'M1_M1_gaba':{'weight':v},
+                       'M1_M2_gaba':{'weight':v},
+                       'M2_M1_gaba':{'weight':v},
+                       'M2_M2_gaba':{'weight':v},
+                    }}
+            l+=[pl(d, '*', **{'name':'scale*'+str(v)})]  
+        return l
+
+
+class Builder_single_M1_weights(Builder_single_MS_weights_base, 
+                          Mixin_dopamine, 
+                          Mixin_general_single,
+                          Mixin_reversal_potential_M1):
+    pass
+
+class Builder_single_M2_weights(Builder_single_MS_weights_base, 
+                          Mixin_dopamine, 
+                          Mixin_general_single,
+                          Mixin_reversal_potential_M2):
+    pass
+
 def add_perturbations(perturbations, nets):
     if not perturbations:
         return
-    for net in nets:
-        net.par.per.update_list(perturbations)
+    for key in sorted(nets.keys()):
+#         print nets[key].par
+        nets[key].par.update_perturbations(perturbations)
 
 
 def compute(d, models, attr, **kwargs_dic):
@@ -539,7 +659,25 @@ def FF_curve(data, **kwargs):
     return data.get_mean_rate_parts()
 
 def firing_rate(data, **kwargs):
-    return data.get_firing_rate(**kwargs)
+       
+    if 'set' in kwargs.keys():
+        _set=kwargs.get('set', 0)
+        del kwargs['set']
+        return data[:,_set].get_firing_rate(**kwargs)
+    else: 
+        return data.get_firing_rate(**kwargs)
+
+def firing_rate_set(data, **kwargs):
+    sets=kwargs.get('sets', [0])
+    if 'sets' in kwargs.keys():
+        del kwargs['sets']
+
+    d={}
+    for _set in sets:
+        d[_set]=data[:,_set].get_firing_rate(**kwargs)
+    
+    return d
+    
 
 def get_simu(k):
     d={
@@ -565,8 +703,8 @@ def get_networks(Builder, kwargs_builder={}, kwargs_engine={}):
     info, nets = director.get_networks(**kwargs_engine)
     return info, nets, builder
 
-def get_storage(file_name, info):
-    sd = Storage_dic.load(file_name)
+def get_storage(file_name, info, nets=None):
+    sd = Storage_dic.load(file_name, nets)
     sd.add_info(info)
     sd.garbage_collect()
     return sd
@@ -588,6 +726,9 @@ def mean_rates(data, **k):
 
 def phase_diff(data, **k):
     return data.get_phase_diff(**k)
+
+def phases_diff_with_cohere(data, **k):
+    return data.get_phases_diff_with_cohere(**k)
 
 def psd(data, **k):
     return data.get_psd(**k)
@@ -775,7 +916,7 @@ if __name__ == '__main__':
     
     test_classes_to_run=[
                          TestModuleFunctions,
-#                          TestBuilder_network,
+                        TestBuilder_network,
 #                          TestBuilder_single,
 #                         TestBuilder_inhibition_striatum,
                         TestBuilder_MSN_cluster_compete

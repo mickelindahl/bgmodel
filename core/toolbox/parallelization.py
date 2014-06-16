@@ -84,7 +84,30 @@ def execute(fun, worker,  *args, **kwargs):
 
         fun=Wrap(fun)
         args=zip(*args)
-        return pool.map(fun.use, args)
+        
+#         fun.use(args[0])
+
+        r=pool.map(fun.use, args)
+        
+        # Necessary to shut threads down. Otherwise just more and more threads 
+        # are created
+        
+        ''' 
+        close() 
+        Indicate that no more data will be put on this queue 
+        by the current process. The background thread will quit once it 
+        has flushed all buffered data to the pipe. This is called 
+        automatically when the queue is garbage collected.
+        '''
+        pool.close() 
+        
+        '''
+        join()
+        Block until all items in the queue have been gotten and processed.
+        '''
+        pool.join()
+        
+        return r
         
 
 

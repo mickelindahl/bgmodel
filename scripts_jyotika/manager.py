@@ -17,7 +17,7 @@ class Builder_network_base(Builder_abstract):
         
         l=[]
         l+=[pl(**{'name':'no_pert'})]
-        l+=[pl({'nest':{'ST_GI_gaba':{'weight':2.0}}},
+        l+=[pl({'nest':{'ST_GI_ampa':{'weight':2.0}}},
                '*', **{'name':'Doubke STN-GPE-TI'})]
         
         

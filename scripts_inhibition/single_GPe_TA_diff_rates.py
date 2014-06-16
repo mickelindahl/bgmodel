@@ -51,13 +51,14 @@ def main(rand_nodes=False,
     k=get_kwargs_builder()    
     dinfo, dn = get_setup(**{'rand_nodes':rand_nodes})
     
-    dinfo, dn = get_setup()
+#     dinfo, dn = get_setup()
     ds = get_storages(script_name, dn.keys(), dinfo)
   
     d={}
     d.update(optimize('opt_rate', dn, [from_disk]*5, ds, **{ 'x0':200.0}))   
     
-    for net in dn['hist']: 
+    for key in sorted(dn['hist'].keys()): 
+        net=dn['hist'][key]
         set_optimization_val(d['opt_rate'][net.get_name()], [net]) 
     d.update(run('hist', dn, [from_disk]*5, ds, 'mean_rates',
                            **{'t_start':k['start_rec']}))                   
@@ -68,7 +69,7 @@ def main(rand_nodes=False,
     show_opt_hist(d, axs, '$GPe_{+d}^{TA}$')
     ds['fig'].save_fig(fig)
     
-    if not DISPLAY: pylab.show()  
+    if DISPLAY: pylab.show()  
 
 if __name__ == "__main__":
     main() 

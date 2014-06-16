@@ -162,6 +162,32 @@ class Stop_stdout():
         if self.flag:
             sys.stdout.close()
             sys.stdout=self.stdout
+
+
+class Std_to_files():
+    def __init__(self, flag, name='foo'):
+        self.flag = flag
+        self.name = name
+        self.stdout=None
+        self.stderr=None
+        
+    def __enter__(self):
+        if self.flag:
+            self.stdout= sys.stdout
+            self.stderr= sys.stderr
+            path='./'+self.name
+            sys.stdout = open(path+'.out', "wb", 0)
+            sys.stderr = open(path+'.err', "wb", 0)
+                        
+      
+    def __exit__(self, type, value, traceback):
+        if self.flag:
+            sys.stdout.close()
+            sys.stderr.close()
+     
+            sys.stdout=self.stdout
+            sys.stderr=self.stderr
+
         
 def adjust_limit(limit, percent_x=0.03, percent_y=0.04):
     ''' Adjust limit by withdrawing percent of diff from start and
