@@ -318,14 +318,16 @@ def run_XX(flag, dn, from_disks, ds, dstim):
     nets=dn[flag]
     storage_dic=ds[flag]
     stim=dstim[flag]
-    for net, from_disk in zip(nets, from_disks):
+    for key, from_disk in zip(sorted(nets.keys()), from_disks):
+        net=nets[key]
         d = _run_XX(flag, storage_dic, stim, d, net, from_disk)
                 
     return {flag:d}
 
    
 def set_optimization_val(data, nets):
-    for net in nets:
+    for key in sorted(nets.keys()):
+        net=nets[key]
         inp = net.get_single_unit_input()
         x='node.'+inp+'.rate' #kwargs.get('x', ['node.CFp.rate'])
         dic=misc.dict_recursive_add({}, x.split('.'), data.xopt[-1][0])

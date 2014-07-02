@@ -19,7 +19,8 @@ from toolbox.network.default_params import (Beta,
                                             MSN_cluster_compete,
                                             Par_base, 
                                             Single_unit, 
-                                            Slow_wave)
+                                            Slow_wave,
+                                            Slow_wave2)
 
 from toolbox.network.engine import Network, Network_base
 from toolbox import misc
@@ -47,6 +48,7 @@ class Director(object):
             name='Net_'+str(i)
             info+='Net_'+str(i)+':'+ p.name+'\n'
             par=self.builder.get_parameters(p)
+#             perturbation_consistency(p, par)
             net=self.builder.get_network(name, par, **kwargs)
             nets[net.get_name()]=net
         return info, nets
@@ -306,7 +308,48 @@ class Builder_MSN_cluster_compete(Builder_MSN_cluster_compete_base,
                           Mixin_reversal_potential_striatum):
     pass
 
+def get_striatum_inhibition_input(l, **k):
+    
+    
+    resolution=k.get('resolution',14)
+    repetition=k.get('repetition',1)
+    lower=k.get('lower', 1)
+    upper=k.get('upper',2)
+    
+    duration = [500., 500.] * resolution
+    amps0 = numpy.linspace(lower, upper, len(duration) / 2)
+    amps = [[1, amp] for amp in amps0]
+    amps = numpy.array(reduce(lambda x, y:x + y, amps))
+    rep =repetition
+    d = {'C1':{'type':'burst2', 'params':{'amplitudes':amps, 
+                'duration':duration, 
+                'repetitions':rep}}, 
+        'C2':{'type':'burst2', 
+            'params':{'amplitudes':amps, 
+                'duration':duration, 
+                'repetitions':rep}}, 
+        'CF':{'type':'burst2', 
+            'params':{'amplitudes':amps, 
+                'duration':duration, 
+                'repetitions':rep}}, 
+        'CS':{'type':'burst2', 
+            'params':{'amplitudes':amps, 
+                'duration':duration, 
+                'repetitions':rep}}}
+    d = {'netw':{'input':d}}
+    for i in range(len(l)):
+        l[i] = l[i] + pl(d, '=')
+    
+#         intervals=[d*i for i,d in enumerate(duration)]
+#         intervals.append(intervals[-1]+500.0)
+#         intervals=[[d,d+500] for d in intervals[1::2]]
+#
+    sequence = 2
+    intervals = get_intervals(rep, duration, d, sequence)
+    return intervals, rep, amps0
+
 class Builder_inhibition_striatum_base(Builder_network_base):
+
     def _variable(self):
         
         l=[]
@@ -356,37 +399,11 @@ class Builder_inhibition_striatum_base(Builder_network_base):
                        '=',
                **{'name':'no inhibition'})]
    
-        duration=[500.,500.]*14
-        amps0=numpy.linspace(1, 2, len(duration)/2)
-        amps=[[1, amp] for amp in amps0]
-        amps=numpy.array(reduce(lambda x,y:x+y, amps))
-        rep=1
-        d={'C1':{'type':'burst2',
-                 'params':{'amplitudes':amps,
-                           'duration':duration,
-                           'repetitions':rep}},
-        'C2':{'type':'burst2',
-              'params':{'amplitudes':amps,
-                        'duration':duration,
-                        'repetitions':rep}},
-        'CF':{'type':'burst2',
-              'params':{'amplitudes':amps, 
-                        'duration':duration,
-                        'repetitions':rep}},         
-        'CS':{'type':'burst2',
-              'params':{'amplitudes':amps,
-                        'duration':duration,
-                        'repetitions':rep}}}
-        d={'netw':{'input': d}}   
-        
-        
-        for i in range(len(l)):
-            l[i]=l[i]+pl(d, '=')
-        
-        
-        intervals=[d*i for i,d in enumerate(duration)]
-        intervals.append(intervals[-1]+500.0)
-        intervals=[[d,d+500] for d in intervals[1::2]]
+#         res=self.kwargs.get('resolution',5)
+#         rep=self.kwargs.get('repetition',5)
+   
+        intervals, rep, amps0 = get_striatum_inhibition_input(l, 
+                                                              self.kwargs)
         
         self.dic['intervals']=intervals  
         self.dic['repetitions']=rep 
@@ -407,6 +424,39 @@ class Builder_inhibition_striatum(Builder_inhibition_striatum_base,
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass
+
+
+class Builder_striatum_base(Builder_network_base):
+
+    def _variable(self):
+        
+        l=[]
+        l+=[pl(**{'name':'all'})]
+   
+#         res=self.kwargs.get('resolution',5)
+#         rep=self.kwargs.get('repetition',5)
+   
+        intervals, rep, amps0 = get_striatum_inhibition_input(l, **self.kwargs)
+        
+        self.dic['intervals']=intervals  
+        self.dic['repetitions']=rep 
+        self.dic['amplitudes']=amps0   
+          
+        return l
+    
+   
+    def get_parameters(self, per):
+        return Inhibition_striatum(**{'other':Inhibition(),
+                                      'perturbations':per})   
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+class Builder_striatum(Builder_striatum_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
     
 class Builder_slow_wave_base(Builder_abstract):    
       
@@ -423,7 +473,20 @@ class Builder_slow_wave(Builder_slow_wave_base,
                       Mixin_reversal_potential_striatum):
     pass
 
- 
+class Builder_slow_wave2_base(Builder_abstract):    
+      
+    def _get_striatal_reversal_potentials(self):
+        return [self._low()]    
+
+    def get_parameters(self, per):
+        return Slow_wave2(**{'other':Inhibition(),
+                            'perturbations':per})
+     
+class Builder_slow_wave2(Builder_slow_wave2_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
  
 class Builder_beta_base(Builder_abstract):    
       
@@ -453,7 +516,57 @@ def get_intervals(rep, durations, d, sequence):
     for i in range(sequence):
         out.append([[d1, d2] for d1, d2 in zip(intervals[i::sequence], intervals[i+1::sequence])])
     return out
-   
+
+def get_input_Go_NoGo(kwargs):
+    res = kwargs.get('resolution', 5)
+    rep = kwargs.get('repetition', 5)
+    input_lists = kwargs.get('input_lists', [['C1'], ['C1', 'C2']])
+    v = numpy.linspace(1, 3, res)
+    x, y = numpy.meshgrid(v, v)
+    x, y = x.ravel(), y.ravel()
+    p0 = reduce(lambda x, y:x + y, [[1, p] for p in y])
+    p1 = reduce(lambda x, y:x + y, [[1, p] for p in x])
+    durations = [900., 100.] * res * res
+    l = []
+    for inp_list in input_lists:
+        d = {}
+        for node in ['M1', 'M2', 'GI', 'SN']:
+            d = misc.dict_update(d, {'node':{node:{'n_sets':2}}})
+        
+        for conn, rule in zip(['M1_SN_gaba', 'M2_GI_gaba', 'GI_SN_gaba'], 
+            ['set-set', 'set-set', 'all-all']):
+            d = misc.dict_update(d, {'conn':{conn:{'rule':rule}}})
+        
+        for inp in inp_list:
+            d = misc.dict_update(d, {'node':{inp:{'n_sets':2}}})
+            params = {'type':'burst3', 
+                'params':{'n_set_pre':2, 
+                    'repetitions':rep}}
+            d_sets = {}
+            d_sets.update({str(0):{'active':True, 
+                                   'amplitudes':p0, 
+                                   'durations':durations, 
+                                   'proportion_connected':1}, 
+                           
+                           str(1):{'active':True, 
+                                   'amplitudes':p1, 
+                                   'durations':durations, 
+                                   'proportion_connected':1}})
+            
+            params['params'].update({'params_sets':d_sets})
+            d = misc.dict_update(d, {'netw':{'input':{inp:params}}})
+        
+        l += [pl(d, '=', **{'name':'_'.join(inp_list)})]
+    
+    sequence = 2
+    intervals = get_intervals(rep, durations, d, sequence)
+    dic={}
+    dic['intervals'] = intervals
+    dic['repetitions'] = rep
+    dic['x'] = x
+    dic['y'] = y
+    return l, dic
+
 class Builder_Go_NoGo_compete_base(Builder_network):    
 
     def get_parameters(self, per):
@@ -461,58 +574,14 @@ class Builder_Go_NoGo_compete_base(Builder_network):
                        'perturbations':per})
 
 
-
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
 
     def _variable(self):
         
-        kwargs=self.kwargs
-        res=kwargs.get('resolution',5)
-        rep=kwargs.get('repetition',5)
-        v=numpy.linspace(2.3, 3, res)
-
-        x, y=numpy.meshgrid(v,v)
-        x, y=x.ravel(), y.ravel()                
-              
-        p0=reduce(lambda x,y:x+y, [[1,p] for p in y])
-        p1=reduce(lambda x,y:x+y, [[1,p] for p in x])    
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
         
-        durations=[900., 100.]*res*res
-        
-        l=[]
-        for inp_list in [['C1'],
-                         ['C1', 'C2']]:
-            d={}
-      
-            for inp in inp_list:
-                d=misc.dict_update(d, {'node':{inp:{'n_sets':2}}})        
-                
-                params={'type':'burst3',
-                        'params':{'n_set_pre':2,
-                                  'repetitions':rep}}
-                
-                d_sets={}
-                d_sets.update({str(0):{'active':True,
-                                       'amplitudes':p0,
-                                       'durations':durations,
-                                       'proportion_connected':1,
-                                  },
-                               str(1):{'active':True,
-                                       'amplitudes':p1,
-                                       'durations':durations,
-                                       'proportion_connected':1,
-                                  }})
-                params['params'].update({'params_sets':d_sets})
-   
-                d=misc.dict_update(d, {'netw':{'input':{inp:params}}})
-            
-        l+=[pl(d, '=', **{'name':'_'.join(inp_list)})]        
-        
-        sequence=2
-        intervals = get_intervals(rep, durations, d, sequence)
-
-        self.dic['intervals']=intervals  
-        self.dic['repetitions']=rep      
-
         return l    
 
 
@@ -523,6 +592,54 @@ class Builder_Go_NoGo_compete(Builder_Go_NoGo_compete_base,
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass
+
+class Builder_Go_NoGo_with_lesion_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+
+    def _variable(self):
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        from copy import deepcopy
+        
+        lesions=[{'conn':{'M1_M1_gaba':{'lesion': True },
+                          'M1_M2_gaba':{'lesion': True },                     
+                          'M2_M1_gaba':{'lesion': True },
+                          'M2_M2_gaba':{'lesion': True }}},
+                 {'conn':{'FS_M1_gaba':{'lesion': True },
+                          'FS_M2_gaba':{'lesion': True  },
+                         }},
+                  {'conn':{'GA_M1_gaba':{'lesion': True },
+                           'GA_M2_gaba':{'lesion': True }}}]
+        
+        names=['no-MS-MS', 'no-FS', 'no_GP']
+        
+        for lesion, name in zip(lesions, names):
+            l+=[deepcopy(l[-1])]
+            l[-1]+=pl(lesion,
+                           '=',
+                           **{'name':name})             
+        return l    
+
+
+
+
+class Builder_Go_NoGo_with_lesion(Builder_Go_NoGo_with_lesion_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
+  
+        
+        
+        
 
 
 
@@ -620,8 +737,24 @@ def add_perturbations(perturbations, nets):
         return
     for key in sorted(nets.keys()):
 #         print nets[key].par
+#         perturbation_consistency(perturbations, nets[key].par)
         nets[key].par.update_perturbations(perturbations)
 
+def perturbation_consistency(pl, par):
+    err=[]
+    for p in pl:
+        print p
+        if not misc.dict_haskey(par.dic, p.keys):
+            err.append(p.keys)
+    if err:
+        
+        msg='Keys missing:\n'
+        for keys in err:
+            msg+='.'.join(keys)+'\n'
+        
+        raise LookupError(msg)
+        
+                
 
 def compute(d, models, attr, **kwargs_dic):
     dout={}
@@ -634,9 +767,25 @@ def compute(d, models, attr, **kwargs_dic):
             module=misc.import_module('toolbox.network.manager')
             
             call=getattr(module, a)
-            k=kwargs_dic.get(a,{})
-            u=call(val, **k)
-            dout=misc.dict_recursive_add(dout, keys[0:2]+[a], u)
+            
+            k=kwargs_dic.get(a, {}).copy()
+            sets=k.pop('sets', None)
+            
+            if sets!=None:
+                for s in sets:
+                    name='set_'+str(s)
+                    if  name in k.keys():
+                        k.update(k[name])
+                        
+                    k['set']=s
+                    u=call(val, **k)
+                    dout=misc.dict_recursive_add(dout, [keys[0],
+                                                    name,
+                                                    keys[1], a], u)
+                
+            else:
+                u=call(val, **k)
+                dout=misc.dict_recursive_add(dout, keys[0:2]+[a], u)
     
     dout=misc.dict_update(d,dout)
     return d
@@ -659,19 +808,13 @@ def FF_curve(data, **kwargs):
     return data.get_mean_rate_parts()
 
 def firing_rate(data, **kwargs):
-       
-    if 'set' in kwargs.keys():
-        _set=kwargs.get('set', 0)
-        del kwargs['set']
-        return data[:,_set].get_firing_rate(**kwargs)
-    else: 
-        return data.get_firing_rate(**kwargs)
+    _set=kwargs.pop('set', 0)
+    return data[:,_set].get_firing_rate(**kwargs)
+
 
 def firing_rate_set(data, **kwargs):
-    sets=kwargs.get('sets', [0])
-    if 'sets' in kwargs.keys():
-        del kwargs['sets']
-
+    sets=kwargs.pop('sets', [0])
+ 
     d={}
     for _set in sets:
         d[_set]=data[:,_set].get_firing_rate(**kwargs)
@@ -724,6 +867,11 @@ def mean_coherence(data, **k):
 def mean_rates(data, **k):
     return data.get_mean_rates(**k)
 
+def mean_rate_slices(data, **k):
+    _set=k.pop('set', 0)
+    return data[:,_set].get_mean_rate_slices(**k) 
+
+
 def phase_diff(data, **k):
     return data.get_phase_diff(**k)
 
@@ -738,10 +886,12 @@ def run(net):
     return {net.get_name():d}
 
 def save(storage_dic, d):         
-        storage_dic.save_dic(d)
+        storage_dic.save_dic(d, **{'use_hash':False})
                     
 def spike_statistic(data,**k):
     return data.get_spike_stats(**k)
+
+
 
        
 class TestModuleFunctions(unittest.TestCase):
@@ -870,7 +1020,7 @@ class TestDirectorMixin(object):
         director=Director()
         director.set_builder(self.builder)
         _, nets=director.get_networks()
-        for net in nets:
+        for net in nets.values():
             self.assertTrue(isinstance(net, Network_base))
         
 class TestBuilder_network_base(unittest.TestCase):
@@ -912,14 +1062,25 @@ class TestBuilder_MSN_cluster_compete(TestBuilder_MSN_cluster_compete_base,
                                       TestDirectorMixin):
     pass
 
+
+class TestBuilder_Go_NoGo_compete_base(unittest.TestCase):
+    def setUp(self):
+        self.builder=Builder_Go_NoGo_compete()
+
+
+class TestBuilder_Go_NoGo_compete(TestBuilder_Go_NoGo_compete_base, 
+                                  TestBuilderMixin, 
+                                      TestDirectorMixin):
+    pass
 if __name__ == '__main__':
     
     test_classes_to_run=[
-                         TestModuleFunctions,
-                        TestBuilder_network,
-#                          TestBuilder_single,
+#                         TestModuleFunctions,
+#                         TestBuilder_network,
+#                         TestBuilder_single,
 #                         TestBuilder_inhibition_striatum,
-                        TestBuilder_MSN_cluster_compete
+#                         TestBuilder_MSN_cluster_compete
+                        TestBuilder_Go_NoGo_compete
                         ]
     suites_list = []
     for test_class in test_classes_to_run:

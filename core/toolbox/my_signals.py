@@ -25,6 +25,7 @@ SpikeList        - SpikeList object used for spike trains
 from copy import deepcopy
 import numpy
 import pylab
+import scipy.stats
 import unittest
 from toolbox import misc, my_axes
 from toolbox import signal_processing as sp
@@ -40,12 +41,21 @@ from NeuroTools.signals import VmList
 from NeuroTools.signals import SpikeList
 from NeuroTools.plotting import get_display, set_labels, set_axis_limits
 
+from scipy.sparse import csc_matrix
+
+
 import pprint
 pp=pprint.pprint
 
 class Data_element_base(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
+            
+            if key in ['y_raw']:
+                key='_'+key
+                if value!=None:
+                    value =csc_matrix(value)
+            
             self.__dict__[key] = value
 
     def __repr__(self):
@@ -54,7 +64,11 @@ class Data_element_base(object):
     def __str__(self):
         return self.__class__.__name__
 
-
+    @property
+    def y_raw(self):
+        v =self._y_raw.todense() #convert from sparse matrix representation
+        return numpy.array(v) 
+        
 class Data_activity_histogram_base(object):
     def plot(self, ax, **k):
            
@@ -170,7 +184,43 @@ class Data_bar_base(object):
         ax.set_ylabel('y')
         ax.set_xticks(ind+width/2)
 
+    def bar2(self, ax , **k):
+                 
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+                
+        self.y=numpy.array(self.y)
+        
+        n,m=self.y.shape
+        
+        ind=numpy.arange(m)
+        width=0.8/n
+        
+        H=[]
+        for i in range(n):
+            if hasattr(self, 'y_std'):
+                self.y_std=numpy.array(self.y_std)
+#                 h=ax.bar(0+ind, self.y, width, yerr=self.y_std, **k )
+                H.append(ax.bar(ind+i*width,self.y[i,:], width, 
+                                yerr=self.y_std[i,:],  **k ))
+            
+            else: 
 
+                H.append(ax.bar(ind+i*width,self.y[i,:], width, **k ))
+            
+        
+
+        alphas=numpy.linspace(1,1./n,n)
+        colors=misc.make_N_colors('jet', m)
+        
+        for j, h in enumerate(H):
+            self.autolabel(ax, h)
+            for i, b in enumerate(h):
+                b.set_color(colors[i])
+                b.set_alpha(alphas[j])
+
+        ax.set_ylabel('y')
+        ax.set_xticks(ind+width*n/2)
     
 class Data_bar(Data_element_base,Data_bar_base):
     pass
@@ -256,7 +306,7 @@ class Data_phases_diff_with_cohere(Data_element_base,
 
       
 class Data_firing_rate_base(object):
-    def plot(self, ax, win=100, t_stop=0, t_start=numpy.inf, **k):
+    def plot(self, ax, win=100, t_start=0, t_stop=numpy.inf, **k):
                 
         if not isinstance(ax,my_axes.MyAxes):
             ax=my_axes.convert(ax)
@@ -342,7 +392,7 @@ def get_activity_historgram(y, bins, p):
     
     assert len(y) == m * bins, 'not equal'
     y = numpy.reshape(y, [bins, m])
-    import scipy.stats
+
     y_mean = scipy.stats.nanmean(y, axis=1)
     y_std = scipy.stats.nanstd(y, axis=1)
     x = numpy.linspace(0, p, bins)
@@ -516,8 +566,8 @@ class Data_mean_rate_slices_base(object):
                         self.y-self.y_std,
                         self.y+self.y_std, 
                         facecolor=color, alpha=0.5)  
-        ax.set_xlabel('Current (pA)') 
-        ax.set_ylabel('Membrane potential (mV)') 
+        ax.set_xlabel('Input') 
+        ax.set_ylabel('Firing rate (spike/s)') 
         ax.legend()
     
 class Data_mean_rate_slices(Data_element_base, Data_mean_rate_slices_base):
@@ -1129,7 +1179,9 @@ class MySpikeList(SpikeList):
                 +' '+str(self.t_start)+'-'+str(self.t_stop)) 
 
 
-    def Factory_firing_rate(self,*args, **kwargs): 
+    def Factory_firing_rate(self,*args, **kwargs):
+        
+         
         time_bin=kwargs.get('time_bin', 1 )
         if 'time_bin' in kwargs.keys():
             del kwargs['time_bin']
@@ -1209,11 +1261,13 @@ class MySpikeList(SpikeList):
         
 #         args=[lowcut, highcut, order, fs]
         y=sp.phases_diff(signals1, signals2, **kwargs)
+        y=numpy.array(y, dtype=numpy.float16)
+        
         x2, y2=sp.coherences(signals1, signals2, **kwargs)
         
         idx, v =sp.sort_coherences(x2, y2, low, high)
  
-        L=float(len(signals1[0])/kwargs.get('NFFT'))
+        L=float(len(signals1[0]))/kwargs.get('NFFT')
         p_conf95=numpy.ones(len(x2))*(1-0.05**(1/(L-1)))  
  
         
@@ -1283,7 +1337,7 @@ class MySpikeList(SpikeList):
 
     def Factory_mean_rate_slices(self, *args, **kwargs):
         intervals=kwargs.get('intervals',None)
-        repetitions=kwargs.get('repetitions',1)
+        repetition=kwargs.get('repetition',1)
         y=[]
         for start, stop in intervals:
             kwargs['t_stop']=stop
@@ -1293,10 +1347,10 @@ class MySpikeList(SpikeList):
         
         y=numpy.array(y)
         if not y.shape==(1,):
-            y=numpy.reshape(y,(repetitions, len(y)/repetitions))
+            y=numpy.reshape(y,(repetition, len(y)/repetition))
         y_std=numpy.std(y, axis=0)
         y_mean=numpy.mean(y, axis=0)
-        x=numpy.array(range(len(y_mean)))
+        x=kwargs.get('x', numpy.array(range(len(y_mean))))
         
         d={'ids':self.id_list,
            'y_raw_data':y,
@@ -1319,18 +1373,30 @@ class MySpikeList(SpikeList):
              'x':x , 
              'y':y}
         return Data_psd(**d)
-
+    
+        
     def Factory_spike_stat(self, *args, **kwargs):
-        d={'rates':{},'isi':{}}
+        d={'rates':{},'isi':{}, 'cv_isi':{}}
         d['rates']['mean']=self.mean_rate(**kwargs)
         d['rates']['std']=self.mean_rate_std(**kwargs)
+        d['rates']['SEM']=d['rates']['std']/numpy.sqrt(len(self.id_list))
         d['rates']['CV']=d['rates']['std']/d['rates']['mean']
         
         isi=numpy.concatenate((self.isi()))
+        
+        d['isi']['raw']=self.isi()
         d['isi']['mean']=numpy.mean(isi,axis=0)
         d['isi']['1000/mean']=1000./numpy.mean(isi,axis=0)
         d['isi']['std']=numpy.std(isi,axis=0)
         d['isi']['CV']=d['isi']['std']/d['isi']['mean']
+        
+        cv_isi=numpy.array(self.cv_isi())
+        d['cv_isi']['raw']=cv_isi
+        d['cv_isi']['mean']=scipy.stats.nanmean(cv_isi,axis=0)
+        d['cv_isi']['std']=scipy.stats.nanstd(cv_isi,axis=0)
+        d['cv_isi']['SEM']=d['cv_isi']['std']/numpy.sqrt(len(self.id_list))
+        d['cv_isi']['CV']=d['cv_isi']['std']/d['cv_isi']['mean']
+        
         return Data_spike_stat(**d)
 
 
@@ -2309,7 +2375,7 @@ def transpose_if_axis_1(axis, m):
 
 class TestDataElement(unittest.TestCase):
     def setUp(self):
-        self.sim_time=5000.0
+        self.sim_time=6000.0
         self.sl=dummy_data('spike', **{'run':0, 'set':0, 'n_sets':1,
                                        'sim_time':self.sim_time,
                                        'scale':0.1})
@@ -2322,7 +2388,22 @@ class TestDataElement(unittest.TestCase):
                                          'n_sets':1,
                                          'sim_time':self.sim_time})
     
-    
+    def test_bar(self):
+        ax=pylab.subplot(111)
+        data=[[1,2],
+              [1.5,1.2]] 
+        obj=Data_bar(**{'y':data})
+        obj.bar2(ax)
+        ax.set_xticklabels(['Label 1', 'Label 2'])
+        pylab.show()
+
+    def test_spike_stat(self):    
+        obj=self.sl.Factory_spike_stat()
+        pp(obj)
+#         obj.plot(pylab.subplot(111), win=20.0)
+#         pylab.show()
+
+ 
 #     def test_element(self):
 #         d={'x':1,'y':2, 'z':3}
 #         obj=Data_element_base(**d)
@@ -2330,52 +2411,52 @@ class TestDataElement(unittest.TestCase):
 #             self.assertTrue(key in dir(obj))
 # 
 #     def test_firing_rate_plot(self):    
-#         obj=self.sl.Factory_firing_rate()
+#         obj=self.sl.Factory_firing_rate(**{'average':False})
 #         obj.plot(pylab.subplot(111), win=20.0)
-# #         pylab.show()
-# 
+#         pylab.show()
+# # 
 #     def test_activity_histogram(self):
 #         obj1=self.sl.Factory_firing_rate()
 #         obj2=obj1.get_activity_histogram()
 #         self.assertAlmostEqual(obj2.get_activity_histogram_stat().y, 
 #                                0.0, delta=0.001) 
-#         
+#          
 #         obj1=self.slnm.Factory_firing_rate()
 #         obj2=obj1.get_activity_histogram()
 #         self.assertAlmostEqual(obj2.get_activity_histogram_stat().y, 
 #                                1.0, delta=0.05) 
-#         
+#          
 #         obj1=self.sl.Factory_firing_rate(**{'average':False})
 #         obj2=obj1.get_activity_histogram(**{'average':False})
-#         
+#          
 #         self.assertAlmostEqual(numpy.mean(obj2.get_activity_histogram_stat(**{'average':False}).y), 
 #                                0.0, delta=0.001) 
 
-        
-    def test_phases_diff_cohere_plot(self):
-        
-        other=self.sl
-        kwargs={
-                'NTFF':256,
-                'fs':1000.0,
-                'NFFT':256,
-                'noverlap':int(256/2),
-                'other':other,
-                'sample':10.,   
-                
-                'lowcut':10,
-                'highcut':20,
-                'order':3,
-                'bin_extent':10.,
-                'kernel_type':'gaussian',
-                'params':{'std_ms':5.,
-                          'fs': 1000.0}
-      
-                }
-                
-        obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
-        obj.hist(pylab.subplot(111))
-        pylab.show()
+#         
+#     def test_phases_diff_cohere_plot(self):
+#          
+#         other=self.sl
+#         kwargs={
+#                 'NTFF':256,
+#                 'fs':100.0,
+#                 'NFFT':256,
+#                 'noverlap':int(256/2),
+#                 'other':other,
+#                 'sample':10.,   
+#                  
+#                 'lowcut':10,
+#                 'highcut':20,
+#                 'order':3,
+#                 'bin_extent':10.,
+#                 'kernel_type':'gaussian',
+#                 'params':{'std_ms':5.,
+#                           'fs': 100.0},
+#        
+#                 }
+#                  
+#         obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
+#         obj.hist(pylab.subplot(111))
+#         pylab.show()
 
 #     def test_IF_curve_plot(self):
 #           

@@ -19,13 +19,208 @@ from toolbox.my_signals import Data_bar
 from simulate import (cmp_psd, show_fr, show_hr, show_psd,
                       show_coherence, show_phase_diff,
                       get_file_name, get_file_name_figs)
-
+import toolbox.plot_settings as ps
 import pprint
 pp=pprint.pprint
     
 DISPLAY=os.environ.get('DISPLAY')
 THREADS=4
 
+def mallet2008():
+    d={'all':{'slow_wave':{'control':{'rate':25.8,
+                                    'CV':0.49},
+                         'lesioned':{'rate':20.6,
+                                    'CV':1.29}},
+            'activation':{'control':{'rate':33.6,
+                                    'CV':0.43},
+                         'lesioned':{'rate':14.8,
+                                    'CV':0.74}}},
+     'TI':{'slow_wave':{'lesioned':{'rate':24.4,
+                                    'CV':1.28}},
+           'activation':{'lesioned':{'rate':14.3,
+                                     'CV':0.77}}},
+     'TA':{'slow_wave':{'lesioned':{'rate':11.5,
+                                    'CV':1.58}},
+           'activation':{'lesioned':{'rate':19.3,
+                                     'CV':0.61}}},
+       'STN':{'slow_wave':{'control':{'rate':12.6,
+                                    'CV':1.75},
+                         'lesioned':{'rate':20.5,
+                                    'CV':2.02}},
+            'activation':{'control':{'rate':14.9,
+                                    'CV':0.84},
+                         'lesioned':{'rate':31.1,
+                                    'CV':0.64}}},}
+    return d
+
+
+def get_all_slow_wave_rate(d):
+    y = [d['all']['slow_wave']['control']['rate'], d['all']['slow_wave']['lesioned']['rate']]
+    return y
+
+
+def get_all_activation_rate(d):
+    y = [d['all']['activation']['control']['rate'], d['all']['activation']['lesioned']['rate']]
+    return y
+
+
+def get_all_slow_wave_CV(d):
+    y = [d['all']['slow_wave']['control']['CV'], d['all']['slow_wave']['lesioned']['CV']]
+    return y
+
+
+def get_all_activation_CV(d):
+    y = [d['all']['activation']['control']['CV'], d['all']['activation']['lesioned']['CV']]
+    return y
+
+
+def get_TI_TA_slow_wave_rate(d):
+    y = [d['TI']['slow_wave']['lesioned']['rate'], d['TA']['slow_wave']['lesioned']['rate']]
+    return y
+
+
+def get_TI_TA_slow_wave_CV(d):
+    y = [d['TI']['slow_wave']['lesioned']['CV'], d['TA']['slow_wave']['lesioned']['CV']]
+    return y
+
+
+def get_TI_TA_activation_rate(d):
+    y = [d['TI']['activation']['lesioned']['rate'], d['TA']['activation']['lesioned']['rate']]
+    return y
+
+
+def get_TI_TA_activation_CV(d):
+    y = [d['TI']['activation']['lesioned']['CV'], d['TA']['activation']['lesioned']['CV']]
+    return y
+
+def get_STN_slow_wave_rate(d):
+    y = [d['STN']['slow_wave']['control']['rate'], d['STN']['slow_wave']['lesioned']['rate']]
+    return y
+
+
+def get_STN_activation_rate(d):
+    y = [d['STN']['activation']['control']['rate'], d['STN']['activation']['lesioned']['rate']]
+    return y
+
+
+def get_STN_slow_wave_CV(d):
+    y = [d['STN']['slow_wave']['control']['CV'], d['STN']['slow_wave']['lesioned']['CV']]
+    return y
+
+
+def get_STN_activation_CV(d):
+    y = [d['STN']['activation']['control']['CV'], d['STN']['activation']['lesioned']['CV']]
+    return y
+
+
+
+def plot_mallet2008():
+    d=mallet2008()
+    fig, axs=ps.get_figure(n_rows=3, 
+                           n_cols=4, 
+                           w=1200.0, 
+                           h=400.0, 
+                           fontsize=10) 
+  
+    i=0
+    y = get_all_slow_wave_rate(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_xticklabels(['GP control', 'GP lesioned'])
+    axs[i].set_title('Slow wave')
+    axs[i].set_ylim([0,40])
+    i += 1
+    
+    y = get_all_activation_rate(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_xticklabels(['GP control', 'GP lesioned'])
+    axs[i].set_title('Activation')
+    axs[i].set_ylim([0,40])
+    i += 1
+    
+    y = get_all_slow_wave_CV(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_xticklabels(['GP control', 'GP lesioned'])
+    axs[i].set_title('Slow wave')
+    axs[i].set_ylim([0,1.4])
+    i += 1
+    
+    y = get_all_activation_CV(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_xticklabels(['GP control', 'GP lesioned'])
+    axs[i].set_title('Activation')
+    axs[i].set_ylim([0,1.4])
+    i += 1 
+    
+    y = get_TI_TA_slow_wave_rate(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
+    axs[i].set_title('Slow wave')
+    axs[i].set_ylim([0,30])
+    i += 1
+    
+    y = get_TI_TA_slow_wave_CV(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
+    axs[i].set_title('Slow wave')
+    axs[i].set_ylim([0,1.8])
+    i += 1    
+
+    y = get_TI_TA_activation_rate(d)
+    Data_bar(**{'y':y}).bar(axs[i], alpha=0.5)
+    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
+    axs[i].set_title('Activation')
+    axs[i].set_ylim([0,30])
+    i += 1
+    
+    y = get_TI_TA_activation_CV(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
+    axs[i].set_title('Activation')
+    axs[i].set_ylim([0,1.8])
+    i += 1     
+    
+    i=0
+    y = get_all_slow_wave_rate(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_xticklabels(['STN control', 'STN lesioned'])
+    axs[i].set_title('Slow wave')
+    axs[i].set_ylim([0,40])
+    i += 1
+    
+    y = get_STN_activation_rate(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_xticklabels(['STN control', 'STN lesioned'])
+    axs[i].set_title('Activation')
+    axs[i].set_ylim([0,40])
+    i += 1
+    
+    y = get_STN_slow_wave_CV(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_xticklabels(['STN control', 'STN lesioned'])
+    axs[i].set_title('Slow wave')
+    axs[i].set_ylim([0,1.4])
+    i += 1
+    
+    y = get_STN_activation_CV(d)
+    Data_bar(**{'y':y}).bar(axs[i])
+    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_xticklabels(['STN control', 'STN lesioned'])
+    axs[i].set_title('Activation')
+    axs[i].set_ylim([0,1.4])
+    i += 1 
+    
+    return fig, axs
 def add_GPe(d):
     for key in d.keys():
         if not 'GA' in d[key].keys():
@@ -69,49 +264,109 @@ def create_relations(models_coher, dd):
 
 
 
-def plot_spk_stats(d, axs, i):
-    y_mean = []
-    y_CV = []
+def plot_spk_stats(d, axs, i, **k):
+    y_mean, y_mean_SEM = [], []
+    y_CV, y_CV_SEM = [], []
+ 
     for key in sorted(d.keys()):
         v = d[key]
         for model in ['GP']:
             st = v[model]['spike_statistic']
             y_mean.append(st.rates['mean'])
-            y_CV.append(st.isi['CV'])
+            y_mean_SEM.append(st.rates['SEM'])
+            y_CV.append(st.cv_isi['mean'])
+            y_CV_SEM.append(st.cv_isi['SEM'])
+    
+    print y_mean
+    print y_mean_SEM      
+    
+    dm=mallet2008()
+    
+    mode=k.get('statistics_mode', 'activation')
+    if mode=='slow_wave':
+        Y=[get_all_slow_wave_rate(dm),
+           get_all_slow_wave_CV(dm),
+           get_TI_TA_slow_wave_rate(dm),
+           get_TI_TA_slow_wave_CV(dm)]
+    if mode=='activation':
+        Y=[get_all_activation_rate(dm),
+           get_all_activation_CV(dm),
+           get_TI_TA_activation_rate(dm),
+           get_TI_TA_activation_CV(dm)]
             
-    Data_bar(**{'y':y_mean}).bar(axs[i])
+            
+    Data_bar(**{'y':[[y_mean[0], y_mean[1]],
+                     [Y[0][0],  Y[0][1]]],
+                'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
+                         [0.,  0.]]}).bar2(axs[i])
     axs[i].set_ylabel('Mean firing rate (Hz)')
     axs[i].set_xticklabels(['GP control', 'GP lesioned'])
     i += 1
+
+    print y_CV
+    print Y
+    print y_CV_SEM
+    Data_bar(**{'y':[[y_CV[0], y_CV[1]],
+                     [Y[1][0], Y[1][1]]],
+                'y_std':[[y_CV_SEM[0], y_CV_SEM[1]],
+                         [0., 0.]]}).bar2(axs[i])
     
-    Data_bar(**{'y':y_CV}).bar(axs[i])
+#     Data_bar(**{'y':y_CV}).bar(axs[i])
     axs[i].set_ylabel('Coefficient of variation')
     axs[i].set_xticklabels(['GP control', 'GP lesioned'])
     i += 1            
-
+#     pylab.show()
     y_mean = []
     y_CV = []    
-    for model in ['GA', 'GI']:
-        for key in sorted(d.keys()):
+    
+    for key in sorted(d.keys()):
+        for model in ['GI', 'GA']:
             v = d[key]
-
-
+            
             st = v[model]['spike_statistic']
             y_mean.append(st.rates['mean'])
-            y_CV.append(st.isi['CV'])
+            y_mean_SEM.append(st.rates['SEM'])
+            y_CV.append(st.cv_isi['mean'])
+            y_CV_SEM.append(st.cv_isi['SEM'])
         
-    Data_bar(**{'y':y_mean}).bar(axs[i])
+        
+
+    Data_bar(**{'y':y_mean[0:2]}).bar(axs[i])
     axs[i].set_ylabel('Mean firing rate (Hz)')
-    axs[i].set_xticklabels(['TA control', 'TA lesioned',
-                            'TI control', 'TI lesioned'])
+    axs[i].set_xticklabels(['TI control', 'TA control'])
     i += 1
+#     pylab.show()
     
-    Data_bar(**{'y':y_CV}).bar(axs[i])
+    Data_bar(**{'y':[[y_mean[2],y_mean[3]],
+                     [Y[2][0], Y[2][1]]],
+                'y_std':[[y_mean_SEM[2],y_mean_SEM[3]],
+                         [0., 0.]]}).bar2(axs[i])
+    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
+    
+    i += 1
+
+    Data_bar(**{'y':y_CV[0:2]}).bar(axs[i])
     axs[i].set_ylabel('Coefficient of variation')
-    axs[i].set_xticklabels(['TA control', 'TA lesioned',
-                            'TI control', 'TI lesioned'])
+    axs[i].set_xticklabels(['TI control', 'TA control'])
+    i += 1
+
+    Data_bar(**{'y':[[y_CV[2], y_CV[3]],
+                     [Y[3][0], Y[3][1]]],
+                'y_std':[[y_CV_SEM[2], y_CV_SEM[3]],
+                         [0., 0.]]}).bar2(axs[i])
+    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
+    
     i += 1
     
+    
+#     Data_bar(**{'y':y_CV}).bar(axs[i])
+#     axs[i].set_ylabel('Coefficient of variation')
+#     axs[i].set_xticklabels(['TA control', 'TA lesioned',
+#                             'TI control', 'TI lesioned'])
+#     i += 1
+#     
     return i
 
 
@@ -155,8 +410,34 @@ def plot_phases_diff_with_cohere(d, axs, i, xmax=5):
     i+=8
     return i
 
+def plot_isi(d, axs, i):
+    
+    for key in sorted(d.keys()):
+        v = d[key]
+        for j, model in enumerate(['GA']):
+            ax = axs[j+i]
+            obj = v[model]['spike_statistic']
+            m=numpy.mean(obj.isi['raw'][0])
+            std=numpy.std(obj.isi['raw'][0])
+            CV=std/m
+            CV2=obj.cv_isi['raw'][0]
+            CV3=obj.cv_isi['mean']
+            l='m:{0:.4} s:{1:.4} CV:{2:.4} CV2:{3:.4} CV3:{4:.4}'.format(m,std,
+                                                                         CV, 
+                                                                         CV2,
+                                                                         CV3)
+            ax.hist(obj.isi['raw'][0], **{'label':l})
+            ax.legend()
+#             ax.title()
+            
+    
+    i+=1
+        
+   
+
+
 def show_summed(d, **k):
-    import toolbox.plot_settings as ps  
+#     import toolbox.plot_settings as ps  
     fig, axs=ps.get_figure(n_rows=5, 
                            n_cols=4, 
                            w=1400.0, 
@@ -166,11 +447,12 @@ def show_summed(d, **k):
 
 
     i=0
-    i = plot_spk_stats(d, axs, i)
+    i = plot_spk_stats(d, axs, i, **k)
+
     i = plot_activity_hist(d, axs, i)
     i = plot_coherence(d, axs, i, **k)
     i = plot_phases_diff_with_cohere(d, axs, i)
-        
+#     pylab.show()    
     return fig
         
 
@@ -221,7 +503,7 @@ class Setup(object):
     def phases_diff_with_cohere(self):
         kwargs={
                 'NFFT':1024 * 4, 
-                'fs':1000., 
+                'fs':100., 
                 'noverlap':1024 * 2, 
                 'sample':10.,   
                 
@@ -232,7 +514,7 @@ class Setup(object):
              'bin_extent':250., 
              'kernel_type':'gaussian', 
              'params':{'std_ms':125., 
-                       'fs':1000.0}, 
+                       'fs':100.0}, 
       
                 'threads':self.threads}
         return kwargs
@@ -244,9 +526,9 @@ class Setup(object):
         return d
     
     def plot_fr(self):
-        d={'win':20.,
-           't_start':4000.0,
-           't_stop':5000.0}
+        d={'win':100.,
+           't_start':0.0,
+           't_stop':20000.0}
         return d
 
     def plot_coherence(self):
@@ -254,11 +536,12 @@ class Setup(object):
         return d
     
     def plot_summed(self):
-        d={'xlim_cohere':[0, 10]}
+        d={'xlim_cohere':[0, 10],
+           'statistics_mode':'activation'}
         return d
     
 def simulate(builder=Builder,
-         from_disk=2,
+         from_disk=0,
          perturbation_list=None,
          script_name=__file__.split('/')[-1][0:-3],
          setup=Setup(1000.0, THREADS)):
@@ -317,15 +600,18 @@ def simulate(builder=Builder,
             save(sd, dd)
         elif fd == 1:
             filt = [net.get_name()] + models + ['spike_signal']
-            
+             
             dd = load(sd, *filt)    
-            dd = compute(dd, models, ['firing_rate'], **kwargs_dic)     
+            
+                        
+#             dd = compute(dd, models, ['firing_rate'], **kwargs_dic)     
+#             pp(dd)
             dd = compute(dd, models, attr, **kwargs_dic)
             save(sd, dd)
             
-            filt = [net.get_name()] + models + ['spike_signal']+attr
+#             filt = [net.get_name()] + models + ['spike_signal']+attr
             
-            dd = load(sd, *filt)
+#             dd = load(sd, *filt)
             
             for keys, val in misc.dict_iter(dd):
                 if keys[-1]=='spike_signal':
@@ -380,7 +666,9 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
         figs.append(show_psd(d, models=models))
         figs.append(show_coherence(d, models=models_coher, **d_plot_coherence))
         figs.append(show_phase_diff(d, models=models_coher))
+        
         figs.append(show_summed(d, **d_plot_summed))
+
         sd_figs.save_figs(figs, format='png')
 
 def main(*args, **kwargs):
@@ -392,7 +680,7 @@ def main(*args, **kwargs):
     setup=args[-1]
     create_figs(file_name_figs, from_disks, d, models, models_coher, setup)
     
-    if DISPLAY: pylab.show()  
+#     if DISPLAY: pylab.show()  
     
     return d
 
@@ -401,19 +689,41 @@ class TestOcsillation(unittest.TestCase):
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
         from_disk=2
-        sim_time=10000.0
+        sim_time=40000.0
         size=5000.0
         threads=12
+        s=''
         p=pl({'simu':{'sim_time':sim_time,
                       'sim_stop':sim_time,
                       'threads':threads},
                   'netw':{'size':size}},
                   '=')
+        
+        for amp in [
+                0.9, 
+                ]: 
+            d={'type':'oscillation', 
+               'params':{
+                         'p_amplitude_mod':amp,
+                         'freq': 1.,
+                         'freq_min':0.5,
+                         'freq_max':1.5, 
+                         'period':'uniform'}} 
+            dd={}
+            for key in ['C1', 'C2', 'CF', 'CS']: 
+                dd=misc.dict_update(dd, {'netw': {'input': {key:d} } })     
+                         
+            p+=pl(dd,'=',**{'name':'amp_'+str(amp)})
+        s='1'
+                  
+#      
+        
         self.setup=Setup(1000.0, THREADS)
         v=simulate(builder=Builder,
                             from_disk=from_disk,
                             perturbation_list=p,
-                            script_name=__file__.split('/')[-1][0:-3],
+                            script_name=(__file__.split('/')[-1][0:-3]
+                                         +'/data'+s),
                             setup=self.setup)
         
         file_name_figs, from_disks, d, models, models_coher = v
@@ -425,13 +735,34 @@ class TestOcsillation(unittest.TestCase):
         self.models=models
         self.models_coher=models_coher
         
+
+
+
+#     def test_isi(self):
+# #         import toolbox.plot_settings as ps
+#         fig, axs=ps.get_figure(n_rows=1, 
+#                            n_cols=1, 
+#                            w=1000.0, h=800.0, fontsize=10)  
+#           
+#         plot_isi(self.d, axs, 0)
+# #         pylab.show()
+#         print self.d
+
+#         
+#     def test_empty(self):
+#         pass
+    
+#     def test_plot_mallet2008(self):
+#         plot_mallet2008()
+#         pylab.show()
+#         
 #     def testPlotStats(self):
-#         import toolbox.plot_settings as ps
-#         fig, axs=ps.get_figure(n_rows=2, 
+# #         import toolbox.plot_settings as ps
+#         fig, axs=ps.get_figure(n_rows=3, 
 #                            n_cols=2, 
 #                            w=1000.0, h=800.0, fontsize=10)  
-#         
-#         plot_spk_stats(self.d, axs, 0)
+#           
+#         plot_spk_stats(self.d, axs, 0, **{'statistics_mode': 'slow_wave'})
 # #         pylab.show()
 #         print self.d
 
@@ -468,11 +799,12 @@ class TestOcsillation(unittest.TestCase):
 #         pylab.show()
 #         print self.d   
         
-         
+#          
 #     def testShowSummed(self):
-#         show_summed(self.d, **{'xlim_cohere':[0,7]})
+#         show_summed(self.d, **{'xlim_cohere':[0,7], 
+#                                'statistics_mode':'slow_wave'})
 #         pylab.show()
-#            
+             
 
 
     def test_create_figs(self):
@@ -489,7 +821,7 @@ class TestOcsillation(unittest.TestCase):
 #                                         't_start':4000.0,
 #                                         't_stop':5000.0})
 #         pylab.show()
-# 
+ 
 #     def test_show_coherence(self):
 #         show_coherence(self.d, self.models_coher, **{'xlim':[0,10]})
 #         pylab.show()
@@ -504,13 +836,8 @@ if __name__ == '__main__':
         suites_list.append(suite)
 
     big_suite = unittest.TestSuite(suites_list)
-    
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestNode)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestNode_dic)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestStructure)
     unittest.TextTestRunner(verbosity=2).run(big_suite)
     
-    #unittest.main()  
 
 
 

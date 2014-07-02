@@ -13,8 +13,8 @@ from simulate import show_fr, get_file_name, get_file_name_figs
 from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
-from toolbox.network.manager import compute, run, save, load
-from toolbox.network.manager import Builder_Go_NoGo_compete as Builder
+from toolbox.network.manager import add_perturbations, compute, run, save, load
+from toolbox.network.manager import Builder_Go_NoGo_with_lesion as Builder
 
 import pprint
 pp=pprint.pprint
@@ -25,6 +25,7 @@ def get_kwargs_builder(**k_in):
     
     res=k_in.get('resolution',5)
     rep=k_in.get('repetition',5)
+    sub=k_in.get('sub_sampling',50)
     
     return {'print_time':False,
             'save_conn':{'overwrite':True},
@@ -35,7 +36,7 @@ def get_kwargs_builder(**k_in):
             'size':750.0, 
             'start_rec':0.0,  
             'stop_rec':1000.*(res*res*rep+1),
-            'sub_sampling':50,
+            'sub_sampling':sub,
             'threads':THREADS,}   
     
 def get_kwargs_engine():
@@ -78,19 +79,20 @@ def process_data(data, threshold=5):
     return outs
 
 
-def show_3d(d, models, **k):
+def show_3d(d,**k):
+    models=['SN']
     res=k.get('resolution')
     n=len(models)
     m=len(d.keys())
     attr='mean_rate_slices'
-    fig, axs=ps.get_figure(n_rows=n, n_cols=2, w=1000.0, h=800.0, fontsize=10, 
+    fig, axs=ps.get_figure(n_rows=m, n_cols=2, w=1000.0, h=800.0, fontsize=10, 
                            projection='3d')        
      
     i=0
     for model in models:
         alpha=0.8
         dcm={'Net_0':'jet',
-           'Net_1':'coolwarm',}
+             'Net_1':'coolwarm',}
         for key in sorted(d.keys()):
             obj0=d[key]['set_0'][model][attr]
             obj1=d[key]['set_1'][model][attr]
@@ -103,12 +105,12 @@ def show_3d(d, models, **k):
                 args[j]=numpy.reshape(arg, [res,res])
             x,y,z, z_std=args
              
-            axs[i].plot_surface(x, y, z, cmap=dcm[key], rstride=1, cstride=1, 
+            axs[i].plot_surface(x, y, z, cmap='coolwarm', rstride=1, cstride=1, 
                                 linewidth=0, 
                                 shade=True,
                                 alpha=alpha,
                                 antialiased=False)
-            axs[i+1].plot_surface(x, y, z_std, cmap=dcm[key], rstride=1, cstride=1, 
+            axs[i+1].plot_surface(x, y, z_std, cmap='coolwarm', rstride=1, cstride=1, 
                                 linewidth=0, 
                                 shade=True,
                                 alpha=alpha,
@@ -116,7 +118,7 @@ def show_3d(d, models, **k):
              
              
     #                 alpha-=0.3
-    i+=1
+            i+=2
     #                 pylab.show()
     #                 print v
                
@@ -132,12 +134,13 @@ class Setup(object):
         self.threads=k.get('threads',1)
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
-        
+                
     def builder(self):
         d= {'repetition':self.rep,
             'resolution':self.res,
             'input_lists': [['C1'],
-                            ['C1', 'C2']]}
+                            ['C1', 'C2']],
+            'sub_sampling':50}
         return d
 
     def firing_rate(self):
@@ -158,6 +161,7 @@ class Setup(object):
         d={'resolution':self.res}
         return d
 
+        
 def simulate(builder, from_disk, perturbation_list, script_name, setup):
     home = expanduser("~")
     
@@ -176,12 +180,12 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
         'set_0':{'x':x}, 
         'set_1':{'x':y}, 
         'sets':[0, 1]}
-    
+    add_perturbations(perturbation_list, nets)    
     sd = Storage_dic.load(file_name)
     sd.add_info(info)
     sd.garbage_collect()
     d = {}
-    from_disks = [from_disk] * 2
+    from_disks = [from_disk] * len(nets.keys())
     for net, fd in zip(nets.values(), from_disks):
         if fd == 0:
             dd = run(net)
@@ -205,19 +209,19 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
 #             dd=cmp_mean_rates_intervals(dd, intervals[1], x, rep, **{'sets':[0,1]})
         d = misc.dict_update(d, dd)
     
-    return file_name, file_name_figs, d, models
+    return file_name, file_name_figs, from_disks, d, models
 
 
-def create_figs(res, setup, file_name_figs, d, models):
+def create_figs(setup, file_name_figs, d, models):
     
     sd_figs = Storage_dic.load(file_name_figs)
     figs = []
     
     d_plot_fr = setup.plot_fr()
     d_plot_3d=setup.plot_3d()
-    figs.append(show_fr(d['Net_0'], models, **d_plot_fr))
-    figs.append(show_fr(d['Net_1'], models, **d_plot_fr))
-    figs.append(show_3d(d, ['SN'], **d_plot_3d))
+    for i in range(5):
+        figs.append(show_fr(d['Net_'+str(i)], models, **d_plot_fr))
+    figs.append(show_3d(d, **d_plot_3d))
     
     sd_figs.save_figs(figs, format='png')
 
@@ -231,10 +235,10 @@ def main(builder=Builder,
     
     
     v=simulate(builder, from_disk, perturbation_list, script_name, setup)
-    file_name_figs, from_disks, d, models = v
+    file_name, file_name_figs, from_disks, d, models = v
     
     if numpy.all(numpy.array(from_disks) > 0):
-        create_figs(res, setup, file_name_figs, d, models)
+        create_figs(setup, file_name_figs, d, models)
     
     
 #     pylab.show()
@@ -243,11 +247,11 @@ import unittest
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=1
+        from_disk=2
         
         import oscillation_perturbations as op
         
-        rep, res=2, 3
+        rep, res=1, 5
         
         sim_time=rep*res*1000.0
       
@@ -280,7 +284,7 @@ class TestOcsillation(unittest.TestCase):
         
 
     def test_create_figs(self):
-        create_figs(self.res, 
+        create_figs(
                     self.setup,
                     self.file_name_figs, 
                     self.d, 

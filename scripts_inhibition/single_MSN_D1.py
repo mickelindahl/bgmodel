@@ -51,7 +51,7 @@ def modify(dn):
 
 def main(rand_nodes=False, 
          script_name= __file__.split('/')[-1][0:-3], 
-         from_disk=0):   
+         from_disk=1):   
     
     k=get_kwargs_builder()
         
@@ -59,7 +59,7 @@ def main(rand_nodes=False,
     
     pp(dinfo)
     
-    dn=modify(dn)
+#     dn=modify(dn)
     ds = get_storages(script_name, dn.keys(), dinfo)
     pp(ds)
     
@@ -71,7 +71,7 @@ def main(rand_nodes=False,
     d={}
     d.update(run_XX('IV', dn, [from_disk]*4, ds, dstim))
     d.update(run_XX('IF', dn, [from_disk]*4, ds, dstim))
-    d.update(run_XX('FF', dn, [from_disk]*4, ds, dstim))   
+    d.update(run_XX('FF', dn, [1]*4, ds, dstim))   
     d.update(optimize('opt_rate', dn, [from_disk]*1, ds, **{ 'x0':900.0}))   
     set_optimization_val(d['opt_rate']['Net_0'], dn['hist']) 
     d.update(run('hist', dn, [from_disk]*2, ds, 'mean_rates', 

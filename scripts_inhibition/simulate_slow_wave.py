@@ -58,8 +58,8 @@ class Setup(object):
         return d    
 
     def phases_diff_with_cohere(self):
-        kwargs={
-               'fs':1000.0, 
+        d={
+               'fs':100.0, 
                'NFFT':1024 * 4, 
             'noverlap':int(1024 * 2), 
             'sample':30.,
@@ -71,9 +71,10 @@ class Setup(object):
              'bin_extent':500., 
              'kernel_type':'gaussian', 
              'params':{'std_ms':250., 
-                       'fs':1000.0},
+                       'fs':100.0},
       
             'threads':self.threads}
+        return d
     
     def firing_rate(self):
         d={'average':False, 
@@ -83,9 +84,9 @@ class Setup(object):
 
     
     def plot_fr(self):
-        d={'win':20.,
-           't_start':0.0,
-           't_stop':numpy.Inf}
+        d={'win':100.,
+           't_start':10000.0,
+           't_stop':20000.0}
         return d
 
     def plot_coherence(self):
@@ -93,7 +94,8 @@ class Setup(object):
         return d
     
     def plot_summed(self):
-        d={'xlim_cohere':[0, 5]}
+        d={'xlim_cohere':[0, 5],
+           'statistics_mode':'slow_wave'}
         return d
     
 def main(builder=Builder,

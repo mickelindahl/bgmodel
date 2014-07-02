@@ -4,26 +4,22 @@ Created on Aug 12, 2013
 @author: lindahlm
 '''
 from copy import deepcopy
-from inhibition_gather_results import process
 from toolbox import misc
 from toolbox.network.default_params import Perturbation_list as pl
-from toolbox.network.manager import Builder_slow_wave2 as Builder
+from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
 
-import numpy
-import simulate_slow_wave
-import oscillation_perturbations as op
+import simulate_beta
+import oscillation_perturbations3 as op
 import pprint
 pp=pprint.pprint
 
 
 def perturbations():
-    sim_time=20000.0
+    sim_time=10000.0
     size=20000.0
     threads=4
 
-    path=('/home/mikael/results/papers/inhibition'+
-       '/network/simulate_inhibition_ZZZ/')
     
     l=op.get()
 
@@ -34,31 +30,25 @@ def perturbations():
                   'netw':{'size':size}},
                   '=')
 
-
-    freqs=[0.5, 1.0, 1.5]
-    
-    damp=process(path, freqs)
-    for key in sorted(damp.keys()):
-        val=damp[key]
-        print numpy.round(val, 2), key
-
     ll=[]
-    for j in range(3):
+    for amp in [
+                [0.35, 0.9], 
+                [0.25, 1.0], 
+                [0.3, 1.0], 
+                ]: 
+        d={'type':'oscillation2', 
+           'params':{'p_amplitude_mod':amp[0],
+                     'p_amplitude0':amp[1],
+                     'freq': 20.}} 
         for i, _l in enumerate(l):
-            amp=[numpy.round(damp[_l.name][j],2), 1]
-            d={'type':'oscillation2', 
-               'params':{'p_amplitude_mod':amp[0],
-                         'p_amplitude0':amp[1],
-                         'freq': 1.}} 
             _l=deepcopy(_l)
             dd={}
             for key in ['C1', 'C2', 'CF', 'CS']: 
                 dd=misc.dict_update(dd, {'netw': {'input': {key:d} } })     
                       
-            _l+=pl(dd,'=',**{'name':'amp_{0}-{1}'.format(*amp)})
+            _l+=pl(dd,'=',**{'name':'amp_'+str(amp)})
                 
             ll.append(_l)
-        
         
 
     return ll, threads
@@ -76,19 +66,15 @@ home = expanduser("~")
 path=(home + '/results/papers/inhibition/network/'
       +__file__.split('/')[-1][0:-3]+'/')
 
-n=len(p_list)
-
-
 for j in range(0,3):
     for i, p in enumerate(p_list):
         
-        if i>=n-11:
-#         if i>18:
-            continue
+#         if i<5:
+#             continue
 #         
         from_disk=j
 
-        fun=simulate_slow_wave.main
+        fun=simulate_beta.main
         script_name=(__file__.split('/')[-1][0:-3]+'/script_'+str(i)+'_'+p.name)
 #         fun(*[Builder, from_disk, p, script_name, threads])
         args_list.append([fun,script_name]
@@ -96,5 +82,5 @@ for j in range(0,3):
                            script_name, threads])
 
 
-loop(args_list, path, 5)
+loop(args_list, path, 3)
         

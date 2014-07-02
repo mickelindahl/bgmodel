@@ -7,7 +7,7 @@
 import math
 import numpy
 
-from my_axes import MyAxes
+from my_axes import MyAxes, MyAxes3D
 from toolbox import pylab
 
 import pprint
@@ -224,7 +224,7 @@ def set_figsize(fig_width_pt):
     pylab.rcParams['figure.figsize'] = get_figsize(fig_width_pt)
 
 
-def get_figure( n_rows, n_cols, w, h, fontsize, order='col'):
+def get_figure( n_rows, n_cols, w, h, fontsize, order='col', projection=None):
 #     import os
 #     if not os.environ.get('DISPLAY'):
 #         pylab.ioff()
@@ -246,16 +246,21 @@ def get_figure( n_rows, n_cols, w, h, fontsize, order='col'):
     xpoints=list(numpy.linspace(inbetw_col, 1-step_col ,n_cols))
     ax_list=[]
     
+
+    if projection=='3d':
+        axes_class=MyAxes3D
+    else:
+        axes_class=MyAxes
     
     if order=='col':
         for y in reversed(ypoints):
             for x in xpoints:
-                ax_list.append( MyAxes(fig, [ x,  y,  width, hight ] ) ) 
+                ax_list.append( axes_class(fig, [ x,  y,  width, hight ] ) ) 
     
     if order=='row':
         for x in xpoints:
             for y in reversed(ypoints):
-                ax_list.append( MyAxes(fig, [ x,  y,  width, hight ] ) )                 
+                ax_list.append( axes_class(fig, [ x,  y,  width, hight ] ) )                 
     return fig, ax_list
 
 

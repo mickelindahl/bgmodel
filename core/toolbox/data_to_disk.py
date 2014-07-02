@@ -39,9 +39,12 @@ class Storage(object):
     def load_data(self):
         return pickle_load(self.data_path)
              
-    def save_data(self, name, data):
-        hash_code=str(hash(data))
-        self.data_path=self.main_path+name+'-'+hash_code+'.pkl'
+    def save_data(self, name, data, use_hash=False):
+        hash_code=''
+        if use_hash:
+            hash_code='-'+str(hash(data))
+        
+        self.data_path=self.main_path+name+hash_code+'.pkl'
         pickle_save(data, self.data_path)
 
     def set_main_path(self, val):
@@ -172,14 +175,15 @@ class Storage_dic(Base_dic):
     def save(self):
         pickle_save(self, self.file_name)
     
-    def save_dic(self, d):
+    def save_dic(self, d, **k):
 
         for keys, data in misc.dict_iter(d):
+            
             if not misc.dict_haskey(self.dic, keys):
                 self.add_storage(keys)
         
             s=misc.dict_recursive_get(self.dic, keys)
-            s.save_data('-'.join(keys), data)
+            s.save_data('-'.join(keys), data, **k)
         
         self.save()
         

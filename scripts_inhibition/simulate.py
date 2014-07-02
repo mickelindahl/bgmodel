@@ -7,44 +7,52 @@ Created on May 10, 2014
 from toolbox import misc
 import toolbox.plot_settings as ps
 
-def cmp_mean_rates_intervals_sets(d, intervals, x, repetitions):
-    kwargs={'intervals':intervals,
-            'repetitions':repetitions}
-    
-    for keys, val in misc.dict_iter(d):
-        
-        val={}
-        for j in [0,1]:
-            v=val[:,j].get_mean_rate_slices(**kwargs)
-            v.x=x[0: repetitions]
-            val[j]=v
-            
-        d=misc.dict_recursive_add(d, (keys[0:-1]
-                                      +['mean_rates_intervals']), val)
-        
-    return d
+import pprint
+pp=pprint.pprint
 
-def cmp_mean_rates_intervals(d, intervals, x, repetitions,**k):
-    kwargs={'intervals':intervals,
-            'repetitions':repetitions}
-    
-    for keys, val in misc.dict_iter(d):
-        
-        if not keys[-1] =='spike_signal':
-            continue
-        
-        if 'set' in k.keys():
-            v=val[:,k['set']].get_mean_rate_slices(**kwargs)
-        else:
-            v=val.get_mean_rate_slices(**kwargs)
-        
-        
-        v.x=x
-            
-        d=misc.dict_recursive_add(d, (keys[0:-1]
-                                      +['mean_rates_intervals']), v)
-        
-    return d
+# def cmp_mean_rates_intervals_sets(d, intervals, x, repetitions):
+#     kwargs={'intervals':intervals,
+#             'repetitions':repetitions,
+#             'x':x[0: repetitions]}
+#     
+#     for keys, val in misc.dict_iter(d):
+#         
+#         val={}
+#         for j in [0,1]:
+#             v=val[:,j].get_mean_rate_slices(**kwargs)
+#             v.x=x[0: repetitions]
+#             val[j]=v
+#             
+#         d=misc.dict_recursive_add(d, (keys[0:-1]
+#                                       +['mean_rates_intervals']), val)
+#         
+#     return d
+# 
+# def cmp_mean_rates_intervals(d, intervals, x, repetitions,**k):
+#     kwargs={'intervals':intervals,
+#             'repetitions':repetitions}
+#     
+#     for keys, val in misc.dict_iter(d):
+#         
+#         if not keys[-1] =='spike_signal':
+#             continue
+#         
+#         if 'sets' in k.keys():
+#             for s in k['sets']:
+#                 v=val[:,s].get_mean_rate_slices(**kwargs)
+#                 v.x=x
+#                 d=misc.dict_recursive_add(d, (keys[0:-1]
+#                                       +['Set_'+str(s),'mean_rates_intervals']), v)
+#         else:
+#             v=val.get_mean_rate_slices(**kwargs)
+#         
+#         
+#             v.x=x
+#             d=misc.dict_recursive_add(d, (keys[0:-1]
+#                                       +['mean_rates_intervals']), v)
+#         
+#     return d
+
 
 def cmp_psd(d_pds, models, dd):
     for key1 in dd.keys():
@@ -64,13 +72,21 @@ def get_file_name_figs(script_name, home):
 
 def show_plot(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
     dd={}
+    by_sets=k.pop('by_sets', False)
     for keys, val in misc.dict_iter(d):
-        if keys[-1]==name:
-            dd=misc.dict_recursive_add(dd, keys, val)
+        
+        if keys[-1]!=name:
+            continue
+        if by_sets and keys[0][0:3]!='set':
+            continue
+        
+        dd=misc.dict_recursive_add(dd, keys, val)
+        
     d=dd
     fig, axs=ps.get_figure(n_rows=len(models), n_cols=1, w=1000.0, h=800.0, fontsize=10)  
-    labels=k.get('labels', sorted(d.keys()))
-    colors=misc.make_N_colors('jet', len(labels))
+    labels=k.pop('labels', sorted(d.keys()))
+#     colors=misc.make_N_colors('Paired', max(len(labels), 6))
+    colors=misc.make_N_colors('jet', max(len(labels), 1))
     linestyles=['-']*len(labels)
     
     j=0
@@ -109,7 +125,7 @@ def show_fr_sets(d, models, **k):
     return fig
 
 def show_mr(d, models, **k):
-    fig, _ =show_plot('mean_rates_intervals',d, models, **k)
+    fig, _ =show_plot('mean_rate_slices',d, models, **k)
     return fig
 
 def show_mr_diff(d, models, **k):
@@ -123,9 +139,8 @@ def show_hr(d, models, **k):
 def show_hist(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
 
     fig, axs=ps.get_figure(n_rows=len(models), n_cols=1, w=1000.0, h=800.0, fontsize=10)   
-    labels=k.get('labels', sorted(d.keys()))
-    if 'labels' in k.keys():
-        del k['labels']
+    labels=k.pop('labels', sorted(d.keys()))
+
     colors=misc.make_N_colors('jet', len(labels))
     linestyles=['solid']*len(labels)
     linewidth=[2.0]*len(labels)

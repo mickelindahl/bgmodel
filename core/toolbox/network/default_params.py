@@ -76,7 +76,7 @@ import sys
 import nest # Has to after misc. 
 import numpy
 import operator
-
+import warnings
 import pprint
 pp=pprint.pprint
 
@@ -392,6 +392,7 @@ class Perturbation_list(object):
         for p in self.list:
 #             print p.keys
             if not misc.dict_haskey(dic, p.keys):
+                warnings.warn('\nKey not in par: '+'.'.join(p.keys))
                 continue
             
             try:
@@ -2602,7 +2603,8 @@ class InhibitionPar_base(object):
         # MSN D1-SNr
         dic['nest']['SN']['GABAA_1_E_rev']    =-80.     # (Connelly et al. 2010)
         dic['nest']['SN']['GABAA_1_Tau_decay']=GetNest('M1_SN_gaba', 'tau_psc')      # (Connelly et al. 2010)
- 
+        dic['nest']['GP']['beta_I_GABAA_1'] = 0.8 # From GPe A
+       
         # GPe-SNr
         dic['nest']['SN']['GABAA_2_E_rev']    =-72.     # (Connelly et al. 2010)
         dic['nest']['SN']['GABAA_2_Tau_decay']=GetNest('GI_SN_gaba', 'tau_psc')
@@ -2691,6 +2693,7 @@ class InhibitionPar_base(object):
                'EA_GA_ampa':{},
                'EI_GI_ampa':{},
                'ES_SN_ampa':{}}
+        
         for k in conns.keys():
             conns[k].update({'fan_in0':1,  'rule':'1-1' })
         
@@ -2702,10 +2705,10 @@ class InhibitionPar_base(object):
         GP_fi=GetNetw('GP_fan_in')
         GA_pfi=GetNetw('GP_fan_in_prop_GA')
         
-        M1_M1=int(round(2800*0.13))
-        M1_M2=int(round(2800*0.03))
-        M2_M1=int(round(2800*0.14))
-        M2_M2=int(round(2800*0.18))
+        M1_M1=int(round(2800*0.13))/GetNetw('sub_sampling', 'M1')
+        M1_M2=int(round(2800*0.03))/GetNetw('sub_sampling', 'M1')
+        M2_M1=int(round(2800*0.14))/GetNetw('sub_sampling', 'M2')
+        M2_M2=int(round(2800*0.18))/GetNetw('sub_sampling', 'M2')
         
         FS_M1=int(round(60*0.27))
         FS_M2=int(round(60*0.18))
@@ -2741,7 +2744,7 @@ class InhibitionPar_base(object):
            'GI_GA_gaba':{'fan_in0': GI_XX,'rule':'all-all' },
             
            'GI_ST_gaba':{'fan_in0': 30, 'rule':'all-all' },
-           'GI_SN_gaba':{'fan_in0': 32, 'rule':'set-set' }}  
+           'GI_SN_gaba':{'fan_in0': 32, 'rule':'all-all' }}  
         
         conns.update(d)
 #         pp(d)
@@ -2793,21 +2796,17 @@ class Inhibition_striatum_base(object):
         
         C1={'amplitudes':[1.],
             'duration':[200],
-            'rate':dic_other['node']['C1']['rate'],
             'repetitions':1}
          
         C2={'amplitudes':[1.],
             'duration':[200],
-            'rate':dic_other['node']['C2']['rate'],
             'repetitions':1}
         
         CF={'amplitudes':[1.],
             'duration':[200],
-            'rate':dic_other['node']['CF']['rate'],
             'repetitions':1}         
         CS={'amplitudes':[1.],
             'duration':[200],
-            'rate':dic_other['node']['CS']['rate'],
             'repetitions':1}   
         
         dic={'netw':{'input':{}}}
@@ -2905,7 +2904,10 @@ class Slow_wave_base(object):
         
         d={'type':'oscillation', 
            'params':{'p_amplitude_mod':0.8,
-                     'freq': 1.}} 
+                     'freq': 1.,
+                     'freq_min':None,
+                     'freq_max':None,
+                     'period':'constant'}} 
         for key in ['C1', 'C2', 'CF', 'CS']: 
             dic['netw']['input'][key]=d      
         
@@ -2916,6 +2918,33 @@ class Slow_wave_base(object):
 class Slow_wave(Par_base, Slow_wave_base, Par_base_mixin): 
     pass   
 
+
+class Slow_wave2_base(object):
+
+    def _get_par_constant(self):
+        dic_other=self.other.get_dic_con()
+        
+        #self._dic_con['node']['M1']['n']
+        
+        
+        dic={'netw':{'input':{}}}
+        
+        d={'type':'oscillation2', 
+             'params':{'p_amplitude_mod':0.1,
+                       'p_amplitude0':1.0,
+                       'freq': 1.,
+                       'freq_min':None,
+                       'freq_max':None,
+                       'period':'constant'}} 
+        for key in ['C1', 'C2', 'CF', 'CS']: 
+            dic['netw']['input'][key]=d      
+        
+        dic = misc.dict_update(dic_other, dic)
+        return dic
+
+
+class Slow_wave2(Par_base, Slow_wave2_base, Par_base_mixin): 
+    pass 
 
 class Beta_base(object):
     def _get_par_constant(self):
@@ -2929,7 +2958,10 @@ class Beta_base(object):
         d={'type':'oscillation2', 
              'params':{'p_amplitude_mod':0.1,
                        'p_amplitude0':1.0,
-                       'freq': 20.}} 
+                       'freq': 20.,
+                       'freq_min':None,
+                       'freq_max':None,
+                       'period':'constant'}} 
         for key in ['C1', 'C2', 'CF', 'CS']: 
             dic['netw']['input'][key]=d      
         
@@ -3682,7 +3714,39 @@ def calc_n(d_nuclei_sizes, d_sub_sampl, name, netw_size, obj=None):
     
     return dict(zip(nodes, node_sizes))[name]
 
-def calc_spike_setup(n, params, rate ,start, stop, typ):
+
+def get_oscillation_time_rates(params, stop, testing, ru, rd):
+    if params['period'] == 'constant':
+        step = 1000 / 2 / params['freq']
+        cycles = int(stop / (2 * step))
+        rates = [rd, ru] * cycles
+        times = list(numpy.arange(0, 2. * cycles * step, step))
+    if params['period'] == 'uniform':
+        f_min =params['freq_min']
+        f_max =params['freq_max']
+        step = 1000 / 2 / ((params['freq_min'] + params['freq_max']) / 2)
+        cycles = int(stop / (2 * step))
+        rates = [rd, ru] * cycles
+        if not testing:
+            periods = numpy.random.uniform(f_min, f_max, cycles)
+        else:
+            numpy.random.seed(0)
+            periods = numpy.random.uniform(f_min, f_max, cycles)
+            periods = numpy.round(periods, 2)
+        periods/=2/1000.0
+        times = []
+        accum = 0
+        for i in periods:
+            times.extend([accum + 0, accum + i])
+            accum += 2 * i
+
+        times=numpy.array(times)
+        rates=numpy.array(rates)
+        rates=list(rates[times<stop])
+        times=list(times[times<stop])
+    return rates, times
+
+def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
         
     setup=[]
 
@@ -3731,7 +3795,7 @@ def calc_spike_setup(n, params, rate ,start, stop, typ):
         
     
         t=numpy.array(params['duration'])
-        r=params['rate']
+        r=rate
         amp=params['amplitudes']   
         rep=params['repetitions']
         
@@ -3782,10 +3846,9 @@ def calc_spike_setup(n, params, rate ,start, stop, typ):
         ru=rate*(2-params['p_amplitude_mod'])
         rd=rate*params['p_amplitude_mod']
 
-        step=1000/2/params['freq']
-        cycles=int(stop/(2*step))
-        rates=[rd, ru]*cycles
-        times=list(numpy.arange(0, 2.*cycles*step, step))
+        
+        rates, times = get_oscillation_time_rates(params, stop, testing, ru, rd)        
+        
         idx=range(n)
 
         setup+=[{'rates':rates, 
@@ -3796,12 +3859,19 @@ def calc_spike_setup(n, params, rate ,start, stop, typ):
 
     if typ=='oscillation2':
         ru=rate*(params['p_amplitude0']+params['p_amplitude_mod'])
-        rd=rate*(params['p_amplitude0']-params['p_amplitude_mod'])
-
-        step=1000/2/params['freq']
-        cycles=int(stop/(2*step))
-        rates=[rd, ru]*cycles
-        times=list(numpy.arange(0, 2.*cycles*step, step))
+        rd=rate*max(0, (params['p_amplitude0']-params['p_amplitude_mod']))
+        
+        rates, times = get_oscillation_time_rates(params, 
+                                                  stop, 
+                                                  testing, 
+                                                  ru, 
+                                                  rd)
+#         
+#         step=1000/2/params['freq']
+#         cycles=int(stop/(2*step))
+#         rates=[rd, ru]*cycles
+#         times=list(numpy.arange(0, 2.*cycles*step, step))
+        
         idx=range(n)
 
         setup+=[{'rates':rates, 
@@ -3876,9 +3946,11 @@ def dummy_args(flag, **kwargs):
                      'idx': [0, 1, 2, 3], 
                      'times': [1.0]}])
         
-        #OSCILLATION
+        #OSCILLATION with constant period
         params={'p_amplitude_mod':0.9,
-                'freq': 1.}
+                'freq': 1.,
+                'period':'constant'
+                }
         args.append([4, params, 25.0,100.0, 2000.0, 'oscillation'])
         out.append([{'rates': [22.5, 27.500000000000004, 
                                22.5, 27.500000000000004], 
@@ -3887,10 +3959,25 @@ def dummy_args(flag, **kwargs):
                      'times': [    0.,   500.,  1000.,  1500.]}])
 
 
+        #OSCILLATION with uniform
+        params={'p_amplitude_mod':0.9,
+                'freq_min': 0.5,
+                'freq_max': 1.5,
+                'period':'uniform'
+                }
+        args.append([4, params, 25.0, 100.0, 2000.0, 'oscillation', True])
+        out.append([{'idx': [0, 1, 2, 3],
+                    'rates': [22.5, 27.500000000000004, 22.5, 27.500000000000004],
+                    't_stop': 2000.0,
+                    'times': [0, 525.0, 1050.0, 1660.0]}])
+
+
+
         #OSCILLATION2
         params={'p_amplitude_mod':0.1,
                 'p_amplitude0':1.0,
-                'freq': 1.}
+                'freq': 1.,
+                'period':'constant'}
         args.append([4, params, 25.0,100.0, 2000.0, 'oscillation2'])
         out.append([{'rates': [22.5, 27.500000000000004, 
                                22.5, 27.500000000000004], 
