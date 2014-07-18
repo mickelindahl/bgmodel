@@ -1,0 +1,26 @@
+/usr/lib/pymodules/python2.7/matplotlib/__init__.py:923: UserWarning:  This call to matplotlib.use() has no effect
+because the the backend has already been chosen;
+matplotlib.use() must be called *before* pylab, matplotlib.pyplot,
+or matplotlib.backends is imported for the first time.
+
+  if warn: warnings.warn(_use_error_msg)
+/usr/local/lib/python2.7/dist-packages/NeuroTools/__init__.py:130: DependencyWarning: ** interval ** package is not installed.
+To have functions using interval please install the package.
+website : http://pypi.python.org/pypi/interval/1.0.0
+
+  warnings.warn(get_import_warning(name), DependencyWarning)
+/usr/lib/pymodules/python2.7/matplotlib/__init__.py:923: UserWarning:  This call to matplotlib.use() has no effect
+because the the backend has already been chosen;
+matplotlib.use() must be called *before* pylab, matplotlib.pyplot,
+or matplotlib.backends is imported for the first time.
+
+  if warn: warnings.warn(_use_error_msg)
+/usr/local/lib/python2.7/dist-packages/NeuroTools/__init__.py:130: DependencyWarning: ** interval ** package is not installed.
+To have functions using interval please install the package.
+website : http://pypi.python.org/pypi/interval/1.0.0
+
+  warnings.warn(get_import_warning(name), DependencyWarning)
+/usr/lib/pymodules/python2.7/mpl_toolkits/__init__.py:2: UserWarning: Module pylab was already imported from /home/mikael/git/bgmodel/core/pylab.pyc, but /usr/lib/pymodules/python2.7 is being added to sys.path
+  __import__('pkg_resources').declare_namespace(__name__)
+/usr/lib/pymodules/python2.7/mpl_toolkits/__init__.py:2: UserWarning: Module pylab was already imported from /home/mikael/git/bgmodel/core/pylab.pyc, but /usr/lib/pymodules/python2.7 is being added to sys.path
+  __import__('pkg_resources').declare_namespace(__name__)
