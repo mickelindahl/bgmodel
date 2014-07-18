@@ -327,11 +327,15 @@ def phase_diff(signal1, signal2, kwargs):
     
     inspect=kwargs.get('inspect', False)
 #     kwargs['inspect']=False
+
+    rand=numpy.random.random()
     a=phase(signal1,  **kwargs)
     b=phase(signal2,  **kwargs)
 
-    x=a-b
-
+    if rand>0.5:
+        x=a-b
+    else:
+        x=b-a
 #     x[x>numpy.pi]=x[x>numpy.pi]-2*numpy.pi
 #     x[x<-numpy.pi]=x[x<-numpy.pi]+2*numpy.pi
 

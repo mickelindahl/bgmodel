@@ -4,11 +4,13 @@ Created on Aug 12, 2013
 @author: lindahlm
 '''
 from copy import deepcopy
+from inhibition_gather_results import process
 from toolbox import misc
 from toolbox.network.default_params import Perturbation_list as pl
 from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
 
+import numpy
 import simulate_beta
 import oscillation_perturbations3 as op
 import pprint
@@ -16,11 +18,14 @@ pp=pprint.pprint
 
 
 def perturbations():
-    sim_time=10000.0
+    sim_time=40000.0
     size=20000.0
     threads=2
 
-    
+    freqs=[1.]
+
+    path=('/home/mikael/results/papers/inhibition'+
+       '/network/simulate_inhibition_ZZZ3/')
     l=op.get()
 
     for i in range(len(l)):
@@ -30,24 +35,28 @@ def perturbations():
                   'netw':{'size':size}},
                   '=')
 
+
+    
+    damp=process(path, freqs)
+    for key in sorted(damp.keys()):
+        val=damp[key]
+        print numpy.round(val, 2), key
+
     ll=[]
-    for amp in [
-                [0.25, 0.9], 
-                [0.15, 1.0], 
-                [0.2, 1.0], 
-                ]: 
-        d={'type':'oscillation2', 
-           'params':{'p_amplitude_mod':amp[0],
-                     'p_amplitude0':amp[1],
-                     'freq': 20.}} 
+    for j, _ in enumerate(freqs):
         for i, _l in enumerate(l):
+            amp=[numpy.round(damp[_l.name][j],2), 1]
+            d={'type':'oscillation2', 
+               'params':{'p_amplitude_mod':amp[0],
+                         'p_amplitude0':amp[1],
+                         'freq': 20.}} 
             _l=deepcopy(_l)
             dd={}
             for key in ['C1', 'C2', 'CF', 'CS']: 
                 dd=misc.dict_update(dd, {'netw': {'input': {key:d} } })     
                       
-            _l+=pl(dd,'=',**{'name':'amp_'+str(amp)})
-                
+            _l+=pl(dd,'=',**{'name':'amp_{0}-{1}'.format(*amp)})
+
             ll.append(_l)
         
 
@@ -66,7 +75,7 @@ home = expanduser("~")
 path=(home + '/results/papers/inhibition/network/'
       +__file__.split('/')[-1][0:-3]+'/')
 
-for j in range(2,3):
+for j in range(0,3):
     for i, p in enumerate(p_list):
         
 #         if i<5:
@@ -82,5 +91,5 @@ for j in range(2,3):
                            script_name, threads])
 
 
-loop(args_list, path, 6)
+loop(args_list, path, 4)
         

@@ -7,16 +7,15 @@ import numpy
 import os
 
 from os.path import expanduser
-
-
-from toolbox import misc, pylab
+from simulate import (main_loop, show_fr, show_mr, 
+                      get_file_name, get_file_name_figs)
+from toolbox import pylab
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
-from toolbox.network.manager import (add_perturbations, compute, 
-                                     run, save, load, get_storage)
+from toolbox.network.manager import (add_perturbations,
+                                      get_storage)
 from toolbox.network.manager import Builder_striatum as Builder
-from simulate import (show_fr, show_mr, #cmp_mean_rates_intervals,
-                      get_file_name, get_file_name_figs)
+
 import pprint
 pp=pprint.pprint
     
@@ -76,7 +75,7 @@ class Setup(object):
         return d
     
     def plot_fr(self):
-        d={'lables':['All', 
+        d={'labels':['All', 
                      'Only MSN-MSN',
                      'Only FSN-MSN',
                      'Only FSN-MSN-static',
@@ -88,7 +87,7 @@ class Setup(object):
         return d
 
     def plot_mr(self):
-        d={'lables':['All', 
+        d={'labels':['All', 
                      'Only MSN-MSN',
                      'Only FSN-MSN',
                      'Only FSN-MSN-static',
@@ -109,10 +108,11 @@ def simulate(builder,
     
     attr = ['firing_rate', 'mean_rate_slices']
     models = ['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN']
+    sets = []
     
     info, nets, intervals, amplitudes, rep = get_networks(builder,
                                                           **setup.builder())
-    add_perturbations(perturbation_list, nets)
+    
     d_firing_rate = setup.firing_rate()
     
     kwargs_dic = {'firing_rate':d_firing_rate, 
@@ -120,25 +120,11 @@ def simulate(builder,
                                       'repetition':rep, 
                                       'x':amplitudes}}
     
+    add_perturbations(perturbation_list, nets)
     sd = get_storage(file_name, info)
-    d = {}
-    from_disks = [from_disk] * len(nets.keys())
-    for net, mode in zip(nets.values(), from_disks):
-        if mode == 0:
-            dd = run(net)
-            save(sd, dd)
-            print sd
-        elif mode == 1:
-            filt = [net.get_name()] + models + ['spike_signal']
-            dd = load(sd, *filt)
-            dd = compute(dd, models, attr, **kwargs_dic)
-#             dd=cmp_mean_rates_intervals(dd, intervals, amplitudes, rep)
-            pp(dd)
-            save(sd, dd)
-        elif mode == 2:
-            filt = [net.get_name()] + models + attr
-            dd = load(sd, *filt)
-        d = misc.dict_update(d, dd)
+    
+    from_disks, d = main_loop(from_disk, attr, models, 
+                              sets, nets, kwargs_dic, sd)
     
     return file_name_figs, from_disks, d, models
 
@@ -151,6 +137,7 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
     figs = []
     figs.append(show_fr(d, models, **d_plot_fr))
     figs.append(show_mr(d, models, **d_plot_mr))
+    figs.append(show_mr(d, ['M1', 'M2'], **d_plot_mr))
     sd_figs.save_figs(figs, format='png')
 
 def main(builder=Builder,

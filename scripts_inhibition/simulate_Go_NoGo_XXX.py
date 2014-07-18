@@ -6,7 +6,7 @@ Created on Aug 12, 2013
 
 from Go_NoGo_compete import Setup
 from toolbox.network.default_params import Perturbation_list as pl
-from toolbox.network.manager import Builder_Go_NoGo_with_lesion as Builder
+from toolbox.network.manager import Builder_MSN_cluster_compete as Builder
 from toolbox.parallel_excecution import loop
 
 import Go_NoGo_compete
@@ -45,7 +45,7 @@ def perturbations(rep,res):
 
 
 
-res, rep=5, 1
+res, rep=10, 1
 p_list, threads=perturbations(rep, res)
 for i, p in enumerate(p_list):
     print i, p
@@ -66,8 +66,8 @@ for j in range(0,3):
     for i, p in enumerate(p_list):
         
 # #         if i<n-9:
-#         if i>18:
-#             continue
+        if i!=1:
+            continue
 
         from_disk=j
 
@@ -87,5 +87,5 @@ for j in range(0,3):
 # for i, a in enumerate(args_list):
 #     print i, a
 
-loop(args_list, path, 6)
+loop(args_list, path, 1)
         

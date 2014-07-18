@@ -8,6 +8,7 @@ import numpy
 import os
 import unittest
 
+from copy import deepcopy        
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network.data_processing import (dummy_data_du, Data_unit_spk,
                                              Data_unit_base, Data_units_relation)
@@ -239,7 +240,7 @@ class Builder_MSN_cluster_compete_base(Builder_abstract):
         
         durations=[500., 500.]
         amplitudes=[1.,1.75]
-        rep=5
+        rep=self.kwargs.get('repetition',5)
         
         l=[]
         for n,rule in zip(n_sets, rules):
@@ -268,22 +269,22 @@ class Builder_MSN_cluster_compete_base(Builder_abstract):
                 params['params'].update({'params_sets':d_sets})
    
                 d=misc.dict_update(d, {'netw':{'input':{inp:params}}})
-#             pp(d)
+
             l+=[pl(d, '=', **{'name':'n_sets_'+str(n)+'_prop_'+rule})] 
-            
-        intervals=[d*i for i,d in enumerate(durations*rep)]
-        intervals.append(intervals[-1]+500.0)
-        intervals=[[d,d+500] for d in intervals[1::2]]
+        
+        sequence = 2
+        intervals = get_intervals(rep, durations, d, sequence)
+
         
         self.dic['intervals']=intervals  
-        self.dic['repetitions']=rep      
+        self.dic['repetition']=rep      
         self.dic['percents']=[100/v for v in n_sets0]
         
         for i in range(len(l)):
             l[i]+=pl({'conn':{'FS_M1_gaba':{'lesion': True },
-                                'FS_M2_gaba':{'lesion': True  },
-                                'GA_M1_gaba':{'lesion': True },
-                                'GA_M2_gaba':{'lesion': True }}},
+                              'FS_M2_gaba':{'lesion': True  },
+                              'GA_M1_gaba':{'lesion': True },
+                              'GA_M2_gaba':{'lesion': True }}},
                                '=',
                                **{'name':'only MSN-MSN'})
         
@@ -403,7 +404,7 @@ class Builder_inhibition_striatum_base(Builder_network_base):
 #         rep=self.kwargs.get('repetition',5)
    
         intervals, rep, amps0 = get_striatum_inhibition_input(l, 
-                                                              self.kwargs)
+                                                              **self.kwargs)
         
         self.dic['intervals']=intervals  
         self.dic['repetitions']=rep 
@@ -518,6 +519,8 @@ def get_intervals(rep, durations, d, sequence):
     return out
 
 def get_input_Go_NoGo(kwargs):
+    n_sets=kwargs.get('n_sets', 2)
+    
     res = kwargs.get('resolution', 5)
     rep = kwargs.get('repetition', 5)
     input_lists = kwargs.get('input_lists', [['C1'], ['C1', 'C2']])
@@ -536,11 +539,13 @@ def get_input_Go_NoGo(kwargs):
         for conn, rule in zip(['M1_SN_gaba', 'M2_GI_gaba', 'GI_SN_gaba'], 
             ['set-set', 'set-set', 'all-all']):
             d = misc.dict_update(d, {'conn':{conn:{'rule':rule}}})
-        
-        for inp in inp_list:
-            d = misc.dict_update(d, {'node':{inp:{'n_sets':2}}})
+
+        for inp in inp_list :
+            if inp not in ['C1', 'C2']:
+                continue
+            d = misc.dict_update(d, {'node':{inp:{'n_sets':n_sets}}})
             params = {'type':'burst3', 
-                'params':{'n_set_pre':2, 
+                'params':{'n_set_pre':n_sets, 
                     'repetitions':rep}}
             d_sets = {}
             d_sets.update({str(0):{'active':True, 
@@ -555,6 +560,23 @@ def get_input_Go_NoGo(kwargs):
             
             params['params'].update({'params_sets':d_sets})
             d = misc.dict_update(d, {'netw':{'input':{inp:params}}})
+
+        for inp in inp_list :
+            if inp in ['C1', 'C2']:
+                continue
+            
+            d = misc.dict_update(d, {'node':{inp:{'n_sets':n_sets}}})
+            params = {'type':'burst3', 
+                      'params':{'n_set_pre':n_sets, 
+                                'repetitions':rep}}
+            d_sets = {}
+            d_sets.update({str(0):{'active':True, 
+                                   'amplitudes':p0+p1, 
+                                   'durations':durations, 
+                                   'proportion_connected':1}})
+            
+            params['params'].update({'params_sets':d_sets})
+            d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
         
         l += [pl(d, '=', **{'name':'_'.join(inp_list)})]
     
@@ -593,6 +615,25 @@ class Builder_Go_NoGo_compete(Builder_Go_NoGo_compete_base,
                       Mixin_reversal_potential_striatum):
     pass
 
+
+def add_lesions_Go_NoGo(l):
+    lesions = [{'conn':{'M1_M1_gaba':{'lesion':True}, 
+                        'M1_M2_gaba':{'lesion':True}, 
+                        'M2_M1_gaba':{'lesion':True}, 
+                        'M2_M2_gaba':{'lesion':True}}}, 
+                {'conn':{'FS_M1_gaba':{'lesion':True}, 
+                        'FS_M2_gaba':{'lesion':True}}}, 
+                {'conn':{'GA_M1_gaba':{'lesion':True}, 
+                        'GA_M2_gaba':{'lesion':True}}}]
+    names = ['no-MS-MS', 'no-FS', 'no_GP']
+    for lesion, name in zip(lesions, names):
+        l += [deepcopy(l[1])]
+        l[-1] += pl(lesion, 
+            '=', **
+            {'name':name})
+    
+    return l
+
 class Builder_Go_NoGo_with_lesion_base(Builder_network):    
 
     def get_parameters(self, per):
@@ -603,43 +644,51 @@ class Builder_Go_NoGo_with_lesion_base(Builder_network):
     def _get_dopamine_levels(self):
         return [self._dop()]    
     
-
     def _variable(self):
         
         l, self.dic = get_input_Go_NoGo(self.kwargs)      
-        from copy import deepcopy
-        
-        lesions=[{'conn':{'M1_M1_gaba':{'lesion': True },
-                          'M1_M2_gaba':{'lesion': True },                     
-                          'M2_M1_gaba':{'lesion': True },
-                          'M2_M2_gaba':{'lesion': True }}},
-                 {'conn':{'FS_M1_gaba':{'lesion': True },
-                          'FS_M2_gaba':{'lesion': True  },
-                         }},
-                  {'conn':{'GA_M1_gaba':{'lesion': True },
-                           'GA_M2_gaba':{'lesion': True }}}]
-        
-        names=['no-MS-MS', 'no-FS', 'no_GP']
-        
-        for lesion, name in zip(lesions, names):
-            l+=[deepcopy(l[-1])]
-            l[-1]+=pl(lesion,
-                           '=',
-                           **{'name':name})             
+        l = add_lesions_Go_NoGo(l)             
         return l    
-
-
 
 
 class Builder_Go_NoGo_with_lesion(Builder_Go_NoGo_with_lesion_base, 
                       Mixin_dopamine, 
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
-    pass
+    pass     
+
+
   
         
         
+class Builder_Go_NoGo_with_lesion_FS_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
         
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        l = add_lesions_Go_NoGo(l)    
+        
+        for ll in l:
+            ll+=pl()
+        
+        return l    
+
+
+class Builder_Go_NoGo_with_lesion_FS(Builder_Go_NoGo_with_lesion_FS_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
+
+  
 
 
 
@@ -754,7 +803,23 @@ def perturbation_consistency(pl, par):
         
         raise LookupError(msg)
         
-                
+def compute_dependables(obj, dout, kwargs, key, _set=None):
+    if 'mean_rate_slices' in kwargs.keys():            
+        kwargs=kwargs['mean_rate_slices']
+        if _set!=None:
+            update_kwargs_with_set_dic(kwargs, _set)
+            
+        u=obj.get_mean_rate_slices(**kwargs)
+        key[-1]='mean_rate_slices' 
+        dout=misc.dict_recursive_add(dout, key, u)
+             
+
+
+def update_kwargs_with_set_dic(k, s):
+    name='set_'+str(s)
+    if name in k.keys():
+        k.update(k[name])
+    k['set'] = s
 
 def compute(d, models, attr, **kwargs_dic):
     dout={}
@@ -772,20 +837,26 @@ def compute(d, models, attr, **kwargs_dic):
             sets=k.pop('sets', None)
             
             if sets!=None:
+                
+                max_sets=val.wrap.shape[1]
+                
+                sets=[s for s in sets if s<max_sets ]
+                
                 for s in sets:
-                    name='set_'+str(s)
-                    if  name in k.keys():
-                        k.update(k[name])
-                        
-                    k['set']=s
+
+                    update_kwargs_with_set_dic(k, s)
                     u=call(val, **k)
-                    dout=misc.dict_recursive_add(dout, [keys[0],
-                                                    name,
-                                                    keys[1], a], u)
+                    
+                    name='set_'+str(s)
+                    key=[keys[0], name, keys[1], a]
+                    dout=misc.dict_recursive_add(dout, key, u)
+                    compute_dependables(u, dout, k, key, s)
                 
             else:
                 u=call(val, **k)
-                dout=misc.dict_recursive_add(dout, keys[0:2]+[a], u)
+                key=keys[0:2]+[a]
+                dout=misc.dict_recursive_add(dout, key, u)
+                compute_dependables(u, dout, k, key)
     
     dout=misc.dict_update(d,dout)
     return d
@@ -921,7 +992,7 @@ class TestModuleFunctions(unittest.TestCase):
                                 kwargs_builder={'netw':{'size':10}}, 
                                 kwargs_engine={'verbose':False})
         self.assertTrue(type(info)==str)
-        self.assertTrue(type(nets)==list)
+        self.assertTrue(type(nets)==dict)
         self.assertTrue(isinstance(builder, Builder_abstract))
         
     def test_load(self):
@@ -943,14 +1014,20 @@ class TestModuleFunctions(unittest.TestCase):
         attr=['firing_rate',
               'mean_rates',
               'spike_statistic']
+        
+        dmrs={'intervals':[[0,100], [200, 300], [300, 400],
+                         [600,700], [800, 900], [900, 1000]],
+              'repetition':2, 'threads':2}
+        kwargs_dic={'firing_rate':{'mean_rate_slices':dmrs}}
+        
         models=['dummy1','dummy2']
         d = run(Network_mockup)
-        d = compute(d, models, attr)
+        d = compute(d, models, attr,**kwargs_dic)
         attr.append('spike_signal')
         self.assertListEqual(d.keys(), ['net1'])
         self.assertListEqual(sorted(d['net1'].keys()), models)
-        self.assertListEqual(sorted(d['net1']['dummy1'].keys()), sorted(attr))
-        self.assertListEqual(sorted(d['net1']['dummy2'].keys()), sorted(attr))                
+        self.assertListEqual(sorted(d['net1']['dummy1'].keys()), sorted(attr+['mean_rate_slices']))
+        self.assertListEqual(sorted(d['net1']['dummy2'].keys()), sorted(attr+['mean_rate_slices']))                
         
      
     def test_save(self):
@@ -964,130 +1041,4 @@ class TestModuleFunctions(unittest.TestCase):
         if os.path.isfile(self.file_name+'.pkl'):
             os.remove(self.file_name+'.pkl')        
         
-        path=self.file_name+'/'
-        if os.path.isdir(path):
-            l=os.listdir(path)
-            l=[path+ll for ll in l]
-            for p in l:
-                os.remove(p)
-            os.rmdir(path)
-            
-        
-class TestBuilderMixin(object):
-    
-    def test_1_perturbations_functions(self):
-        v=1
-        for method in ['_get_general',
-                       '_get_striatal_reversal_potentials',
-                       '_get_dopamine_levels',
-                       '_get_variable',
-                       'get_perturbations'
-                       ]:
-            call=getattr(self.builder,method)
-            l=call()
-            
-            if method=='get_perturbations':
-                self.assertEqual(v, len(l))
-            else:
-                v*=len(l) 
-                
-            self.assertTrue(type(l)==list)
-            for e in l:
-                self.assertTrue(isinstance(e, pl))
-
-    def test_2_get_parameters(self):
-        
-        
-        per=self.builder.get_perturbations()
-        par=self.builder.get_parameters(per[0])
-        self.assertTrue(isinstance(par, Par_base))
-        for pl in per:
-            for p in pl:
-#                 print p
-                self.assertTrue(misc.dict_haskey(par.dic, p.keys))
-        
-
-    def test_3_get_network(self):
-        per=self.builder.get_perturbations()
-        par=self.builder.get_parameters(per[0])
-        name='dummy'
-        net=self.builder.get_network(name, par)
-        self.assertTrue(isinstance(net, Network_base))
-        
-
-class TestDirectorMixin(object):
-    def test_4_director(self):
-        director=Director()
-        director.set_builder(self.builder)
-        _, nets=director.get_networks()
-        for net in nets.values():
-            self.assertTrue(isinstance(net, Network_base))
-        
-class TestBuilder_network_base(unittest.TestCase):
-    def setUp(self):
-        self.builder=Builder_network()
-
-
-class TestBuilder_network(TestBuilder_network_base, TestBuilderMixin, 
-                          TestDirectorMixin):
-    pass
-
-class TestBuilder_single_base(unittest.TestCase):
-    def setUp(self):
-        self.builder=Builder_network()
-
-
-class TestBuilder_single(TestBuilder_single_base, TestBuilderMixin, 
-                          TestDirectorMixin):
-    pass
-
-
-class TestBuilder_inhibition_striatum_base(unittest.TestCase):
-    def setUp(self):
-        self.builder=Builder_inhibition_striatum()
-
-
-class TestBuilder_inhibition_striatum(TestBuilder_inhibition_striatum_base, TestBuilderMixin, 
-                          TestDirectorMixin):
-    pass
-
-
-class TestBuilder_MSN_cluster_compete_base(unittest.TestCase):
-    def setUp(self):
-        self.builder=Builder_MSN_cluster_compete()
-
-
-class TestBuilder_MSN_cluster_compete(TestBuilder_MSN_cluster_compete_base, 
-                                      TestBuilderMixin, 
-                                      TestDirectorMixin):
-    pass
-
-
-class TestBuilder_Go_NoGo_compete_base(unittest.TestCase):
-    def setUp(self):
-        self.builder=Builder_Go_NoGo_compete()
-
-
-class TestBuilder_Go_NoGo_compete(TestBuilder_Go_NoGo_compete_base, 
-                                  TestBuilderMixin, 
-                                      TestDirectorMixin):
-    pass
-if __name__ == '__main__':
-    
-    test_classes_to_run=[
-#                         TestModuleFunctions,
-#                         TestBuilder_network,
-#                         TestBuilder_single,
-#                         TestBuilder_inhibition_striatum,
-#                         TestBuilder_MSN_cluster_compete
-                        TestBuilder_Go_NoGo_compete
-                        ]
-    suites_list = []
-    for test_class in test_classes_to_run:
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        suites_list.append(suite)
-
-    big_suite = unittest.TestSuite(suites_list)
-    unittest.TextTestRunner(verbosity=2).run(big_suite)  
-
-
+  

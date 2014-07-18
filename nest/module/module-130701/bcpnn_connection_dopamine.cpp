@@ -27,7 +27,7 @@ BCPNNDopaCommonProperties::BCPNNDopaCommonProperties() :
    dopamine_modulated_(true),
    epsilon_(0.001),
    fmax_(50.0),
-   gain_(1.0),
+//   gain_(1.0),
    gain_dopa_(1.0),
    k_pow_(1.0),
    K_(1.0),
@@ -61,7 +61,7 @@ void BCPNNDopaCommonProperties::get_status(DictionaryDatum & d) const
 	def<bool>(d, "dopamine_modulated", dopamine_modulated_);
 	def<nest::double_t>(d, "epsilon", epsilon_);
 	def<nest::double_t>(d, "fmax", fmax_);
-	def<nest::double_t>(d, "gain", gain_);
+//	def<nest::double_t>(d, "gain", gain_);
 	def<nest::double_t>(d, "gain_dopa", gain_dopa_);
 	def<nest::double_t>(d, "k_pow", k_pow_);
 	def<nest::double_t>(d, "K", K_);
@@ -98,7 +98,7 @@ void BCPNNDopaCommonProperties::set_status(const DictionaryDatum & d,
   updateValue<bool>(d, "dopamine_modulated", dopamine_modulated_);
   updateValue<nest::double_t>(d, "epsilon", epsilon_);
   updateValue<nest::double_t>(d, "fmax", fmax_);
-  updateValue<nest::double_t>(d, "gain", gain_);
+//  updateValue<nest::double_t>(d, "gain", gain_);
   updateValue<nest::double_t>(d, "gain_dopa", gain_dopa_);
   updateValue<nest::double_t>(d, "k_pow", k_pow_);
   updateValue<nest::double_t>(d, "K", K_);
@@ -133,6 +133,9 @@ nest::Node* BCPNNDopaCommonProperties::get_node()
 //
 
 BCPNNDopaConnection::BCPNNDopaConnection() :
+
+    gain_(1.0),
+
 	bias_(0.0),
 	BUFFER_(20),
 	dopa_spikes_idx_(0),
@@ -161,6 +164,8 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
   BCPNNDopaConnection::BCPNNDopaConnection(const BCPNNDopaConnection &rhs) :
     nest::ConnectionHetWD(rhs)
   {
+	gain_ = rhs.gain_;
+
 	bias_ = rhs.bias_;
 	BUFFER_ = rhs.BUFFER_;
     dopa_spikes_idx_ = rhs.dopa_spikes_idx_;
@@ -191,6 +196,8 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
   {
     nest::ConnectionHetWD::get_status(d);
 
+	def<nest::double_t>(d, "gain", gain_);
+
 	def<nest::double_t>(d, "bias", bias_);
     def<nest::double_t>(d, "e_i", ei_);
     def<nest::double_t>(d, "e_j", ej_);
@@ -216,6 +223,8 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
   {
 	// base class properties
 	nest::ConnectionHetWD::set_status(d, cm);
+
+    updateValue<nest::double_t>(d, "gain", gain_);
 
     updateValue<nest::double_t>(d, "bias", bias_);
     updateValue<nest::double_t>(d, "e_i", ei_);
@@ -247,7 +256,7 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
 		  d->known("dopamine_modulateds")   ||
 		  d->known("epsilons")  ||
 		  d->known("fmaxs")     ||
-		  d->known("gains")     ||
+//		  d->known("gains")     ||
 		  d->known("gain_dopas")     ||
 		  d->known("k_pows")     ||
 		  d->known("Ks")        ||
@@ -266,6 +275,8 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
 				  "STDPDopaConnection::set_status()",
 				  "you are trying to set common properties via an individual synapse.");
 	  }
+
+	nest::set_property<nest::double_t>(d, "gain", p, gain_);
 
     nest::set_property<nest::double_t>(d, "bias", p, bias_);
     nest::set_property<nest::double_t>(d, "e_i", p, ei_);
@@ -290,6 +301,8 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
   void BCPNNDopaConnection::initialize_property_arrays(DictionaryDatum & d) const
   {
     nest::ConnectionHetWD::initialize_property_arrays(d);
+
+    initialize_property_array(d, "gain");
 
     initialize_property_array(d, "bias");
     initialize_property_array(d, "e_i");
@@ -318,6 +331,8 @@ BCPNNDopaConnection::BCPNNDopaConnection() :
   void BCPNNDopaConnection::append_properties(DictionaryDatum & d) const
   {
     nest::ConnectionHetWD::append_properties(d);
+
+    append_property<nest::double_t>(d, "gain", gain_);
 
     append_property<nest::double_t>(d, "bias", bias_);
     append_property<nest::double_t>(d, "e_i", ei_);

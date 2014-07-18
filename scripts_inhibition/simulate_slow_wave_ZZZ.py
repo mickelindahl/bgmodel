@@ -20,7 +20,7 @@ pp=pprint.pprint
 def perturbations():
     sim_time=20000.0
     size=20000.0
-    threads=4
+    threads=2
 
     path=('/home/mikael/results/papers/inhibition'+
        '/network/simulate_inhibition_ZZZ/')
@@ -79,13 +79,15 @@ path=(home + '/results/papers/inhibition/network/'
 n=len(p_list)
 
 
-for j in range(0,3):
+for j in range(2,3):
     for i, p in enumerate(p_list):
         
-        if i>=n-11:
-#         if i>18:
-            continue
-#         
+#         if i>=n-11:
+# #         if i>18:
+#             continue
+#         if i<25:
+#             continue
+        
         from_disk=j
 
         fun=simulate_slow_wave.main
@@ -96,5 +98,5 @@ for j in range(0,3):
                            script_name, threads])
 
 
-loop(args_list, path, 5)
+loop(args_list, path, 10)
         

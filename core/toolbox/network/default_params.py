@@ -88,6 +88,12 @@ HOME = expanduser("~")
 #               'install-nest-2.2.2/lib/nest/ml_module')
 #MODULE_PATH= (HOME+'/opt/NEST/dist/install-nest-2.2.2/lib/nest/ml_module')
 MODULE_PATH= ('ml_module')
+ 
+ 
+# nest.Install(MODULE_PATH)
+# nest.Create('iaf_neuron', 2)
+ 
+ 
     
 #@todo: change name on Node to Surface
 class Call(object):
@@ -2376,6 +2382,7 @@ class InhibitionPar_base(object):
         dic['nest']['MS']['V_th']   = -29.7      # (Humphries, Lepora, et al. 2009)
         dic['nest']['MS']['V_m']    =  80.
     
+        # CTX_MSN
         dic['nest']['MS']['AMPA_1_Tau_decay'] = 12.  # (Ellender 2011)
         dic['nest']['MS']['AMPA_1_E_rev']     =  0.  # (Humphries, Wood, et al. 2009)
         
@@ -2450,6 +2457,8 @@ class InhibitionPar_base(object):
         dic['nest']['FS']['V_peak'] = 25.    # (E.M. Izhikevich 2007)
         dic['nest']['FS']['V_th']   = -50.   # (Tateno et al. 2004)
     
+    
+        #CTX-FSN
         dic['nest']['FS']['AMPA_1_Tau_decay'] = 12.   # CTX to FSN ampa
         dic['nest']['FS']['AMPA_1_E_rev']    =  0.   # n.d. set as for  CTX to MSN
          
@@ -2499,6 +2508,8 @@ class InhibitionPar_base(object):
         dic['nest']['ST']['V_reset_max_slope1'] = -60. # Max v restet u<0  
         dic['nest']['ST']['V_reset_max_slope2'] = dic['nest']['ST']['V_reset'] # Max v restet u>=0  
        
+       
+        # CTX-STN
         dic['nest']['ST']['AMPA_1_Tau_decay'] = 4.0  # (Baufreton et al. 2005)
         dic['nest']['ST']['AMPA_1_E_rev']     = 0.   # (Baufreton et al. 2009)
         
@@ -2507,6 +2518,7 @@ class InhibitionPar_base(object):
         dic['nest']['ST']['NMDA_1_Vact']      = -20.0
         dic['nest']['ST']['NMDA_1_Sact']      =  16.0
         
+        #GPE-STN
         dic['nest']['ST']['GABAA_1_Tau_decay'] =   8.   # (Baufreton et al. 2009)
         dic['nest']['ST']['GABAA_1_E_rev']     = -84.0  # (Baufreton et al. 2009)
     

@@ -105,7 +105,7 @@ private:
 	bool dopamine_modulated_;
 	nest::double_t epsilon_;
 	nest::double_t fmax_;
-	nest::double_t gain_;
+//	nest::double_t gain_;
 	nest::double_t gain_dopa_;
 	nest::double_t k_pow_;
 	nest::double_t K_;
@@ -221,6 +221,8 @@ private:
 			const nest::vector<nest::spikecounter>& dopa_spikes,
 			nest::double_t t0, nest::double_t t1, bool pre_spike,
 			const BCPNNDopaCommonProperties& cp);
+
+	nest::double_t gain_;
 
 	nest::double_t bias_;
 	nest::double_t yi_;
@@ -384,7 +386,7 @@ inline void BCPNNDopaConnection::progress_state_variables(
 
 	nest::double_t w =pij_ / (pi_ * pj_);
 
-	weight_ = cp.gain_ * ((w<=cp.min_weight_) ? std::log(cp.min_weight_) : std::log(w));
+	weight_ = gain_ * ((w<=cp.min_weight_) ? std::log(cp.min_weight_) : std::log(w));
 
 	/*Reset variables*/
 	post_spiketimes_.clear();

@@ -6,7 +6,7 @@ Created on Aug 12, 2013
 import numpy
 import os
 
-from copy import deepcopy
+
 from os.path import expanduser
 from toolbox import misc, pylab
 from toolbox.data_to_disk import Storage_dic
@@ -264,10 +264,20 @@ def create_relations(models_coher, dd):
 
 
 
+
+def set_text_on_bars(axs, i, names, coords):
+    for name, coord in zip(names, coords):
+        axs[i].text(coord[0], coord[1], name, 
+                    horizontalalignment='center', 
+                    verticalalignment='center', color='w', transform=axs[i].transAxes)
+    
+
 def plot_spk_stats(d, axs, i, **k):
     y_mean, y_mean_SEM = [], []
     y_CV, y_CV_SEM = [], []
- 
+    names=['Sim', 'Mallet', 'Sim', 'Mallet']
+    coords=[[0.1, 0.1],[0.33, 0.1],[0.67, 0.1],[ 0.9,0.1]]
+    
     for key in sorted(d.keys()):
         v = d[key]
         for model in ['GP']:
@@ -299,8 +309,11 @@ def plot_spk_stats(d, axs, i, **k):
                      [Y[0][0],  Y[0][1]]],
                 'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
                          [0.,  0.]]}).bar2(axs[i])
-    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_ylabel('Mean rate (Hz)')
     axs[i].set_xticklabels(['GP control', 'GP lesioned'])
+    axs[i].set_ylim([0,40])
+    
+    set_text_on_bars(axs, i, names, coords)
     i += 1
 
     print y_CV
@@ -312,8 +325,12 @@ def plot_spk_stats(d, axs, i, **k):
                          [0., 0.]]}).bar2(axs[i])
     
 #     Data_bar(**{'y':y_CV}).bar(axs[i])
-    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_ylabel('CV')
     axs[i].set_xticklabels(['GP control', 'GP lesioned'])
+    axs[i].set_ylim([0, 1.9])
+    set_text_on_bars(axs, i, names, coords)
+    
+    
     i += 1            
 #     pylab.show()
     y_mean = []
@@ -332,8 +349,12 @@ def plot_spk_stats(d, axs, i, **k):
         
 
     Data_bar(**{'y':y_mean[0:2]}).bar(axs[i])
-    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_ylabel('Firing rate (Hz)')
     axs[i].set_xticklabels(['TI control', 'TA control'])
+    axs[i].set_ylim([0,40])
+    set_text_on_bars(axs, i, names[0::2], coords[0::2])
+    
+    
     i += 1
 #     pylab.show()
     
@@ -341,23 +362,28 @@ def plot_spk_stats(d, axs, i, **k):
                      [Y[2][0], Y[2][1]]],
                 'y_std':[[y_mean_SEM[2],y_mean_SEM[3]],
                          [0., 0.]]}).bar2(axs[i])
-    axs[i].set_ylabel('Mean firing rate (Hz)')
+    axs[i].set_ylabel('Firing rate (Hz)')
     axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
-    
+    axs[i].set_ylim([0,40])
+    set_text_on_bars(axs, i, names, coords)   
     i += 1
 
     Data_bar(**{'y':y_CV[0:2]}).bar(axs[i])
-    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_ylabel('CV')
     axs[i].set_xticklabels(['TI control', 'TA control'])
+    axs[i].set_ylim([0,1.9])
+    set_text_on_bars(axs, i, names[0::2], coords[0::2])
     i += 1
 
     Data_bar(**{'y':[[y_CV[2], y_CV[3]],
                      [Y[3][0], Y[3][1]]],
                 'y_std':[[y_CV_SEM[2], y_CV_SEM[3]],
                          [0., 0.]]}).bar2(axs[i])
-    axs[i].set_ylabel('Coefficient of variation')
+    axs[i].set_ylabel('CV')
     axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
-    
+    axs[i].set_ylim([0,1.9])
+    set_text_on_bars(axs, i, names, coords)
+       
     i += 1
     
     
@@ -371,48 +397,62 @@ def plot_spk_stats(d, axs, i, **k):
 
 
 def plot_activity_hist(d, axs, i):
-    for key in sorted(d.keys()):
-        d[key]['GP']['activity_histogram'].plot(axs[i])
+    colors=misc.make_N_colors('jet', len( d.keys()))
+    for i_key, key in enumerate(sorted(d.keys())):
+        d[key]['GP']['activity_histogram'].plot(axs[i], 
+                                                **{'color':colors[i_key]})
         axs[i].set_ylim([0,50])
         
         axs[i].set_title(key)
-        d[key]['GP']['activity_histogram_stat'].hist(axs[i+1])
+        d[key]['GP']['activity_histogram_stat'].hist(axs[i+1],
+                                                     **{'color':colors[i_key]})
     
     i += 2
     return i
 
 
+def translation_dic():
+    return {'GP':'GPe',
+            'GI':'TI',
+            'GA':'TA',
+            'ST':'STN'}
+
 def plot_coherence(d, axs, i, **k):
+    td=translation_dic()
     ax = axs[i]
-    for key in sorted(d.keys()):
+    colors=misc.make_N_colors('jet', len( d.keys()))
+    for i_key, key in enumerate(sorted(d.keys())):
         v = d[key]
         for j, model in enumerate(['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA']):
             ax = axs[i+j]
             ch = v[model]['mean_coherence']
-            ch.plot(ax)
-            ax.set_title(model)
+            ch.plot(ax, **{'color':colors[i_key]})
             ax.set_xlim(k.get('xlim_cohere',[0,2]))
+            ax.set_title(td[model[0:2]]+' vs '+td[model[-2:]])
+            
     i+=4
     
     return i
 
 def plot_phases_diff_with_cohere(d, axs, i, xmax=5):
-    
-    for key in sorted(d.keys()):
+    td=translation_dic()
+    colors=misc.make_N_colors('jet', len( d.keys()))
+    for i_key, key in enumerate(sorted(d.keys())):
         v = d[key]
         for j, model in enumerate(['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA', 
                                    'ST_ST', 'GP_ST', 'GA_ST', 'GI_ST',]):
             ax = axs[i+j]
             ch = v[model]['phases_diff_with_cohere']
-            ch.hist(ax)
+            ch.hist(ax, **{'color':colors[i_key]})
             
-            ax.set_title(model)
+            ax.set_title(td[model[0:2]]+' vs '+td[model[-2:]])
     i+=8
     return i
 
 def plot_isi(d, axs, i):
     
-    for key in sorted(d.keys()):
+    colors=misc.make_N_colors('jet', len( d.keys()))
+    for i_key, key in enumerate(sorted(d.keys())):
         v = d[key]
         for j, model in enumerate(['GA']):
             ax = axs[j+i]
@@ -426,7 +466,8 @@ def plot_isi(d, axs, i):
                                                                          CV, 
                                                                          CV2,
                                                                          CV3)
-            ax.hist(obj.isi['raw'][0], **{'label':l})
+            ax.hist(obj.isi['raw'][0], **{'label':l,
+                                          'color':colors[i_key]})
             ax.legend()
 #             ax.title()
             
@@ -442,7 +483,8 @@ def show_summed(d, **k):
                            n_cols=4, 
                            w=1400.0, 
                            h=800.0, 
-                           fontsize=10)   
+                           fontsize=14,
+                           frame_hight_y=0.6)   
     
 
 
@@ -453,6 +495,9 @@ def show_summed(d, **k):
     i = plot_coherence(d, axs, i, **k)
     i = plot_phases_diff_with_cohere(d, axs, i)
 #     pylab.show()    
+
+    for ax in axs:
+        ax.my_set_no_ticks(yticks=5)
     return fig
         
 
@@ -600,19 +645,10 @@ def simulate(builder=Builder,
             save(sd, dd)
         elif fd == 1:
             filt = [net.get_name()] + models + ['spike_signal']
-             
             dd = load(sd, *filt)    
-            
-                        
-#             dd = compute(dd, models, ['firing_rate'], **kwargs_dic)     
-#             pp(dd)
             dd = compute(dd, models, attr, **kwargs_dic)
             save(sd, dd)
-            
-#             filt = [net.get_name()] + models + ['spike_signal']+attr
-            
-#             dd = load(sd, *filt)
-            
+                        
             for keys, val in misc.dict_iter(dd):
                 if keys[-1]=='spike_signal':
                     val.wrap.allowed.append('get_phases_diff_with_cohere')
@@ -688,7 +724,7 @@ import unittest
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=2
+        from_disk=1
         sim_time=40000.0
         size=5000.0
         threads=12
@@ -800,21 +836,21 @@ class TestOcsillation(unittest.TestCase):
 #         print self.d   
         
 #          
-#     def testShowSummed(self):
-#         show_summed(self.d, **{'xlim_cohere':[0,7], 
-#                                'statistics_mode':'slow_wave'})
-#         pylab.show()
+    def testShowSummed(self):
+        show_summed(self.d, **{'xlim_cohere':[0,7], 
+                               'statistics_mode':'slow_wave'})
+        pylab.show()
              
 
 
-    def test_create_figs(self):
-        create_figs(self.file_name_figs, 
-                    self.from_disks, 
-                    self.d, 
-                    self.models, 
-                    self.models_coher,
-                    self.setup)
-        pylab.show()
+#     def test_create_figs(self):
+#         create_figs(self.file_name_figs, 
+#                     self.from_disks, 
+#                     self.d, 
+#                     self.models, 
+#                     self.models_coher,
+#                     self.setup)
+#         pylab.show()
     
 #     def test_show_fr(self):
 #         show_fr(self.d, self.models, **{'win':20.,

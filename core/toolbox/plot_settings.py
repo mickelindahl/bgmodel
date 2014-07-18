@@ -224,7 +224,7 @@ def set_figsize(fig_width_pt):
     pylab.rcParams['figure.figsize'] = get_figsize(fig_width_pt)
 
 
-def get_figure( n_rows, n_cols, w, h, fontsize, order='col', projection=None):
+def get_figure( n_rows, n_cols, w, h, fontsize, order='col', projection=None, **kwargs):
 #     import os
 #     if not os.environ.get('DISPLAY'):
 #         pylab.ioff()
@@ -236,7 +236,7 @@ def get_figure( n_rows, n_cols, w, h, fontsize, order='col', projection=None):
 #     matplotlib.use('Agg')
     fig = pylab.figure( facecolor = 'w' )
     
-    hight=1./n_rows*0.7
+    hight=1./n_rows*kwargs.get('frame_hight_y',0.7)
     width=1./n_cols*0.7
     inbetw_row=(1-hight*n_rows)/(1+n_rows)
     inbetw_col=(1-width*n_cols)/(1+n_cols)

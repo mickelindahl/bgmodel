@@ -284,9 +284,9 @@ class Data_phases_diff_with_cohere_base(object):
         k['normed']=1
         k['linestyle']='dashed'
         bins=numpy.linspace(-numpy.pi, numpy.pi, num)
-#         y=reduce(lambda x,y:list(x)+list(y),self.y)
+        y=reduce(lambda x,y:list(x)+list(y),self.y)
         h=ax.hist(numpy.array(self.y.ravel()), bins,  **k)
-        
+#         h=ax.bar(self.y_bins[0:-1], self.y, **{'linewith':0})
         color=pylab.getp(h[2][0], 'edgecolor')   
         
         k['linestyle']='solid'
@@ -351,7 +351,42 @@ class Data_firing_rate_base(object):
             d = {'y':y, 'y_std':y_std, 'y_raw':y_raw,'x':x}
                
         return Data_activity_histogram(**d)
+
+
+
+
+    def get_mean_rate_slices(self, *args, **kwargs):
+#          y = self.mean_rate_slices(**kwargs)
+
+        intervals = kwargs.get('intervals', None)
+        repetition = kwargs.get('repetition', 1)
+#         y = []
+#         for start, stop in intervals:
+#             kwargs['t_stop'] = stop
+#             kwargs['t_start'] = start
+#             y_slice=self.y[(self.x>start)*(self.x>stop)]
+#             y.append(numpy.mean(y_slice))
+            
+        l_start, l_stop=zip(*intervals)
+        l_x=[self.x]*len(l_start)
+        l_y=[self.y]*len(l_start)
         
+        args=[l_x, l_y, l_start, l_stop]
+        y=map_parallel(wrap_mean_rate_slice, *args )
+        y = numpy.array(y)
+        
+        if not y.shape == (1, ):
+            y = numpy.reshape(y, (repetition, len(y) / repetition))
+            
+        d=get_mean_rate_slices(self.ids, kwargs, y)    
+
+        
+        return Data_mean_rate_slices(**d)
+
+def wrap_mean_rate_slice(x, y, start, stop):
+    y_slice=y[(x>start)*(x<stop)]
+    return numpy.mean(y_slice)
+   
 class Data_firing_rate(Data_element_base, Data_firing_rate_base):
     pass
 
@@ -558,17 +593,27 @@ class Data_mean_rate_slices_base(object):
         
         if list(x):
             self.x=x 
-            
-        h=ax.plot(self.x, self.y, **k)
         
-        color=pylab.getp(h[0], 'color')   
-        ax.fill_between(self.x, 
-                        self.y-self.y_std,
-                        self.y+self.y_std, 
-                        facecolor=color, alpha=0.5)  
+        h=ax.plot(self.x.ravel(), self.y.ravel(), **k)
+
+#         color=pylab.getp(h[0], 'color')   
+#         ax.fill_between(self.x, 
+#                         self.y-self.y_std,
+#                         self.y+self.y_std, 
+#                         facecolor=color, alpha=0.5)
+        
+        if hasattr(self, 'xticklabels'):
+            step=int(len(self.xticklabels)/15+1)
+            ax.set_xticklabels(self.xticklabels[0::step])
+            ax.set_xticks(self.x[0::step])
+            pylab.setp( ax.xaxis.get_majorticklabels(), 
+                        rotation=k.get('rotation',0) )
+        
+        
+#         ax.my_set_no_ticks(xticks=15, yticks=6)
         ax.set_xlabel('Input') 
         ax.set_ylabel('Firing rate (spike/s)') 
-        ax.legend()
+#         ax.legend()
     
 class Data_mean_rate_slices(Data_element_base, Data_mean_rate_slices_base):
     pass
@@ -1261,8 +1306,17 @@ class MySpikeList(SpikeList):
         
 #         args=[lowcut, highcut, order, fs]
         y=sp.phases_diff(signals1, signals2, **kwargs)
-        y=numpy.array(y, dtype=numpy.float16)
+#         vals=[]
+#         bins=[]
+#         for yy in y:
+#             val, bin=numpy.histogram(yy, 100)
+#             vals.append(val)
+#             bins.append(bin)
+            
+#             hg.append(numpy.histogram(yy, 100))
         
+        y=numpy.array(y, dtype=numpy.float16)
+#         y=hg
         x2, y2=sp.coherences(signals1, signals2, **kwargs)
         
         idx, v =sp.sort_coherences(x2, y2, low, high)
@@ -1275,6 +1329,8 @@ class MySpikeList(SpikeList):
             'ids2':other.id_list,
             'x':self.time_axis_centerd(time_bin) , 
             'y':y,
+#             'y':val,
+#             'y_bins':bins,
             'coherence':v,
             'idx_sorted':idx,
             'p_conf95':p_conf95}
@@ -1335,28 +1391,13 @@ class MySpikeList(SpikeList):
         d= {'ids':self.id_list,  'y':y, 'x':x} 
         return Data_mean_rates(**d)
 
+
+
+
     def Factory_mean_rate_slices(self, *args, **kwargs):
-        intervals=kwargs.get('intervals',None)
-        repetition=kwargs.get('repetition',1)
-        y=[]
-        for start, stop in intervals:
-            kwargs['t_stop']=stop
-            kwargs['t_start']=start
-            y.append(self.mean_rate(**kwargs)) 
-            fr=self.firing_rate(1)
+        y = self.mean_rate_slices(**kwargs)
         
-        y=numpy.array(y)
-        if not y.shape==(1,):
-            y=numpy.reshape(y,(repetition, len(y)/repetition))
-        y_std=numpy.std(y, axis=0)
-        y_mean=numpy.mean(y, axis=0)
-        x=kwargs.get('x', numpy.array(range(len(y_mean))))
-        
-        d={'ids':self.id_list,
-           'y_raw_data':y,
-           'y':y_mean, 
-           'y_std':y_std,
-           'x':x}
+        d = get_mean_rate_slices(self.id_list, kwargs, y)
         
         return Data_mean_rate_slices(**d) 
 
@@ -1398,7 +1439,6 @@ class MySpikeList(SpikeList):
         d['cv_isi']['CV']=d['cv_isi']['std']/d['cv_isi']['mean']
         
         return Data_spike_stat(**d)
-
 
 
     @property
@@ -1458,54 +1498,54 @@ class MySpikeList(SpikeList):
 
 
 
-#     def spike_histogram(self, time_bin, normalized=True, binary=False, display=False, **kwargs):
-#         """
-#         Generate an array with all the spike_histograms of all the SpikeTrains
-#         objects within the SpikeList.
-#          
-#         Inputs:
-#             time_bin   - the time bin used to gather the data
-#             normalized - if True, the histogram are in Hz (spikes/second), otherwise they are
-#                          in spikes/bin
-#             display    - if True, a new figure is created. Could also be a subplot. The averaged
-#                          spike_histogram over the whole population is then plotted
-#             binary     - if True, a binary matrix of 0/1 is returned
-#             kwargs     - dictionary contening extra parameters that will be sent to the plot 
-#                          function
-#          
-#         See also
-#             firing_rate, time_axis
-#         """
-#         
-#         nbins      = self.time_axis(time_bin)
-# #         N          = len(self)
-# #         M          = len(nbins)
+    def spike_histogram(self, time_bin, normalized=True, binary=False, display=False, **kwargs):
+        """
+        Generate an array with all the spike_histograms of all the SpikeTrains
+        objects within the SpikeList.
+          
+        Inputs:
+            time_bin   - the time bin used to gather the data
+            normalized - if True, the histogram are in Hz (spikes/second), otherwise they are
+                         in spikes/bin
+            display    - if True, a new figure is created. Could also be a subplot. The averaged
+                         spike_histogram over the whole population is then plotted
+            binary     - if True, a binary matrix of 0/1 is returned
+            kwargs     - dictionary contening extra parameters that will be sent to the plot 
+                         function
+          
+        See also
+            firing_rate, time_axis
+        """
+         
+        nbins      = self.time_axis(time_bin)
+#         N          = len(self)
+#         M          = len(nbins)
 #         spike_hist=[]
-# #         if newnum:
-# #             M -= 1
-# #         if binary:
-# #             spike_hist = numpy.zeros((N, M), numpy.int)
-# #         else:
-# #             spike_hist = numpy.zeros((N, M), numpy.float32)
-# #         subplot    = get_display(display)
-# #  
-# #         def fun(): 
-# 
-# 
-#         n=len(self.id_list)
-#         args=[[self.spiketrains[_id].spike_times for _id in self.id_list],
-#               [time_bin]*n, 
-#               [normalized]*n,
-#               [binary]*n, 
-#               [nbins]*n, 
-#               self.id_list]
-#         spike_hist=map_parallel(spike_histogram_fun, *args, 
-#                                 **{'threads': kwargs.get('threads',1)})
-# #         for idx, id in enumerate(self.id_list):
-# #  
-# #             self.fun(time_bin, normalized, binary, nbins, spike_hist, id)
-#          
-#         return numpy.array(spike_hist, dtype=numpy.float32)
+#         if newnum:
+#             M -= 1
+#         if binary:
+#             spike_hist = numpy.zeros((N, M), numpy.int)
+#         else:
+#             spike_hist = numpy.zeros((N, M), numpy.float32)
+#         subplot    = get_display(display)
+#  
+#         def fun(): 
+ 
+ 
+        n=len(self.id_list)
+        args=[[self.spiketrains[_id].spike_times for _id in self.id_list],
+              [time_bin]*n, 
+              [normalized]*n,
+              [binary]*n, 
+              [nbins]*n, 
+              self.id_list]
+        spike_hist=map_parallel(spike_histogram_fun, *args, 
+                                **{'threads': kwargs.get('threads',1)})
+#         for idx, id in enumerate(self.id_list):
+#  
+#             self.fun(time_bin, normalized, binary, nbins, spike_hist, id)
+          
+        return numpy.array(spike_hist, dtype=numpy.float32)
 
        
             
@@ -1517,13 +1557,13 @@ class MySpikeList(SpikeList):
         binary=kwargs.get('binary', False)
 
         call=super(MySpikeList, self)
-#         result = self.spike_histogram(time_bin, **kwargs)
-#         if average:
-#             return numpy.mean(result, axis=0)
-#         else:
-#             return result  
-        kwargs=kwargs.get('kwargs',{})
-        return call.firing_rate(time_bin, display, average, binary, kwargs)
+        result = self.spike_histogram(time_bin, **kwargs)
+        if average:
+            return numpy.mean(result, axis=0)
+        else:
+            return result  
+#         kwargs=kwargs.get('kwargs',{})
+#         return call.firing_rate(time_bin, display, average, binary, kwargs)
 
     def get_mean_coherence(self,*args, **kwargs):
         return self.Factory_mean_coherence(*args, **kwargs)
@@ -1614,12 +1654,60 @@ class MySpikeList(SpikeList):
      
     def mean_rate_std(self, **kwargs):
         return numpy.std(self.mean_rates(**kwargs))    
+    
+    def mean_rate_slices(self, **kwargs):
+        intervals = kwargs.get('intervals', None)
+        repetition = kwargs.get('repetition', 1)
+        y = []
+        for start, stop in intervals:
+            kwargs['t_stop'] = stop
+            kwargs['t_start'] = start
+            y.append(self.mean_rate(**kwargs))
+        
+        y = numpy.array(y)
+        if not y.shape == (1, ):
+            y = numpy.reshape(y, (repetition, len(y) / repetition))
+        return y   
 
-    def mean_rates(self, **kwargs):
-        t_start=kwargs.get('t_start', None)
-        t_stop=kwargs.get('t_stop', None)
-        call=super(MySpikeList, self)
-        return call.mean_rates(t_start, t_stop)
+    
+    def mean_rates(self, t_start=None, t_stop=None, **kwargs):
+        """ 
+        Returns a vector of the size of id_list giving the mean firing rate for each neuron
+
+        Inputs:
+            t_start - begining of the selected area to compute std(mean_rate), in ms
+            t_stop  - end of the selected area to compute std(mean_rate), in ms
+        
+        If t_start or t_stop are not defined, those of the SpikeList are used
+        
+        See also
+            mean_rate, mean_rate_std
+        """
+#         rates = []
+        n=len(self.id_list)
+        t_starts=[t_start]*n
+        t_stops=[t_stop]*n
+        l_spiketrains=[self.spiketrains]*n
+        
+        threads=kwargs.pop('threads',1)
+        rates=map_parallel(wrap_compute_mean_rate, *[l_spiketrains,
+                                                          self.id_list, 
+                                                          t_starts, 
+                                                          t_stops], 
+                                **{'threads': threads})
+        
+        
+
+#         for id in self.id_list:
+#             rates.append(self.spiketrains[id].mean_rate(t_start, t_stop))
+#         
+        return rates
+    
+#     def mean_rates(self, **kwargs):
+#         t_start=kwargs.get('t_start', None)
+#         t_stop=kwargs.get('t_stop', None)
+#         call=super(MySpikeList, self)
+#         return call.mean_rates(t_start, t_stop)
 
     
     def time_slice(self, t_start, t_stop):
@@ -2354,7 +2442,23 @@ def dummy_data_matrix(flag, **kwargs):
         return SpikeListMatrix(l)
     if flag=='voltage':
         return VmListMatrix(l)    
+
+
+def get_mean_rate_slices(ids,  kwargs, y):
+    shape = y.shape
+    x = numpy.array(kwargs.get('x', numpy.arange(shape[1])))
+    xticklabels = kwargs.get('xticklabels', x)
+    y_mean = numpy.mean(y, axis=0)
+    y_std = numpy.std(y, axis=0)
+    d = {'ids':ids, 'y_raw_data':y, 
+        'x':x, 
+        'x_set':numpy.array(kwargs.get('x_set', x)), 
+        'xticklabels':xticklabels, 
+        'y':y_mean, 
+        'y_std':y_std}
     
+    return d
+   
 def shuffle(*args, **kwargs):
     out=[]
     sample=kwargs.get('sample',1)
@@ -2371,7 +2475,8 @@ def transpose_if_axis_1(axis, m):
         m=m.transpose()
     return m
 
-
+def wrap_compute_mean_rate(spiketrains, _id, t_start, t_stop):
+    return spiketrains[_id].mean_rate(t_start, t_stop)
 
 class TestDataElement(unittest.TestCase):
     def setUp(self):
@@ -2388,18 +2493,18 @@ class TestDataElement(unittest.TestCase):
                                          'n_sets':1,
                                          'sim_time':self.sim_time})
     
-    def test_bar(self):
-        ax=pylab.subplot(111)
-        data=[[1,2],
-              [1.5,1.2]] 
-        obj=Data_bar(**{'y':data})
-        obj.bar2(ax)
-        ax.set_xticklabels(['Label 1', 'Label 2'])
-        pylab.show()
+#     def test_bar(self):
+#         ax=pylab.subplot(111)
+#         data=[[1,2],
+#               [1.5,1.2]] 
+#         obj=Data_bar(**{'y':data})
+#         obj.bar2(ax)
+#         ax.set_xticklabels(['Label 1', 'Label 2'])
+#         pylab.show()
 
     def test_spike_stat(self):    
         obj=self.sl.Factory_spike_stat()
-        pp(obj)
+#         pp(obj)
 #         obj.plot(pylab.subplot(111), win=20.0)
 #         pylab.show()
 
@@ -2433,30 +2538,30 @@ class TestDataElement(unittest.TestCase):
 #                                0.0, delta=0.001) 
 
 #         
-#     def test_phases_diff_cohere_plot(self):
-#          
-#         other=self.sl
-#         kwargs={
-#                 'NTFF':256,
-#                 'fs':100.0,
-#                 'NFFT':256,
-#                 'noverlap':int(256/2),
-#                 'other':other,
-#                 'sample':10.,   
-#                  
-#                 'lowcut':10,
-#                 'highcut':20,
-#                 'order':3,
-#                 'bin_extent':10.,
-#                 'kernel_type':'gaussian',
-#                 'params':{'std_ms':5.,
-#                           'fs': 100.0},
-#        
-#                 }
-#                  
-#         obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
-#         obj.hist(pylab.subplot(111))
-#         pylab.show()
+    def test_phases_diff_cohere_plot(self):
+          
+        other=self.sl
+        kwargs={
+                'NTFF':256,
+                'fs':100.0,
+                'NFFT':256,
+                'noverlap':int(256/2),
+                'other':other,
+                'sample':10.,   
+                  
+                'lowcut':10,
+                'highcut':20,
+                'order':3,
+                'bin_extent':10.,
+                'kernel_type':'gaussian',
+                'params':{'std_ms':5.,
+                          'fs': 100.0},
+        
+                }
+                  
+        obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
+        obj.hist(pylab.subplot(111))
+        pylab.show()
 
 #     def test_IF_curve_plot(self):
 #           
@@ -2502,6 +2607,29 @@ class TestDataElement(unittest.TestCase):
 #         obj.plot(pylab.subplot(111))        
 # #         pylab.show() 
 
+#     def test_mean_rate_slices(self):
+#         obj=self.sl.Factory_mean_rate_slices(**{'intervals':[[0,100], [200, 300], [300, 400],
+#                                                      [600,700], [800, 900], [900, 1000]],
+#                                         'repetition':2, 'threads':1})
+#         obj.plot(pylab.subplot(111))
+#         pylab.show()
+
+#     def test_firing_rate_get_mean_rate_slices(self):
+#         obj_fr=self.sl.Factory_firing_rate(1)
+#         obj1=obj_fr.get_mean_rate_slices(**{'intervals':[[0,100], [200, 300], [300, 400],
+#                                                      [600,700], [800, 900], [900, 1000]],
+#                                         'repetition':2, 
+#                                         'xticklabels':['i', 'ii', 'iii'],
+#                                         'threads':2})
+#         obj1.plot(pylab.subplot(111))
+#         obj2=self.sl.Factory_mean_rate_slices(**{'intervals':[[0,100], [200, 300], [300, 400],
+#                                                      [600,700], [800, 900], [900, 1000]],
+#                                         'repetition':2, 'threads':1})
+#         self.assertListEqual(list(obj1.y), list(obj2.y))
+#         self.assertListEqual(list(obj1.y_std), list(obj2.y_std))
+# #         obj.plot(pylab.subplot(111))
+#         pylab.show()
+#         
 class TestSpikeList(unittest.TestCase):
     def setUp(self):
     
@@ -2526,6 +2654,36 @@ class TestSpikeList(unittest.TestCase):
         d=self.sl.get_psd( NFFT, Fs)
         self.assertEqual(d.x.shape, d.y.shape)        
         
+        
+    def test_3_mean_rate(self):
+        r=self.sl.mean_rate(t_start=0, t_stop=1000, **{'threads':1})
+        r2=self.sl.mean_rate(t_start=0, t_stop=1000,  **{'threads':2})
+        r3=self.sl.mean_rate(t_start=0, t_stop=1000,  **{'threads':3})
+        self.assertEqual(r, r2)
+        self.assertEqual(r, r3)
+#         print r, r2, r3
+        
+        
+    def test_4_firing_rate(self):
+        fr=self.sl.firing_rate(1, **{'threads':1})
+        fr2=self.sl.firing_rate(1, **{'threads':3})
+        self.assertListEqual(list(fr), list(fr2))
+#         print fr
+#         print fr2
+        
+    def test_5_mean_rate_slices(self):
+        mrs=self.sl.mean_rate_slices(**{'intervals':[[0,100], [300, 400],
+                                                     [600,700], [900, 1000]],
+                                        'repetition':2, 'threads':1})
+        mrs2=self.sl.mean_rate_slices(**{'intervals':[[0,100], [300, 400],
+                                                     [600,700], [900, 1000]],
+                                        'repetition':2, 'threads':3})
+
+        self.assertListEqual([list(a) for a in mrs], 
+                             [list(a) for a in mrs2])
+#         print mrs
+#         print mrs2
+
 class TestSpikeListMatrix(unittest.TestCase):
     
         
@@ -2572,7 +2730,8 @@ class TestSpikeListMatrix(unittest.TestCase):
     def test_2_calls_wrapped_class(self):
         other=SpikeListMatrix(self.spike_lists2)
         calls=[
-               ['firing_rate', [100], {'average':True}],
+               ['firing_rate', [100], {'average':True,
+                                       'threads':2}],
 
                ['get_firing_rate', [100],{'average':True}],
                ['get_isi',[],{}],
@@ -2609,7 +2768,7 @@ class TestSpikeListMatrix(unittest.TestCase):
                                         'fs': 1000.0},
                  }],
                ['get_spike_stats', [],{}],
-               ['mean_rate', [], {'t_start':250, 't_stop':4000}], 
+               ['mean_rate', [], {'t_start':250, 't_stop':4000, 'threads':2}], 
                ['mean_rates', [], {}], 
                ['merge', [], {}],
                ['my_raster', [], {}],

@@ -5,6 +5,8 @@ Created on May 10, 2014
 '''
 
 from toolbox import misc
+from toolbox.network.manager import save, load, compute, run
+
 import toolbox.plot_settings as ps
 
 import pprint
@@ -70,6 +72,27 @@ def get_file_name_figs(script_name, home):
     file_name_figs = home + '/results/papers/inhibition/network/fig/' + script_name
     return file_name_figs
 
+
+
+def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd):
+    d = {}
+    from_disks = [from_disk] * len(nets.keys())
+    for net, fd in zip(nets.values(), from_disks):
+        if fd == 0:
+            dd = run(net)
+            save(sd, dd)
+        elif fd == 1:
+            filt = [net.get_name()] + models + ['spike_signal']
+            dd = load(sd, *filt)
+            dd = compute(dd, models, attr, **kwargs_dic)
+            save(sd, dd)
+        elif fd == 2:
+            filt = [net.get_name()] + sets + models + attr
+            dd = load(sd, *filt)
+        d = misc.dict_update(d, dd)
+    
+    return from_disks, d
+
 def show_plot(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
     dd={}
     by_sets=k.pop('by_sets', False)
@@ -80,7 +103,13 @@ def show_plot(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
         if by_sets and keys[0][0:3]!='set':
             continue
         
-        dd=misc.dict_recursive_add(dd, keys, val)
+        first_keys=keys[:-2]
+        if type(first_keys)==str:
+            first_keys=[first_keys]
+        
+        new_keys=['_'.join(first_keys)]+keys[-2:]
+        
+        dd=misc.dict_recursive_add(dd, new_keys, val)
         
     d=dd
     fig, axs=ps.get_figure(n_rows=len(models), n_cols=1, w=1000.0, h=800.0, fontsize=10)  
@@ -104,7 +133,8 @@ def show_plot(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
             if 't_stop' in k.keys():
                 kk['t_stop']=k['t_stop']
             
-            v[model][name].plot(ax=axs[i], **kk)
+            if model in v.keys():
+                v[model][name].plot(ax=axs[i], **kk)
         j+=1    
     
     return fig, axs

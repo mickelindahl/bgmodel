@@ -43,7 +43,7 @@ def perturbations():
         print numpy.round(val, 2), key
 
     ll=[]
-    for j in range(3):
+    for j, _ in enumerate(freqs):
         for i, _l in enumerate(l):
             amp=[numpy.round(damp[_l.name][j],2), 1]
             d={'type':'oscillation2', 
@@ -77,11 +77,11 @@ path=(home + '/results/papers/inhibition/network/'
 
 n=len(p_list)
 
-for j in range(0,3):
+for j in range(2,3):
     for i, p in enumerate(p_list):
         
 # #         if i<n-9:
-#         if i>18:
+#         if i<40:
 #             continue
 
 
@@ -97,5 +97,5 @@ for j in range(0,3):
 # for i, a in enumerate(args_list):
 #     print i, a
 
-loop(args_list, path, 5)
+loop(args_list, path, 10)
         

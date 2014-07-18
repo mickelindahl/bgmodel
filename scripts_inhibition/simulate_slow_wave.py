@@ -3,7 +3,7 @@ Created on Aug 12, 2013
 
 @author: lindahlm
 '''
-import numpy
+
 
 import oscillation_common
 import os
@@ -14,7 +14,7 @@ from toolbox.network.manager import Builder_slow_wave as Builder
 import pprint
 pp=pprint.pprint
     
-DISPLAY=os.environ.get('DISPLAY')
+# DISPLAY=os.environ.get('DISPLAY')
 THREADS=10
 
 class Setup(object):
@@ -85,8 +85,8 @@ class Setup(object):
     
     def plot_fr(self):
         d={'win':100.,
-           't_start':10000.0,
-           't_stop':20000.0}
+           't_start':0.0,
+           't_stop':5000.0}
         return d
 
     def plot_coherence(self):

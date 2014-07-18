@@ -524,7 +524,11 @@ class Network(Network_base):
                   self.params_conn, self.verbose]
             
             self.conns=structure.connect(*args)
-
+#         import nest
+#         c=nest.GetConnections(self.pops['n1'].ids, 
+#                               self.pops['n2'].ids)
+#         pp(nest.GetStatus(c))
+#         nest.SetStatus(c, {'gain':2.})
     def do_run(self):
         
         if not self.connected: self.do_connect()
@@ -890,6 +894,10 @@ def plot_plastic_dopa(d):
     
     c=misc.make_N_colors('jet', 12)
     ax.plot(dc['p_i'].x[:,0] , p[:,0], **{'label':'weight', 
+                                                        'linewidth':2.0,
+                                                        'color':c[0]} )
+
+    ax.plot(dc['weight'].x[:,0] , dc['weight'].y[:,0], **{'label':'weight_true', 
                                                         'linewidth':2.0,
                                                         'color':c[0]} )
     ax.set_ylabel('Weight')
@@ -1267,8 +1275,8 @@ class TestUnittestBcpnnDopa_base(unittest.TestCase):
         self.class_par=Unittest_bcpnn_dopa
         dic_rep={}
 #         ['n_nuclei']={'n1':1, 'n2':1, 'm1':50}
-        dic_rep.update({'simu':{'sim_stop':1000.0,
-                                'sim_time':10.0,
+        dic_rep.update({'simu':{'sim_stop':2000.0,
+                                'sim_time':100.0,
                                 'threads':1,
                          'mm_params':{'to_file':False, 'to_memory':True},
                          'sd_params':{'to_file':False, 'to_memory':True}},
