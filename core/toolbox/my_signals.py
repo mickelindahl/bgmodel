@@ -276,14 +276,14 @@ class Data_phase_diff(Data_element_base, Data_phase_diff_base):
 
 
 class Data_phases_diff_with_cohere_base(object):
-    def hist(self, ax,  num=100.0, **k):
+    def hist2(self, ax,  num=300.0, **k):
         if not isinstance(ax,my_axes.MyAxes):
             ax=my_axes.convert(ax)
             
         k['histtype']=k.get('histtype','step')
         k['normed']=1
         k['linestyle']='dashed'
-        bins=numpy.linspace(-numpy.pi, numpy.pi, num)
+        bins=numpy.linspace(-3*numpy.pi,3* numpy.pi, num)
         y=reduce(lambda x,y:list(x)+list(y),self.y)
         h=ax.hist(numpy.array(self.y.ravel()), bins,  **k)
 #         h=ax.bar(self.y_bins[0:-1], self.y, **{'linewith':0})
@@ -294,12 +294,54 @@ class Data_phases_diff_with_cohere_base(object):
         idx=self.idx_sorted[self.coherence[self.idx_sorted]>self.p_conf95]
         ax.hist(numpy.array(self.y[idx,:].ravel()), bins,  **k)
         
-        ax.set_xlim(-numpy.pi, numpy.pi)
+#         ax.set_xlim(-numpy.pi, numpy.pi)
         ax.set_xlabel('Angle (Rad)') 
         ax.set_ylabel('Count') 
         ax.my_set_no_ticks(xticks=10, yticks=6)
         ax.legend()
         
+    def hist(self, ax,  num=100.0, **k):
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+
+#         k['normed']=1
+        k['linestyle']='--'
+
+        rest=k.pop('rest', True)
+        p_95=k.pop('p_95', True)
+        if rest:
+            a=numpy.mean(self.y_bins, axis=0)[0:-1]
+            step=numpy.diff(a)[0]
+            a=numpy.array([[aa, aa+step] for aa in a]).ravel()
+            b=numpy.array([[bb,bb] for bb in numpy.sum(self.y_val, axis=0)],
+                          dtype=numpy.float).ravel()
+           
+            norm=sum(b)*(a[-1]-a[0])/len(a)
+            h=ax.plot(a, b/norm, **k)
+            color=pylab.getp(h[0], 'color')   
+        
+        if p_95:
+            k['linestyle']='-'
+            k['color']=color
+            idx=self.idx_sorted[self.coherence[self.idx_sorted]>self.p_conf95]
+            y=self.y_val[idx,:]
+            y_bins=self.y_bins[idx,:]
+            
+            a=numpy.mean(y_bins, axis=0)[0:-1]
+            a=numpy.array([[aa, aa+step] for aa in a]).ravel()
+            b=numpy.array([[bb,bb] for bb in numpy.sum(y, axis=0)],
+                          dtype=numpy.float).ravel()
+            
+            norm=sum(b)*(a[-1]-a[0])/len(a)
+            
+            h=ax.plot(a, b/norm, **k)
+#         ax.hist(numpy.array(self.y[idx,:].ravel()), bins,  **k)
+        
+#         ax.set_xlim(-numpy.pi, numpy.pi)
+        ax.set_xlabel('Angle (Rad)') 
+        ax.set_ylabel('Count') 
+        ax.my_set_no_ticks(xticks=10, yticks=6)
+        ax.legend()       
 class Data_phases_diff_with_cohere(Data_element_base,
                                    Data_phases_diff_with_cohere_base):
     pass
@@ -318,7 +360,7 @@ class Data_firing_rate_base(object):
                               'axis':1})     
         ax.plot(x, y, **k)
         ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Frequency (spike/s)') 
+        ax.set_ylabel('Firing rate (spike/s)') 
         ax.my_set_no_ticks(xticks=6, yticks=6)
         ax.legend()
 
@@ -602,12 +644,12 @@ class Data_mean_rate_slices_base(object):
 #                         self.y+self.y_std, 
 #                         facecolor=color, alpha=0.5)
         
-        if hasattr(self, 'xticklabels'):
-            step=int(len(self.xticklabels)/15+1)
-            ax.set_xticklabels(self.xticklabels[0::step])
-            ax.set_xticks(self.x[0::step])
-            pylab.setp( ax.xaxis.get_majorticklabels(), 
-                        rotation=k.get('rotation',0) )
+#         if hasattr(self, 'xticklabels'):
+#             step=int(len(self.xticklabels)/15+1)
+#             ax.set_xticklabels(self.xticklabels[0::step])
+#             ax.set_xticks(self.x[0::step])
+#             pylab.setp( ax.xaxis.get_majorticklabels(), 
+#                         rotation=k.get('rotation',0) )
         
         
 #         ax.my_set_no_ticks(xticks=15, yticks=6)
@@ -1305,13 +1347,15 @@ class MySpikeList(SpikeList):
         signals2=sl2.firing_rate(time_bin, average=False, **kwargs)       
         
 #         args=[lowcut, highcut, order, fs]
+
         y=sp.phases_diff(signals1, signals2, **kwargs)
-#         vals=[]
-#         bins=[]
-#         for yy in y:
-#             val, bin=numpy.histogram(yy, 100)
-#             vals.append(val)
-#             bins.append(bin)
+        vals=[]
+        bins=[]
+        bins0=numpy.linspace(3*-numpy.pi, 3*numpy.pi, 3*100)
+        for yy in y:
+            val, bin=numpy.histogram(yy, bins0)
+            vals.append(val)
+            bins.append(bin)
             
 #             hg.append(numpy.histogram(yy, 100))
         
@@ -1324,13 +1368,15 @@ class MySpikeList(SpikeList):
         L=float(len(signals1[0]))/kwargs.get('NFFT')
         p_conf95=numpy.ones(len(x2))*(1-0.05**(1/(L-1)))  
  
+        if not kwargs.get('full_data', False):
+            y=None
         
         d= {'ids1':self.id_list,
             'ids2':other.id_list,
             'x':self.time_axis_centerd(time_bin) , 
             'y':y,
-#             'y':val,
-#             'y_bins':bins,
+            'y_val':numpy.array(vals),
+            'y_bins':numpy.array(bins),
             'coherence':v,
             'idx_sorted':idx,
             'p_conf95':p_conf95}
@@ -2556,11 +2602,15 @@ class TestDataElement(unittest.TestCase):
                 'kernel_type':'gaussian',
                 'params':{'std_ms':5.,
                           'fs': 100.0},
+                
+                'full_data':True,
         
                 }
                   
         obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
-        obj.hist(pylab.subplot(111))
+        ax=pylab.subplot(111)
+        obj.hist(ax)
+        obj.hist2(ax)
         pylab.show()
 
 #     def test_IF_curve_plot(self):

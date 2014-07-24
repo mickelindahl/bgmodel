@@ -2191,7 +2191,7 @@ class InhibitionPar_base(object):
 
         # FSN-MSN static
         dic['nest']['FS_M1_gaba_s']={}
-        dic['nest']['FS_M1_gaba_s']['weight']  =6.
+        dic['nest']['FS_M1_gaba_s']['weight']  =6.*0.2
         dic['nest']['FS_M1_gaba_s']['delay']   = 1.7    # Taverna 2004   
         dic['nest']['FS_M1_gaba_s']['type_id'] = 'static_synapse'  
         dic['nest']['FS_M1_gaba_s']['receptor_type'] = self.rec['izh']['GABAA_1']   
@@ -2615,7 +2615,7 @@ class InhibitionPar_base(object):
         # MSN D1-SNr
         dic['nest']['SN']['GABAA_1_E_rev']    =-80.     # (Connelly et al. 2010)
         dic['nest']['SN']['GABAA_1_Tau_decay']=GetNest('M1_SN_gaba', 'tau_psc')      # (Connelly et al. 2010)
-        dic['nest']['GP']['beta_I_GABAA_1'] = 0.8 # From GPe A
+        dic['nest']['SN']['beta_I_GABAA_1'] = 0.8 # From MSN D1
        
         # GPe-SNr
         dic['nest']['SN']['GABAA_2_E_rev']    =-72.     # (Connelly et al. 2010)
@@ -2870,10 +2870,10 @@ class Compete_base(object):
         
         dic_other=self.other.get_dic_con()
         max_n_set_pre=80
-        inps=['C1', 'C2']
+        inps=['C1', 'C2', 'CF']
         
         dic = setup_burst3(dic_other, max_n_set_pre, inps)
-
+    
         dic = misc.dict_update(dic_other, dic)
         return dic
 

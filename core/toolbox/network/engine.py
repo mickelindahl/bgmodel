@@ -618,6 +618,53 @@ class Network(Network_base):
         return s
 
 
+    def get_conn_matrix(self, pre, post, synapse_model ):
+        
+        def fun(c, d1, d2):
+#             print c['source'], '->', d1[c['source']]
+#             print c['target'], '->', d2[c['target']]
+            return [d1[c['source']], d2[c['target']]]
+        
+        self.do_connect()
+        source=self.pops[pre]
+        target=self.pops[post]
+        acum1=0
+        out=[]
+        trans1, trans2={},{}
+        for _set1 in source.sets:
+            s=source.ids[_set1.get_slice()]
+    
+            trans1.update(dict(zip(s, range(acum1,acum1+ len(s)))))
+            
+            acum1+=len(s)
+            acum2=0
+            for _set2 in target.sets:
+                
+                t=target.ids[_set2.get_slice()]
+                
+                trans2.update(dict(zip(t, range(acum2, acum2+len(t)))))
+                acum2+=len(t)
+                
+                
+                
+        conns=my_nest.GetStatus(my_nest.GetConnections(s, t, synapse_model))
+                
+        n=len(conns)
+# 
+#                 for c in conns:
+#                     out+=(fun(c,trans1, trans2))
+        
+        out+=map(fun,conns, [trans1]*n, [trans2]*n)
+        out=numpy.array(out)
+#         pylab.scatter(out[:,0], out[:,1], **{'marker':'.'})
+#         pylab.show()
+        return out            
+#                 
+                
+                
+      
+        
+        
 # class Inhibition(Network):
 # 
 #     def get_data_root_path(self):
@@ -627,11 +674,11 @@ class Network(Network_base):
 #         return toolbox.get_figure_root_path('inhibition')
     
               
-class Slow_wave(Network):  
-    def __init__(self, dic_rep={}, perturbation=None, **kwargs):
-        super( Slow_wave, self ).__init__(dic_rep, perturbation, **kwargs)       
-        # In order to be able to convert super class object to subclass object   
-        self.class_par=Slow_wave
+# class Slow_wave(Network):  
+#     def __init__(self, dic_rep={}, perturbation=None, **kwargs):
+#         super( Slow_wave, self ).__init__(dic_rep, perturbation, **kwargs)       
+#         # In order to be able to convert super class object to subclass object   
+#         self.class_par=Slow_wave
 
 class Single_units_activity(Inhibition):    
     
@@ -1152,7 +1199,12 @@ class TestMixin_2(object):
         self.assertAlmostEqual(e2[0], 28, delta=2)
 #         #pylab.show()
         
-
+class TestMixin_3(object):
+    def test_get_conn_matrix(self):
+        network=self.class_network(self.name, **self.kwargs)  
+        conn=network.get_conn_matrix('M1', 'M1', 'M1_M1_gaba')
+        
+    
 class TestMixinPlastic(object):           
     def test_simulation_loop(self):
         dic_rep=self.dic_rep
@@ -1235,7 +1287,7 @@ class TestUnittest_base(unittest.TestCase):
         self.input='i1'
         self._setUp()
 
-        
+ 
 class TestUnittest(
                    TestUnittest_base, 
                    TestMixin_1, 
@@ -1610,7 +1662,26 @@ class TestNetwork_dic(unittest.TestCase):
 # 
 # class TestStructureSingle_units_in_vitro(TestStructureSingle_units_activity_base, TestMixin_1):
 #     pass
-#         
+#  
+class TestStructureSlow_wave_base(unittest.TestCase):
+    def setUp(self):
+#         self.do_reset()
+        from toolbox.network.default_params import Perturbation_list as pl
+        self.class_network=Network    
+        self.name='Net_0'
+        self.kwargs={'par':Slow_wave(**{'other':Inhibition(),
+                                        'perturbations':pl({'netw':{'size':400.0},
+                                                            'node':{'M1':{'n_sets':3}},
+                                                            'conn':{'M1_M1_gaba':{'rule':'set-not_set'}}}, '=')})}
+        
+#         self.dic_rep['netw'].update({'size':10})  
+        #for key in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:
+        #    del self.dic_rep['conn'][key]
+#         self.fileName=self.class_network().path_data+'network'             
+        self.model_list=['M1']
+ 
+class TestStructureSlow_wave(TestStructureSlow_wave_base,TestMixin_3):
+    pass       
 # class TestStructureSlow_wave(TestStructureInhibition):
 #     
 #     def setUp(self):
@@ -1651,11 +1722,12 @@ if __name__ == '__main__':
     test_classes_to_run=[
 #                         TestUnittest,
 #                         TestUnittestExtend,
-                        TestUnittestBcpnnDopa,
+#                         TestUnittestBcpnnDopa,
 #                         TestUnittestStdp,
 #                         TestUnittestBcpnn,
 #                         TestSingle_unit
 #                         TestNetwork_dic,
+                          TestStructureSlow_wave,
                        ]
     suites_list = []
     for test_class in test_classes_to_run:

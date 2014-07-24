@@ -78,16 +78,25 @@ class Setup(object):
 
     def firing_rate(self):
         d={'average':False, 
-           'threads':self.threads,
-           'win':10.0}
+           'threads':THREADS,
+           'win':100.0}
         return d
 
-    
     def plot_fr(self):
-        d={'win':20.,
-           't_start':4000.0,
-           't_stop':5000.0}
+        d={'win':100.,
+           't_start':5000.0,
+           't_stop':10000.0,
+           'labels':['Control', 'Lesion'],
+           
+            'fig_and_axes':{'n_rows':8, 
+                                        'n_cols':1, 
+                                        'w':800.0, 
+                                        'h':600.0, 
+                                        'fontsize':12,
+                                        'frame_hight_y':0.9}}
         return d
+    
+
 
     def plot_coherence(self):
         d={'xlim':[0, 50],
@@ -97,7 +106,16 @@ class Setup(object):
     def plot_summed(self):
         d={'xlim_cohere':[0, 50]}
         return d
-
+    
+    def plot_summed2(self):
+        d={'xlim_cohere':[0, 50],
+           'rest':True,
+           'p_95':False,
+           'leave_out':['control_fr', 'control_cv'],
+           'statistics_mode':'activation',
+           'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
+           }
+        return d
 def main(builder=Builder,
          from_disk=2,
          perturbation_list=None,

@@ -9,6 +9,8 @@ from toolbox.network.manager import save, load, compute, run
 
 import toolbox.plot_settings as ps
 
+from copy import deepcopy
+
 import pprint
 pp=pprint.pprint
 
@@ -73,6 +75,28 @@ def get_file_name_figs(script_name, home):
     return file_name_figs
 
 
+def get_conn_matricies(net, models, attr):
+    d={}
+    for model in models:
+        soruce, target, _=model.split('_')
+        d[model]={attr:net.get_conn_matrix(soruce, target, model)}
+    return d
+        
+def main_loop_conn(from_disk, attr, models, sets, nets, kwargs_dic, sd):
+    d = {}
+    from_disks = [from_disk] * len(nets.keys())
+    for net, fd in zip(nets.values(), from_disks):
+        if fd == 0:
+            net.do_connect()
+            dd=get_conn_matricies(net, models, attr)
+            save(sd, dd)
+        elif fd == 1:
+            pass   
+        elif fd == 2:
+            filt = [net.get_name()] + sets + models + attr
+            dd = load(sd, *filt)
+            
+    return from_disks, d
 
 def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd):
     d = {}
@@ -96,6 +120,8 @@ def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd):
 def show_plot(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
     dd={}
     by_sets=k.pop('by_sets', False)
+    
+
     for keys, val in misc.dict_iter(d):
         
         if keys[-1]!=name:
@@ -112,14 +138,20 @@ def show_plot(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
         dd=misc.dict_recursive_add(dd, new_keys, val)
         
     d=dd
-    fig, axs=ps.get_figure(n_rows=len(models), n_cols=1, w=1000.0, h=800.0, fontsize=10)  
+    
+    if k.get('fig_and_axes', False):
+        fig, axs=ps.get_figure(**k.get('fig_and_axes'))
+    else:
+        fig, axs=ps.get_figure(n_rows=len(models), n_cols=1, w=1000.0, h=800.0, 
+                           fontsize=k.get('fontsize',10))  
     labels=k.pop('labels', sorted(d.keys()))
 #     colors=misc.make_N_colors('Paired', max(len(labels), 6))
     colors=misc.make_N_colors('jet', max(len(labels), 1))
     linestyles=['-']*len(labels)
     
     j=0
-    for key in sorted(d.keys()):
+    nets=k.get('nets', sorted(d.keys()))
+    for key in nets:
         v=d[key]
 #         axs[0].set_title(k)
         for i, model in enumerate(models):
@@ -136,6 +168,9 @@ def show_plot(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
             if model in v.keys():
                 v[model][name].plot(ax=axs[i], **kk)
         j+=1    
+    
+    for ax in axs:
+        ax.legend()
     
     return fig, axs
 
@@ -155,11 +190,56 @@ def show_fr_sets(d, models, **k):
     return fig
 
 def show_mr(d, models, **k):
-    fig, _ =show_plot('mean_rate_slices',d, models, **k)
+    fig, axs =show_plot('mean_rate_slices',d, models, **k)
+    
+    if k.get('relative', False):
+        r_to1, r_to2=k.get('relative_to') #index
+        for ax in axs:
+            
+            y_upp=ax.lines[r_to1].get_ydata()
+            y_low=ax.lines[r_to2].get_ydata()
+            y=y_upp-y_low
+            
+            for i, line in enumerate(ax.lines):
+                
+#                 ax.lines[i]._y/=y
+                line.set_ydata(1-(line.get_ydata()-y_low)/y)
+#                 line.set_ydata(1-line.get_ydata())#               
+#   import copy
+#                 ax.lines[i]._y=copy.deepcopy(1-line._y)
+#                 ax.lines[i]._y=copy.deepcopy(1-line._y)
+#                 ax.lines[i]._y=copy.deepcopy(1-line._y)            
+#                 print ax.lines[i]._y
+    if k.get('y_lim', False):
+        for ax in axs:
+            ax.set_ylim(k.get('y_lim'))
+
+    if k.get('x_lim', False):
+        for ax in axs:
+            ax.set_xlim(k.get('x_lim'))
+
+#     import pylab
+#     pylab.show()
+
+    
+    if k.get('delete', False):
+        j=0
+        for i in k.get('delete'):
+            del ax.lines[i-j]
+            j+=1 
+            
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles, labels)       
     return fig
 
 def show_mr_diff(d, models, **k):
-    fig, _ =show_plot('mean_rate_diff',d, models, **k)
+    fig, axs =show_plot('mean_rate_diff',d, models, **k)
+    
+    for ax in axs:
+        ax.set_xlabel('Active MSNs(%)')
+        
+    for ax in axs:
+        ax.set_ylabel('Firing rate (spike/s)')
     return fig
 
 def show_hr(d, models, **k):
@@ -178,7 +258,7 @@ def show_hist(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
     
     for key in sorted(d.keys()):
         v=d[key]
-#         axs[0].set_title(k)
+#         axs[0].serunt_title(k)
         
         for i, model in enumerate(models):
             if 'spike_stastistic' in v[model]:

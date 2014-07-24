@@ -14,8 +14,8 @@ from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
 from toolbox.network.manager import (add_perturbations,
                                       get_storage)
-from toolbox.network.manager import Builder_striatum as Builder
-
+from toolbox.network.manager import Builder_inhibition_striatum as Builder
+import toolbox.plot_settings as ps
 import pprint
 pp=pprint.pprint
     
@@ -53,12 +53,12 @@ def get_networks(builder, **k_in):
 
 class Setup(object):
     
-    def __init__(self, threads, res, rep, low, upp):
-        self.threads=threads
-        self.res=res
-        self.rep=rep
-        self.low=low
-        self.upp=upp
+    def __init__(self, **k):
+        self.threads=k.get('threads',1)
+        self.res=k.get('resolution',3)
+        self.rep=k.get('repetition',1)
+        self.low=k.get('lower',1.)
+        self.upp=k.get('upper',2.)
    
 
     def builder(self):
@@ -83,7 +83,12 @@ class Setup(object):
                      'No inhibition'],
            'win':100.,
            't_start':0.0,
-           't_stop':20000.0}
+           't_stop':20000.0,           
+           'fig_and_axes':{'n_rows':2, 
+                                        'n_cols':1, 
+                                        'w':600.0, 
+                                        'h':500.0, 
+                                        'fontsize':16} }
         return d
 
     def plot_mr(self):
@@ -92,7 +97,32 @@ class Setup(object):
                      'Only FSN-MSN',
                      'Only FSN-MSN-static',
                      'Only GPe TA-MSN',
-                     'No inhibition']}
+                     'No inhibition'],
+                      'fig_and_axes':{'n_rows':2, 
+                                        'n_cols':1, 
+                                        'w':600.0, 
+                                        'h':500.0, 
+                                        'fontsize':16} }
+        return d
+        
+    def plot_mr2(self):
+        d={'labels':['All', 
+                     'Only MSN-MSN',
+                     'Only FSN-MSN',
+                     'Only FSN-MSN-static',
+                     'Only GPe TA-MSN',
+                     'No inhibition'],
+           'fontsize':16,
+           'relative':True,
+           'relative_to':[5,0],
+           'x_lim':[1,2],
+           'y_lim':[0,1],
+           'delete':[0,5],
+           'fig_and_axes':{'n_rows':2, 
+                                        'n_cols':1, 
+                                        'w':600.0, 
+                                        'h':500.0, 
+                                        'fontsize':16} }
         return d
     
 
@@ -134,17 +164,36 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
 
     d_plot_fr = setup.plot_fr()
     d_plot_mr = setup.plot_mr()
+    d_plot_mr2 = setup.plot_mr2()
     figs = []
-    figs.append(show_fr(d, models, **d_plot_fr))
-    figs.append(show_mr(d, models, **d_plot_mr))
+    figs.append(show_mr(d, ['M1', 'M2'], **d_plot_mr2))
+    axs=figs[-1].get_axes()
+    ps.shift('left', axs, 0.5, n_rows=len(axs), n_cols=1)
+    for ax in axs:
+        ax.legend(bbox_to_anchor=(2., 1), prop={'size':12})
+        ax.set_xlim([1,2])
+#     figs.append(show_fr(d, models, **d_plot_fr))
+#     figs.append(show_mr(d, models, **d_plot_mr))
+#     figs.append(show_mr(d, models, **d_plot_mr2))
     figs.append(show_mr(d, ['M1', 'M2'], **d_plot_mr))
+    axs=figs[-1].get_axes()
+    ps.shift('left', axs, 0.5, n_rows=len(axs), n_cols=1)
+    for ax in axs:
+        ax.legend(bbox_to_anchor=(2., 1), prop={'size':12})
+        ax.set_xlim([1,2])
+#         ax.set_ylim([0,30])
     sd_figs.save_figs(figs, format='png')
-
+    sd_figs.save_figs(figs, format='svg')
+    
 def main(builder=Builder,
          from_disk=2,
          perturbation_list=None,
          script_name=__file__.split('/')[-1][0:-3],
-         setup=Setup(8, 2, 7, 1, 3 )):
+         setup=Setup(**{'threads':8,
+                        'resolution':2,
+                        'repetition':7,
+                        'lower':1,
+                        'upper':3})):
     
     
 
@@ -161,18 +210,18 @@ def main(builder=Builder,
     
 
 import unittest
-class TestOcsillation(unittest.TestCase):     
+class TestInhibitionStriatum(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
         from_disk=1
         
-        import oscillation_perturbations as op
+        import oscillation_perturbations4 as op
         
-        rep, res, low, upp=2, 3, 1, 3
+        rep, res, low, upp=1, 3, 1, 1.5
         
         sim_time=rep*res*1000.0
         size=3000.0
-        threads=12
+        threads=16
         
         l=op.get()
         
@@ -181,8 +230,13 @@ class TestOcsillation(unittest.TestCase):
                       'threads':threads},
                   'netw':{'size':size}},
                   '=')
-        p+=l[1]
-        self.setup=Setup(threads, rep, res, low, upp)
+        p+=l[7]
+        self.setup=Setup(**{'threads':threads,
+                            'resolution':res,
+                            'repetition':rep,
+                            'lower':low,
+                            'upper':upp})
+        
         v=simulate(builder=Builder,
                             from_disk=from_disk,
                             perturbation_list=p,
@@ -216,7 +270,7 @@ class TestOcsillation(unittest.TestCase):
 
 if __name__ == '__main__':
     test_classes_to_run=[
-                         TestOcsillation
+                         TestInhibitionStriatum
                          ]
     suites_list = []
     for test_class in test_classes_to_run:

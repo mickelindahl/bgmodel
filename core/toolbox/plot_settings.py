@@ -182,6 +182,7 @@ def set_mode(pylab, mode='large', w = None, h = None, fontsize=10):
     if mode == "by_fontsize":
         fs=fontsize
         params8 = {'backend': 'png',
+                   'axes.titlesize':fs,
           'axes.labelsize': fs,
           'text.fontsize': fs,
           'xtick.labelsize': fs,
@@ -237,7 +238,7 @@ def get_figure( n_rows, n_cols, w, h, fontsize, order='col', projection=None, **
     fig = pylab.figure( facecolor = 'w' )
     
     hight=1./n_rows*kwargs.get('frame_hight_y',0.7)
-    width=1./n_cols*0.7
+    width=1./n_cols*kwargs.get('frame_hight_x',0.7)
     inbetw_row=(1-hight*n_rows)/(1+n_rows)
     inbetw_col=(1-width*n_cols)/(1+n_cols)
     step_row=hight+inbetw_row
@@ -264,3 +265,17 @@ def get_figure( n_rows, n_cols, w, h, fontsize, order='col', projection=None, **
     return fig, ax_list
 
 
+def shift(flag, axs, shift, n_rows=1, n_cols=1):
+    assert n_rows*n_cols==len(axs)
+    shift_vert=shift/n_rows
+    shift_hor=shift/n_cols
+    k=0
+    for i in range(n_rows):
+        for j in range(n_cols):
+            ax=axs[k]
+            k+=1 
+            box = ax.get_position()
+            if flag=='upp':
+                ax.set_position([box.x0, box.y0+shift_vert*i, box.width, box.height*(1-shift_vert)])
+            if flag=='left':
+                ax.set_position([box.x0+shift_hor*j, box.y0, box.width*(1-shift_hor), box.height])

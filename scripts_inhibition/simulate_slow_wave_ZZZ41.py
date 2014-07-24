@@ -18,15 +18,15 @@ pp=pprint.pprint
 
 
 def perturbations():
-    sim_time=20000.0
+    sim_time=40000.0
     size=20000.0
     threads=4
 
-    freqs=[0.5, 1.5]
+    freqs=[0.75]
 
     path=('/home/mikael/results/papers/inhibition'+
        '/network/simulate_inhibition_ZZZ4/')
-    l=op.get()
+    l=[op.get()[7]]
 
     for i in range(len(l)):
         l[i]+=pl({'simu':{'sim_time':sim_time,
@@ -57,33 +57,7 @@ def perturbations():
             _ll+=pl(dd,'=',**{'name':'amp_{0}-{1}'.format(*amp)})
 
             ll.append(_ll)
- 
-    freqs=[0.75, 1.0]
-    damp=process(path, freqs)
-    for key in sorted(damp.keys()):
-        val=damp[key]
-        print numpy.round(val, 2), key
- 
-    for i, _l in enumerate(l[4::3]):
-        for j, _ in enumerate(freqs):
-
-            amp=[numpy.round(damp[_l.name][j],2), 1]
-            d={'type':'oscillation2', 
-               'params':{'p_amplitude_mod':amp[0],
-                         'p_amplitude0':amp[1],
-                         'freq': 1.}} 
-            _ll=deepcopy(_l)
-            dd={}
-            for key in ['C1', 'C2', 'CF', 'CS']: 
-                dd=misc.dict_update(dd, {'netw': {'input': {key:d} } })     
-                      
-            _ll+=pl(dd,'=',**{'name':'amp_{0}-{1}'.format(*amp)})
-
-            ll.append(_ll)       
-
-    return ll, threads      
-
-
+    return ll, threads  
 p_list, threads=perturbations()
 for i, p in enumerate(p_list):
     print i, p
@@ -98,9 +72,6 @@ path=(home + '/results/papers/inhibition/network/'
 
 for j in range(1,3):
     for i, p in enumerate(p_list):
-        
-        if i<20:
-            continue
          
         from_disk=j
 
@@ -112,5 +83,5 @@ for j in range(1,3):
                            script_name, threads])
 
 
-loop(args_list, path, 4)
+loop(args_list, path, 1)
         

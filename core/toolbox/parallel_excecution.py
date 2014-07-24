@@ -94,8 +94,10 @@ def loop(args_list, path, chunks):
         with misc.Stopwatch(s):
             for p in p_list:    
                 p.join()
-      
-
+                p.terminate()
+        import time
+        time.sleep(1)
+        
 
 
 def fun1(d):

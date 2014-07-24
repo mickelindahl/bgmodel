@@ -85,8 +85,16 @@ class Setup(object):
     
     def plot_fr(self):
         d={'win':100.,
-           't_start':0.0,
-           't_stop':5000.0}
+           't_start':10000.0,
+           't_stop':20000.0,
+           'labels':['Control', 'Lesion'],
+           
+            'fig_and_axes':{'n_rows':8, 
+                                        'n_cols':1, 
+                                        'w':800.0, 
+                                        'h':600.0, 
+                                        'fontsize':12,
+                                        'frame_hight_y':0.9}}
         return d
 
     def plot_coherence(self):
@@ -98,6 +106,15 @@ class Setup(object):
            'statistics_mode':'slow_wave'}
         return d
     
+    def plot_summed2(self):
+        d={'xlim_cohere':[0, 5],
+           'rest':False,
+           'p_95':True,
+           'leave_out':['control_fr', 'control_cv'],
+           'statistics_mode':'activation',
+           'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
+           }
+        return d
 def main(builder=Builder,
          from_disk=1,
          perturbation_list=None,

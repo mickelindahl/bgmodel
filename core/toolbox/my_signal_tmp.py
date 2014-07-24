@@ -6,44 +6,7 @@ Created on Jul 17, 2014
 
 
 class Data_phases_diff_with_cohere_base(object):
-    def hist(self, ax,  num=100.0, **k):
-        if not isinstance(ax,my_axes.MyAxes):
-            ax=my_axes.convert(ax)
-            
-#         k['histtype']=k.get('histtype','step')
-#         k['normed']=1
-        k['linestyle']='--'
-#         k['linewidth']=0
-        bins=numpy.linspace(-numpy.pi, numpy.pi, num)
-#         y=reduce(lambda x,y:list(x)+list(y),self.y)
-#         h=ax.hist(numpy.array(self.y.ravel()), bins,  **k)
-        
-        a=numpy.mean(self.y_bins, axis=0)[0:-1]
-        step=numpy.diff(a)[0]
-        a=numpy.array([[aa, aa+step] for aa in a]).ravel()
-        b=numpy.array([[bb,bb] for bb in numpy.sum(self.y, axis=0)],
-                      dtype=numpy.float).ravel()
-        h=ax.plot(a, b/sum(b)*100., **k)
-        color=pylab.getp(h[0], 'color')   
-        
-        k['linestyle']='-'
-        k['color']=color
-        idx=self.idx_sorted[self.coherence[self.idx_sorted]>self.p_conf95]
-        y=self.y[idx,:]
-        y_bins=self.y_bins[idx,:]
-        
-        a=numpy.mean(y_bins, axis=0)[0:-1]
-        a=numpy.array([[aa, aa+step] for aa in a]).ravel()
-        b=numpy.array([[bb,bb] for bb in numpy.sum(y, axis=0)],
-                      dtype=numpy.float).ravel()
-        h=ax.plot(a, b/sum(b)*100., **k)
-#         ax.hist(numpy.array(self.y[idx,:].ravel()), bins,  **k)
-        
-#         ax.set_xlim(-numpy.pi, numpy.pi)
-        ax.set_xlabel('Angle (Rad)') 
-        ax.set_ylabel('Count') 
-        ax.my_set_no_ticks(xticks=10, yticks=6)
-        ax.legend()
+
         
     def Factory_phases_diff_with_cohere(self, *args, **kwargs):
         '''

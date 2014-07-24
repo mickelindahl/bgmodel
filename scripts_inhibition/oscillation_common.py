@@ -273,6 +273,9 @@ def set_text_on_bars(axs, i, names, coords):
     
 
 def plot_spk_stats(d, axs, i, **k):
+    
+    leave_out=k.get('leave_out',[])
+    
     y_mean, y_mean_SEM = [], []
     y_CV, y_CV_SEM = [], []
     names=['Sim', 'Mallet', 'Sim', 'Mallet']
@@ -347,15 +350,15 @@ def plot_spk_stats(d, axs, i, **k):
             y_CV_SEM.append(st.cv_isi['SEM'])
         
         
-
-    Data_bar(**{'y':y_mean[0:2]}).bar(axs[i])
-    axs[i].set_ylabel('Firing rate (Hz)')
-    axs[i].set_xticklabels(['TI control', 'TA control'])
-    axs[i].set_ylim([0,40])
-    set_text_on_bars(axs, i, names[0::2], coords[0::2])
+    if 'control_fr' not in leave_out:
+        Data_bar(**{'y':y_mean[0:2]}).bar(axs[i])
+        axs[i].set_ylabel('Firing rate (Hz)')
+        axs[i].set_xticklabels(['TI control', 'TA control'])
+        axs[i].set_ylim([0,40])
+        set_text_on_bars(axs, i, names[0::2], coords[0::2])
     
     
-    i += 1
+        i += 1
 #     pylab.show()
     
     Data_bar(**{'y':[[y_mean[2],y_mean[3]],
@@ -368,12 +371,13 @@ def plot_spk_stats(d, axs, i, **k):
     set_text_on_bars(axs, i, names, coords)   
     i += 1
 
-    Data_bar(**{'y':y_CV[0:2]}).bar(axs[i])
-    axs[i].set_ylabel('CV')
-    axs[i].set_xticklabels(['TI control', 'TA control'])
-    axs[i].set_ylim([0,1.9])
-    set_text_on_bars(axs, i, names[0::2], coords[0::2])
-    i += 1
+    if 'control_cv' not in leave_out:
+        Data_bar(**{'y':y_CV[0:2]}).bar(axs[i])
+        axs[i].set_ylabel('CV')
+        axs[i].set_xticklabels(['TI control', 'TA control'])
+        axs[i].set_ylim([0,1.9])
+        set_text_on_bars(axs, i, names[0::2], coords[0::2])
+        i += 1
 
     Data_bar(**{'y':[[y_CV[2], y_CV[3]],
                      [Y[3][0], Y[3][1]]],
@@ -419,6 +423,7 @@ def translation_dic():
 
 def plot_coherence(d, axs, i, **k):
     td=translation_dic()
+#     models=k.get()
     ax = axs[i]
     colors=misc.make_N_colors('jet', len( d.keys()))
     for i_key, key in enumerate(sorted(d.keys())):
@@ -434,17 +439,21 @@ def plot_coherence(d, axs, i, **k):
     
     return i
 
-def plot_phases_diff_with_cohere(d, axs, i, xmax=5):
+def plot_phases_diff_with_cohere(d, axs, i, xmax=5, **k):
     td=translation_dic()
+    models=k.get('models_pdwc', ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA', 
+                  'ST_ST', 'GP_ST', 'GA_ST', 'GI_ST',])
     colors=misc.make_N_colors('jet', len( d.keys()))
     for i_key, key in enumerate(sorted(d.keys())):
         v = d[key]
-        for j, model in enumerate(['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA', 
-                                   'ST_ST', 'GP_ST', 'GA_ST', 'GI_ST',]):
+        for j, model in enumerate(models):
             ax = axs[i+j]
             ch = v[model]['phases_diff_with_cohere']
-            ch.hist(ax, **{'color':colors[i_key]})
             
+            ch.hist(ax, **{'color':colors[i_key], 
+                           'rest':k.pop('rest',True), 
+                           'p_95':k.pop('p_95',True)})
+            ax.set_xlim([-numpy.pi, numpy.pi])
             ax.set_title(td[model[0:2]]+' vs '+td[model[-2:]])
     i+=8
     return i
@@ -500,6 +509,28 @@ def show_summed(d, **k):
         ax.my_set_no_ticks(yticks=5)
     return fig
         
+def show_summed2(d, **k):
+#     import toolbox.plot_settings as ps  
+    fig, axs=ps.get_figure(n_rows=3, 
+                           n_cols=4, 
+                           w=1000.0, 
+                           h=500.0, 
+                           fontsize=12,
+                           frame_hight_y=0.6)   
+    
+
+
+    i=0
+    i = plot_spk_stats(d, axs, i, **k)
+
+#     i = plot_activity_hist(d, axs, i)
+    i = plot_coherence(d, axs, i, **k)
+    i = plot_phases_diff_with_cohere(d, axs, i, **k)
+#     pylab.show()    
+
+    for ax in axs:
+        ax.my_set_no_ticks(yticks=5)
+    return fig
 
 class Setup(object):
     
@@ -567,13 +598,21 @@ class Setup(object):
     def firing_rate(self):
         d={'average':False, 
            'threads':self.threads, 
-           'win':100.0}
+           'win':100.0,}
         return d
     
     def plot_fr(self):
         d={'win':100.,
-           't_start':0.0,
-           't_stop':20000.0}
+           't_start':10000.0,
+           't_stop':20000.0,
+           'labels':['Control', 'Lesion'],
+           
+            'fig_and_axes':{'n_rows':8, 
+                                        'n_cols':1, 
+                                        'w':800.0, 
+                                        'h':600.0, 
+                                        'fontsize':12,
+                                        'frame_hight_y':0.9}}
         return d
 
     def plot_coherence(self):
@@ -583,6 +622,16 @@ class Setup(object):
     def plot_summed(self):
         d={'xlim_cohere':[0, 10],
            'statistics_mode':'activation'}
+        return d
+
+    def plot_summed2(self):
+        d={'xlim_cohere':[0, 10],
+           'rest':False,
+           'p_95':False,
+           'leave_out':['control_fr', 'control_cv'],
+           'statistics_mode':'activation',
+           'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
+           }
         return d
     
 def simulate(builder=Builder,
@@ -687,25 +736,51 @@ def cmp_activity_hist_stat(models, d, **kwargs):
             obj=v.get_activity_histogram_stat(**kwargs)
             d[key1][model]['activity_histogram_stat'] = obj
             
+            
+            
 
+    
 def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 
     d_plot_fr=setup.plot_fr()
     d_plot_coherence=setup.plot_coherence()
     d_plot_summed=setup.plot_summed()
+    d_plot_summed2=setup.plot_summed2()
+
 
     sd_figs = Storage_dic.load(file_name_figs)
     if numpy.all(numpy.array(from_disks) == 2):
         figs = []
         figs.append(show_fr(d, models, **d_plot_fr))
-        figs.append(show_hr(d, models))
-        figs.append(show_psd(d, models=models))
-        figs.append(show_coherence(d, models=models_coher, **d_plot_coherence))
-        figs.append(show_phase_diff(d, models=models_coher))
+        axs=figs[-1].get_axes()
+        ps.shift('upp', axs, 0.05, n_rows=len(axs), n_cols=1)
+        for i, ax in enumerate(axs):      
+            
+            ax.my_set_no_ticks(xticks=5, yticks=4)
+            
+            ax.set_ylabel('Rate (Hz)')
+            if i==7:
+                pass
+            else:
+                ax.my_remove_axis(xaxis=True)
+                ax.set_xlabel('')
+#         figs.append(show_hr(d, models))
+#         figs.append(show_psd(d, models=models))
+#         figs.append(show_coherence(d, models=models_coher, **d_plot_coherence))
+#         figs.append(show_phase_diff(d, models=models_coher))
         
-        figs.append(show_summed(d, **d_plot_summed))
-
+#         figs.append(show_summed(d, **d_plot_summed))
+        
+        figs.append(show_summed2(d, **d_plot_summed2))
+        axs=figs[-1].get_axes()
+        axs[4].legend(axs[4].lines,['Control', 'Lesion'])
+#         axs[8].legend(axs[8].lines,['Control', 'Lesion'], loc='lower center')
+        
+        for ax in axs[8:]:
+            ax.my_set_no_ticks(xticks=6)
+        
         sd_figs.save_figs(figs, format='png')
+        sd_figs.save_figs(figs, format='svg')
 
 def main(*args, **kwargs):
     
@@ -724,8 +799,8 @@ import unittest
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=1
-        sim_time=40000.0
+        from_disk=2
+        sim_time=20000.0
         size=5000.0
         threads=12
         s=''
@@ -829,29 +904,36 @@ class TestOcsillation(unittest.TestCase):
 #         fig, axs=ps.get_figure(n_rows=3, 
 #                            n_cols=2, 
 #                            w=1000.0, h=800.0, fontsize=10)  
-#         
+#          
 #         plot_phases_diff_with_cohere(self.d, axs, 0)
 # #         plot_spk_stats(self.d, axs, 0)
 #         pylab.show()
 #         print self.d   
-        
+#         
 #          
-    def testShowSummed(self):
-        show_summed(self.d, **{'xlim_cohere':[0,7], 
-                               'statistics_mode':'slow_wave'})
-        pylab.show()
-             
-
-
-#     def test_create_figs(self):
-#         create_figs(self.file_name_figs, 
-#                     self.from_disks, 
-#                     self.d, 
-#                     self.models, 
-#                     self.models_coher,
-#                     self.setup)
+#     def testShowSummed(self):
+#         show_summed(self.d, **{'xlim_cohere':[0,7], 
+#                                'statistics_mode':'slow_wave'})
 #         pylab.show()
-    
+#              
+#     def testShowSummed2(self):
+#         d={'xlim_cohere':[0, 10],
+#            'leave_out':['control_fr', 'control_cv'],
+#            'statistics_mode':'slow_wave',
+#            'models_pdwc': ['GP_GP', 'GI_GI', 
+#                            'GI_GA', 'GA_GA']}
+#         show_summed2(self.d, **d)
+#         pylab.show()
+
+    def test_create_figs(self):
+        create_figs(self.file_name_figs, 
+                    self.from_disks, 
+                    self.d, 
+                    self.models, 
+                    self.models_coher,
+                    self.setup)
+        pylab.show()
+     
 #     def test_show_fr(self):
 #         show_fr(self.d, self.models, **{'win':20.,
 #                                         't_start':4000.0,
@@ -861,6 +943,13 @@ class TestOcsillation(unittest.TestCase):
 #     def test_show_coherence(self):
 #         show_coherence(self.d, self.models_coher, **{'xlim':[0,10]})
 #         pylab.show()
+
+
+#     def test_show_phase_diff(self):
+#         show_phase_diff(self.d, self.models_coher)
+#         pylab.show()
+
+# show_phase_diff(d, models=models_coher)
 
 if __name__ == '__main__':
     test_classes_to_run=[

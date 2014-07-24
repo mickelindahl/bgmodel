@@ -336,8 +336,8 @@ def phase_diff(signal1, signal2, kwargs):
         x=a-b
     else:
         x=b-a
-#     x[x>numpy.pi]=x[x>numpy.pi]-2*numpy.pi
-#     x[x<-numpy.pi]=x[x<-numpy.pi]+2*numpy.pi
+    x[x>numpy.pi]=x[x>numpy.pi]-2*numpy.pi
+    x[x<-numpy.pi]=x[x<-numpy.pi]+2*numpy.pi
 
      
     if inspect:

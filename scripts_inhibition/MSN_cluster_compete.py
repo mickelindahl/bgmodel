@@ -7,7 +7,7 @@ Created on May 14, 2014
 import numpy
 import os
 from os.path import expanduser
-from simulate import (main_loop, show_fr, show_mr, show_mr_diff,
+from simulate import (main_loop,main_loop_conn, show_fr, show_mr, show_mr_diff,
                       get_file_name, get_file_name_figs)
 
 from toolbox import misc, pylab
@@ -16,8 +16,10 @@ from toolbox.my_signals import Data_generic
 from toolbox.network import manager
 from toolbox.network.manager import (add_perturbations,
                                     get_storage)
-
+import toolbox.plot_settings as ps
 from toolbox.network.manager import Builder_MSN_cluster_compete as Builder
+
+
 
 import pprint
 pp=pprint.pprint
@@ -112,16 +114,45 @@ class Setup(object):
            'labels':labels}
         return d
 
+    def plot_fr2(self):
+        labels=['Unspec {}%'.format(int(100/v)) 
+                for v in [10]]
+        labels+=['Spec {}%'.format(int(100/v)) 
+                 for v in [10]]
+        
+        d={'win':10.,
+           't_stop':1500.0,
+           'by_sets':False,
+           'labels':labels,
+           'nets':['Net_1_set_0', 'Net_6_set_0'],
+           'fig_and_axes':{'n_rows':2, 
+                                        'n_cols':1, 
+                                        'w':350.0, 
+                                        'h':500.0, 
+                                        'fontsize':16}}
+        return d
+
+    def plot_mr_diff(self):
+     
+        d={
+           'fig_and_axes':{'n_rows':2, 
+                                        'n_cols':1, 
+                                        'w':350.0, 
+                                        'h':500.0, 
+                                        'fontsize':16}}
+        return d
+    
     def plot_mr(self):
-        labels=['Unspec active {}%'.format(int(100/v)) 
+        labels=['Unspec {}%'.format(int(100/v)) 
                 for v in [5, 10, 20, 40, 80]]
-        labels+=['Spec cluster size {}%'.format(int(100/v)) 
+        labels+=['Spec {}%'.format(int(100/v)) 
                  for v in [5, 10, 20, 40, 80]]
         
         d={'win':10.,
            'by_sets':True,
            'labels':labels}
         return d
+
 
 def simulate(builder, from_disk, perturbation_list, script_name, setup):
     home = expanduser("~")
@@ -132,7 +163,10 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
     d_firing_rate = setup.firing_rate()
     
     attr = ['firing_rate', 'mean_rate_slices']
+    attr_conn=['conn_matrix']
     models=['M1', 'M2']
+    models_conn=['M1_M1_gaba', 'M1_M2_gaba',
+                 'M2_M1_gaba', 'M2_M2_gaba']
     sets = ['set_0']
     
     info, nets, intervals, rep, x = get_networks(builder, 
@@ -146,10 +180,13 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
 
     add_perturbations(perturbation_list, nets)    
     sd = get_storage(file_name, info)
-     
-    from_disks, d = main_loop(from_disk, attr, models, 
+
+#     _, d1 = main_loop_conn(from_disk, attr_conn, models_conn, 
+#                               sets, nets, kwargs_dic, sd)     
+    d1={}
+    from_disks, d2 = main_loop(from_disk, attr, models, 
                               sets, nets, kwargs_dic, sd)
-       
+    d=misc.dict_update(d1,d2)
     d=cmp_mean_rate_diff(d, models, [['Net_0', 'Net_5'],
                                      ['Net_1', 'Net_6'],
                                      ['Net_2', 'Net_7'],
@@ -165,7 +202,9 @@ def create_figs(setup, file_name_figs, d, models):
     figs = []
     
     d_plot_fr = setup.plot_fr()
+    d_plot_fr2=setup.plot_fr2()
     d_plot_mr=setup.plot_mr()
+    d_plot_mr_diff=setup.plot_mr_diff()
 
 #     for name in sorted(d.keys()):
 #         if name=='Difference':
@@ -174,12 +213,25 @@ def create_figs(setup, file_name_figs, d, models):
 #             v={'firing_rate':d[name]['set_0'][model]['firing_rate']}
 #             d['Net_0'][model]=v
     
-    figs.append(show_fr(d, models, **d_plot_fr))
-    figs.append(show_mr_diff(d, models))
-    figs.append(show_mr(d, models, **d_plot_mr))
+#     figs.append(show_fr(d, models, **d_plot_fr))
+    figs.append(show_fr(d, models, **d_plot_fr2))
+    axs=figs[-1].get_axes()
+    for i, ax in enumerate(axs):
+        if i==0:
+            ax.set_ylim([0,70])
+        else: 
+            ax.set_ylim([0,50])
+        ax.my_set_no_ticks(xticks=5)
+    
+    figs.append(show_mr_diff(d, models, **d_plot_mr_diff))
+    axs=figs[-1].get_axes()
+    for i, ax in enumerate(axs):
+        handles, labels=ax.get_legend_handles_labels() 
+        ax.legend(handles, labels,loc='upper left')
+
     
     sd_figs.save_figs(figs, format='png')
-
+    sd_figs.save_figs(figs, format='svg')
 def main(builder=Builder,
          from_disk=2,
          perturbation_list=None,
@@ -204,13 +256,13 @@ class TestMethods(unittest.TestCase):
         from toolbox.network.default_params import Perturbation_list as pl
         from_disk=2
         
-        import oscillation_perturbations as op
+        import oscillation_perturbations4 as op
         
         rep=2
         
         sim_time=rep*1000.0
       
-        threads=4
+        threads=20
         
         l=op.get()
         
@@ -218,7 +270,7 @@ class TestMethods(unittest.TestCase):
                       'sim_stop':sim_time,
                       'threads':threads}},
                   '=')
-        p+=l[1]
+        p+=l[7]
         self.setup=Setup(**{'threads':threads,
                         'repetition':rep})
         v=simulate(builder=Builder,

@@ -10,7 +10,7 @@ from toolbox.network.manager import Builder_inhibition_striatum as Builder
 from toolbox.parallel_excecution import loop
 
 import inhibition_striatum
-import oscillation_perturbations3 as op
+import oscillation_perturbations4 as op
 import pprint
 pp=pprint.pprint
 
@@ -18,10 +18,10 @@ pp=pprint.pprint
 def perturbations(rep,res):
     sim_time=rep*res*1000.0
     size=3000.0
-    threads=4
+    threads=16
 
     
-    l=[op.get()[3]]
+    l=[op.get()[7]]
 
     for i in range(len(l)):
         l[i]+=pl({'simu':{'sim_time':sim_time,
@@ -34,7 +34,7 @@ def perturbations(rep,res):
 
 
 
-res, rep, low, upp=14, 1, 1, 2
+res, rep, low, upp=14, 5, 1, 2
 p_list, threads=perturbations(rep, res)
 for i, p in enumerate(p_list):
     print i, p
@@ -67,7 +67,11 @@ for j in range(2,3):
         args_list.append([fun,script_name]
                          +[Builder, from_disk, p, 
                            script_name, 
-                           Setup(threads, res, rep, low, upp)])
+                           Setup(**{'threads':threads,
+                            'resolution':res,
+                            'repetition':rep,
+                            'lower':low,
+                            'upper':upp})])
 
 # for i, a in enumerate(args_list):
 #     print i, a

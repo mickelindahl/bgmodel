@@ -20,7 +20,7 @@ pp=pprint.pprint
 def perturbations():
     sim_time=40000.0
     size=20000.0
-    threads=8
+    threads=4
 
     freqs=[0.5]
 
@@ -43,8 +43,9 @@ def perturbations():
         print numpy.round(val, 2), key
 
     ll=[]
-    for j, _ in enumerate(freqs):
-        for i, _l in enumerate(l):
+    for i, _l in enumerate(l):
+        for j, _ in enumerate(freqs):
+
             amp=[numpy.round(damp[_l.name][j],2), 1]
             d={'type':'oscillation2', 
                'params':{'p_amplitude_mod':amp[0],
@@ -78,9 +79,9 @@ path=(home + '/results/papers/inhibition/network/'
 for j in range(0,3):
     for i, p in enumerate(p_list):
         
-#         if i<5:
-#             continue
-#         
+        if i<10:
+            continue
+         
         from_disk=j
 
         fun=simulate_slow_wave.main
@@ -91,5 +92,5 @@ for j in range(0,3):
                            script_name, threads])
 
 
-loop(args_list, path, 4)
+loop(args_list, path, 10)
         

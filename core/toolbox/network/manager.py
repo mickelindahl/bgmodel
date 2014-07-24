@@ -523,25 +523,35 @@ def get_input_Go_NoGo(kwargs):
     
     res = kwargs.get('resolution', 5)
     rep = kwargs.get('repetition', 5)
+    dur = kwargs.get('duration', [1000., 500.])
+    
+    act=kwargs.get('act',['M1', 'M2', 'GI', 'SN'])
+    act_input=kwargs.get('act_input', ['C1', 'C2'])
+    no_act=kwargs.get('no_act',['FS', 'GA', 'ST'])
+    
+    
     input_lists = kwargs.get('input_lists', [['C1'], ['C1', 'C2']])
     v = numpy.linspace(1, 3, res)
+    
     x, y = numpy.meshgrid(v, v)
     x, y = x.ravel(), y.ravel()
     p0 = reduce(lambda x, y:x + y, [[1, p] for p in y])
     p1 = reduce(lambda x, y:x + y, [[1, p] for p in x])
-    durations = [900., 100.] * res * res
+    durations = dur * res * res
     l = []
     for inp_list in input_lists:
         d = {}
-        for node in ['M1', 'M2', 'GI', 'SN']:
+        for node in act:
             d = misc.dict_update(d, {'node':{node:{'n_sets':2}}})
-        
+        for node in no_act:
+            d = misc.dict_update(d, {'node':{node:{'n_sets':1}}}) 
+                   
         for conn, rule in zip(['M1_SN_gaba', 'M2_GI_gaba', 'GI_SN_gaba'], 
             ['set-set', 'set-set', 'all-all']):
             d = misc.dict_update(d, {'conn':{conn:{'rule':rule}}})
 
         for inp in inp_list :
-            if inp not in ['C1', 'C2']:
+            if inp not in act_input:
                 continue
             d = misc.dict_update(d, {'node':{inp:{'n_sets':n_sets}}})
             params = {'type':'burst3', 
@@ -562,24 +572,45 @@ def get_input_Go_NoGo(kwargs):
             d = misc.dict_update(d, {'netw':{'input':{inp:params}}})
 
         for inp in inp_list :
-            if inp in ['C1', 'C2']:
+            if inp in act_input:
                 continue
             
-            d = misc.dict_update(d, {'node':{inp:{'n_sets':n_sets}}})
+            d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
             params = {'type':'burst3', 
-                      'params':{'n_set_pre':n_sets, 
+                      'params':{'n_set_pre':1, 
                                 'repetitions':rep}}
             d_sets = {}
             d_sets.update({str(0):{'active':True, 
-                                   'amplitudes':p0+p1, 
+                                   'amplitudes':list((numpy.array(p0) 
+                                                      +numpy.array(p1))/2), 
                                    'durations':durations, 
                                    'proportion_connected':1}})
             
             params['params'].update({'params_sets':d_sets})
             d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
         
+        if 'CF' not in inp_list:
+            inp='CF'
+            d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
+            params = {'type':'burst3', 
+                      'params':{'n_set_pre':1, 
+                                'repetitions':1}}
+            d_sets = {}
+            
+            d_sets.update({str(0):{'active':True, 
+                                   'amplitudes':[1], 
+                                   'durations':[sum(durations)], 
+                                   'proportion_connected':1}})
+            
+            params['params'].update({'params_sets':d_sets})
+            d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
+   
+            
+        
+        
         l += [pl(d, '=', **{'name':'_'.join(inp_list)})]
-    
+        
+        
     sequence = 2
     intervals = get_intervals(rep, durations, d, sequence)
     dic={}
@@ -622,10 +653,38 @@ def add_lesions_Go_NoGo(l):
                         'M2_M1_gaba':{'lesion':True}, 
                         'M2_M2_gaba':{'lesion':True}}}, 
                 {'conn':{'FS_M1_gaba':{'lesion':True}, 
-                        'FS_M2_gaba':{'lesion':True}}}, 
+                         'FS_M2_gaba':{'lesion':True}}}, 
                 {'conn':{'GA_M1_gaba':{'lesion':True}, 
-                        'GA_M2_gaba':{'lesion':True}}}]
-    names = ['no-MS-MS', 'no-FS', 'no_GP']
+                         'GA_M2_gaba':{'lesion':True}}}]
+    
+    
+    
+    names = ['no-MS-MS', 
+             'no-FS', 
+             'no_GP']
+    for lesion, name in zip(lesions, names):
+        l += [deepcopy(l[1])]
+        l[-1] += pl(lesion, 
+            '=', **
+            {'name':name})
+    
+    return l
+
+
+
+
+def add_extra_lesions_Go_NoGo(l):
+
+
+    lesions = [{'conn':{'GA_FS_gaba':{'lesion':True}}},
+               {'conn':{'GA_M1_gaba':{'lesion':True}}},
+               {'conn':{'GA_M2_gaba':{'lesion':True}}}]
+    
+    
+    
+    names = ['no-MS-MS', 
+             'no-FS', 
+             'no_GP']
     for lesion, name in zip(lesions, names):
         l += [deepcopy(l[1])]
         l[-1] += pl(lesion, 
@@ -646,8 +705,15 @@ class Builder_Go_NoGo_with_lesion_base(Builder_network):
     
     def _variable(self):
         
-        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        l, self.dic = get_input_Go_NoGo(self.kwargs)    
+        
+
+          
         l = add_lesions_Go_NoGo(l)             
+
+        del l[0]
+        del l[1]
+        
         return l    
 
 
@@ -673,11 +739,16 @@ class Builder_Go_NoGo_with_lesion_FS_base(Builder_network):
     
     def _variable(self):
         
+        self.kwargs['input_lists']= [['C1','CF'], 
+                                     ['C1', 'C2', 'CF']]
+
+        
         l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        
+
         l = add_lesions_Go_NoGo(l)    
         
-        for ll in l:
-            ll+=pl()
+
         
         return l    
 
@@ -688,8 +759,75 @@ class Builder_Go_NoGo_with_lesion_FS(Builder_Go_NoGo_with_lesion_FS_base,
                       Mixin_reversal_potential_striatum):
     pass
 
-  
+        
+class Builder_Go_NoGo_with_lesion_FS_act_base(Builder_network):    
 
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [['C1','CF'], 
+                                     ['C1', 'C2', 'CF']]
+        
+        self.kwargs['act']=['M1', 'M2','FS', 'GI', 'SN']
+        self.kwargs['act_input'] = ['C1', 'C2', 'CF']
+        self.kwargs['no_act'] =[ 'GA', 'ST']
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        l = add_lesions_Go_NoGo(l)    
+        
+        for i, _ in enumerate(l):
+            l[i]+= pl({'conn':{'FS_M1_gaba':{'rule':'set-not_set'},
+                             'FS_M2_gaba':{'rule':'set-not_set'}}},'=',**{'name':'FS_act'})
+        
+        return l    
+
+
+class Builder_Go_NoGo_with_lesion_FS_act(Builder_Go_NoGo_with_lesion_FS_act_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass  
+
+class Builder_Go_NoGo_with_lesion_GA_act_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [['C1'], 
+                                     ['C1', 'C2']]
+        
+        self.kwargs['act']=['M1', 'M2','GA', 'GI', 'SN']
+        self.kwargs['act_input'] = ['C1', 'C2']
+        self.kwargs['no_act'] =[ 'FS', 'ST']
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        l = add_lesions_Go_NoGo(l)    
+        
+        for i, _ in enumerate(l):
+            l[i]+= pl({'conn':{'GI_GA_gaba':{'rule':'set-set'},
+                               'GA_M1_gaba':{'rule':'set-not_set'},
+                               'GA_M2_gaba':{'rule':'set-not_set'}}},'=',**{'name':'GA_act'})
+        
+        return l    
+
+
+class Builder_Go_NoGo_with_lesion_GA_act(Builder_Go_NoGo_with_lesion_GA_act_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass  
 
 
 
@@ -804,14 +942,18 @@ def perturbation_consistency(pl, par):
         raise LookupError(msg)
         
 def compute_dependables(obj, dout, kwargs, key, _set=None):
-    if 'mean_rate_slices' in kwargs.keys():            
-        kwargs=kwargs['mean_rate_slices']
-        if _set!=None:
-            update_kwargs_with_set_dic(kwargs, _set)
-            
-        u=obj.get_mean_rate_slices(**kwargs)
-        key[-1]='mean_rate_slices' 
-        dout=misc.dict_recursive_add(dout, key, u)
+    for attr  in kwargs.keys():
+        
+        if (len(attr)>=len('mean_rate_slices') and 
+            attr[0:16]=='mean_rate_slices'):            
+#             pp(kwargs)
+            _kwargs=kwargs[attr]
+            if _set!=None:
+                update_kwargs_with_set_dic(_kwargs, _set)
+                
+            u=obj.get_mean_rate_slices(**_kwargs)
+            key[-1]=attr
+            dout=misc.dict_recursive_add(dout, key, u)
              
 
 
@@ -829,9 +971,15 @@ def compute(d, models, attr, **kwargs_dic):
         if keys[1] not in models:
             continue
         for a in attr:
+            
+            if a[-1].isdigit():
+                a_name=a[0:-2]
+            else:
+                a_name=a
+            
             module=misc.import_module('toolbox.network.manager')
             
-            call=getattr(module, a)
+            call=getattr(module, a_name)
             
             k=kwargs_dic.get(a, {}).copy()
             sets=k.pop('sets', None)
@@ -956,15 +1104,16 @@ def run(net):
     d=net.simulation_loop()
     return {net.get_name():d}
 
+
+
 def save(storage_dic, d):         
         storage_dic.save_dic(d, **{'use_hash':False})
                     
 def spike_statistic(data,**k):
     return data.get_spike_stats(**k)
-
-
-
-       
+  
+    
+      
 class TestModuleFunctions(unittest.TestCase):
     
     def setUp(self):
@@ -972,73 +1121,203 @@ class TestModuleFunctions(unittest.TestCase):
         self.file_name=HOME+'/tmp/manager_unittest'
         self.main_path=HOME+'/tmp/manager_unittest/'
        
-    def test_data_functions(self):
+#     def test_data_functions(self):
+#         
+#         for method in [
+#                      'firing_rate',
+#                      'mean_rates',
+#                      'spike_statistic',
+#                      ]:
+#             mod = __import__(__name__)
+#             call=getattr(mod, method)
+#             for _, val in misc.dict_iter(self.d):
+#                 if not isinstance(val, Data_unit_spk):
+#                     continue
+#                 _=call(val)  
+# 
+#     def test_get_metwork(self):
+#         
+#         info, nets, builder=get_networks(Builder_network, 
+#                                 kwargs_builder={'netw':{'size':10}}, 
+#                                 kwargs_engine={'verbose':False})
+#         self.assertTrue(type(info)==str)
+#         self.assertTrue(type(nets)==dict)
+#         self.assertTrue(isinstance(builder, Builder_abstract))
         
-        for method in [
-                     'firing_rate',
-                     'mean_rates',
-                     'spike_statistic',
-                     ]:
-            mod = __import__(__name__)
-            call=getattr(mod, method)
-            for _, val in misc.dict_iter(self.d):
-                if not isinstance(val, Data_unit_spk):
-                    continue
-                _=call(val)  
-
-    def test_get_metwork(self):
+    def test_get_input_Go_NoGo(self):
         
-        info, nets, builder=get_networks(Builder_network, 
-                                kwargs_builder={'netw':{'size':10}}, 
-                                kwargs_engine={'verbose':False})
-        self.assertTrue(type(info)==str)
-        self.assertTrue(type(nets)==dict)
-        self.assertTrue(isinstance(builder, Builder_abstract))
+        kwargs={'duration':[1000.0, 500.0],
+                'input_lists': [['C1', 'FS'], 
+                                ['C1', 'C2', 'FS']]}
+        l=get_input_Go_NoGo(kwargs)
         
-    def test_load(self):
-        self.test_save()
-        d1=self.s.load_dic(self.file_name)    
-        self.assertTrue(isinstance(d1,dict))
-    
+#     def test_load(self):
+#         self.test_save()
+#         d1=self.s.load_dic(self.file_name)    
+#         self.assertTrue(isinstance(d1,dict))
+#     
     def test_compute(self):
         class Network_mockup():
             @classmethod
             def simulation_loop(cls):
                 return dummy_data_dic()['net1']
-            
+             
             @classmethod
             def get_name(self):
                 return 'net1'
-            
-        
+             
+         
         attr=['firing_rate',
               'mean_rates',
+              'mean_rates_0',
               'spike_statistic']
-        
+         
         dmrs={'intervals':[[0,100], [200, 300], [300, 400],
                          [600,700], [800, 900], [900, 1000]],
               'repetition':2, 'threads':2}
-        kwargs_dic={'firing_rate':{'mean_rate_slices':dmrs}}
-        
+        kwargs_dic={'firing_rate':{'mean_rate_slices':dmrs,
+                                   'mean_rate_slices_0':dmrs}}
+         
         models=['dummy1','dummy2']
         d = run(Network_mockup)
         d = compute(d, models, attr,**kwargs_dic)
         attr.append('spike_signal')
         self.assertListEqual(d.keys(), ['net1'])
         self.assertListEqual(sorted(d['net1'].keys()), models)
-        self.assertListEqual(sorted(d['net1']['dummy1'].keys()), sorted(attr+['mean_rate_slices']))
-        self.assertListEqual(sorted(d['net1']['dummy2'].keys()), sorted(attr+['mean_rate_slices']))                
-        
-     
-    def test_save(self):
-        self.s=Storage_dic(self.file_name)
-        save(self.s, self.d)
-        self.assertTrue(os.path.isdir(self.file_name+'/'))    
-        self.assertTrue(os.path.isfile(self.file_name+'.pkl'))    
+        self.assertListEqual(sorted(d['net1']['dummy1'].keys()), 
+                             sorted(attr+['mean_rate_slices', 'mean_rate_slices_0']))
+        self.assertListEqual(sorted(d['net1']['dummy2'].keys()), 
+                             sorted(attr+['mean_rate_slices', 'mean_rate_slices_0']))                
+         
+#      
+#     def test_save(self):
+#         self.s=Storage_dic(self.file_name)
+#         save(self.s, self.d)
+#         self.assertTrue(os.path.isdir(self.file_name+'/'))    
+#         self.assertTrue(os.path.isfile(self.file_name+'.pkl'))    
 
              
     def tearDown(self):
         if os.path.isfile(self.file_name+'.pkl'):
             os.remove(self.file_name+'.pkl')        
+            
+            
+class TestBuilderMixin(object):
+    
+    def test_1_perturbations_functions(self):
+        v=1
+        for method in ['_get_general',
+                       '_get_striatal_reversal_potentials',
+                       '_get_dopamine_levels',
+                       '_get_variable',
+                       'get_perturbations'
+                       ]:
+            call=getattr(self.builder,method)
+            l=call()
+            
+            if method=='get_perturbations':
+                self.assertEqual(v, len(l))
+            else:
+                v*=len(l) 
+                
+            self.assertTrue(type(l)==list)
+            for e in l:
+                self.assertTrue(isinstance(e, pl))
+
+    def test_2_get_parameters(self):
         
+        
+        per=self.builder.get_perturbations()
+        par=self.builder.get_parameters(per[0])
+        self.assertTrue(isinstance(par, Par_base))
+        for pl in per:
+            for p in pl:
+#                 print p
+                self.assertTrue(misc.dict_haskey(par.dic, p.keys))
+        
+
+    def test_3_get_network(self):
+        per=self.builder.get_perturbations()
+        par=self.builder.get_parameters(per[0])
+        name='dummy'
+        net=self.builder.get_network(name, par)
+        self.assertTrue(isinstance(net, Network_base))
+        
+
+class TestDirectorMixin(object):
+    def test_4_director(self):
+        director=Director()
+        director.set_builder(self.builder)
+        _, nets=director.get_networks()
+        for net in nets.values():
+            self.assertTrue(isinstance(net, Network_base))
+        
+class TestBuilder_network_base(unittest.TestCase):
+    def setUp(self):
+        self.builder=Builder_network()
+
+
+class TestBuilder_network(TestBuilder_network_base, TestBuilderMixin, 
+                          TestDirectorMixin):
+    pass
+
+class TestBuilder_single_base(unittest.TestCase):
+    def setUp(self):
+        self.builder=Builder_network()
+
+
+class TestBuilder_single(TestBuilder_single_base, TestBuilderMixin, 
+                          TestDirectorMixin):
+    pass
+
+
+class TestBuilder_inhibition_striatum_base(unittest.TestCase):
+    def setUp(self):
+        self.builder=Builder_inhibition_striatum()
+
+
+class TestBuilder_inhibition_striatum(TestBuilder_inhibition_striatum_base, TestBuilderMixin, 
+                          TestDirectorMixin):
+    pass
+
+
+class TestBuilder_MSN_cluster_compete_base(unittest.TestCase):
+    def setUp(self):
+        self.builder=Builder_MSN_cluster_compete()
+
+
+class TestBuilder_MSN_cluster_compete(TestBuilder_MSN_cluster_compete_base, 
+                                      TestBuilderMixin, 
+                                      TestDirectorMixin):
+    pass
+
+class TestBuilder_Go_NoGo_with_lesion_FS_base(unittest.TestCase):
+    def setUp(self):
+        self.builder=Builder_Go_NoGo_with_lesion_FS()
+
+
+class TestBuilder_Go_NoGo_with_lesion_FS(TestBuilder_Go_NoGo_with_lesion_FS_base, 
+                                      TestBuilderMixin, 
+                                      TestDirectorMixin):
+    pass
+
+if __name__ == '__main__':
+    
+    test_classes_to_run=[
+                        TestModuleFunctions,
+#                         TestBuilder_network,
+#                          TestBuilder_single,
+#                         TestBuilder_inhibition_striatum,
+#                         TestBuilder_MSN_cluster_compete,
+                        TestBuilder_Go_NoGo_with_lesion_FS
+                        ]
+    suites_list = []
+    for test_class in test_classes_to_run:
+        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+        suites_list.append(suite)
+
+    big_suite = unittest.TestSuite(suites_list)
+    unittest.TextTestRunner(verbosity=2).run(big_suite)  
+
+
   

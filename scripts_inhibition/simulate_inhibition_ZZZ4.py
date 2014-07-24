@@ -4,39 +4,41 @@ Created on Aug 12, 2013
 @author: lindahlm
 '''
 
-from MSN_cluster_compete import Setup
+from inhibition_striatum import Setup
 from toolbox.network.default_params import Perturbation_list as pl
-from toolbox.network.manager import Builder_MSN_cluster_compete as Builder
+from toolbox.network.manager import Builder_striatum as Builder
 from toolbox.parallel_excecution import loop
 
-import MSN_cluster_compete
+import inhibition_striatum
 import oscillation_perturbations4 as op
 import pprint
 pp=pprint.pprint
 
-from copy import deepcopy
 
-def perturbations():
-
+def perturbations(rep,res):
+    sim_time=rep*res*1000.0
+    size=3000.0
     threads=8
 
-    l=[]
     
-#     l.append(op.get()[0])
-    l.append(op.get()[7])
+    l=op.get()
 
-    ll=[]
-    
-
-    l[-1]+=pl({'simu':{'threads':threads}},'=')
-             
+    for i in range(len(l)):
+        l[i]+=pl({'simu':{'sim_time':sim_time,
+                          'sim_stop':sim_time,
+                          'threads':threads},
+                  'netw':{'size':size}},
+                  '=')
+        
     return l, threads
 
 
 
-rep=5
-p_list, threads=perturbations()
+res, rep, low, upp=14, 1, 1, 3
+p_list, threads=perturbations(rep, res)
 for i, p in enumerate(p_list):
+    if i<4:
+        continue
     print i, p
 args_list=[]
  
@@ -54,25 +56,26 @@ n=len(p_list)
 for j in range(0,3):
     for i, p in enumerate(p_list):
         
-# #         if i<n-9:
-#         if i!=1:
-#             continue
+#         if i<n-12:
+        if i<4:
+            continue
 
         from_disk=j
 
-        fun=MSN_cluster_compete.main
+        fun=inhibition_striatum.main
         script_name=(__file__.split('/')[-1][0:-3]+'/script_'+str(i)+'_'+p.name)
 #         fun(*[Builder, from_disk, p, script_name, 
-#               Setup(**{'threads':threads,
-#                         'repetition':rep})])
+#               Setup(threads, res, rep, low, upp)])
         args_list.append([fun,script_name]
                          +[Builder, from_disk, p, 
                            script_name, 
                            Setup(**{'threads':threads,
-                                    'repetition':rep})])
-
+                                    'resolution':res,
+                                    'repetition':rep,
+                                    'lower':low,
+                                    'upper':upp})])
+                    
 # for i, a in enumerate(args_list):
 #     print i, a
 
-loop(args_list, path, 1)
-        
+loop(args_list, path, 6)

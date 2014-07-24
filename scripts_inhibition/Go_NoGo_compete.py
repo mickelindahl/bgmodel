@@ -29,17 +29,19 @@ def get_kwargs_builder(**k_in):
     
     res=k_in.get('resolution',5)
     rep=k_in.get('repetition',5)
-    sub=k_in.get('sub_sampling',50)
-    
-    return {'print_time':False,
+    sub=k_in.get('sub_sampling',6.25)
+    laptime=k_in.get('laptime',1500.0)
+    duration=k_in.get('duration',[1000.,500.])
+    return {'duration':duration,
+            'print_time':False,
             'save_conn':{'overwrite':True},
             'resolution':res, 
             'repetition':rep,
-            'sim_time':1000.*res*res*rep, 
-            'sim_stop':1000.*res*res*rep, 
-            'size':750.0, 
+            'sim_time':laptime*res*res*rep, 
+            'sim_stop':laptime*res*res*rep, 
+            'size':4000.0, 
             'start_rec':0.0,  
-            'stop_rec':1000.*(res*res*rep+1),
+            'stop_rec':numpy.inf,
             'sub_sampling':sub,
             'threads':THREADS,}   
     
@@ -115,9 +117,9 @@ def show_neuron_numbers(d, models, **k):
 
     ax.set_xticklabels(labels)
     return fig
-def show_bulk(d, models, **k):
+def show_bulk(d, models, attr, **k):
     
-    attr='mean_rate_slices'    
+#     attr='mean_rate_slices'    
     linestyle=['-','--']
     
     labels=k.pop('labels', sorted(d.keys()))  
@@ -139,7 +141,8 @@ def show_bulk(d, models, **k):
                 obj=v[_set][model][attr]
                 obj.plot(ax, **{'color':colors[j],
                                 'linestyle':linestyle[i],
-                                'label':labels[j]})
+                                'label':labels[j]
+                                })
                 if max_set<=i:
                     max_set+=1
         ax.set_ylabel(model+' (spikes/s)')
@@ -171,14 +174,14 @@ def show_bulk(d, models, **k):
                 
      
 
-def show_3d(d,**k):
+def show_3d(d,attr,**k):
     models=['SN']
     res=k.get('resolution')
     titles=k.get('titles')
     n=len(models)
     m=len(d.keys())
-    attr='mean_rate_slices'
-    fig, axs=ps.get_figure(n_rows=m, n_cols=1, w=500.0, h=800.0, fontsize=10, 
+#     attr='mean_rate_slices'
+    fig, axs=ps.get_figure(n_rows=m, n_cols=1, w=500.0, h=800.0, fontsize=12, 
                            projection='3d')        
      
     i=0
@@ -203,7 +206,9 @@ def show_3d(d,**k):
                                 linewidth=0, 
                                 shade=True,
                                 alpha=alpha,
-                                antialiased=False)
+                                antialiased=False,
+                                vmin=-40,
+                                vmax=40)
             axs[i].set_zlim([-40, 40])
 #             axs[i].set_zlabel('SNr firing rate (Hz)')
 #             axs[i].set_xlabel('CTX increase A1 (proportion)')
@@ -229,19 +234,130 @@ def show_3d(d,**k):
     return fig
 
 
+def show_heat_map(d,attr,**k):
+    models=['SN']
+    res=k.get('resolution')
+    titles=k.get('titles')
+    n=len(models)
+    m=len(d.keys())
+#     attr='mean_rate_slices'
+    fig, axs=ps.get_figure(n_rows=3, n_cols=2, w=700.0, h=700.0, fontsize=16,
+                           frame_hight_y=0.6, frame_hight_x=0.7)        
+     
+    i=0
+    
+    for model in models:
+        alpha=0.8
+        dcm={'Net_0':'jet',
+             'Net_1':'coolwarm',}
+        for key in sorted(d.keys()):
+            obj0=d[key]['set_0'][model][attr]
+            obj1=d[key]['set_1'][model][attr]
+            args=[obj0.x_set, obj1.x_set,
+                  # obj1.y-obj0.y, 
+                  numpy.mean(obj1.y_raw_data-obj0.y_raw_data, axis=0),
+                  numpy.std(obj1.y_raw_data-obj0.y_raw_data, axis=0)]
+            for j, arg in enumerate(args):
+                arg.shape
+                args[j]=numpy.reshape(arg, [res,res])
+            x,y,z, z_std=args
+             
+             
+             
+             
+            im=axs[i].pcolor(x, y, z, cmap='coolwarm',  vmin=-40, vmax=40)
+#           
+            box = axs[i].get_position()
+            
+            if key in ['Net_0', 'Net_2', 'Net_4']:
+                v=1.0
+            else:
+                v=0.9
+            axs[i].set_position([box.x0*v, box.y0, box.width*0.85, box.height])
+            
+            axs[i].set_xlabel('Action 1')
+            axs[i].set_ylabel('Action 2')
+            # create color bar
+            
+#             pylab.colorbar(im, cax = axColor, orientation="vertical")
+
+  
+#             axs[i].set_zlim([-40, 40])
+            if key=='Net_1':
+#                 from mpl_toolkits.axes_grid1 import make_axes_locatable
+#                 divider = make_axes_locatable(pylab.gca())
+#                 cax = divider.append_axes("right", "5%", pad="3%")
+                axColor = pylab.axes([box.x0*v + box.width * 0.9, box.y0, 0.05, box.height])
+                cbar=pylab.colorbar(im, cax = axColor, orientation="vertical")
+                cbar.ax.set_ylabel('Contrast (spike/s)', rotation=270)
+#                 pylab.colorbar(im)
+            
+#             axs[i].set_zlabel('SNr firing rate (Hz)')
+#             axs[i].set_xlabel('CTX increase A1 (proportion)')
+#             axs[i].set_ylabel('CTX increase A2 (proportion)')
+            
+            
+            axs[i].set_title(titles[i])
+#             axs[i+1].plot_surface(x, y, z_std, cmap='coolwarm', rstride=1, cstride=1, 
+#                                 linewidth=0, 
+#                                 shade=True,
+#                                 alpha=alpha,
+#                                 antialiased=False)
+             
+             
+    #                 alpha-=0.3
+            i+=1
+    #                 pylab.show()
+    #                 print v
+#     pylab.tight_layout()       
+#     for ax in axs:
+#         ax.view_init(elev=15)
+    
+    return fig
+
+def plot_optimal(size):
+    fig, axs=ps.get_figure(n_rows=1, n_cols=1, w=400.0, h=250.0, fontsize=16)        
+ 
+ 
+    x,y=numpy.meshgrid(numpy.linspace(1,3, size+1),numpy.linspace(1,3, size+1))
+    z=numpy.ones([size,size])*40
+    for i in range(z.shape[0]):
+        for j in range(z.shape[1]):
+            if j==i:
+                z[i,j]=0
+            if j<i:
+                z[i,j]=-z[i,j]
+    im=axs[0].pcolor(x, y, z, cmap='coolwarm',  vmin=-40, vmax=40)
+#           
+    box = axs[0].get_position()
+    axs[0].set_position([box.x0*1.05, box.y0, box.width*0.85, box.height])
+ 
+    axs[0].set_xlabel('Action 1')
+    axs[0].set_ylabel('Action 2')
+    axs[0].my_set_no_ticks(xticks=5,yticks=5, )
+            
+    return fig
+    
+
 class Setup(object):
 
     def __init__(self, **k):
         self.threads=k.get('threads',1)
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
-                
+        self.laptime=k.get('laptime',1500.0)
+        self.duration=k.get('duration',[1000.,500.])
+        self.l_mean_rate_slices=k.get('l_mean_rate_slices', ['mean_rate_slices', 
+                                                             'mean_rate_slices_0',
+                                                             'mean_rate_slices_1'])
     def builder(self):
         d= {'repetition':self.rep,
             'resolution':self.res,
             'input_lists': [['C1'],
                             ['C1', 'C2']],
-            'sub_sampling':50}
+            'sub_sampling':6.25,
+            'laptime':self.laptime,                
+            'duration':self.duration}
         return d
 
     def firing_rate(self):
@@ -259,9 +375,19 @@ class Setup(object):
         d={'win':10.,
            'by_sets':True,
            't_start':0.0,
-           't_stop':30000.0}
+           't_stop':10000.0}
         return d
+    def plot_fr2(self):
+        d={'win':10.,
+           'by_sets':True,
+           't_start':0.0,
+           't_stop':30000.0,
+              'fig_and_axes':{'n_rows':3, 'n_cols':1, 'w':500.0, 'h':500.0, 'fontsize':16}
+    }
+        return d    
     
+        
+ 
     def plot_3d(self):
         d={'resolution':self.res,
            'titles':['Only D1', 
@@ -273,12 +399,15 @@ class Setup(object):
 
         
     def plot_bulkt(self):
-        d={'labels':['Only D1', 
+        d={'labels':[
+                    'Only D1', 
                      'D1 and D2',
-                     'MSN lesioned (D1 and D2)',
+                    'MSN lesioned (D1 and D2)',
                      'FSN lesioned (D1 and D2)',
                      'GPe TA lesioned (D1 and D2)']}
         return d
+    def get_l_mean_rate_slices(self):
+        return self.l_mean_rate_slices
 
 def simulate(builder, from_disk, perturbation_list, script_name, setup):
     home = expanduser("~")
@@ -305,6 +434,15 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
                   'sets':[0, 1]})
     
     d_firing_rate['mean_rate_slices']=d_mrs
+    
+    d=d_mrs.copy()
+    d['intervals']=[[v[0], v[0]+100] for v in intervals[1]]
+    d_firing_rate['mean_rate_slices_0']=d
+ 
+    d=d_mrs.copy()
+    d['intervals']=[[v[1]-100, v[1]] for v in intervals[1]]
+ 
+    d_firing_rate['mean_rate_slices_1']=d
     
     kwargs_dic = {'firing_rate':d_firing_rate, 
 #                   'mean_rate_slices2': d_mrs
@@ -344,23 +482,48 @@ def create_figs(setup, file_name_figs, d, models):
     
     sd_figs = Storage_dic.load(file_name_figs)
     figs = []
+    d_plot_3d=setup.plot_3d()
+
     
     d_plot_fr = setup.plot_fr()
-    d_plot_3d=setup.plot_3d()
+    d_plot_fr2 = setup.plot_fr2()
     d_plot_bulk=setup.plot_bulkt()
-    figs.append(show_neuron_numbers(d, models))
-   
-    figs.append(show_bulk(d, models, **d_plot_bulk))
-    figs.append(show_3d(d, **d_plot_3d))
-#     for i in range(5):
+    l_mean_rate_slices=setup.get_l_mean_rate_slices()
+    
+    
+    figs.append(plot_optimal(setup.res))
+#     for name in l_mean_rate_slices:
+#         figs.append(show_3d(d,name,  **d_plot_3d))
+# 
+    for name in l_mean_rate_slices:
+        figs.append(show_heat_map(d, name,  **d_plot_3d))
+
+# 
+#     for name in l_mean_rate_slices:   
+#         figs.append(show_bulk(d, models, name, **d_plot_bulk))
+#      
+#     figs.append(show_neuron_numbers(d, models))
+#      
+#     for i in range(len(d.keys())):
 #         figs.append(show_fr(d['Net_'+str(i)], models, **d_plot_fr))
-#     
-#     for i in range(5):
-#         figs.append(show_fr(d['Net_'+str(i)], ['M1', 'M2', 'SN'], **d_plot_fr))
-#         
+     
+    for i in range(len(d.keys())):
+        figs.append(show_fr(d['Net_'+str(i)], ['M1', 'M2', 'SN'], **d_plot_fr2))
+        axs=figs[-1].get_axes()
+        for i, ax in enumerate(axs):
+            ax.my_set_no_ticks(xticks=5)
+            if i==1:
+                pass
+            else:
+                ax.set_ylabel('')
+            if i==2:
+                pass
+            else:
+                ax.set_xlabel('')
+            
 
     sd_figs.save_figs(figs, format='png')
-
+    sd_figs.save_figs(figs, format='svg')
 def main(builder=Builder,
          from_disk=2,
          perturbation_list=None,
@@ -383,15 +546,15 @@ import unittest
 class TestMethods(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=0
+        from_disk=2
         
-        import oscillation_perturbations as op
+        import oscillation_perturbations4 as op
         
         rep, res=1, 5
         
-        sim_time=rep*res*res*1000.0
+        sim_time=rep*res*res*1500.0
       
-        threads=12
+        threads=2
         
         l=op.get()
         
@@ -399,7 +562,10 @@ class TestMethods(unittest.TestCase):
                       'sim_stop':sim_time,
                       'threads':threads}},
                   '=')
-        p+=l[1]
+#         p+=l[4+3] #data2
+#         p+=l[4] #data        
+        p+=l[4+5] #data3
+        
         self.setup=Setup(**{'threads':threads,
                         'resolution':res,
                         'repetition':rep})
@@ -408,7 +574,7 @@ class TestMethods(unittest.TestCase):
                             from_disk=from_disk,
                             perturbation_list=p,
                             script_name=(__file__.split('/')[-1][0:-3]
-                                         +'/data'),
+                                         +'/data3'),
                             setup=self.setup)
         
         file_name, file_name_figs, from_disks, d, models= v
