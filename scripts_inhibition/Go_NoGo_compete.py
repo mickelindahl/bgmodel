@@ -241,10 +241,11 @@ def show_heat_map(d,attr,**k):
     n=len(models)
     m=len(d.keys())
 #     attr='mean_rate_slices'
-    fig, axs=ps.get_figure(n_rows=3, n_cols=2, w=700.0, h=700.0, fontsize=16,
-                           frame_hight_y=0.6, frame_hight_x=0.7)        
+    fig, axs=ps.get_figure(n_rows=3, n_cols=2, w=600.0*0.65*2, h=700.0*0.65*2, fontsize=24,
+                           frame_hight_y=0.5, frame_hight_x=0.6, title_fontsize=20)        
      
     i=0
+    performance={}
     
     for model in models:
         alpha=0.8
@@ -261,7 +262,8 @@ def show_heat_map(d,attr,**k):
                 arg.shape
                 args[j]=numpy.reshape(arg, [res,res])
             x,y,z, z_std=args
-             
+            x0,y0,z0=get_optimal(z.shape[0])
+            performance[key]=numpy.round(numpy.sum(numpy.abs(z)) ,2)
              
              
              
@@ -290,6 +292,10 @@ def show_heat_map(d,attr,**k):
                 axColor = pylab.axes([box.x0*v + box.width * 0.9, box.y0, 0.05, box.height])
                 cbar=pylab.colorbar(im, cax = axColor, orientation="vertical")
                 cbar.ax.set_ylabel('Contrast (spike/s)', rotation=270)
+                from matplotlib import ticker
+                tick_locator = ticker.MaxNLocator(nbins=5)
+                cbar.locator = tick_locator
+                cbar.update_ticks()
 #                 pylab.colorbar(im)
             
 #             axs[i].set_zlabel('SNr firing rate (Hz)')
@@ -313,20 +319,27 @@ def show_heat_map(d,attr,**k):
 #     for ax in axs:
 #         ax.view_init(elev=15)
     
-    return fig
-
-def plot_optimal(size):
-    fig, axs=ps.get_figure(n_rows=1, n_cols=1, w=400.0, h=250.0, fontsize=16)        
- 
- 
+    ax=axs[5]
+    import pprint
+    ax.text( 0.1, 0.1, pprint.pformat(performance), 
+                   transform=ax.transAxes, 
+            fontsize=12)
+    return fig, performance
+def get_optimal(size):
     x,y=numpy.meshgrid(numpy.linspace(1,3, size+1),numpy.linspace(1,3, size+1))
     z=numpy.ones([size,size])*40
     for i in range(z.shape[0]):
         for j in range(z.shape[1]):
             if j==i:
                 z[i,j]=0
-            if j<i:
+            if j>i:
                 z[i,j]=-z[i,j]
+    return x,y,z
+def plot_optimal(size):
+    fig, axs=ps.get_figure(n_rows=1, n_cols=1, w=400.0, h=250.0, fontsize=16)        
+ 
+    x,y,z=get_optimal(size)
+       
     im=axs[0].pcolor(x, y, z, cmap='coolwarm',  vmin=-40, vmax=40)
 #           
     box = axs[0].get_position()
@@ -382,7 +395,16 @@ class Setup(object):
            'by_sets':True,
            't_start':0.0,
            't_stop':30000.0,
-              'fig_and_axes':{'n_rows':3, 'n_cols':1, 'w':500.0, 'h':500.0, 'fontsize':16}
+           'labels':['Action 1', 'action 2'],
+'fig_and_axes':{'n_rows':3, 
+                                        'n_cols':1, 
+                                        'w':800.0*0.55*2, 
+                                        'h':600.0*0.55*2, 
+                                        'fontsize':11*2,
+                                        'frame_hight_y':0.8,
+                                        'frame_hight_x':0.78,
+                                        'linewidth':3.
+                                        }
     }
         return d    
     
@@ -391,10 +413,10 @@ class Setup(object):
     def plot_3d(self):
         d={'resolution':self.res,
            'titles':['Only D1', 
-                     'D1 and D2',
-                     'MSN lesioned (D1 and D2)',
-                     'FSN lesioned (D1 and D2)',
-                     'GPe TA lesioned (D1 and D2)']}
+                     'D1,D2',
+                     'MSN lesioned (D1, D2)',
+                     'FSN lesioned (D1, D2)',
+                     'GPe TA lesioned (D1,D2)']}
         return d
 
         
@@ -475,10 +497,10 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
     from_disks, d = main_loop(from_disk, attr, models, 
                               sets, nets, kwargs_dic, sd)
     
-    return file_name, file_name_figs, from_disks, d, models
+    return file_name, file_name_figs, from_disks, d, models, sd
 
 
-def create_figs(setup, file_name_figs, d, models):
+def create_figs(setup, file_name_figs, d, models,sd):
     
     sd_figs = Storage_dic.load(file_name_figs)
     figs = []
@@ -487,6 +509,7 @@ def create_figs(setup, file_name_figs, d, models):
     
     d_plot_fr = setup.plot_fr()
     d_plot_fr2 = setup.plot_fr2()
+    
     d_plot_bulk=setup.plot_bulkt()
     l_mean_rate_slices=setup.get_l_mean_rate_slices()
     
@@ -496,7 +519,9 @@ def create_figs(setup, file_name_figs, d, models):
 #         figs.append(show_3d(d,name,  **d_plot_3d))
 # 
     for name in l_mean_rate_slices:
-        figs.append(show_heat_map(d, name,  **d_plot_3d))
+        fig, perf=show_heat_map(d, name,  **d_plot_3d)
+        figs.append(fig)
+ 
 
 # 
 #     for name in l_mean_rate_slices:   
@@ -508,14 +533,31 @@ def create_figs(setup, file_name_figs, d, models):
 #         figs.append(show_fr(d['Net_'+str(i)], models, **d_plot_fr))
      
     for i in range(len(d.keys())):
+        
+        if i!=1:
+            continue
+        
         figs.append(show_fr(d['Net_'+str(i)], ['M1', 'M2', 'SN'], **d_plot_fr2))
+        axs=figs[-1].get_axes()
+        ps.shift('upp', axs, 0.1, n_rows=len(axs), n_cols=1)
+        ps.shift('left', axs, 0.25, n_rows=len(axs), n_cols=1)
+        for i, ax in enumerate(axs):      
+            
+            ax.my_set_no_ticks(xticks=5, yticks=4)
+            ax.legend(bbox_to_anchor=[1.45,1.])
         axs=figs[-1].get_axes()
         for i, ax in enumerate(axs):
             ax.my_set_no_ticks(xticks=5)
+#             ax.set_ylabel('Ra')
             if i==1:
                 pass
             else:
                 ax.set_ylabel('')
+            if i >1:
+                pass
+            else:
+#                 ax.set_ylabel('')
+                ax.my_remove_axis(xaxis=True)
             if i==2:
                 pass
             else:
@@ -523,7 +565,7 @@ def create_figs(setup, file_name_figs, d, models):
             
 
     sd_figs.save_figs(figs, format='png')
-    sd_figs.save_figs(figs, format='svg')
+#     sd_figs.save_figs(figs, format='svg')
 def main(builder=Builder,
          from_disk=2,
          perturbation_list=None,
@@ -534,10 +576,10 @@ def main(builder=Builder,
     
     
     v=simulate(builder, from_disk, perturbation_list, script_name, setup)
-    file_name, file_name_figs, from_disks, d, models = v
+    file_name, file_name_figs, from_disks, d, models, sd = v
     
     if numpy.all(numpy.array(from_disks) > 0):
-        create_figs(setup, file_name_figs, d, models)
+        create_figs(setup, file_name_figs, d, models, sd)
     
     
 #     pylab.show()
@@ -577,13 +619,14 @@ class TestMethods(unittest.TestCase):
                                          +'/data3'),
                             setup=self.setup)
         
-        file_name, file_name_figs, from_disks, d, models= v
+        file_name, file_name_figs, from_disks, d, models, sd= v
         
         self.res=res
         self.file_name_figs=file_name_figs
         self.from_disks=from_disks
         self.d=d
         self.models=models
+        self.sd=sd
         
 
     def test_create_figs(self):
@@ -591,7 +634,8 @@ class TestMethods(unittest.TestCase):
                     self.setup,
                     self.file_name_figs, 
                     self.d, 
-                    self.models)
+                    self.models,
+                    self.sd)
         pylab.show()
     
 #     def test_show_fr(self):

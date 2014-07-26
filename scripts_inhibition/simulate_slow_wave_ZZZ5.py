@@ -19,7 +19,7 @@ pp=pprint.pprint
 
 
 def perturbations():
-    sim_time=20000.0
+    sim_time=40000.0
     size=20000.0
     threads=8
 
@@ -86,11 +86,11 @@ home = expanduser("~")
 path=(home + '/results/papers/inhibition/network/'
       +__file__.split('/')[-1][0:-3]+'/')
 
-for j in range(0,3):
+for j in range(1,3):
     for i, p in enumerate(p_list):
         
-        if i<3:
-            continue
+#         if i<3:
+#             continue
           
         from_disk=j
 
@@ -102,5 +102,5 @@ for j in range(0,3):
                            script_name, threads])
 
 
-loop(args_list, path, 1)
+loop(args_list, path, 3)
         

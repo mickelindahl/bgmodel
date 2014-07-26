@@ -51,7 +51,7 @@ n=len(p_list)
 
 
 
-for j in range(0,3):
+for j in range(2,3):
     for i, p in enumerate(p_list):
         
 # #         if i<n-9:

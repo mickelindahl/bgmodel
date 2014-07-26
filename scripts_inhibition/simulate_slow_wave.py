@@ -91,10 +91,12 @@ class Setup(object):
            
             'fig_and_axes':{'n_rows':8, 
                                         'n_cols':1, 
-                                        'w':800.0, 
-                                        'h':600.0, 
-                                        'fontsize':12,
-                                        'frame_hight_y':0.9}}
+                                        'w':800.0*0.55*2, 
+                                        'h':600.0*0.55*2, 
+                                        'fontsize':11*2,
+                                        'frame_hight_y':0.8,
+                                        'frame_hight_x':0.78,
+                                        'linewidth':3.}}
         return d
 
     def plot_coherence(self):
@@ -111,7 +113,7 @@ class Setup(object):
            'rest':False,
            'p_95':True,
            'leave_out':['control_fr', 'control_cv'],
-           'statistics_mode':'activation',
+           'statistics_mode':'slow_wave',
            'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
            }
         return d

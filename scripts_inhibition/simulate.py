@@ -210,13 +210,7 @@ def show_mr(d, models, **k):
 #                 ax.lines[i]._y=copy.deepcopy(1-line._y)
 #                 ax.lines[i]._y=copy.deepcopy(1-line._y)            
 #                 print ax.lines[i]._y
-    if k.get('y_lim', False):
-        for ax in axs:
-            ax.set_ylim(k.get('y_lim'))
 
-    if k.get('x_lim', False):
-        for ax in axs:
-            ax.set_xlim(k.get('x_lim'))
 
 #     import pylab
 #     pylab.show()
@@ -230,6 +224,14 @@ def show_mr(d, models, **k):
             
         handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles, labels)       
+
+    if k.get('y_lim', False):
+        for ax in axs:
+            ax.set_ylim(k.get('y_lim'))
+
+    if k.get('x_lim', False):
+        for ax in axs:
+            ax.set_xlim(k.get('x_lim'))
     return fig
 
 def show_mr_diff(d, models, **k):

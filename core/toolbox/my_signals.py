@@ -169,6 +169,7 @@ class Data_bar_base(object):
         
         ind=numpy.arange(N)
         width=0.8
+        colors=k.pop('colors',misc.make_N_colors('jet', N))
         
         if hasattr(self, 'y_std'):
             h=ax.bar(0+ind, self.y, width, yerr=self.y_std, **k )
@@ -177,7 +178,6 @@ class Data_bar_base(object):
             
         self.autolabel(ax, h)
 
-        colors=misc.make_N_colors('jet', len(h))
         for i, b in enumerate(h):
             b.set_color(colors[i])
 
@@ -195,7 +195,10 @@ class Data_bar_base(object):
         
         ind=numpy.arange(m)
         width=0.8/n
-        
+
+        alphas=numpy.linspace(1,1./n,n)
+        colors=k.pop('colors',misc.make_N_colors('jet',m ))
+        hatchs=k.pop('hatchs',['']*m)
         H=[]
         for i in range(n):
             if hasattr(self, 'y_std'):
@@ -210,14 +213,17 @@ class Data_bar_base(object):
             
         
 
-        alphas=numpy.linspace(1,1./n,n)
-        colors=misc.make_N_colors('jet', m)
+
+
         
         for j, h in enumerate(H):
             self.autolabel(ax, h)
             for i, b in enumerate(h):
                 b.set_color(colors[i])
+                b.set_hatch(hatchs[i])
                 b.set_alpha(alphas[j])
+                if k.get('edgecolor', False):
+                    b.set_edgecolor(k.get('edgecolor'))
 
         ax.set_ylabel('y')
         ax.set_xticks(ind+width*n/2)
@@ -303,12 +309,13 @@ class Data_phases_diff_with_cohere_base(object):
     def hist(self, ax,  num=100.0, **k):
         if not isinstance(ax,my_axes.MyAxes):
             ax=my_axes.convert(ax)
-
+        k=deepcopy(k)
 #         k['normed']=1
-        k['linestyle']='--'
+        k['linestyle']=k.pop('linestyle_rest','-')
 
         rest=k.pop('rest', True)
         p_95=k.pop('p_95', True)
+        h=[]
         if rest:
             a=numpy.mean(self.y_bins, axis=0)[0:-1]
             step=numpy.diff(a)[0]
@@ -318,16 +325,20 @@ class Data_phases_diff_with_cohere_base(object):
            
             norm=sum(b)*(a[-1]-a[0])/len(a)
             h=ax.plot(a, b/norm, **k)
-            color=pylab.getp(h[0], 'color')   
+
         
         if p_95:
-            k['linestyle']='-'
-            k['color']=color
+            k['linestyle']=k.pop('linestyle_p_95','-')
+            
+            if h:
+                color=pylab.getp(h[0], 'color')   
+                k['color']=color
             idx=self.idx_sorted[self.coherence[self.idx_sorted]>self.p_conf95]
             y=self.y_val[idx,:]
             y_bins=self.y_bins[idx,:]
             
             a=numpy.mean(y_bins, axis=0)[0:-1]
+            step=numpy.diff(a)[0]
             a=numpy.array([[aa, aa+step] for aa in a]).ravel()
             b=numpy.array([[bb,bb] for bb in numpy.sum(y, axis=0)],
                           dtype=numpy.float).ravel()
@@ -2539,14 +2550,14 @@ class TestDataElement(unittest.TestCase):
                                          'n_sets':1,
                                          'sim_time':self.sim_time})
     
-#     def test_bar(self):
-#         ax=pylab.subplot(111)
-#         data=[[1,2],
-#               [1.5,1.2]] 
-#         obj=Data_bar(**{'y':data})
-#         obj.bar2(ax)
-#         ax.set_xticklabels(['Label 1', 'Label 2'])
-#         pylab.show()
+    def test_bar2(self):
+        ax=pylab.subplot(111)
+        data=[[1,2],
+              [1.5,1.2]] 
+        obj=Data_bar(**{'y':data,})
+        obj.bar2(ax, **{ 'colors':['r', 'r'], 'hatchs':['-', 'x'], 'edgecolor':'k'})
+        ax.set_xticklabels(['Label 1', 'Label 2'])
+        pylab.show()
 
     def test_spike_stat(self):    
         obj=self.sl.Factory_spike_stat()
@@ -2584,34 +2595,34 @@ class TestDataElement(unittest.TestCase):
 #                                0.0, delta=0.001) 
 
 #         
-    def test_phases_diff_cohere_plot(self):
-          
-        other=self.sl
-        kwargs={
-                'NTFF':256,
-                'fs':100.0,
-                'NFFT':256,
-                'noverlap':int(256/2),
-                'other':other,
-                'sample':10.,   
-                  
-                'lowcut':10,
-                'highcut':20,
-                'order':3,
-                'bin_extent':10.,
-                'kernel_type':'gaussian',
-                'params':{'std_ms':5.,
-                          'fs': 100.0},
-                
-                'full_data':True,
-        
-                }
-                  
-        obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
-        ax=pylab.subplot(111)
-        obj.hist(ax)
-        obj.hist2(ax)
-        pylab.show()
+#     def test_phases_diff_cohere_plot(self):
+#           
+#         other=self.sl
+#         kwargs={
+#                 'NTFF':256,
+#                 'fs':100.0,
+#                 'NFFT':256,
+#                 'noverlap':int(256/2),
+#                 'other':other,
+#                 'sample':10.,   
+#                   
+#                 'lowcut':10,
+#                 'highcut':20,
+#                 'order':3,
+#                 'bin_extent':10.,
+#                 'kernel_type':'gaussian',
+#                 'params':{'std_ms':5.,
+#                           'fs': 100.0},
+#                 
+#                 'full_data':True,
+#         
+#                 }
+#                   
+#         obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
+#         ax=pylab.subplot(111)
+#         obj.hist(ax)
+#         obj.hist2(ax)
+#         pylab.show()
 
 #     def test_IF_curve_plot(self):
 #           

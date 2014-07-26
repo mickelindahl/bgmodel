@@ -20,7 +20,7 @@ pp=pprint.pprint
 def perturbations():
     sim_time=40000.0
     size=20000.0
-    threads=4
+    threads=20
 
     freqs=[0.75]
 

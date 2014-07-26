@@ -83,19 +83,20 @@ class Setup(object):
         return d
 
     def plot_fr(self):
-        d={'win':100.,
+        d={'win':10.,
            't_start':5000.0,
-           't_stop':10000.0,
+           't_stop':6000.0,
            'labels':['Control', 'Lesion'],
            
             'fig_and_axes':{'n_rows':8, 
                                         'n_cols':1, 
-                                        'w':800.0, 
-                                        'h':600.0, 
-                                        'fontsize':12,
-                                        'frame_hight_y':0.9}}
+                                        'w':800.0*0.55*2, 
+                                        'h':600.0*0.55*2, 
+                                        'fontsize':11*2,
+                                        'frame_hight_y':0.8,
+                                        'frame_hight_x':0.78,
+                                        'linewidth':3.}}
         return d
-    
 
 
     def plot_coherence(self):

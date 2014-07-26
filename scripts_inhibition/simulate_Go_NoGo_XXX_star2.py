@@ -25,9 +25,9 @@ def perturbations(rep,res):
 #     l.append(op.get()[0])
 #     l.append(op.get()[4::3])
     l.append(op.get()[4+3])
-
-    ll=[]
     
+    ll=[]
+    w=0.4
     p_sizes=[0.1989460102,  
             0.1608005821,    
             0.122655154, 
@@ -54,19 +54,27 @@ def perturbations(rep,res):
             ll.append(_l)
     
     for _l in deepcopy([ll[0]]):
-        _l=deepcopy(_l)
-        _l.update_list(
-            pl({'nest':{'GA_M1_gaba':{'weight':5*2.*0.25},
+        _lr=deepcopy(_l)
+        _lr.update_list(
+            pl({'nest':{'GA_M1_gaba':{'weight':5*2.*w},
 #                         'GA_FS_gaba':{'weight':0.1}
                         }},'*', **{'name':'GA-XX-equal'}))
-        ll.append(_l)
+        ll.append(_lr)
  
-        _l=deepcopy(_l)
-        _l.update_list(
-            pl({'nest':{'GA_M1_gaba':{'weight':5*4.*0.25},
+        _lr=deepcopy(_l)
+        _lr.update_list(
+            pl({'nest':{'GA_M1_gaba':{'weight':5*4.*w},
 #                         'GA_FS_gaba':{'weight':0.1}
                         }},'*', **{'name':'GA-XX-equal'}))
-        ll.append(_l)
+        ll.append(_lr)
+ 
+        _lr=deepcopy(_l)
+        _lr.update_list(
+            pl({'nest':{'GA_M1_gaba':{'weight':5*0.5*w},
+#                         'GA_FS_gaba':{'weight':0.1}
+                        }},'*', **{'name':'GA-XX-equal'}))
+        ll.append(_lr)
+ 
     
     return ll, threads
 
@@ -94,11 +102,11 @@ n=len(p_list)
 
 for j in range(2, 3):
     for i, p in enumerate(p_list):
-#         
-#         if i>1:
+        
+        
+#         if i<3:
 # #         if i!=1:
 #             continue
-
         from_disk=j
 
         fun=Go_NoGo_compete.main

@@ -274,6 +274,8 @@ def set_text_on_bars(axs, i, names, coords):
 
 def plot_spk_stats(d, axs, i, **k):
     
+    color_red=misc.make_N_colors('jet', 2)[1]
+    
     leave_out=k.get('leave_out',[])
     
     y_mean, y_mean_SEM = [], []
@@ -307,11 +309,13 @@ def plot_spk_stats(d, axs, i, **k):
            get_TI_TA_activation_rate(dm),
            get_TI_TA_activation_CV(dm)]
             
-            
+    # *******
+    # GPe FR
+    # *******      
     Data_bar(**{'y':[[y_mean[0], y_mean[1]],
                      [Y[0][0],  Y[0][1]]],
                 'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
-                         [0.,  0.]]}).bar2(axs[i])
+                         [0.,  0.]]}).bar2(axs[i], **{'edgecolor':'k'})
     axs[i].set_ylabel('Mean rate (Hz)')
     axs[i].set_xticklabels(['GP control', 'GP lesioned'])
     axs[i].set_ylim([0,40])
@@ -319,13 +323,13 @@ def plot_spk_stats(d, axs, i, **k):
     set_text_on_bars(axs, i, names, coords)
     i += 1
 
-    print y_CV
-    print Y
-    print y_CV_SEM
+    # *******
+    # GPe CV
+    # *******    
     Data_bar(**{'y':[[y_CV[0], y_CV[1]],
                      [Y[1][0], Y[1][1]]],
                 'y_std':[[y_CV_SEM[0], y_CV_SEM[1]],
-                         [0., 0.]]}).bar2(axs[i])
+                         [0., 0.]]}).bar2(axs[i], **{'edgecolor':'k'})
     
 #     Data_bar(**{'y':y_CV}).bar(axs[i])
     axs[i].set_ylabel('CV')
@@ -349,7 +353,9 @@ def plot_spk_stats(d, axs, i, **k):
             y_CV.append(st.cv_isi['mean'])
             y_CV_SEM.append(st.cv_isi['SEM'])
         
-        
+    # *****************
+    # TI/TA FR control
+    # *****************   
     if 'control_fr' not in leave_out:
         Data_bar(**{'y':y_mean[0:2]}).bar(axs[i])
         axs[i].set_ylabel('Firing rate (Hz)')
@@ -361,18 +367,27 @@ def plot_spk_stats(d, axs, i, **k):
         i += 1
 #     pylab.show()
     
+    # *****************
+    # TI/TA FR lesion
+    # *****************   
     Data_bar(**{'y':[[y_mean[2],y_mean[3]],
                      [Y[2][0], Y[2][1]]],
                 'y_std':[[y_mean_SEM[2],y_mean_SEM[3]],
-                         [0., 0.]]}).bar2(axs[i])
+                         [0., 0.]]}).bar2(axs[i],  **{'colors':[color_red,color_red], 
+                                                      'hatchs':['/', 'o'], 
+                                                      'edgecolor':'k'})
     axs[i].set_ylabel('Firing rate (Hz)')
     axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
     axs[i].set_ylim([0,40])
     set_text_on_bars(axs, i, names, coords)   
     i += 1
 
+
+    # *****************
+    # TI/TA CV control
+    # *****************  
     if 'control_cv' not in leave_out:
-        Data_bar(**{'y':y_CV[0:2]}).bar(axs[i])
+        Data_bar(**{'y':y_CV[0:2]}).bar(axs[i], **{'colors'})
         axs[i].set_ylabel('CV')
         axs[i].set_xticklabels(['TI control', 'TA control'])
         axs[i].set_ylim([0,1.9])
@@ -382,7 +397,9 @@ def plot_spk_stats(d, axs, i, **k):
     Data_bar(**{'y':[[y_CV[2], y_CV[3]],
                      [Y[3][0], Y[3][1]]],
                 'y_std':[[y_CV_SEM[2], y_CV_SEM[3]],
-                         [0., 0.]]}).bar2(axs[i])
+                         [0., 0.]]}).bar2(axs[i],  **{'colors':[color_red,color_red], 
+                                                      'hatchs':['/', 'o'], 
+                                                      'edgecolor':'k'})
     axs[i].set_ylabel('CV')
     axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
     axs[i].set_ylim([0,1.9])
@@ -451,8 +468,8 @@ def plot_phases_diff_with_cohere(d, axs, i, xmax=5, **k):
             ch = v[model]['phases_diff_with_cohere']
             
             ch.hist(ax, **{'color':colors[i_key], 
-                           'rest':k.pop('rest',True), 
-                           'p_95':k.pop('p_95',True)})
+                           'rest':k.get('rest',True), 
+                           'p_95':k.get('p_95',True)})
             ax.set_xlim([-numpy.pi, numpy.pi])
             ax.set_title(td[model[0:2]]+' vs '+td[model[-2:]])
     i+=8
@@ -513,10 +530,14 @@ def show_summed2(d, **k):
 #     import toolbox.plot_settings as ps  
     fig, axs=ps.get_figure(n_rows=3, 
                            n_cols=4, 
-                           w=1000.0, 
-                           h=500.0, 
-                           fontsize=12,
-                           frame_hight_y=0.6)   
+                           w=1000.0*0.58*2, 
+                           h=500.0*0.6*2, 
+                           fontsize=8*2,
+                           text_fontsize=7*2,
+                           font_size=7*2,
+                           frame_hight_y=0.55,
+                           frame_hight_x=0.6,
+                           linewidth=4.)   
     
 
 
@@ -609,10 +630,12 @@ class Setup(object):
            
             'fig_and_axes':{'n_rows':8, 
                                         'n_cols':1, 
-                                        'w':800.0, 
-                                        'h':600.0, 
-                                        'fontsize':12,
-                                        'frame_hight_y':0.9}}
+                                        'w':800.0*0.55*2, 
+                                        'h':600.0*0.55*2, 
+                                        'fontsize':11*2,
+                                        'frame_hight_y':0.8,
+                                        'frame_hight_x':0.78,
+                                        'linewidth':3.}}
         return d
 
     def plot_coherence(self):
@@ -627,7 +650,7 @@ class Setup(object):
     def plot_summed2(self):
         d={'xlim_cohere':[0, 10],
            'rest':False,
-           'p_95':False,
+           'p_95':True,
            'leave_out':['control_fr', 'control_cv'],
            'statistics_mode':'activation',
            'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
@@ -753,12 +776,14 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
         figs = []
         figs.append(show_fr(d, models, **d_plot_fr))
         axs=figs[-1].get_axes()
-        ps.shift('upp', axs, 0.05, n_rows=len(axs), n_cols=1)
+        ps.shift('upp', axs, 0.08, n_rows=len(axs), n_cols=1)
+        ps.shift('left', axs, 0.25, n_rows=len(axs), n_cols=1)
         for i, ax in enumerate(axs):      
             
-            ax.my_set_no_ticks(xticks=5, yticks=4)
+            ax.my_set_no_ticks(xticks=5, yticks=2)
+            ax.legend(bbox_to_anchor=[1.45,1.15])
             
-            ax.set_ylabel('Rate (Hz)')
+            ax.set_ylabel('Hz')
             if i==7:
                 pass
             else:
@@ -770,14 +795,19 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 #         figs.append(show_phase_diff(d, models=models_coher))
         
 #         figs.append(show_summed(d, **d_plot_summed))
+
         
         figs.append(show_summed2(d, **d_plot_summed2))
         axs=figs[-1].get_axes()
-        axs[4].legend(axs[4].lines,['Control', 'Lesion'])
+#         ps.shift('right', axs, 0.25, n_rows=len(axs), n_cols=1)
+        axs[4].legend(axs[4].lines[0::2],['Control', 'Lesion'])
 #         axs[8].legend(axs[8].lines,['Control', 'Lesion'], loc='lower center')
         
         for ax in axs[8:]:
             ax.my_set_no_ticks(xticks=6)
+
+        for ax in axs[4:]:
+            ax.my_set_no_ticks(yticks=3)
         
         sd_figs.save_figs(figs, format='png')
         sd_figs.save_figs(figs, format='svg')

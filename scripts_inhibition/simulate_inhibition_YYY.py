@@ -34,7 +34,7 @@ def perturbations(rep,res):
 
 
 
-res, rep, low, upp=14, 5, 1, 2
+res, rep, low, upp=14, 5, 1, 2.
 p_list, threads=perturbations(rep, res)
 for i, p in enumerate(p_list):
     print i, p

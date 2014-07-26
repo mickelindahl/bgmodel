@@ -125,21 +125,37 @@ class Setup(object):
            'by_sets':False,
            'labels':labels,
            'nets':['Net_1_set_0', 'Net_6_set_0'],
-           'fig_and_axes':{'n_rows':2, 
+#            'fig_and_axes':{'n_rows':2, 
+#                                         'n_cols':1, 
+#                                         'w':350.0, 
+#                                         'h':500.0, 
+#                                         'fontsize':16}
+                      'fig_and_axes':{'n_rows':2, 
                                         'n_cols':1, 
-                                        'w':350.0, 
-                                        'h':500.0, 
-                                        'fontsize':16}}
+                                        'w':350.0*0.65*2, 
+                                        'h':500.0*0.65*2, 
+                                        'fontsize':12*2,
+                                        'legend_fontsize':9*2,
+                                        'frame_hight_x':0.6,
+                                        'linewidth':4.}}
         return d
 
     def plot_mr_diff(self):
      
         d={
-           'fig_and_axes':{'n_rows':2, 
+#            'fig_and_axes':{'n_rows':2, 
+#                                         'n_cols':1, 
+#                                         'w':350.0, 
+#                                         'h':500.0, 
+#                                         'fontsize':16}
+                                 'fig_and_axes':{'n_rows':2, 
                                         'n_cols':1, 
-                                        'w':350.0, 
-                                        'h':500.0, 
-                                        'fontsize':16}}
+                                        'w':350.0*0.65*2, 
+                                        'h':500.0*0.65*2, 
+                                        'fontsize':12*2,
+                                        'legend_fontsize':9*2,
+                                        'frame_hight_x':0.6,
+                                        'linewidth':4.}}
         return d
     
     def plot_mr(self):
@@ -221,7 +237,7 @@ def create_figs(setup, file_name_figs, d, models):
             ax.set_ylim([0,70])
         else: 
             ax.set_ylim([0,50])
-        ax.my_set_no_ticks(xticks=5)
+        ax.my_set_no_ticks(xticks=4)
     
     figs.append(show_mr_diff(d, models, **d_plot_mr_diff))
     axs=figs[-1].get_axes()

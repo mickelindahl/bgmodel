@@ -36,12 +36,12 @@ def measure_font():
         pixels.append(font.metrics('linespace'))
             
 
-def get_figsize(fig_width_pt, w = None, h = None):
-    if w == None and h == None:
+def get_figsize(w, h = None, **kwargs):
+    if h == None:
         inches_per_pt = 1.0/72.0                # Convert pt to inch
         golden_mean = (math.sqrt(5)-1.0)/2.0    # Aesthetic ratio
-        fig_width = fig_width_pt*inches_per_pt  # width in inches
-        fig_height = fig_width*golden_mean      # height in inches
+        fig_width = w*inches_per_pt  # width in inches
+        fig_height = w*golden_mean      # height in inches
         fig_size =  [fig_width,fig_height]      # exact figsize
     else:
         inches_per_pt = 1.0/72.0                # Convert pt to inch
@@ -159,7 +159,7 @@ params7 = {'backend': 'eps',
           'figure.figsize': get_figsize(800),
           'axes.frameon':False}
 
-def set_mode(pylab, mode='large', w = None, h = None, fontsize=10):
+def set_mode(pylab, mode='large', w = None, h = None, fontsize=10, **kwargs):
     pl=pylab
     if mode == "dynamic":
         ratio=33/400.*h
@@ -167,7 +167,7 @@ def set_mode(pylab, mode='large', w = None, h = None, fontsize=10):
         fs=fh.size
         params7 = {'backend': 'eps',
           'axes.labelsize': fs,
-          'text.fontsize': fs,
+          'text.fontsize': kwargs.get('text.fontsize',fs),
           'xtick.labelsize': fs,
           'ytick.labelsize': fs,
           'legend.pad': 0.2,     # empty space around the legend box
@@ -175,29 +175,31 @@ def set_mode(pylab, mode='large', w = None, h = None, fontsize=10):
           'lines.markersize': 3,
           'font.size': fs,
           #'text.usetex': True,
-          'figure.figsize': get_figsize( 800, w = w, h = h),
+          'figure.figsize': get_figsize( kwargs.get('dpi',800), w = w, h = h),
           'axes.frameon':False}
     #matplotlib.use("WXAgg") # do this before pylab so you don'tget the default back end.
 
     if mode == "by_fontsize":
         fs=fontsize
         params8 = {'backend': 'png',
-                   'axes.titlesize':fs,
+                   'axes.titlesize':kwargs.get('title_fontsize',fs),
           'axes.labelsize': fs,
-          'text.fontsize': fs,
+          'text.fontsize': kwargs.get('text_fontsize',fs),
           'xtick.labelsize': fs,
           'ytick.labelsize': fs,
           'legend.pad': 0.2,     # empty space around the legend box
-          'legend.fontsize': fs,
+          'legend.fontsize': kwargs.get('legend_fontsize',fs),
           'lines.markersize': 3,
-          'font.size': fs,
+          'lines.linewidth':kwargs.get( 'linewidth', 2.),
+          'font.size': kwargs.get('font_size',fs),
           'mathtext.default':'sf', # Use sans-serif font family for math text
                                    # priority list, check mathtext for the other
                                    # font alternatives. Defailt is italic serif.
                                    # Here sf is serif-sans
           #'text.usetex': True,
-          'figure.figsize': get_figsize( 800, w = w, h = h),
-          'figure.dpi': 80,       # dots per inches, increase and font size follows
+          'figure.figsize': get_figsize( w, h),
+          'figure.dpi':  kwargs.get('dpi',72),       # dots per inches, increase and font size follows
+          'savefig.dpi': kwargs.get('dpi',72),
           'axes.frameon':False,
           'path.simplify':False}    
         pl.rcParams.update(params8)
@@ -225,12 +227,12 @@ def set_figsize(fig_width_pt):
     pylab.rcParams['figure.figsize'] = get_figsize(fig_width_pt)
 
 
-def get_figure( n_rows, n_cols, w, h, fontsize, order='col', projection=None, **kwargs):
+def get_figure( n_rows, n_cols, w, h=None, fontsize=12, order='col', projection=None, **kwargs):
 #     import os
 #     if not os.environ.get('DISPLAY'):
 #         pylab.ioff()
     
-    set_mode(pylab, 'by_fontsize', w, h, fontsize)
+    set_mode(pylab, 'by_fontsize', w, h, fontsize, **kwargs)
 #     pylab.rcParams.update({'backend':'Agg'})
 #     pp(pylab.rcParams)
 #     import matplotlib
@@ -279,3 +281,31 @@ def shift(flag, axs, shift, n_rows=1, n_cols=1):
                 ax.set_position([box.x0, box.y0+shift_vert*i, box.width, box.height*(1-shift_vert)])
             if flag=='left':
                 ax.set_position([box.x0+shift_hor*j, box.y0, box.width*(1-shift_hor), box.height])
+            if flag=='right':
+                ax.set_position([box.x0-shift_hor*j, box.y0, box.width*(1-shift_hor), box.height])
+
+import unittest
+
+class TestPlotSettings(unittest.TestCase):     
+    def setUp(self):
+        self.fname='/home/mikael/results/papers/inhibition/network/unittest/plot_settings/'
+    def test_get_figure(self):
+        fig1, axs=get_figure( 2, 2, 100, 100, 12, order='col', projection=None, **{'dpi':72})
+        fig1.savefig(self.fname+'fig_1')
+        fig2, axs=get_figure( 2, 2, 1200, 1200, 12, order='col', projection=None, **{'dpi':72})
+
+        fig2.savefig(self.fname+'fig_2')
+# show_phase_diff(d, models=models_coher)
+
+if __name__ == '__main__':
+    test_classes_to_run=[
+                         TestPlotSettings
+                         ]
+    suites_list = []
+    for test_class in test_classes_to_run:
+        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+        suites_list.append(suite)
+
+    big_suite = unittest.TestSuite(suites_list)
+    unittest.TextTestRunner(verbosity=2).run(big_suite)
+

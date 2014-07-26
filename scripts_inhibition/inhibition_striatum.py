@@ -88,7 +88,10 @@ class Setup(object):
                                         'n_cols':1, 
                                         'w':600.0, 
                                         'h':500.0, 
-                                        'fontsize':16} }
+                                        'fontsize':16},
+                      'x_lim':[1,1.5], 
+                      'x_lim':[1,30], 
+           }
         return d
 
     def plot_mr(self):
@@ -100,9 +103,13 @@ class Setup(object):
                      'No inhibition'],
                       'fig_and_axes':{'n_rows':2, 
                                         'n_cols':1, 
-                                        'w':600.0, 
-                                        'h':500.0, 
-                                        'fontsize':16} }
+                                        'w':600.0*0.65*2, 
+                                        'h':500.0*0.65*2, 
+                                        'fontsize':12*2,
+                                        'legend_fontsize':9*2,
+                                        'linewidth':4.} ,
+                      'x_lim':[1,1.5],
+                      'y_lim':[0,30]}
         return d
         
     def plot_mr2(self):
@@ -115,14 +122,16 @@ class Setup(object):
            'fontsize':16,
            'relative':True,
            'relative_to':[5,0],
-           'x_lim':[1,2],
+           'x_lim':[1,1.5],
            'y_lim':[0,1],
            'delete':[0,5],
            'fig_and_axes':{'n_rows':2, 
                                         'n_cols':1, 
-                                        'w':600.0, 
-                                        'h':500.0, 
-                                        'fontsize':16} }
+                                        'w':600.0*0.65*2, 
+                                        'h':500.0*0.65*2, 
+                                        'fontsize':12*2,
+                                        'legend_fontsize':9*2,
+                                        'linewidth':4.} }
         return d
     
 
@@ -170,18 +179,20 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
     axs=figs[-1].get_axes()
     ps.shift('left', axs, 0.5, n_rows=len(axs), n_cols=1)
     for ax in axs:
-        ax.legend(bbox_to_anchor=(2., 1), prop={'size':12})
-        ax.set_xlim([1,2])
+        ax.legend(bbox_to_anchor=(2.2, 1))
+        ax.set_ylabel('Rel decrease (Hz)')
+#         ax.set_xlim([1,2])
 #     figs.append(show_fr(d, models, **d_plot_fr))
 #     figs.append(show_mr(d, models, **d_plot_mr))
 #     figs.append(show_mr(d, models, **d_plot_mr2))
     figs.append(show_mr(d, ['M1', 'M2'], **d_plot_mr))
     axs=figs[-1].get_axes()
     ps.shift('left', axs, 0.5, n_rows=len(axs), n_cols=1)
-    for ax in axs:
-        ax.legend(bbox_to_anchor=(2., 1), prop={'size':12})
-        ax.set_xlim([1,2])
-#         ax.set_ylim([0,30])
+    for i, ax in enumerate(axs):
+        ax.legend(bbox_to_anchor=(2.2, 1))
+#         ax.set_xlim([1,1.5])
+        if i==1:
+            ax.set_ylim([0,20])
     sd_figs.save_figs(figs, format='png')
     sd_figs.save_figs(figs, format='svg')
     
@@ -213,7 +224,7 @@ import unittest
 class TestInhibitionStriatum(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=1
+        from_disk=2
         
         import oscillation_perturbations4 as op
         
