@@ -32,8 +32,10 @@ def get_kwargs_builder(**k_in):
     sub=k_in.get('sub_sampling',6.25)
     laptime=k_in.get('laptime',1500.0)
     duration=k_in.get('duration',[1000.,500.])
+    prop_conn=k_in.get('proportion_connected', 1)
     return {'duration':duration,
             'print_time':False,
+            'proportion_connected':prop_conn,
             'save_conn':{'overwrite':True},
             'resolution':res, 
             'repetition':rep,

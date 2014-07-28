@@ -524,6 +524,7 @@ def get_input_Go_NoGo(kwargs):
     res = kwargs.get('resolution', 5)
     rep = kwargs.get('repetition', 5)
     dur = kwargs.get('duration', [1000., 500.])
+    prop_conn=kwargs.get('proportion_connected', 1)
     
     act=kwargs.get('act',['M1', 'M2', 'GI', 'SN'])
     act_input=kwargs.get('act_input', ['C1', 'C2'])
@@ -561,12 +562,12 @@ def get_input_Go_NoGo(kwargs):
             d_sets.update({str(0):{'active':True, 
                                    'amplitudes':p0, 
                                    'durations':durations, 
-                                   'proportion_connected':1}, 
+                                   'proportion_connected':prop_conn}, 
                            
                            str(1):{'active':True, 
                                    'amplitudes':p1, 
                                    'durations':durations, 
-                                   'proportion_connected':1}})
+                                   'proportion_connected':prop_conn}})
             
             params['params'].update({'params_sets':d_sets})
             d = misc.dict_update(d, {'netw':{'input':{inp:params}}})
@@ -724,6 +725,28 @@ class Builder_Go_NoGo_with_lesion(Builder_Go_NoGo_with_lesion_base,
     pass     
 
 
+class Builder_Go_NoGo_with_nodop_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop(), self._no_dop()]    
+    
+    def _variable(self):
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)    
+        
+        return l    
+
+
+class Builder_Go_NoGo_with_nodop(Builder_Go_NoGo_with_nodop_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass     
   
         
         
