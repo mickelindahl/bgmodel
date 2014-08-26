@@ -653,8 +653,8 @@ void mynest::my_aeif_cond_exp::update(const nest::Time &origin, const nest::long
 void mynest::my_aeif_cond_exp::handle(nest::SpikeEvent & e)
 {
 	assert(e.get_delay() > 0);
-	// Assert that port is 0 or 1 (SUP_SPIKE_RECEPTOR (3)- MIN_SPIKE_RECEPTOR (1)
-	// = 2). AMPA_1 =1, NMDA_1 =2
+	// Assert that port is 0-4 (SUP_SPIKE_RECEPTOR (6)- MIN_SPIKE_RECEPTOR (1)
+	// = 5). AMPA_1 =1, NMDA_1 =2, GABAA_1=3, GABAA_2=4, AMPA_2=5
 	assert(0 <= e.get_rport() && e.get_rport() < SUP_SPIKE_RECEPTOR - MIN_SPIKE_RECEPTOR);
 
 	// If AMPA_1

@@ -526,8 +526,8 @@ def create_figs(setup, file_name_figs, d, models,sd):
  
 
 # 
-#     for name in l_mean_rate_slices:   
-#         figs.append(show_bulk(d, models, name, **d_plot_bulk))
+    for name in l_mean_rate_slices:   
+         figs.append(show_bulk(d, models, name, **d_plot_bulk))
 #      
 #     figs.append(show_neuron_numbers(d, models))
 #      

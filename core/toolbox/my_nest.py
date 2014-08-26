@@ -21,6 +21,29 @@ from copy import deepcopy
 
 
 
+def Connect(pre, post, params=None, delay=None, model="static_synapse"):
+    
+    if hasattr(nest, 'OneToOneConnect'):
+        nest.OneToOneConnect(pre, post, params, delay, model)
+    else:
+        nest.Connect(pre, post, params, delay, model)
+ 
+#         if params:
+#             syn_list=[{'model':model,
+#                        'delay':delay,
+#                        'weight':weight} 
+#                       for delay, weight in zip(delay, params)]
+#         else:
+#             syn_list=[{'model':model}]*len(pre)
+#         conn_list=[None]*len(pre)
+#         
+#         
+#         pre=[[v] for v in pre] 
+#         post=[[v] for v in post]
+#         map(nest.Connect, pre, post, conn_list, syn_list) 
+#         for source, target, syn_dict in zip(pre,  post, syn_list):
+#             nest.Connect([source], [target], syn_spec=syn_dict)
+
 def C(pre, post, params = None, delay = None, model = "static_synapse" ):    
     
     '''

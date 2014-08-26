@@ -19,14 +19,23 @@ buildDir="$currDir/build-$1"
 #Build directory
 installDir="$currDir/install-$1"
 
+#Log directory
+logDir="$currDir/log/"
+
 #Remove old build
 echo "Clear previous installation and build directories" 
 echo "Build dir: $buildDir"
 echo "Install dir: $installDir"
+echo "Log dir: $logDir"
 echo "Press [Enter] key to continue..."
 read TMP
-rm -r $buildDir
-rm -r $installDir
+
+if [ -d "$buildDir" ]; then rm -r $buildDir 
+fi
+if [ -d "$installDir" ]; then rm -r $installDir 
+fi
+if [ ! -d "$logDir" ]; then mkdir $logDir 
+fi
 
 #Make new build directory, configure and run make, make install and make installcheck
 echo "Create new build and install dir directory: "
@@ -42,9 +51,9 @@ echo "Press [Enter] key to continue..."
 read TMP
 
 # Need to explicilty say where to put nest with --prefix=$HOME/opt/nest
-../$1/configure --with-mpi --prefix=$installDir 2>&1 | tee "../mymodule-configure-$2.log"
-make -j $noProcs2 >&1 | tee "../mymodule-make-$2.log"
-sudo make -j $noProcs install "../mymodule-install-$2.log"
+../$1/configure --with-mpi --prefix=$installDir 2>&1 | tee "$LogDir$1-configure"
+make -j $noProcs2 >&1 | tee "$LogDir$1-make"
+make -j $noProcs install "$LogDir$1-install"
 #sudo make -j $noProcs installcheck
 
 #Stop time watch

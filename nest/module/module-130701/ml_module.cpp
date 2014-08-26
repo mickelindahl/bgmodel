@@ -75,16 +75,9 @@ mynest::Ml_Module::~Ml_Module()
 
    const std::string mynest::Ml_Module::commandstring(void) const
    {
-     /* 1. Tell interpreter that we provide the C++ part of Ml_Module with the
-           current revision number. 
-        2. Instruct the interpreter to check that ml_module-init.sli exists,
-           provides at least version 1.0 of the SLI interface to Ml_Module, and
-           to load it.
-      */
-     return std::string(
-       "/ml_module /C++ ($Revision: 8512 $) provide-component "
-       "/ml_module /SLI (7165) require-component"
-       );
+     // Instruct the interpreter to load mymodule-init.sli
+     return std::string( "(ml_module) run");
+
    }
 
    /* BeginDocumentation

@@ -637,7 +637,14 @@ def connect_conns(params_nest, conns, popus, display_print=False):
 #         print pre, post 
 
         my_nest.Connect(pre, post , weights, delays, model=c.get_syn())    
-
+       
+#         syn_list=[{'model':c.get_syn(),
+#                    'delay':delay,
+#                    'weight':weight} 
+#                   for delay, weight in zip(delays, weights)]
+#         my_nest.Connect(pre, post,# weights, delays, 
+#                         syn_spec = syn_list
+#                         )    
 def create_populations(params_nest, params_popu):
     #! Create input surfs
     popus=Population_dic()

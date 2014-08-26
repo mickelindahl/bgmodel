@@ -18,7 +18,7 @@ from copy import deepcopy
 
 def perturbations(rep,res, sizes):
 
-    threads=2
+    threads=40
 
     l=[]
     
@@ -46,8 +46,8 @@ def perturbations(rep,res, sizes):
     return ll, threads
 
 
-sizes=[3000]
-res, rep=5, 1
+sizes=[5000, 10000., 20000]
+res, rep=10, 1
 duration=[900.,100.0]
 laptime=1000.0
 props_conn=[0.08]*len(sizes)*2
@@ -80,7 +80,7 @@ for i in range(len(p_list)):
                
 
 
-for j in range(0, 3):
+for j in range(2, 3):
     for i, p in enumerate(p_list):
         
         

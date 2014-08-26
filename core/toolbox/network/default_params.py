@@ -87,8 +87,21 @@ HOME = expanduser("~")
 #MODULE_PATH=  (HOME+'/tools/NEST/dist/'+
 #               'install-nest-2.2.2/lib/nest/ml_module')
 #MODULE_PATH= (HOME+'/opt/NEST/dist/install-nest-2.2.2/lib/nest/ml_module')
-MODULE_PATH= ('ml_module')
- 
+    
+
+
+#MODULE_PATH= ('ml_module')
+if nest.version()=='NEST 2.2.2':
+    s='nest-2.2.2'
+if nest.version()=='NEST 2.4.1':
+    s='nest-2.4.1'    
+if nest.version()=='NEST 2.4.2':
+    s='nest-2.4.2'   
+      
+MODULE_PATH= (HOME+'/opt/NEST/module/'
+              +'install-module-130701-'+s+'/lib/nest/ml_module')
+MODULE_SLI_PATH= (HOME+'/opt/NEST/module/'
+                  +'install-module-130701-'+s+'/share/ml_module/sli')
  
 # nest.Install(MODULE_PATH)
 # nest.Create('iaf_neuron', 2)
@@ -469,12 +482,20 @@ class Par_base(object):
 #         l=kwargs.get('perturbations', Perturbation_list())
 #         self.set_perturbation_list(l)
 
-        self.module_path=MODULE_PATH
-       
+        self.module_path=kwargs.get('module_path',MODULE_PATH)
+        self.module_sli_path=kwargs.get('module_sli_path',MODULE_SLI_PATH)
+        
         if not 'my_aeif_cond_exp' in nest.Models(): 
+#             print self.module_path
+            if self.module_sli_path:    
+                nest.sr('('+self.module_sli_path+') addpath')
             nest.Install( self.module_path)
-        if not 'my_aeif_cond_exp' in nest.Models(): 
-            nest.Install( self.module_path)
+            
+                
+#         if not 'my_aeif_cond_exp' in nest.Models(): 
+#             nest.Install( self.module_path)
+        
+        
 
         self.dep={} #dic storing dependable calculations, dynamically growing
         self.other=kwargs.get('other', None)                

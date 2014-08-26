@@ -224,7 +224,7 @@ import unittest
 class TestInhibitionStriatum(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=2
+        from_disk=1
         
         import oscillation_perturbations4 as op
         
