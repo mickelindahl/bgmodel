@@ -119,10 +119,13 @@ int mynest::my_aeif_cond_exp_dynamics (double, const double y[], double f[], voi
 	const nest::double_t I_GABAA_1 = - y[S::G_GABAA_1] * ( V - node.P_.GABAA_1_E_rev )*dop_GABAA_1;
 	const nest::double_t I_GABAA_2 = - y[S::G_GABAA_2] * ( V - node.P_.GABAA_2_E_rev )*dop_GABAA_2;
 
-
 	// Dopamine modulation neuron
 	const nest::double_t E_L = node.P_.E_L*( 1 - node.P_.beta_E_L*node.P_.tata_dop);
 	const nest::double_t V_a = node.P_.V_a*( 1 - node.P_.beta_V_a*node.P_.tata_dop);
+
+
+
+
 
 		// Set state variable used for recording AMPA_1, NMDA_1 and GABAA current
 	// contributions

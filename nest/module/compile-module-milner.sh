@@ -6,11 +6,10 @@
 
 # compile with the GNU compiler
 module swap PrgEnv-cray PrgEnv-gnu
-module add nest
 
 # Directory where nest have been installed
 export NEST_INSTALL_DIR="$3"
-export NEST_MODELS_DIR="$4" #directory for of soruce code for models. Needed in Makefile.am
+export NEST_MODELS_DIR="$4" #directory for of soruce code for models. Needed in Makefile.amls
 
 #export NEST_INSTALL_DIR="$HOME/opt/NEST/dist/install-$2"
 #export NEST_INSTALL_DIR="/home/mikael/opt/NEST/dist/install-$2"
@@ -61,7 +60,6 @@ fi
 if [ ! -d "$logDir" ]; then mkdir $logDir 
 fi
 
-
 echo "Copying $srcDir to $bootstrapDir" 
 #mkdir $bootstrapDir
 cp -r "$srcDir" $bootstrapDir 
@@ -80,3 +78,31 @@ cd $bootstrapDir
 #Make new build directory, configure and run make, make install and make installcheck
 echo "Entering $buildDir"
 cd $buildDir
+
+
+
+# To inform about where nest is installed --with-nest=${NEST_INSTALL_DIR}/bin/nest-config and with --prefix inform where to put module installation files
+
+
+$bootstrapDir"configure" --with-nest=${NEST_INSTALL_DIR}/bin/nest-config --prefix=$installDir/ 2>&1 | tee $logDir$1-$2-configure
+make -j $noProcs 2>&1 | tee $logDir$1-$2-make
+make -j $noProcs install 2>&1 | tee $logDir$1-$2-install
+#sudo make -j $noProcs installcheck
+
+#Stop time watch
+END=$(date +%s)
+DIFF=$(( $END - $START ))
+
+# Move out
+cd ..
+
+# Move module sli file to path that is in the sli search path
+#FROM=$NEST_INSTALL_DIR/share/ml_module/sli/ml_module.sli 
+#TO=$NEST_INSTALL_DIR/share/nest/sli/ml_module.sli
+#ln -s $FROM $TO
+
+# Create symbolic link to module 
+#sudo ln -s $buildDir/ml_module /usr/bin/ml_module
+
+#Display script execution time
+echo "It took $DIFF seconds"

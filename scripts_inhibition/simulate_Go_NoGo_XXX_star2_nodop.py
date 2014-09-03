@@ -46,7 +46,7 @@ def perturbations(rep,res, sizes):
     return ll, threads
 
 
-sizes=[5000, 10000., 20000]
+sizes=[20000]
 res, rep=10, 1
 duration=[900.,100.0]
 laptime=1000.0
