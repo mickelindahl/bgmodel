@@ -8,13 +8,33 @@ import csv
 import cPickle as pickle # Can be 1000 times faster than pickle
 import numpy
 import os
+import subprocess
 import unittest
 
-from toolbox import misc
+import toolbox.misc as misc
+import toolbox.my_nest as my_nest # need to have it othervice imprt crashes somtimes
+
 from toolbox.misc import Base_dic
+from toolbox.parallelization import comm, Barrier
 
 from os.path import expanduser
 HOME = expanduser("~")
+
+
+# if comm.is_mpi_used():
+#     import mpi4py
+#     open=mpi4py.MPI.File.Open
+
+
+# def open(*args):
+#     
+#     if comm.is_mpi_used():    
+#         f=comm.open(*args)
+#     else:
+#         f=__builtins__.open(*args)
+#     
+#     
+#     return f
 
 class Storage(object):
     def __init__(self, *args, **kwargs):
@@ -45,7 +65,9 @@ class Storage(object):
             hash_code='-'+str(hash(data))
         
         self.data_path=self.main_path+name+hash_code+'.pkl'
+        
         pickle_save(data, self.data_path)
+
 
     def set_main_path(self, val):
         self.main_path=val
@@ -91,7 +113,20 @@ class Storage_dic(Base_dic):
     def delete(self, k):
         del self.dic[k]
     
+    
+    def _garbage_collect_mpi(self):
+        with Barrier():
+            if comm.rank()==0:
+                self._garbage_collect()
+                
+            
     def garbage_collect(self):
+        if comm.is_mpi_used():
+            self._garbage_collect_mpi()
+        else:
+            self._garbage_collect()
+            
+    def _garbage_collect(self):
         
         files1=[self.file_name_info]
         for _, storage in misc.dict_iter(self.dic):
@@ -109,8 +144,19 @@ class Storage_dic(Base_dic):
                 continue
             else:
                 os.remove(f)
+
+    def save_fig(self, *args):
+        if comm.is_mpi_used():
+            with Barrier():
+                if comm.rank()==0:
+                    self._save_fig(*args)
+        else:
+            self._save_fig(*args)
+                    
+
      
-    def save_fig(self, fig, extension='', format='svg'):
+    def _save_fig(self, fig, extension='', format='svg'):
+        
         with misc.Stopwatch('Saving figure...'):
             fig.savefig( self.file_name +extension+'.'+format, 
                          format = format) 
@@ -192,6 +238,9 @@ class Storage_dic(Base_dic):
 def nest_sd_load(file_names):
     data=[]
 
+#     if my_nest.Rank!=0:
+#         return
+
     for name in file_names: 
         c=0
         while c<2:
@@ -214,6 +263,12 @@ def nest_sd_load(file_names):
         #with open(name,'rb') as f:
         #    f.read()
 
+def make_bash_script(path_bash0, path_bash, **kwargs):
+    s=text_load(path_bash0)
+    s=s.format(**kwargs)
+    text_save(s, path_bash)
+    p=subprocess.Popen(['chmod', '777',path_bash])
+    p.wait()
 
 def mkdir(path):
     
@@ -319,16 +374,7 @@ def txt_save_to_row(text, row_id, fileName):
     f.write(''.join(write_text))
     f.close()
          
-
-
-def pickle_save(data, fileName):
-    '''
-    
-    Arguments:
-        data        - data to be pickled
-        fileName    - full path or just file name
-    '''
-
+def _pickle_save(data, fileName):
     fileName=fileName.split('/')
     if  '~' in fileName:
         fileName[fileName.index('~')]=expanduser("~")
@@ -341,12 +387,48 @@ def pickle_save(data, fileName):
         fileName=fileName+'.pkl'
     f=open(fileName, 'wb') #open in binary mode
     
-    
     # With -1 pickle the list using the highest protocol available (binary).
     pickle.dump(data, f, -1)
     #cPickle.dump(data, f, -1)
     
     f.close()
+
+def _pickle_save_mpi(*args):
+    with Barrier():
+        if comm.rank()==0:
+            print 'Saving mpi2'
+            _pickle_save(*args)
+        
+#     comm.barrier()
+    
+def pickle_save(*args, **kwargs):
+    '''
+    
+    Arguments:
+        data        - data to be pickled
+        fileName    - full path or just file name
+    '''
+#     print 'Pickle save',kwargs
+#     print 'If state', comm.is_mpi_used() and not kwargs.get('all_mpi', False)
+#     print 'is mpi used', comm.is_mpi_used()
+    
+    if comm.is_mpi_used() and not kwargs.get('all_mpi', False):
+        print 'Saving mpi'
+        _pickle_save_mpi(*args)
+    else:
+        print 'Saving normal'
+        _pickle_save(*args)
+    
+def _pickle_load_mpi(f):
+    with Barrier():
+        if comm.rank()==0:
+            data=pickle.load(f)
+        else:
+            data=None
+    with Barrier():        
+        data=comm.bcast(data, root=0)
+    return data
+            
     
 def pickle_load(fileName):
     '''
@@ -358,8 +440,12 @@ def pickle_load(fileName):
         fileName=fileName+'.pkl'
     fileName=os.path.expanduser(fileName)
         
-    f=open(fileName, 'rb') # make sure file are read in binary mode
-    data=pickle.load(f)
+    f=open(fileName, 'rb') # make sure file are read in binary mod
+    
+    if comm.is_mpi_used():
+        data=_pickle_load_mpi(f)
+    else:  
+        data=pickle.load(f)
 
     f.close()
     return data
@@ -447,6 +533,52 @@ def dummy_data4():
                                         'CV':3.}}}}
     return d
 
+
+class TestModuleFunctions(unittest.TestCase):     
+    def setUp(self):
+        self.data=[('s'), (1)]
+    
+    def test_picke_save_MPI(self):
+        import subprocess
+        s = expanduser("~")
+        data_path= s+'/results/unittest/data_to_disk/save_dic_MPI/'
+        script_name=os.getcwd()+'/test_scripts_MPI/data_to_disk_save_dic_mpi.py'
+        threads=4
+        p=subprocess.Popen(['mpirun', '-np', str(threads),  'python', 
+                         script_name, data_path, str(self.data)],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE)
+         
+        out, err = p.communicate()
+#         print out
+#         print err
+         
+        self.assertTrue(os.path.isfile(data_path+'data.pkl'))
+
+    def test_picke_load_MPI(self):
+        import subprocess
+        s = expanduser("~")
+        data_path= s+'/results/unittest/data_to_disk/pickle_load_MPI/'
+        script_name=os.getcwd()+'/test_scripts_MPI/data_to_disk_pickle_load_mpi.py'
+    
+    
+        pickle_save([1],data_path+'data')
+        threads=2
+    
+        p=subprocess.Popen(['mpirun', '-np', str(threads), 'python', 
+                         script_name, data_path],
+#                         stdout=subprocess.PIPE,
+#                         stderr=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        )
+        
+        out, err = p.communicate()
+#         print out
+#         print err
+        for i in range(threads):
+            self.assertTrue(os.path.isfile(data_path+'data'+str(i)+'.pkl'))
+
+
 class TestStorage(unittest.TestCase):
     def setUp(self):
         self.data=[('s'), (1)]
@@ -467,7 +599,7 @@ class TestStorage(unittest.TestCase):
         self.s=[]
         for name, data in zip(self.name_data, self.data):
             s=Storage(self.main_path)
-            s.save_data(name, data)
+            s.save_data(name, data, use_hash=True)
             self.s.append(s)
             
         for name, data in zip(self.name_data, self.data):
@@ -511,8 +643,8 @@ class TestStorage_dic(unittest.TestCase):
         d2=dummy_data4()
         self.s=Storage_dic(self.file_name)
         self.s.add_info('test')
-        self.s.save_dic(d1)
-        self.s.save_dic(d2)
+        self.s.save_dic(d1, use_hash=True)
+        self.s.save_dic(d2, use_hash=True)
         
         d3=self.s.load_dic()
         
@@ -571,13 +703,12 @@ class TestStorage_dic(unittest.TestCase):
         self.s=Storage_dic(self.file_name)
         self.s.save_dic(self.data)
         self.assertTrue(os.path.isfile(self.file_name+'.pkl'))
-    
-    
+        
     def test_save_fig(self):
         import pylab
         fig=pylab.figure()
         self.s=Storage_dic(self.file_name)
-        self.s.save_fig(fig, extension='')
+        self.s.save_fig(fig)
         self.assertTrue(os.path.isfile(self.file_name+'.svg'))
         os.remove(self.file_name+'.svg')  
    
@@ -597,8 +728,9 @@ class TestStorage_dic(unittest.TestCase):
 if __name__ == '__main__':
     
     test_classes_to_run=[
-                         TestStorage,
-                         TestStorage_dic
+                         TestModuleFunctions,
+                        TestStorage,
+                        TestStorage_dic
                         ]
     suites_list = []
     for test_class in test_classes_to_run:

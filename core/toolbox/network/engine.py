@@ -506,6 +506,7 @@ class Network(Network_base):
           
         with Stop_stdout(not self.verbose), Stopwatch('Building...\n',
                                                       self.stopwatch):
+            
             my_nest.ResetKernel(threads=self.threads, print_time=False)  
 #             print self.par['simu']['sd_params']      
 #             t=self.params_surfs

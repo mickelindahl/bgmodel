@@ -17,7 +17,8 @@ from toolbox.data_to_disk import Storage_dic
 from toolbox import misc
 from toolbox.network import manager
 from toolbox.network.manager import (add_perturbations, get_storage)
-from toolbox.network.manager import Builder_Go_NoGo_with_lesion as Builder
+# from toolbox.network.manager import Builder_Go_NoGo_with_lesion as Builder
+from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS_ST_base as Builder
 from toolbox.my_signals import Data_bar
 
 import pprint
@@ -36,7 +37,7 @@ def get_kwargs_builder(**k_in):
     return {'duration':duration,
             'print_time':False,
             'proportion_connected':prop_conn,
-            'save_conn':{'overwrite':True},
+            'save_conn':{'overwrite':False},
             'resolution':res, 
             'repetition':rep,
             'sim_time':laptime*res*res*rep, 
@@ -245,6 +246,8 @@ def show_heat_map(d,attr,**k):
 #     attr='mean_rate_slices'
     fig, axs=ps.get_figure(n_rows=3, n_cols=2, w=600.0*0.65*2, h=700.0*0.65*2, fontsize=24,
                            frame_hight_y=0.5, frame_hight_x=0.6, title_fontsize=20)        
+    
+    type_of_plot=k.get('type_of_plot', 'mean')
      
     i=0
     performance={}
@@ -259,18 +262,46 @@ def show_heat_map(d,attr,**k):
             args=[obj0.x_set, obj1.x_set,
                   # obj1.y-obj0.y, 
                   numpy.mean(obj1.y_raw_data-obj0.y_raw_data, axis=0),
-                  numpy.std(obj1.y_raw_data-obj0.y_raw_data, axis=0)]
+                  numpy.std(obj1.y_raw_data-obj0.y_raw_data, axis=0),
+                  numpy.mean(obj0.y_raw_data, axis=0),
+                  numpy.mean(obj1.y_raw_data, axis=0)]
             for j, arg in enumerate(args):
                 arg.shape
                 args[j]=numpy.reshape(arg, [res,res])
-            x,y,z, z_std=args
-            x0,y0,z0=get_optimal(z.shape[0])
+            x, y, z, z_std, d0, d1=args
+            if type_of_plot=='variance':
+                z=z_std
+                _vmin=0
+                _vmax=2
+            elif type_of_plot=='CV':
+                z=z_std/numpy.abs(z)
+                _vmin=0
+                _vmax=3
+            else:
+                _vmin=-40
+                _vmax=40
+            
+            
+            stepx=(x[0,-1]-x[0,0])/res
+            stepy=(y[-1,0]-y[0,0])/res
+            x1,y1=numpy.meshgrid(numpy.linspace(x[0,0], x[0,-1], res+1),
+                               numpy.linspace(y[0,0], y[-1,0], res+1))
+            x2,y2=numpy.meshgrid(numpy.linspace(x[0,0]+stepx/2, x[0,-1]-stepx/2, res),
+                                 numpy.linspace(y[0,0]+stepy/2, y[-1,0]-stepy/2, res))
+            
+            thr=k.get('threshold',14)
+           
+            x2=numpy.ma.array(x2, mask=(d0>thr)+(d1>thr))
+            y2=numpy.ma.array(y2, mask=(d0>thr)+(d1>thr))
+#             x0,y0,z0=get_optimal(z.shape[0])
+            
             performance[key]=numpy.round(numpy.sum(numpy.abs(z)) ,2)
              
-             
-             
-            im=axs[i].pcolor(x, y, z, cmap='coolwarm',  vmin=-40, vmax=40)
-#           
+ 
+            im=axs[i].pcolor(x1, y1, z, cmap='coolwarm',  vmin=_vmin, vmax=_vmax)
+            
+            axs[i].scatter(x2,y2, color='k', edgecolor='k', s=100, marker='o')
+            
             box = axs[i].get_position()
             
             if key in ['Net_0', 'Net_2', 'Net_4']:
@@ -278,9 +309,11 @@ def show_heat_map(d,attr,**k):
             else:
                 v=0.9
             axs[i].set_position([box.x0*v, box.y0, box.width*0.85, box.height])
-            
+#             pylab.show()
             axs[i].set_xlabel('Action 1')
             axs[i].set_ylabel('Action 2')
+            axs[i].set_xlim([x[0,0], x[0,-1]])
+            axs[i].set_ylim([y[0,0], y[-1,0]])
             # create color bar
             
 #             pylab.colorbar(im, cax = axColor, orientation="vertical")
@@ -354,9 +387,35 @@ def plot_optimal(size):
     return fig
     
 
+# def plot_uniformity(d,attr,**k):
+#     models=['SN']
+#     res=k.get('resolution')
+#     titles=k.get('titles')
+#     n=len(models)
+#     m=len(d.keys())
+# #     attr='mean_rate_slices'
+#     fig, axs=ps.get_figure(n_rows=1, 
+#                            n_cols=1, 
+#                            w=600.0*0.65*2, 
+#                            h=700.0*0.65*2, 
+#                            fontsize=24,
+#                            frame_hight_y=0.5, 
+#                            frame_hight_x=0.6, 
+#                            title_fontsize=20)        
+#     
+#     type_of_plot=k.get('type_of_plot', 'mean')
+#      
+#     i=0
+#     performance={}  
+
 class Setup(object):
 
     def __init__(self, **k):
+        self.labels=k.get('labels',['Only D1', 
+                             'D1,D2',
+                             'MSN lesioned (D1, D2)',
+                             'FSN lesioned (D1, D2)',
+                             'GPe TA lesioned (D1,D2)'])
         self.threads=k.get('threads',1)
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
@@ -365,6 +424,7 @@ class Setup(object):
         self.l_mean_rate_slices=k.get('l_mean_rate_slices', ['mean_rate_slices', 
                                                              'mean_rate_slices_0',
                                                              'mean_rate_slices_1'])
+        self.proportion_connected=k.get('proportion_connected',1)
     def builder(self):
         d= {'repetition':self.rep,
             'resolution':self.res,
@@ -372,14 +432,16 @@ class Setup(object):
                             ['C1', 'C2']],
             'sub_sampling':6.25,
             'laptime':self.laptime,                
-            'duration':self.duration}
+            'duration':self.duration,
+            'proportion_connected':self.proportion_connected}
         return d
 
     def firing_rate(self):
         d={'average':False, 
            'sets':[0,1],
            'time_bin':5,
-           'threads':self.threads}
+           'threads':self.threads,
+           'proportion_connected':self.proportion_connected}
         return d
     
     def mean_rate_slices(self):
@@ -392,13 +454,14 @@ class Setup(object):
            't_start':0.0,
            't_stop':10000.0}
         return d
+    
     def plot_fr2(self):
         d={'win':10.,
            'by_sets':True,
            't_start':0.0,
            't_stop':30000.0,
            'labels':['Action 1', 'action 2'],
-'fig_and_axes':{'n_rows':3, 
+           'fig_and_axes':{'n_rows':3, 
                                         'n_cols':1, 
                                         'w':800.0*0.55*2, 
                                         'h':600.0*0.55*2, 
@@ -407,29 +470,21 @@ class Setup(object):
                                         'frame_hight_x':0.78,
                                         'linewidth':3.
                                         }
-    }
+           }
         return d    
     
         
  
     def plot_3d(self):
         d={'resolution':self.res,
-           'titles':['Only D1', 
-                     'D1,D2',
-                     'MSN lesioned (D1, D2)',
-                     'FSN lesioned (D1, D2)',
-                     'GPe TA lesioned (D1,D2)']}
+           'titles':self.labels}
         return d
 
         
     def plot_bulkt(self):
-        d={'labels':[
-                    'Only D1', 
-                     'D1 and D2',
-                    'MSN lesioned (D1 and D2)',
-                     'FSN lesioned (D1 and D2)',
-                     'GPe TA lesioned (D1 and D2)']}
+        d={'labels':self.labels}
         return d
+    
     def get_l_mean_rate_slices(self):
         return self.l_mean_rate_slices
 
@@ -521,13 +576,25 @@ def create_figs(setup, file_name_figs, d, models,sd):
 #         figs.append(show_3d(d,name,  **d_plot_3d))
 # 
     for name in l_mean_rate_slices:
+        d_plot_3d['type_of_plot']='mean'
         fig, perf=show_heat_map(d, name,  **d_plot_3d)
         figs.append(fig)
  
+    for name in l_mean_rate_slices:
+        d_plot_3d['type_of_plot']='variance'
+        
+        fig, perf=show_heat_map(d, name,  **d_plot_3d)
+        figs.append(fig)
+
+    for name in l_mean_rate_slices:
+        d_plot_3d['type_of_plot']='CV'
+         
+        fig, perf=show_heat_map(d, name,  **d_plot_3d)
+        figs.append(fig)
 
 # 
     for name in l_mean_rate_slices:   
-         figs.append(show_bulk(d, models, name, **d_plot_bulk))
+        figs.append(show_bulk(d, models, name, **d_plot_bulk))
 #      
 #     figs.append(show_neuron_numbers(d, models))
 #      
@@ -567,7 +634,7 @@ def create_figs(setup, file_name_figs, d, models,sd):
             
 
     sd_figs.save_figs(figs, format='png')
-#     sd_figs.save_figs(figs, format='svg')
+    sd_figs.save_figs(figs, format='svg')
 def main(builder=Builder,
          from_disk=2,
          perturbation_list=None,
@@ -594,31 +661,39 @@ class TestMethods(unittest.TestCase):
         
         import oscillation_perturbations4 as op
         
-        rep, res=1, 5
-        
-        sim_time=rep*res*res*1500.0
+        rep, res=4, 2
+        duration=[900.,100.0]
+        laptime=1000.0
+        p_size=0.1608005821
+        ss=8.3
+        l_mean_rate_slices= ['mean_rate_slices']
+#         sim_time=rep*res*res*1500.0
       
-        threads=2
+        threads=16
         
         l=op.get()
-        
-        p=pl({'simu':{'sim_time':sim_time,
-                      'sim_stop':sim_time,
-                      'threads':threads}},
+        max_size=4000
+        p=pl({'netw':{'size':int(p_size*max_size),
+                      'sub_sampling':{'M1':ss,
+                                      'M2':ss}},
+              'simu':{'threads':threads}},
                   '=')
-#         p+=l[4+3] #data2
+        p+=l[4+3] #data2
 #         p+=l[4] #data        
-        p+=l[4+5] #data3
+#         p+=l[4+3] #data3
         
-        self.setup=Setup(**{'threads':threads,
-                        'resolution':res,
-                        'repetition':rep})
+        self.setup=Setup(**{'duration':duration,
+                            'laptime':laptime,
+                            'l_mean_rate_slices':l_mean_rate_slices,
+                            'threads':threads,
+                            'resolution':res,
+                            'repetition':rep})
         
         v=simulate(builder=Builder,
                             from_disk=from_disk,
                             perturbation_list=p,
                             script_name=(__file__.split('/')[-1][0:-3]
-                                         +'/data3'),
+                                         +'/data2'),
                             setup=self.setup)
         
         file_name, file_name_figs, from_disks, d, models, sd= v

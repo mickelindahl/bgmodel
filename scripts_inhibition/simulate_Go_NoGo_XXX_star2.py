@@ -18,7 +18,7 @@ from copy import deepcopy
 
 def perturbations(rep,res):
 
-    threads=8
+    threads=20
 
     l=[]
     
@@ -35,7 +35,8 @@ def perturbations(rep,res):
               ]
     p_sizes=[p/p_sizes[0] for p in p_sizes]
     max_size=4000
-    for ss, p_size in zip([6.25, 
+    for ss, p_size in zip([
+                           6.25, 
                            8.3 , 
                            12.5, 
                            25
@@ -53,34 +54,34 @@ def perturbations(rep,res):
             _l+=pl({'simu':{'threads':threads}},'=')
             ll.append(_l)
     
-    for _l in deepcopy([ll[0]]):
-        _lr=deepcopy(_l)
-        _lr.update_list(
-            pl({'nest':{'GA_M1_gaba':{'weight':5*2.*w},
-#                         'GA_FS_gaba':{'weight':0.1}
-                        }},'*', **{'name':'GA-XX-equal'}))
-        ll.append(_lr)
- 
-        _lr=deepcopy(_l)
-        _lr.update_list(
-            pl({'nest':{'GA_M1_gaba':{'weight':5*4.*w},
-#                         'GA_FS_gaba':{'weight':0.1}
-                        }},'*', **{'name':'GA-XX-equal'}))
-        ll.append(_lr)
- 
-        _lr=deepcopy(_l)
-        _lr.update_list(
-            pl({'nest':{'GA_M1_gaba':{'weight':5*0.5*w},
-#                         'GA_FS_gaba':{'weight':0.1}
-                        }},'*', **{'name':'GA-XX-equal'}))
-        ll.append(_lr)
+#     for _l in deepcopy([ll[0]]):
+#         _lr=deepcopy(_l)
+#         _lr.update_list(
+#             pl({'nest':{'GA_M1_gaba':{'weight':5*2.*w},
+# #                         'GA_FS_gaba':{'weight':0.1}
+#                         }},'*', **{'name':'GA-XX-equal'}))
+#         ll.append(_lr)
+#  
+#         _lr=deepcopy(_l)
+#         _lr.update_list(
+#             pl({'nest':{'GA_M1_gaba':{'weight':5*4.*w},
+# #                         'GA_FS_gaba':{'weight':0.1}
+#                         }},'*', **{'name':'GA-XX-equal'}))
+#         ll.append(_lr)
+#  
+#         _lr=deepcopy(_l)
+#         _lr.update_list(
+#             pl({'nest':{'GA_M1_gaba':{'weight':5*0.5*w},
+# #                         'GA_FS_gaba':{'weight':0.1}
+#                         }},'*', **{'name':'GA-XX-equal'}))
+#         ll.append(_lr)
  
     
     return ll, threads
 
 
 
-res, rep=5, 1
+res, rep=7, 40
 duration=[900.,100.0]
 laptime=1000.0
 l_mean_rate_slices= ['mean_rate_slices']
@@ -100,13 +101,13 @@ n=len(p_list)
 
 
 
-for j in range(2, 3):
+for j in range(1, 3):
     for i, p in enumerate(p_list):
         
         
 #         if i<3:
-# #         if i!=1:
-#             continue
+        if i!=0:
+            continue
         from_disk=j
 
         fun=Go_NoGo_compete.main

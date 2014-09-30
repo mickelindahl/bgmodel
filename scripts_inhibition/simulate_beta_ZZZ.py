@@ -20,7 +20,7 @@ pp=pprint.pprint
 def perturbations():
     sim_time=10000.0
     size=20000.0
-    threads=2
+    threads=4
 
     freqs=[0.5, 1.0, 1.5]
 
@@ -71,13 +71,16 @@ args_list=[]
 
 from os.path import expanduser
 home = expanduser("~")
-   
+
+type_of_run='mpi_supermicro'
+ 
 path=(home + '/results/papers/inhibition/network/'
       +__file__.split('/')[-1][0:-3]+'/')
 
 n=len(p_list)
 
-for j in range(2,3):
+j0=0
+for j in range(j0,3):
     for i, p in enumerate(p_list):
         
 # #         if i<n-9:
@@ -85,17 +88,24 @@ for j in range(2,3):
 #             continue
 
 
-        from_disk=j
-
-        fun=simulate_beta.main
-        script_name=(__file__.split('/')[-1][0:-3]+'/script_'+str(i)+'_'+p.name)
-#         fun(*[Builder, from_disk, p, script_name, threads])
-        args_list.append([fun,script_name]
-                         +[Builder, from_disk, p, 
-                           script_name, threads])
+        script_name=(__file__.split('/')[-1][0:-3]
+                     +'/script_'+str(i)+'_'+p.name)
+        
+        setup=simulate_beta.Setup(1000.0/20.0, threads)
+        obj=simulate_beta.Main(**{'builder':Builder,
+                                'from_disk':j,
+                                'perturbation_list':p,
+                                'script_name':script_name,
+                                'setup':setup})
+#         obj.do()
+        args_list.append([obj, script_name])
 
 # for i, a in enumerate(args_list):
 #     print i, a
 
-loop(args_list, path, 10)
+loop(args_list, path, 10, 
+     **{'type_of_run':type_of_run,
+        'threads':threads,
+        'i0':j0, 
+        'debug':True})
         

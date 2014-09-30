@@ -4,8 +4,12 @@
 # compile-module-milner module-130701 nest-2.2.2 /pdc/vol/nest/2.2.2/ /afs/nada.kth.se/home/w/u1yxbcfw/opt/NEST/dist/nest-2.2.2/models
 #./compile-module.sh module-130701 nest-2.4.2 /home/mikael/opt/NEST/dist/install-nest-2.4.2/ /home/mikael/opt/NEST/dist/nest-2.4.2/models
 
+#enable modules within the batch system
+. /opt/modules/default/etc/modules.sh
+
 # compile with the GNU compiler
 module swap PrgEnv-cray PrgEnv-gnu
+module add nest
 
 # Directory where nest have been installed
 export NEST_INSTALL_DIR="$3"

@@ -590,21 +590,22 @@ def get_input_Go_NoGo(kwargs):
             params['params'].update({'params_sets':d_sets})
             d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
         
-        if 'CF' not in inp_list:
-            inp='CF'
-            d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
-            params = {'type':'burst3', 
-                      'params':{'n_set_pre':1, 
-                                'repetitions':1}}
-            d_sets = {}
-            
-            d_sets.update({str(0):{'active':True, 
-                                   'amplitudes':[1], 
-                                   'durations':[sum(durations)], 
-                                   'proportion_connected':1}})
-            
-            params['params'].update({'params_sets':d_sets})
-            d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
+        if ('CF' not in inp_list) or ('CS' not in inp_list):
+            for inp in ['CF', 'CS']:
+#             inp='CF'
+                d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
+                params = {'type':'burst3', 
+                          'params':{'n_set_pre':1, 
+                                    'repetitions':1}}
+                d_sets = {}
+                
+                d_sets.update({str(0):{'active':True, 
+                                       'amplitudes':[1], 
+                                       'durations':[sum(durations)], 
+                                       'proportion_connected':1}})
+                
+                params['params'].update({'params_sets':d_sets})
+                d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
    
             
         
@@ -625,7 +626,7 @@ class Builder_Go_NoGo_compete_base(Builder_network):
 
     def get_parameters(self, per):
         return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -674,25 +675,38 @@ def add_lesions_Go_NoGo(l):
 
 
 
-def add_extra_lesions_Go_NoGo(l):
+def set_lesions_scenarios_GPe_Go_NoGo(l):
 
 
     lesions = [{'conn':{'GA_FS_gaba':{'lesion':True}}},
                {'conn':{'GA_M1_gaba':{'lesion':True}}},
-               {'conn':{'GA_M2_gaba':{'lesion':True}}}]
+               {'conn':{'GA_M2_gaba':{'lesion':True}}},
+               
+               {'conn':{'GA_FS_gaba':{'lesion':True},
+                        'GA_M1_gaba':{'lesion':True}}},
+               
+               {'conn':{'GA_FS_gaba':{'lesion':True},
+                        'GA_M2_gaba':{'lesion':True}}},
+               
+               {'conn':{'GA_M1_gaba':{'lesion':True},
+                        'GA_M2_gaba':{'lesion':True}}}]
     
     
     
-    names = ['no-MS-MS', 
-             'no-FS', 
-             'no_GP']
+    names = ['no-GP_FS', 
+             'no-GP_M1', 
+             'no_GP_M2',
+             'no_GP_FS-M1',
+             'no_GP_FS_M2',
+             'no_GP_M1_M2']
+    
     for lesion, name in zip(lesions, names):
-        l += [deepcopy(l[1])]
+        l += [deepcopy(l[0])]
         l[-1] += pl(lesion, 
             '=', **
             {'name':name})
     
-    return l
+    return l[-6:]
 
 class Builder_Go_NoGo_with_lesion_base(Builder_network):    
 
@@ -777,11 +791,105 @@ class Builder_Go_NoGo_with_lesion_FS_base(Builder_network):
 
 
 class Builder_Go_NoGo_with_lesion_FS(Builder_Go_NoGo_with_lesion_FS_base, 
+                                     Mixin_dopamine, 
+                                     Mixin_general_network, 
+                                     Mixin_reversal_potential_striatum):
+    pass
+
+
+class Builder_Go_NoGo_with_lesion_FS_ST_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [['C1','CF', 'CS'], 
+                                     ['C1', 'C2', 'CF', 'CS']]
+
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        
+
+        l = add_lesions_Go_NoGo(l)    
+        
+
+        
+        return l    
+
+
+class Builder_Go_NoGo_with_lesion_FS_ST(Builder_Go_NoGo_with_lesion_FS_ST_base, 
+                                     Mixin_dopamine, 
+                                     Mixin_general_network, 
+                                     Mixin_reversal_potential_striatum):
+    pass
+
+class Builder_Go_NoGo_with_GP_scenarios_FS_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [['C1', 'C2', 'CF']]
+
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        
+
+        l = set_lesions_scenarios_GPe_Go_NoGo(l)    
+        
+
+        
+        return l    
+
+
+class Builder_Go_NoGo_with_GP_scenarios__FS(Builder_Go_NoGo_with_GP_scenarios_FS_base, 
                       Mixin_dopamine, 
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass
+ 
+class Builder_Go_NoGo_with_GP_scenarios_FS_ST_base(Builder_network):    
 
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [['C1', 'C2', 'CF', 'CS']]
+
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        
+
+        l = set_lesions_scenarios_GPe_Go_NoGo(l)    
+        
+
+        
+        return l    
+
+
+class Builder_Go_NoGo_with_GP_scenarios_FS_ST(Builder_Go_NoGo_with_GP_scenarios_FS_ST_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass 
         
 class Builder_Go_NoGo_with_lesion_FS_act_base(Builder_network):    
 
@@ -1127,16 +1235,12 @@ def run(net):
     d=net.simulation_loop()
     return {net.get_name():d}
 
-
-
 def save(storage_dic, d):         
         storage_dic.save_dic(d, **{'use_hash':False})
                     
 def spike_statistic(data,**k):
     return data.get_spike_stats(**k)
-  
-    
-      
+        
 class TestModuleFunctions(unittest.TestCase):
     
     def setUp(self):

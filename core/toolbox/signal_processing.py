@@ -11,10 +11,12 @@ from numpy import resize, sqrt, divide, array
 from numpy import dot, conjugate, absolute, arange #matrixmultiply, \
 Float=numpy.float64 
 Complex=numpy.complex 
-     
+    
+
 from numpy.fft import fft
 from toolbox.parallelization import map_parallel
 from scipy.signal import butter, lfilter, hilbert, filtfilt
+from os.path import expanduser
 
 from toolbox import misc
 import pylab
@@ -416,7 +418,7 @@ def psd(x, NFFT=256, fs=2,  noverlap=0, normalize=True, **kwargs):
     detrend=kwargs.get('detrend',detrend_none )
     
     #No signal
-#     if not numpy.mean(x):
+#     if tnot numpy.mean(x):
 #         return zeros((numFreqs,n), Float)
             
     if normalize and numpy.mean(x):
@@ -535,7 +537,8 @@ class Test_signal_processing(unittest.TestCase):
         self.sim_time=10000.0
         self.n_pop=30
         
-
+        self.home=expanduser("~")
+        
 #     def test_1_phase(self):
 #         fs=1000.0
 #         lowcut, highcut, order,  fs,=10,30,3, fs
@@ -623,44 +626,102 @@ class Test_signal_processing(unittest.TestCase):
 #         p2=phases_diff(x, y,  **kwargs)    
 
 
-    def test_4_coherence_and_phase_diff(self):
+    def test_41_phase_diff_mpi(self):
+        from toolbox.data_to_disk import mkdir
+        
+        import pickle
+        import os
+        import subprocess
         fs=1000.0
-        kwargs_phase_diff = get_kwargs_phase_diff(fs)
-        
-        m=2
-        kwargs_cohere = get_kwargs_cohere(m)
-        
-        n_pop, sim_time=10, 10000.0 
+        kwargs = get_kwargs_phase_diff(fs)
+         
+        n_pop, sim_time=5, 2000.0 
         x=dummy_data_pop(n_pop, **{'fs':fs,
-                                   'scale':0.5,
-                                   'sim_time':sim_time})        
+                                   'scale':0.5,'sim_time':sim_time})
         y=dummy_data_pop(n_pop, **{'fs':fs,
-                                   'scale':0.5,
-                                   'sim_time':sim_time})     
+                                   'scale':0.5,'sim_time':sim_time,
+                                   'shift':0.})
+        kwargs['inspect']=False
+        kwargs['threads']=2
+
         
-  
+        data_path= self.home+('/results/unittest/signal_processing'
+                         +'/signal_processing_phase_diff_mpi/')
+        script_name=os.getcwd()+('/test_scripts_MPI/'
+                                 +'signal_processing_phase_diff_mpi.py')
         
-        f, c1=coherences(x, y,**kwargs_cohere)
-        idx, v =sort_coherences(f, c1, 19, 21)
+        fileName=data_path+'data_in.pkl'
+        fileOut=data_path+'data_out.pkl'
+        mkdir(data_path)
         
-        L=float(len(x[0])/kwargs_cohere.get('NFFT'))
-        p_conf95=numpy.ones(len(f[0, 2:]))*(1-0.05**(1/(L-1)))
-        p=[]
-        p+=[phases_diff(x, y, idx_filter=idx[0:10], **kwargs_phase_diff).ravel()]
-        p+=[phases_diff(x, y, idx_filter=idx[0:50], **kwargs_phase_diff).ravel()]
-        p+=[phases_diff(x, y, idx_filter=idx[90:], **kwargs_phase_diff).ravel()]
-        p+=[phases_diff(x, y, idx_filter=idx[v[idx]>p_conf95[0]], **kwargs_phase_diff).ravel()]
-        p+=[phases_diff(x, y, **kwargs_phase_diff).ravel()]
-        if 1:
-            for x in p:
-                bins=numpy.linspace(-numpy.pi,numpy.pi, 100.0)
-                pylab.hist(x, bins,**{'histtype':'step', 'normed':True} )
-            pylab.xlim((-numpy.pi, 2*numpy.pi))  
-            pylab.xlabel('Angle')
-            pylab.ylabel('Occurance') 
-            pylab.show() 
-            pylab.plot()
+        f=open(fileName, 'w') #open in binary mode 
+        pickle.dump([x,y, kwargs], f, -1)
+        f.close()
+                
+        np=4        
+        p=subprocess.Popen(['mpirun', '-np', str(np), 'python', 
+                            script_name, fileName, fileOut],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE
+#                             stderr=subprocess.STDOUT
+                            )
         
+        out, err = p.communicate()
+#         print out
+#         print err
+
+        p0=phases_diff(x, y,  **kwargs)   
+        
+        f=open(fileOut, 'rb') #open in binary mode
+        p1=pickle.load(f)
+        f.close()
+        l0=numpy.round(p0.ravel(),2)
+        l1=numpy.round(p1.ravel(),2)
+        
+        # abs since order of signal comparisons are random
+        # se phase_diff
+        l0,l1=list(numpy.abs(l0)), list(numpy.abs(l1))
+        self.assertListEqual(l0,l1 )
+        
+
+#     def test_4_coherence_and_phase_diff(self):
+#         fs=1000.0
+#         kwargs_phase_diff = get_kwargs_phase_diff(fs)
+#         
+#         m=2
+#         kwargs_cohere = get_kwargs_cohere(m)
+#         
+#         n_pop, sim_time=10, 10000.0 
+#         x=dummy_data_pop(n_pop, **{'fs':fs,
+#                                    'scale':0.5,
+#                                    'sim_time':sim_time})        
+#         y=dummy_data_pop(n_pop, **{'fs':fs,
+#                                    'scale':0.5,
+#                                    'sim_time':sim_time})     
+#         
+#   
+#         
+#         f, c1=coherences(x, y,**kwargs_cohere)
+#         idx, v =sort_coherences(f, c1, 19, 21)
+#         
+#         L=float(len(x[0])/kwargs_cohere.get('NFFT'))
+#         p_conf95=numpy.ones(len(f[0, 2:]))*(1-0.05**(1/(L-1)))
+#         p=[]
+#         p+=[phases_diff(x, y, idx_filter=idx[0:10], **kwargs_phase_diff).ravel()]
+#         p+=[phases_diff(x, y, idx_filter=idx[0:50], **kwargs_phase_diff).ravel()]
+#         p+=[phases_diff(x, y, idx_filter=idx[90:], **kwargs_phase_diff).ravel()]
+#         p+=[phases_diff(x, y, idx_filter=idx[v[idx]>p_conf95[0]], **kwargs_phase_diff).ravel()]
+#         p+=[phases_diff(x, y, **kwargs_phase_diff).ravel()]
+#         if 1:
+#             for x in p:
+#                 bins=numpy.linspace(-numpy.pi,numpy.pi, 100.0)
+#                 pylab.hist(x, bins,**{'histtype':'step', 'normed':True} )
+#             pylab.xlim((-numpy.pi, 2*numpy.pi))  
+#             pylab.xlabel('Angle')
+#             pylab.ylabel('Occurance') 
+#             pylab.show() 
+#             pylab.plot()
+#         
         
         
                       
@@ -674,7 +735,8 @@ def sort_coherences(f, c, low, high):
     
                
 if __name__ == '__main__':
-    test_classes_to_run=[Test_signal_processing,
+    test_classes_to_run=[
+                         Test_signal_processing,
                          ]
     suites_list = []
     for test_class in test_classes_to_run:

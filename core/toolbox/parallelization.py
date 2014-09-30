@@ -3,15 +3,16 @@ Created on Apr 9, 2014
 
 @author: lindahlm
 '''
-import misc
-import nest #Need to be imported before MPI is impoorted!!!
+# import misc
+# import nest #Need to be imported before MPI is impoorted!!!
 import mpi4py.MPI as MPI
 
-
 import math
-import threading
+# import threading
 import unittest
+import os
 
+from os.path import expanduser
 from multiprocessing import Pool
 
 class comm(object):
@@ -46,6 +47,16 @@ class comm(object):
     @classmethod
     def send(cls, *args, **kwargs):
         return comm.obj.send(*args, **kwargs)
+    
+    @classmethod
+    def open(cls, name, mode):
+        
+        if mode in ['r', 'rb']:
+            amode=MPI.MODE_RDONLY
+        if mode in ['w','wb']:
+            amode=(MPI.MODE_WRONLY + MPI.MODE_CREATE)
+        
+        return MPI.File.Open(MPI.COMM_WORLD, name, amode=amode)
 
 class Barrier():
     
@@ -149,7 +160,8 @@ def _mpi(fun, worker, *args, **kwargs):
     with Barrier():    
         chunksize = int(math.ceil(len(args[0]) / float(comm.size())))
         l=worker(fun, chunksize, comm.rank(), None, *args)
-        #print l
+#         print l
+        
         if comm.rank() == 0: 
             data=[l]+[comm.recv(source=i, tag=1) for i in range(1, comm.size())]
             data=reduce(lambda x,y:x+y, data )
@@ -158,8 +170,10 @@ def _mpi(fun, worker, *args, **kwargs):
             comm.send(l,dest=0, tag=1)
             data=None
             
+    with Barrier():
         data=comm.bcast(data, root=0)
-        
+    
+#     print 'returning'
     return data
 
 
@@ -232,11 +246,53 @@ class TestModule_functions(unittest.TestCase):
 #         nest.Connect(pre, post)#, weights, delays, **{'model':'static_synapse'})
 # #         fun_parallel(nest.Connect, pre, post, weights, delays, **kwargs)
 
-                
+class TestComm(unittest.TestCase):
+
+    def test_is_mpi_used(self):
+        import subprocess
+        import pickle
+        from toolbox.data_to_disk import read_f_name
+        s = expanduser("~")
+        data_path= s+'/results/unittest/parallelization/comm_is_mpi_used/'
+        script_name=os.getcwd()+'/test_scripts_MPI/parallelization_comm_is_mpi_used.py'
+        np=2
+        
+        
+        for fname in read_f_name(data_path):
+            os.remove(data_path+fname)
+        
+        files=[]
+        for i in range(np):
+            files.append(data_path+'data'+str(i)+'.pkl')
+            
+        p=subprocess.Popen(['mpirun', 
+                         '-np',
+                         str(np), 
+                         'python', 
+                         script_name,
+                         data_path],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE)
+        
+        out, err = p.communicate()
+#         print out
+#         print err
+        data=[]
+        for fn in files:
+            f=open(fn, 'rb') #open in binary mode
+
+            data.append(pickle.load(f))
+            f.close()
+            
+        data2=[1 for _ in range(np)]
+        
+        self.assertListEqual(data, data2)          
+        
 if __name__ == '__main__':
     
     test_classes_to_run=[
                             TestModule_functions,
+                            TestComm,
                          ]
     suites_list = []
     for test_class in test_classes_to_run:

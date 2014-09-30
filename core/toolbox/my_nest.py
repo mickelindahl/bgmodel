@@ -11,22 +11,67 @@ setting random weight or delay on connections.
 
 '''
 
+
+
 # Imports
 import numpy
 import numpy.random as rand
+
+import socket
+HOST=socket.gethostname().split('.')[0]
+# if 'milner-login1.pdc.kth.se'==HOST:
+# if 0:
 from nest import *
 import nest
+    
+    
 import time
 from copy import deepcopy
+from toolbox.parallelization import comm, Barrier
+
+
+def _Simulate_mpi(*args, **kwargs):
+    with Barrier():
+        nest.Simulate(*args, **kwargs)
+        
+def Simulate(*args, **kwargs):
+    if comm.is_mpi_used():
+        _Simulate_mpi(*args, **kwargs)    
+    else:
+        nest.Simulate(*args, **kwargs)   
+
+def _Create_mpi(*args, **kwargs):
+    with Barrier():
+        return nest.Create(*args, **kwargs)
+        
+def Create(*args, **kwargs):
+    if comm.is_mpi_used():
+        return _Create_mpi(*args, **kwargs)    
+    else:
+        return nest.Create(*args, **kwargs)  
+
+
+def Connect(*args, **kwargs):
+    if comm.is_mpi_used():
+        _Connect_mpi(*args, **kwargs)
+    else:
+        _Connect(*args, **kwargs)
+        
+
+def _Connect_mpi(*args, **kwargs):
+    with Barrier():
+        _Connect(*args, **kwargs)
 
 
 
-def Connect(pre, post, params=None, delay=None, model="static_synapse"):
+        
+
+def _Connect(pre, post, *args, **kwargs):
     
     if hasattr(nest, 'OneToOneConnect'):
-        nest.OneToOneConnect(pre, post, params, delay, model)
+        nest.OneToOneConnect(pre, post,  *args, **kwargs)
     else:
-        nest.Connect(pre, post, params, delay, model)
+        nest.Connect(pre, post,  *args, **kwargs)
  
 #         if params:
 #             syn_list=[{'model':model,
@@ -132,16 +177,16 @@ def CC( pre,  post,
                                         delay = d, model = m )                   
     
     
-def Create(*args, **kwargs):
-    try:
-        return nest.Create(*args, **kwargs)
-    except Exception as e:
-        s='\nargs:{} \nkwargs:{} \nAvailable models: \n{}'.format(args, 
-                                                           kwargs, 
-                                                           nest.Models())
-        if len(e.message)>40:
-            e.message=e.message[0:40]+'\n'+e.message[40:]
-        raise type(e)(e.message + s), None, sys.exc_info()[2]
+# def Create(*args, **kwargs):
+#     try:
+#         return nest.Create(*args, **kwargs)
+#     except Exception as e:
+#         s='\nargs:{} \nkwargs:{} \nAvailable models: \n{}'.format(args, 
+#                                                            kwargs, 
+#                                                            nest.Models())
+#         if len(e.message)>40:
+#             e.message=e.message[0:40]+'\n'+e.message[40:]
+#         raise type(e)(e.message + s), None, sys.exc_info()[2]
         
 def GetConn(soruces, targets):    
     c=[]
@@ -150,6 +195,30 @@ def GetConn(soruces, targets):
         for t in targets:
             c.extend(nest.GetStatus(nest.FindConnections([s], [t])))     
     return c
+
+def get_default_module_paths(home):
+
+    if nest.version()=='NEST 2.2.2':
+        s='nest-2.2.2'
+    if nest.version()=='NEST 2.4.1':
+        s='nest-2.4.1'    
+    if nest.version()=='NEST 2.4.2':
+        s='nest-2.4.2'   
+          
+    path= (home+'/opt/NEST/module/'
+                  +'install-module-130701-'+s+'/lib/nest/ml_module')
+    sli_path =(home+'/opt/NEST/module/'
+                      +'install-module-130701-'+s+'/share/ml_module/sli')
+    
+    return path, sli_path
+
+def install_module(path, sli_path, model_to_exist='my_aeif_cond_exp'):
+    
+    
+    if not model_to_exist in nest.Models(): 
+        nest.sr('('+sli_path+') addpath')
+        nest.Install(path)
+        
 
 def GetConnProp(soruces, targets, prop_name, time):
     c=GetConn(soruces, targets)                                        
@@ -440,10 +509,15 @@ def MySimulate(duration):
     print 'Rank %i simulation time: %i minutes, %i seconds' % ( Rank(), m, s )    
             
 def ResetKernel(threads=1, print_time=False, display=True):
+
+    
     if display:
         print 'Reseting kernel'
     nest.ResetKernel()
     #nest.SetKernelStatus({"resolution": .1, "print_time": print_time})
     nest.SetKernelStatus({ "print_time": print_time})
-    nest.SetKernelStatus({"local_num_threads":  threads})
-            
+    
+    if comm.is_mpi_used():
+        nest.SetKernelStatus({"local_num_threads":  1})
+    else:    
+        nest.SetKernelStatus({"local_num_threads":  threads})

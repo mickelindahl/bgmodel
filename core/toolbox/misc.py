@@ -5,7 +5,6 @@ Mikael Lindahl 2010
 Module:
 misc
 
-
 '''
 
 # Imports
@@ -19,6 +18,7 @@ import pylab
 import random
 import scipy.signal as signal
 import scipy.cluster.vq as clust
+import socket
 import sys
 import time
 
@@ -143,7 +143,7 @@ class Stopwatch():
         
     def __exit__(self, type, value, traceback):
         t=round(time.time()-self.time,)
-        print ' {} sec'.format(t)
+        print '... finnish {} {} sec'.format(self.msg, t)
         if len(self.args)>1:
             self.args[1][self.msg]=t
             
@@ -188,7 +188,9 @@ class Std_to_files():
             sys.stdout=self.stdout
             sys.stderr=self.stderr
 
-        
+
+
+      
 def adjust_limit(limit, percent_x=0.03, percent_y=0.04):
     ''' Adjust limit by withdrawing percent of diff from start and
         adding percent of diff to start.  
@@ -587,8 +589,6 @@ def dict_reduce(dic_in, dic_out, s='', deliminator='.'):
 def dict_slice(d, keys):
     m=map(lambda x:d[x], keys)
     return dict(zip(keys,m)) 
-
-
 
 
 def sigmoid(p,x):
@@ -992,7 +992,7 @@ def wrap(ids, start, stop):
 def zero_lag_correlation_matrix(spikes, lenGaussKernel = 1,  samplingW =1):
     '''
     zero_lag_correlation_matrix(steps, MSN_layer, FSI_layer,
-CortexX_layer, CortexY_layer, meter, nestResetting,
+CortexX_layer, CortexY_layer, meter, dResetting,
 pathLength = 10, seedNest = randomSeedNest, problemType =
 0, tau = 23, initialPositions = None, clustRuntime =
 runtime, stepSize = numCortexX/50, lenGaussKernel =

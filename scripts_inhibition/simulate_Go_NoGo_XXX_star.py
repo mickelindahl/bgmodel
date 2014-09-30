@@ -28,14 +28,16 @@ def perturbations(rep,res):
 
     ll=[]
     
-    p_sizes=[0.1989460102,  
+    p_sizes=[
+#              0.1989460102,  
             0.1608005821,    
-            0.122655154, 
-            0.0845097259
+#             0.122655154, 
+#             0.0845097259
               ]
     p_sizes=[p/p_sizes[0] for p in p_sizes]
     max_size=4000
-    for ss, p_size in zip([6.25, 
+    for ss, p_size in zip([
+                           6.25, 
                            8.3 , 
                            12.5, 
                            25

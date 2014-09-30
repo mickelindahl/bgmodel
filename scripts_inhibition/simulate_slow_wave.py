@@ -109,7 +109,8 @@ class Setup(object):
         return d
     
     def plot_summed2(self):
-        d={'xlim_cohere':[0, 5],
+        d={
+           'xlim_cohere':[0, 5],
            'rest':False,
            'p_95':True,
            'leave_out':['control_fr', 'control_cv'],

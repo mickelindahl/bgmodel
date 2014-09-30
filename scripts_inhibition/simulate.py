@@ -6,7 +6,7 @@ Created on May 10, 2014
 
 from toolbox import misc
 from toolbox.network.manager import save, load, compute, run
-
+from toolbox.network import default_params
 import toolbox.plot_settings as ps
 
 from copy import deepcopy
@@ -65,14 +65,23 @@ def cmp_psd(d_pds, models, dd):
             dd[key1][model]['psd'] = psd
 
 
-def get_file_name(script_name, home):
-    file_name = home + '/results/papers/inhibition/network/' + script_name
+def get_file_name(script_name):
+    par=default_params.Inhibition()
+    path=par.get_path_data()
+    file_name = path + script_name
+#     file_name = home + '/results/papers/inhibition/network/' + script_name
     return file_name
 
 
-def get_file_name_figs(script_name, home):
-    file_name_figs = home + '/results/papers/inhibition/network/fig/' + script_name
-    return file_name_figs
+def get_file_name_figs(script_name):
+    par=default_params.Inhibition()
+    path=par.get_path_figure()
+    file_name = path + script_name
+
+#     file_name = path +'/fig/'+ script_name
+
+#     file_name_figs = home + '/results/papers/inhibition/network/fig/' + script_name
+    return file_name
 
 
 def get_conn_matricies(net, models, attr):

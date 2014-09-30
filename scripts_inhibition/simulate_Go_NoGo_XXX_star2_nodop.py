@@ -42,7 +42,18 @@ def perturbations(rep,res, sizes):
     
             _lt+=pl({'simu':{'threads':threads}},'=')
             ll.append(_lt)
+
     
+    for l in ll[:]:
+        for beta in [0, 0.9375, 0.3125]:
+            _lb=deepcopy(l) 
+            per=pl({'nest':{'M1_low':{'beta_I_GABAA_2':beta },
+                            'M2_low':{'beta_I_GABAA_2':beta }, 
+                            }},
+                      '=', 
+                    **{'name':'beta-'+str(beta)})
+            _lb+=per
+            ll.append(_lb)
     return ll, threads
 
 
@@ -74,7 +85,11 @@ for i in range(len(p_list)):
             'threads':threads,
             'resolution':res,
             'repetition':rep,
-            'proportion_connected':props_conn[i]
+            'proportion_connected':props_conn[i],
+            'labels':['Only D1', 
+                      'D1,D2',
+                      'Only D1 no dop', 
+                      'D1,D2 no dop']
             }))
                
                

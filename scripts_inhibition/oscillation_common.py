@@ -665,7 +665,6 @@ def simulate(builder=Builder,
     
     k = get_kwargs_builder()
 
-    home = expanduser("~")
     d_pds = setup.pds()
     d_cohere = setup.coherence()
     d_phase_diff = setup.phase_diff()
@@ -683,10 +682,10 @@ def simulate(builder=Builder,
            'activity_histogram_stat']
     
     attr_coher = [
-        'phase_diff', 
-        'phases_diff_with_cohere',
-        'mean_coherence'
-        ]
+                  'phase_diff', 
+                  'phases_diff_with_cohere',
+                  'mean_coherence'
+                 ]
     
     kwargs_dic = {'firing_rate':d_firing_rate, 
                   'mean_rates':{'t_start':k['start_rec'] + 1000.}, 
@@ -695,8 +694,8 @@ def simulate(builder=Builder,
                   'phases_diff_with_cohere':d_phases_diff_with_cohere,
                   'spike_statistic':{'t_start':k['start_rec'] + 1000.}}
     
-    file_name = get_file_name(script_name, home)
-    file_name_figs = get_file_name_figs(script_name, home)
+    file_name = get_file_name(script_name)
+    file_name_figs = get_file_name_figs(script_name)
     
     models = ['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN', 'GP']
     models_coher = ['GI_GA', 'GI_GI', 'GA_GA', 'GA_ST', 'GI_ST', 'GP_GP',
@@ -705,6 +704,7 @@ def simulate(builder=Builder,
     info, nets, _ = get_networks(builder)
     add_perturbations(perturbation_list, nets)
     sd = get_storage(file_name, info)
+    
     
     d = {}
     
@@ -760,9 +760,6 @@ def cmp_activity_hist_stat(models, d, **kwargs):
             d[key1][model]['activity_histogram_stat'] = obj
             
             
-            
-
-    
 def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 
     d_plot_fr=setup.plot_fr()
@@ -818,142 +815,145 @@ def main(*args, **kwargs):
     file_name_figs, from_disks, d, models, models_coher = v
 
     
-    setup=args[-1]
+    setup=kwargs['setup']
     create_figs(file_name_figs, from_disks, d, models, models_coher, setup)
     
 #     if DISPLAY: pylab.show()  
     
     return d
 
+
+def run_simulation(from_disk=0, threads=12, type_of_run='shared_memory'):
+    from toolbox.network.default_params import Perturbation_list as pl
+
+    sim_time=10000.0
+    size=250.0
+    threads=12
+    sub_sampling=25
+    
+    p=pl({'simu':{
+                  'sim_time':sim_time,
+                  'sim_stop':sim_time,
+                  'threads':threads
+                  },
+              'netw':{'size':size,
+                      'sub_sampling':{'M1':sub_sampling,
+                                      'M2':sub_sampling}}},
+              '=')
+    
+    amp=0.9
+    d={'type':'oscillation', 
+       'params':{
+                 'p_amplitude_mod':amp,
+                 'freq': 1.,
+                 'freq_min':0.5,
+                 'freq_max':1.5, 
+                 'period':'uniform'}
+       } 
+    dd={}
+    for key in ['C1', 'C2', 'CF', 'CS']: 
+        dd=misc.dict_update(dd, {'netw': {'input': {key:d} } })     
+                 
+    p+=pl(dd,'=',**{'name':'amp_'+str(amp)})
+    
+    setup=Setup(1000.0, THREADS)
+    v=simulate(builder=Builder,
+                from_disk=from_disk,
+                perturbation_list=p,
+                script_name=(__file__.split('/')[-1][0:-3]
+                             +'/script_'+p.name+'_'+type_of_run),
+                setup=setup)
+    
+    file_name_figs, from_disks, d, models, models_coher = v
+    return d, file_name_figs, from_disks, models, models_coher, setup 
+  
+
 import unittest
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
-        from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=2
-        sim_time=20000.0
-        size=5000.0
-        threads=12
-        s=''
-        p=pl({'simu':{'sim_time':sim_time,
-                      'sim_stop':sim_time,
-                      'threads':threads},
-                  'netw':{'size':size}},
-                  '=')
         
-        for amp in [
-                0.9, 
-                ]: 
-            d={'type':'oscillation', 
-               'params':{
-                         'p_amplitude_mod':amp,
-                         'freq': 1.,
-                         'freq_min':0.5,
-                         'freq_max':1.5, 
-                         'period':'uniform'}} 
-            dd={}
-            for key in ['C1', 'C2', 'CF', 'CS']: 
-                dd=misc.dict_update(dd, {'netw': {'input': {key:d} } })     
-                         
-            p+=pl(dd,'=',**{'name':'amp_'+str(amp)})
-        s='1'
-                  
-#      
-        
-        self.setup=Setup(1000.0, THREADS)
-        v=simulate(builder=Builder,
-                            from_disk=from_disk,
-                            perturbation_list=p,
-                            script_name=(__file__.split('/')[-1][0:-3]
-                                         +'/data'+s),
-                            setup=self.setup)
-        
-        file_name_figs, from_disks, d, models, models_coher = v
-        
-        
+        v=run_simulation(from_disk=0, threads=12)
+        d, file_name_figs, from_disks, models, models_coher, setup=v
+
+        self.setup=setup
         self.file_name_figs=file_name_figs
         self.from_disks=from_disks
         self.d=d
         self.models=models
-        self.models_coher=models_coher
+        self.models_coher=models_coher  
         
 
-
-
-#     def test_isi(self):
-# #         import toolbox.plot_settings as ps
-#         fig, axs=ps.get_figure(n_rows=1, 
-#                            n_cols=1, 
-#                            w=1000.0, h=800.0, fontsize=10)  
-#           
-#         plot_isi(self.d, axs, 0)
-# #         pylab.show()
-#         print self.d
-
-#         
-#     def test_empty(self):
-#         pass
-    
-#     def test_plot_mallet2008(self):
-#         plot_mallet2008()
-#         pylab.show()
-#         
-#     def testPlotStats(self):
-# #         import toolbox.plot_settings as ps
-#         fig, axs=ps.get_figure(n_rows=3, 
-#                            n_cols=2, 
-#                            w=1000.0, h=800.0, fontsize=10)  
-#           
-#         plot_spk_stats(self.d, axs, 0, **{'statistics_mode': 'slow_wave'})
-# #         pylab.show()
-#         print self.d
-
-#     def testPlotActivityHist(self):
+    def test_isi(self):
 #         import toolbox.plot_settings as ps
-#         fig, axs=ps.get_figure(n_rows=2, 
-#                            n_cols=2, 
-#                            w=1000.0, h=800.0, fontsize=10)  
-#         
-#         plot_activity_hist(self.d, axs, 0)
-# #         plot_spk_stats(self.d, axs, 0)
+        fig, axs=ps.get_figure(n_rows=1, n_cols=1, 
+                               w=1000.0, h=800.0, fontsize=10)  
+           
+        plot_isi(self.d, axs, 0)
 #         pylab.show()
-#         print self.d
+        print self.d
 
-#     def testPlotCoherence(self):
+             
+    def test_plot_mallet2008(self):
+        plot_mallet2008()
+        pylab.show()
+         
+    def testPlotStats(self):
 #         import toolbox.plot_settings as ps
-#         fig, axs=ps.get_figure(n_rows=1, 
-#                            n_cols=1, 
-#                            w=1000.0, h=800.0, fontsize=10)  
-#         
-#         plot_coherence(self.d, axs, 0)
-# #         plot_spk_stats(self.d, axs, 0)
+        fig, axs=ps.get_figure(n_rows=3, 
+                           n_cols=2, 
+                           w=1000.0, h=800.0, fontsize=10)  
+           
+        plot_spk_stats(self.d, axs, 0, **{'statistics_mode': 'slow_wave'})
 #         pylab.show()
-#         print self.d
-# 
-#     def testPlotPhasesDffWithCohere(self):
-#         import toolbox.plot_settings as ps
-#         fig, axs=ps.get_figure(n_rows=3, 
-#                            n_cols=2, 
-#                            w=1000.0, h=800.0, fontsize=10)  
-#          
-#         plot_phases_diff_with_cohere(self.d, axs, 0)
-# #         plot_spk_stats(self.d, axs, 0)
-#         pylab.show()
-#         print self.d   
-#         
-#          
-#     def testShowSummed(self):
-#         show_summed(self.d, **{'xlim_cohere':[0,7], 
-#                                'statistics_mode':'slow_wave'})
-#         pylab.show()
-#              
-#     def testShowSummed2(self):
-#         d={'xlim_cohere':[0, 10],
-#            'leave_out':['control_fr', 'control_cv'],
-#            'statistics_mode':'slow_wave',
-#            'models_pdwc': ['GP_GP', 'GI_GI', 
-#                            'GI_GA', 'GA_GA']}
-#         show_summed2(self.d, **d)
-#         pylab.show()
+        print self.d
+
+    def testPlotActivityHist(self):
+        import toolbox.plot_settings as ps
+        fig, axs=ps.get_figure(n_rows=2, 
+                           n_cols=2, 
+                           w=1000.0, h=800.0, fontsize=10)  
+         
+        plot_activity_hist(self.d, axs, 0)
+#         plot_spk_stats(self.d, axs, 0)
+        pylab.show()
+        print self.d
+
+    def testPlotCoherence(self):
+        import toolbox.plot_settings as ps
+        fig, axs=ps.get_figure(n_rows=1, 
+                           n_cols=1, 
+                           w=1000.0, h=800.0, fontsize=10)  
+         
+        plot_coherence(self.d, axs, 0)
+#         plot_spk_stats(self.d, axs, 0)
+        pylab.show()
+        print self.d
+ 
+    def testPlotPhasesDffWithCohere(self):
+        import toolbox.plot_settings as ps
+        fig, axs=ps.get_figure(n_rows=3, 
+                           n_cols=2, 
+                           w=1000.0, h=800.0, fontsize=10)  
+          
+        plot_phases_diff_with_cohere(self.d, axs, 0)
+#         plot_spk_stats(self.d, axs, 0)
+        pylab.show()
+        print self.d   
+         
+          
+    def testShowSummed(self):
+        show_summed(self.d, **{'xlim_cohere':[0,7], 
+                               'statistics_mode':'slow_wave'})
+        pylab.show()
+              
+    def testShowSummed2(self):
+        d={'xlim_cohere':[0, 10],
+           'leave_out':['control_fr', 'control_cv'],
+           'statistics_mode':'slow_wave',
+           'models_pdwc': ['GP_GP', 'GI_GI', 
+                           'GI_GA', 'GA_GA']}
+        show_summed2(self.d, **d)
+        pylab.show()
 
     def test_create_figs(self):
         create_figs(self.file_name_figs, 
@@ -964,34 +964,98 @@ class TestOcsillation(unittest.TestCase):
                     self.setup)
         pylab.show()
      
-#     def test_show_fr(self):
-#         show_fr(self.d, self.models, **{'win':20.,
-#                                         't_start':4000.0,
-#                                         't_stop':5000.0})
-#         pylab.show()
+    def test_show_fr(self):
+        show_fr(self.d, self.models, **{
+                                        'win':20.,
+                                        't_start':4000.0,
+                                        't_stop':5000.0})
+        pylab.show()
+  
+    def test_show_coherence(self):
+        show_coherence(self.d, self.models_coher, **{'xlim':[0,10]})
+        pylab.show()
  
-#     def test_show_coherence(self):
-#         show_coherence(self.d, self.models_coher, **{'xlim':[0,10]})
-#         pylab.show()
+ 
+    def test_show_phase_diff(self):
+        show_phase_diff(self.d, self.models_coher)
+        pylab.show()
 
 
-#     def test_show_phase_diff(self):
-#         show_phase_diff(self.d, self.models_coher)
-#         pylab.show()
+class TestOscillationMPI(unittest.TestCase):
+    
+    def setUp(self):
+        
+        import subprocess
+        from toolbox.data_to_disk import pickle_save, pickle_load        
+        from toolbox.network import default_params
+        
+        s = default_params.HOME
+        data_path= s+'/results/unittest/oscillation_common/run_simulation/'
+        script_name=(os.getcwd()+'/test_scripts_MPI/'
+                     +'oscillation_common_run_simulation_mpi.py')
 
-# show_phase_diff(d, models=models_coher)
+        from_disk=0
+
+        fileName=data_path+'data_in.pkl'
+        fileOut=data_path+'data_out.pkl'
+        
+        np=12
+
+        pickle_save([from_disk, np], fileName)
+
+        p=subprocess.Popen(['mpirun', '-np', str(np), 'python', 
+                            script_name, fileName, fileOut],
+#                            stdout=subprocess.PIPE,
+#                            stderr=subprocess.PIPE,
+                           stderr=subprocess.STDOUT,
+                           )
+         
+        out, err = p.communicate()
+#         print out
+#         print err
+        v=pickle_load(fileOut)
+        d, file_name_figs, from_disks, models, models_coher, setup=v
+
+        self.setuo=setup
+        self.file_name_figs=file_name_figs
+        self.from_disks=from_disks
+        self.d=d
+        self.models=models
+        self.models_coher=models_coher     
+
+    def test_run_simulation(self):
+        pass
+    
+        
 
 if __name__ == '__main__':
-    test_classes_to_run=[
-                         TestOcsillation
-                         ]
-    suites_list = []
-    for test_class in test_classes_to_run:
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        suites_list.append(suite)
+    d={
+        TestOcsillation:[
+#                         'test_create_figs',
+#                         'test_isi',
+#                         'test_plot_mallet2008',
+#                         'testPlotStats',
+#                         'testPlotActivityHist',
+#                         'testPlotCoherence',
+#                         'testPlotPhasesDffWithCohere',
+#                         'testShowSummed',
+#                         'testShowSummed2',
+#                         'test_show_fr',
+#                         'test_show_coherence',
+#                         'test_show_phase_diff',
+                        ],
+       TestOscillationMPI:[
+                        'test_run_simulation',
+                           ]}
 
-    big_suite = unittest.TestSuite(suites_list)
-    unittest.TextTestRunner(verbosity=2).run(big_suite)
+
+    test_classes_to_run=d
+    suite = unittest.TestSuite()
+    for test_class, val in  test_classes_to_run.items():
+        for test in val:
+            suite.addTest(test_class(test))
+
+    unittest.TextTestRunner(verbosity=2).run(suite)
     
 
 

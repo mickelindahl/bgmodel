@@ -181,10 +181,11 @@ def set_mode(pylab, mode='large', w = None, h = None, fontsize=10, **kwargs):
 
     if mode == "by_fontsize":
         fs=fontsize
-        params8 = {'backend': 'png',
+        params8 = {'backend': 'Agg',
                    'axes.titlesize':kwargs.get('title_fontsize',fs),
           'axes.labelsize': fs,
           'text.fontsize': kwargs.get('text_fontsize',fs),
+          'text.usetex' : kwargs.get('text_usetex',False),
           'xtick.labelsize': fs,
           'ytick.labelsize': fs,
           'legend.pad': 0.2,     # empty space around the legend box
@@ -276,13 +277,22 @@ def shift(flag, axs, shift, n_rows=1, n_cols=1):
         for j in range(n_cols):
             ax=axs[k]
             k+=1 
-            box = ax.get_position()
+            
             if flag=='upp':
+                box = ax.get_position()
                 ax.set_position([box.x0, box.y0+shift_vert*i, box.width, box.height*(1-shift_vert)])
+
+            if flag=='down':
+                box = ax.get_position()
+                ax.set_position([box.x0, box.y0-shift_vert*(n_rows-i), 
+                                 box.width, box.height*(1-shift_vert)])
+
             if flag=='left':
+                box = ax.get_position()
                 ax.set_position([box.x0+shift_hor*j, box.y0, box.width*(1-shift_hor), box.height])
             if flag=='right':
-                ax.set_position([box.x0-shift_hor*j, box.y0, box.width*(1-shift_hor), box.height])
+                box = ax.get_position()
+                ax.set_position([box.x0+shift_hor*(n_cols-j), box.y0, box.width*(1-shift_hor), box.height])
 
 import unittest
 

@@ -14,7 +14,8 @@ import time
 
 from toolbox import data_to_disk, my_nest, my_population, misc
 from toolbox.misc import my_slice, Base_dic
-from toolbox.parallelization import map_parallel
+from toolbox.parallelization import map_parallel, comm, Barrier
+from toolbox.network import default_params
 import unittest
 import pylab
 
@@ -22,9 +23,8 @@ import pprint
 pp=pprint.pprint
 
 
-from os.path import expanduser
-HOME = expanduser("~")
-HOME_PATH=(HOME+'/results/papers/inhibition')
+
+HOME = default_params.HOME
 
     
 class Surface(object):
@@ -403,10 +403,11 @@ class Conn(object):
 #         for a in arg:
 #             pool_conn.append(pool_get_connectables(*a))
         # For each driver nod get_connectales is applied
-        pool_conn=map(pool_get_connectables, *arg) #get connectables belong to pool
-        
-#         pool_conn=map_parallel(pool_get_connectables, 
-#                           *arg, **{'threads':self.threads})
+#         pool_conn=map(pool_get_connectables, *arg) #get connectables belong to pool
+
+        # Necessary to ensure all mpi proc gets the same data
+        pool_conn=map_parallel(pool_get_connectables, 
+                          *arg, **{'threads':self.threads})
         
         # For each driver get number of pool neurons that have been chosen
         # and then expand d_idx accordingly to get 
@@ -474,7 +475,16 @@ class Conn(object):
             for i, sl in enumerate(self.sets):
                 conns[sl]=weights[i]
             return list(conns*x['params'])    
+
+    def _save_mpi(self):
+        with Barrier():
+            if comm.rank()==0:
+                self._save()
     
+    def _save(self):
+        data_to_disk.pickle_save([self.pre, self.post, 
+                                   self.sets], self.save['path'] ) 
+        comm.barrier()
 
     
     def set(self, surfs, display_print=True):
@@ -488,18 +498,20 @@ class Conn(object):
         driver=surfs[self.target]
         pool=surfs[self.source]
         
-        
-        if (self.save['active'] 
-            and not self.save['overwrite']
-            and os.path.isfile(self.save['path'] +'.pkl')): 
-            d=data_to_disk.pickle_load(self.save['path'] )
-            self.pre, self.post, self.sets=d
-        
-        else:
+
+        if not (self.save['active'] 
+                and not self.save['overwrite']
+                and os.path.isfile(self.save['path'] +'.pkl')): 
+            
             self._set(driver, pool)
-            if self.save['path']:
-                data_to_disk.pickle_save([self.pre, self.post, 
-                                          self.sets], self.save['path'] )         
+           
+            self._save()
+
+        else:
+            d=data_to_disk.pickle_load(self.save['path'] )
+            
+            self.pre, self.post, self.sets=d
+                
                    
         t=time.time()-t
         if display_print:
@@ -512,6 +524,17 @@ class Conn(object):
                self.rule]
             print s.format(*a)
             
+    def _set_mpi(self, *args):
+#         with Barrier(True):
+        if comm.rank()==0:
+            print 'set_mpi'
+            self._set(*args)
+            print 'post_in_set_mpi'
+                
+        comm.barrier()
+#         self.pre=comm.bcast(self.pre,root=0)
+#         self.post=comm.bcast(self.post,root=0)    
+        print 'post_set_mpi'
     
     def _set(self, driver, pool):   
         '''
@@ -558,7 +581,7 @@ class Conn(object):
             pool_sets=pool.get_sets(self.rule.split('-')[1]) 
             for slice_dr, slice_po in zip(driver_sets, pool_sets):     
                 self._add_connections(slice_dr, slice_po, *args)
-
+ 
          
         assert isinstance(self.pre, list)            
         assert isinstance(self.post, list) 
@@ -789,8 +812,9 @@ class TestConn(unittest.TestCase):
         self.source2=nd['i2']
         self.source3=nd['i3']
         self.target=nd['n2']
-        self.path_conn=HOME+'/results/unittest/conn/'
-        self.path_learned=HOME+'/results/unittest/learned.pkl'
+        self.path_base=HOME+'/results/unittest/structure/'
+        self.path_conn=HOME+'/results/unittest/structure/conn/'
+        self.path_learned=HOME+'/results/unittest/structure/learned.pkl'
 
     def test_create(self):
         _=Conn('n1_n2', **{'fan_in':10.0})
@@ -867,7 +891,47 @@ class TestConn(unittest.TestCase):
         os.system('rm ' + path  + ' 2>/dev/null' )  
             
         self.assertListEqual(l1, l2)     
-            
+
+
+    def test_set_save_load_mpi(self):
+        import subprocess
+        rules=['1-1', 'all-all', 'set-set', 'set-not_set', 'all_set-all_set',
+               'divergent'] 
+        
+        data_path= self.path_base+'set_save_load_mpi/'
+        script_name=os.getcwd()+('/test_scripts_MPI/'
+                                 +'structure_set_save_load_mpi.py')
+        
+        np=20
+
+        
+        p=subprocess.Popen(['mpirun', '-np', str(np), 'python', 
+                            script_name, data_path],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+#                             stderr=subprocess.STDOUT,
+                           )
+        
+        out, err = p.communicate()
+#         print out
+#         print err
+        
+        threads=4
+        
+        for i in range(threads):
+            fileName= data_path+'data'+str(i)
+            l1,l2=data_to_disk.pickle_load(fileName)
+            print l1
+            print l2
+            self.assertListEqual(l1, l2) 
+                
+        path_clear=data_path+'*'
+        os.system('rm ' + path_clear  + ' 2>/dev/null' )  
+
+
+        path_clear=data_path+'conn/*'
+        os.system('rm ' + path_clear  + ' 2>/dev/null' ) 
+          
     def test_get_weight(self):
         m=1.
         c1=Conn('n1_n2', **{'weight':{'params':m, 
@@ -993,22 +1057,44 @@ class TestModuleFunctions(unittest.TestCase):
         self.assertTrue(t1*10>t2)
         
 if __name__ == '__main__':
-    test_classes_to_run=[TestSurface,
-                         TestSurface_dic,
-                         TestConn,
-                         TestConn_dic,
-                         TestModuleFunctions,
-                         ]
-    suites_list = []
-    for test_class in test_classes_to_run:
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        suites_list.append(suite)
+    d={
+#        TestSurface:[
+#                     'test_create',
+#                     'test_get_set',
+#                     'test_apply_boundary_conditions',
+#                     'test_apply_kernel',
+#                     'test_apply_mask',
+#                     'test_get_connectables',
+#                     'test_pos_edge_wrap',
+#                     ],
+#        TestSurface_dic:[
+#                         'test_add',
+#                         ],
+       TestConn:[
+#                  'test_create',
+#                  'test_set_con',
+#                 'test_set_save_load',
+                'test_set_save_load_mpi',
+#                  'test_get_weight',
+#                  'test_get_delays',
+                 ],
+#        TestConn_dic:[
+#                      'test_add'
+#                      ],
+#        TestModuleFunctions:[
+#                             'test_1_create_surfaces',
+#                             'test_2_create_populations',
+#                             'test_3_create_connections',
+#                             'test_4_connect_conns',
+#                             'test_5_build',
+#                             'test_6_connect',
+#                             'test_7_connect_with_save',
+#                             ],
+       }
+    test_classes_to_run=d
+    suite = unittest.TestSuite()
+    for test_class, val in  test_classes_to_run.items():
+        for test in val:
+            suite.addTest(test_class(test))
 
-    big_suite = unittest.TestSuite(suites_list)
-    
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestSurface)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestSurface_dic)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestStructure)
-    unittest.TextTestRunner(verbosity=2).run(big_suite)
-    
-    #unittest.main() 
+    unittest.TextTestRunner(verbosity=2).run(suite)

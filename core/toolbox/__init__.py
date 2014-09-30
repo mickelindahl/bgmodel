@@ -26,16 +26,17 @@ plot_settings        - contains functions setting nice plot settings
 """
 
 
-import misc
-import data_to_disk
-import network
-import my_axes
-import my_nest
-import my_population
-import my_signals
-import my_topology
-import plot_settings
-import pylab
+
+# import misc
+# import data_to_disk
+# import network
+# import my_axes
+# import my_nest
+# import my_population
+# import my_signals
+# import my_topology
+# import plot_settings
+# import pylab
 
 
 # def get_data_root_path(flag):

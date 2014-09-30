@@ -75,6 +75,7 @@ home = expanduser("~")
 path=(home + '/results/papers/inhibition/network/'
       +__file__.split('/')[-1][0:-3]+'/')
 
+
 for j in range(1,3):
     for i, p in enumerate(p_list):
         

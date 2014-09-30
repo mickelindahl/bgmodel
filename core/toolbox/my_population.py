@@ -26,24 +26,26 @@ Mikael Lindahl August 2011
 
 import numpy
 import os
-from my_signals import (MyConductanceList, MyCurrentList, 
-                        MyVmList, MySpikeList, SpikeListMatrix,
-                        VmListMatrix)
 import my_signals
 import my_nest
 import my_topology
 import copy
-from numpy.random import random_integers
-from toolbox import data_to_disk, misc
 import unittest
-
 import pprint
 pp=pprint.pprint
+import pylab
+
+from numpy.random import random_integers
+from my_signals import (MyConductanceList, MyCurrentList, 
+                        MyVmList, MySpikeList, SpikeListMatrix,
+                        VmListMatrix)
+from toolbox import data_to_disk, misc
+from toolbox.parallelization import comm, Barrier
+
+
 #from numpy.random import RandomState
 #random_integers  = RandomState(3).random_integers 
 
-
-       
         
 class MyGroup(object):
     '''
@@ -466,7 +468,8 @@ class MyNetworkNode(MyGroup):
             my_nest.CopyModel('spike_detector', model )
             
         d={'active':False,
-           'params': {"withgid": True, 'to_file':False, 
+           'params': {"withgid": True, 
+                      'to_file':False, 
                       'to_memory':True }} 
         d=misc.dict_update(d, d_add) 
         if d['active']:
@@ -485,11 +488,25 @@ class MyNetworkNode(MyGroup):
             s=data_path + '/' + self.sd['model'] + '-' + gid + '-'  
             file_names = [s+ '0'* (n - len(str(vp))) + str(vp) 
                            + '.gdf' for vp in range(n_vp)]
+            
+            
             s, t = data_to_disk.nest_sd_load(file_names)
+            
+            
         else:
+            
+
             e = my_nest.GetStatus(self.sd['id'])[0]['events'] # get events
             s = e['senders'] # get senders
             t = e['times'] # get spike times
+            
+            
+            if comm.is_mpi_used():
+                s,t=collect_spikes_mpi(s,t)
+                
+                
+
+            
 #             if my_nest.GetKernelStatus()['time']==26:
 #                 print 'j'
 #             if list(t):
@@ -1195,6 +1212,22 @@ class MyLayerPoissonInput(MyPoissonInput):
         my_topology.MyPlotLayer(self.layer_id, ax,nodecolor, nodesize)
     
 
+def collect_spikes_mpi(*args): 
+    args=list(args)
+    
+    for i in range(len(args)):
+        with Barrier():
+            if comm.rank()==0:
+                for i_proc in xrange(1, comm.size()):
+                    args[i] = numpy.r_[args[i], 
+                                       comm.recv(source=i_proc)]
+                    
+            else:
+                comm.send(args[i],dest=0)
+        args[i]=comm.bcast(args[i], root=0)
+        
+    return args
+
 
 def default_kwargs_net(n, n_sets):
     
@@ -1230,7 +1263,57 @@ def default_spike_setup(n, stop):
        'idx':range(n)}
     return d
 
-import pylab
+def sim_group(sim_time, *args, **kwargs):
+        
+    g=MyNetworkNode(*args, **kwargs)
+    my_nest.Simulate(sim_time)
+    return g
+    
+        
+from os.path import expanduser
+import subprocess
+class TestModule_functions(unittest.TestCase):
+    
+    def setUp(self):
+        self.home=expanduser("~")
+    
+    def test_collect_spikes_mpi(self):
+
+        data_path= self.home+('/results/unittest/my_population'
+                         +'/collect_spikes_mpi/')
+        script_name=os.getcwd()+('/test_scripts_MPI/'
+                                 +'my_population_collect_spikes_mpi.py')
+        
+        np=4
+        s0=[]
+        for i in range(4):
+            s0+=[float(i),float(i)]
+        
+        s0=numpy.array(s0)
+        e0=numpy.array(s0)+1
+        
+        p=subprocess.Popen(['mpirun', '-np', str(np), 'python', 
+                            script_name, data_path],
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+        
+        out, err = p.communicate()
+#         print out
+#         print err
+        
+        import pickle    
+
+        f=open(data_path+'data.pkl', 'rb') #open in binary mode
+
+        s1,e1=pickle.load(f)
+        s1,e1=sorted(s1), sorted(e1)
+        
+        self.assertListEqual(list(s0), list(s1))
+        self.assertListEqual(list(e0), list(e1))
+        
+        f.close()
+
+
 class TestMyNetworkNode(unittest.TestCase):
     
     my_nest.sr("M_WARNING setverbosity") #silence nest output
@@ -1238,6 +1321,7 @@ class TestMyNetworkNode(unittest.TestCase):
     #print my_nest.GetKernelStatus()
 
     def setUp(self):
+
         self.n=12
         self.n_sets=3
         self.args=['unittest']
@@ -1247,47 +1331,87 @@ class TestMyNetworkNode(unittest.TestCase):
     
     @property
     def sim_group(self):
-        g=MyNetworkNode(*self.args, **self.kwargs)
-        my_nest.Simulate(self.sim_time)
-        return g    
+        return sim_group(self.sim_time, *self.args, **self.kwargs)  
         
-    def test_1_create(self):
-        g=MyNetworkNode(*self.args, **self.kwargs)
-    
-    def test_2_get_spike_signal(self):
-        l=self.sim_group.get_spike_signal()
-        self.assertEqual(l.shape[1], self.n_sets)
+#     def test_1_create(self):
+#         g=MyNetworkNode(*self.args, **self.kwargs)
+#     
+#     def test_2_get_spike_signal(self):
+#         l=self.sim_group.get_spike_signal()
+#         self.assertEqual(l.shape[1], self.n_sets)
+#         
+#         mr=0
+#         for _,_,spk_list in my_signals.iter2d(l):
+#             mr+=spk_list.mean_rate()/l.shape[1]
+#         self.assertAlmostEqual(mr, 55.0, delta=0.1)
+#     
+#     def test_3_get_voltage_signal(self):
+#         l=self.sim_group.get_voltage_signal()
+#         self.assertEqual(l.shape[1], self.n_sets)
+# 
+#     def test_4_multiple_threads(self):
+#         my_nest.SetKernelStatus({'local_num_threads':2})
+#         _=self.sim_group.get_spike_signal()
+#     
+#     def test_5_load_from_disk(self):
+#         from os.path import expanduser
+#         s = expanduser("~")
+#         s= s+'/results/unittest/my_population'
+#         data_to_disk.mkdir(s)
+#         my_nest.SetKernelStatus({'local_num_threads':2,
+#                                  'data_path':s,
+#                                  'overwrite_files': True,})
+#         
+#         self.kwargs['sd']['params'].update({'to_memory':False, 
+#                                             'to_file':True})
+#         
+#         g=self.sim_group.get_spike_signal()
+#         g[0].firing_rate(1, display=True)
+# #         pylab.show()  
+#         for filename in os.listdir(s):
+#             if filename.endswith(".gdf"):
+#                 #print 'Deleting: ' +s+'/'+filename
+#                 os.remove(s+'/'+filename)        
         
-        mr=0
-        for _,_,spk_list in my_signals.iter2d(l):
-            mr+=spk_list.mean_rate()/l.shape[1]
-        self.assertEqual(mr, 55.0)
-    
-    def test_3_get_voltage_signal(self):
-        l=self.sim_group.get_voltage_signal()
-        self.assertEqual(l.shape[1], self.n_sets)
-
-    def test_4_multiple_threads(self):
-        my_nest.SetKernelStatus({'local_num_threads':2})
-        _=self.sim_group.get_spike_signal()
-    
-    def test_5_load_from_disk(self):
-        from os.path import expanduser
+    def test_6_mpi_run(self):
+        from toolbox.data_to_disk import pickle_save, pickle_load
+        
         s = expanduser("~")
-        s= s+'/results/unittest/my_population'
-        data_to_disk.mkdir(s)
-        my_nest.SetKernelStatus({'local_num_threads':2})
-        my_nest.SetKernelStatus({'data_path':s})
-        self.kwargs['sd']['params'].update({'to_memory':False, 
-                                            'to_file':True})
-        g=self.sim_group.get_spike_signal()
-        g[0].firing_rate(1, display=True)
-#         pylab.show()  
-        for filename in os.listdir(s):
-            if filename.endswith(".gdf"):
-                #print 'Deleting: ' +s+'/'+filename
-                os.remove(s+'/'+filename)        
+        data_path= s+'/results/unittest/my_population/mpi_run/'
+        script_name=os.getcwd()+'/test_scripts_MPI/my_population_mpi_run.py'
+
+        fileName=data_path+'data_in.pkl'
+        fileOut=data_path+'data_out.pkl'
+        pickle_save([self.sim_time, self.args, self.kwargs], fileName)
+
+        np=4
+#         
+        p=subprocess.Popen(['mpirun', '-np', str(np), 'python', 
+                            script_name, fileName, fileOut],
+#                            stdout=subprocess.PIPE,
+#                            stderr=subprocess.PIPE,
+                           stderr=subprocess.STDOUT,
+                           )
+         
+        out, err = p.communicate()
+#         print out
+#         print err
+ 
         
+        
+        l=self.sim_group.get_spike_signal()
+        
+        mr1, fr1=pickle_load(fileOut)      
+        
+        
+        mr0=l.mean_rate()
+        self.assertEqual(mr0, mr1)
+        
+        fr0=l.firing_rate(1)
+        self.assertListEqual(list(fr0), list(fr1))
+        
+         
+     
             
 class TestMyPoissonInput(unittest.TestCase):
     def setUp(self):
@@ -1328,8 +1452,9 @@ class TestMyPoissonInput(unittest.TestCase):
         
 if __name__ == '__main__':
     test_classes_to_run=[
+#                         TestModule_functions,
                         TestMyNetworkNode,
-                         TestMyPoissonInput
+#                          TestMyPoissonInput
                          ]
     suites_list = []
     for test_class in test_classes_to_run:

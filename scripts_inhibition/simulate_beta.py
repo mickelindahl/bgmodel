@@ -117,21 +117,29 @@ class Setup(object):
            'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
            }
         return d
-def main(builder=Builder,
-         from_disk=2,
-         perturbation_list=None,
-         script_name=__file__.split('/')[-1][0:-3],
-         threads=10):
     
-    oscillation_common.main(builder, 
-                            from_disk, 
-                            perturbation_list, 
-                            script_name, 
-                            Setup(1000.0/20.0, threads))
- 
-if __name__ == "__main__":
-    # stuff only to run when not called via 'import' here
-    main()
+class Main():    
+    def __init__(self, **kwargs):
+        self.kwargs=kwargs
+    
+    def __repr__(self):
+        return self.kwargs['script_name']
+
+    
+    def do(self):
+        oscillation_common.main(**self.kwargs)
+        
+# def main(builder=Builder,
+#          from_disk=2,
+#          perturbation_list=None,
+#          script_name=__file__.split('/')[-1][0:-3],
+#          threads=10):
+#     
+# 
+#  
+# if __name__ == "__main__":
+#     # stuff only to run when not called via 'import' here
+#     main()
 
 
 

@@ -67,45 +67,54 @@ network  - define layers and populations
 '''
 
 from copy import deepcopy
-
 from toolbox import misc
 from toolbox.misc import my_slice
 
 import sys
 
-import nest # Has to after misc. 
+from toolbox import my_nest as nest # Has to after misc. 
+from toolbox import my_socket
+
 import numpy
 import operator
 import warnings
 import pprint
 pp=pprint.pprint
 
-
 from os.path import expanduser
-HOME = expanduser("~")
+
+
+if my_socket.determine_host() in ['milner', 'milner_login']:
+    HOME='/cfs/milner/scratch/l/lindahlm'
+else: 
+    HOME = expanduser("~")
+
+COMPUTER=my_socket.determine_host()
 
 #MODULE_PATH=  (HOME+'/tools/NEST/dist/'+
 #               'install-nest-2.2.2/lib/nest/ml_module')
 #MODULE_PATH= (HOME+'/opt/NEST/dist/install-nest-2.2.2/lib/nest/ml_module')
     
 
-
 #MODULE_PATH= ('ml_module')
-if nest.version()=='NEST 2.2.2':
-    s='nest-2.2.2'
-if nest.version()=='NEST 2.4.1':
-    s='nest-2.4.1'    
-if nest.version()=='NEST 2.4.2':
-    s='nest-2.4.2'   
-      
-MODULE_PATH= (HOME+'/opt/NEST/module/'
-              +'install-module-130701-'+s+'/lib/nest/ml_module')
-MODULE_SLI_PATH= (HOME+'/opt/NEST/module/'
-                  +'install-module-130701-'+s+'/share/ml_module/sli')
+
+path, sli_path=nest.get_default_module_paths(HOME)
+nest.install_module(path, sli_path, model_to_exist='my_aeif_cond_exp' )
+
+# if nest.version()=='NEST 2.2.2':
+#     s='nest-2.2.2'
+# if nest.version()=='NEST 2.4.1':
+#     s='nest-2.4.1'    
+# if nest.version()=='NEST 2.4.2':
+#     s='nest-2.4.2'   
+#       
+# MODULE_PATH= (HOME+'/opt/NEST/module/'
+#               +'install-module-130701-'+s+'/lib/nest/ml_module')
+# MODULE_SLI_PATH= (HOME+'/opt/NEST/module/'
+#                   +'install-module-130701-'+s+'/share/ml_module/sli')
  
 # nest.Install(MODULE_PATH)
 # nest.Create('iaf_neuron', 2)
- 
  
     
 #@todo: change name on Node to Surface
@@ -485,11 +494,11 @@ class Par_base(object):
         self.module_path=kwargs.get('module_path',MODULE_PATH)
         self.module_sli_path=kwargs.get('module_sli_path',MODULE_SLI_PATH)
         
-        if not 'my_aeif_cond_exp' in nest.Models(): 
-#             print self.module_path
-            if self.module_sli_path:    
-                nest.sr('('+self.module_sli_path+') addpath')
-            nest.Install( self.module_path)
+#         if not 'my_aeif_cond_exp' in nest.Models(): 
+# #             print self.module_path
+#             if self.module_sli_path:    
+#                 nest.sr('('+self.module_sli_path+') addpath')
+#             nest.Install( self.module_path)
             
                 
 #         if not 'my_aeif_cond_exp' in nest.Models(): 
@@ -2050,17 +2059,16 @@ class InhibitionPar_base(object):
                                    'to_memory':False,
                                    'record_from':['V_m'] }
 
-        dc=(HOME+'/results/papers/inhibition/'
-            +'network/conn/')        
         dp=(HOME+'/results/papers/inhibition/'
-            +'network/'+self.__class__.__name__+'/')
-        df=(HOME+'/projects/papers/inhibition/'
-           +'figures/'+self.__class__.__name__)
-        dn=(HOME+'/results/papers/inhibition/'
-            +'network/'+self.__class__.__name__+'/nest/')        
+            +'network/'+COMPUTER+'/') 
+        dco= dp + 'conn/'       
+        dcl= dp + self.__class__.__name__+'/'
+        df=  dp + 'fig/'
+        dn=  dp + self.__class__.__name__+'/nest/'        
         
-        dic['simu']['path_conn']=dc
         dic['simu']['path_data']=dp
+        dic['simu']['path_conn']=dco
+        dic['simu']['path_class']=dcl
         dic['simu']['path_figure']=df
         dic['simu']['path_nest']=dn
         dic['simu']['print_time']=True
@@ -2425,6 +2433,7 @@ class InhibitionPar_base(object):
         dic['nest']['MS']['GABAA_3_E_rev']     = -74. # n.d. set as for MSN and FSN
     
         dic['nest']['MS']['tata_dop'] = DepNetw('calc_tata_dop')
+        dic['nest']['MS']['beta_I_GABAA_2'] = -0.625 #Dopamine leads to weakening of synspase
         
         
         dic['nest']['M1']=deepcopy(dic['nest']['MS'])
@@ -2891,7 +2900,7 @@ class Compete_base(object):
         
         dic_other=self.other.get_dic_con()
         max_n_set_pre=80
-        inps=['C1', 'C2', 'CF']
+        inps=['C1', 'C2', 'CF', 'CS']
         
         dic = setup_burst3(dic_other, max_n_set_pre, inps)
     
@@ -3017,6 +3026,7 @@ class ThalamusPar_base(object):
         # Default simu parameters 
         # ========================
         
+        #@TODO change save path
         dic['simu']={}
         
         dc=(HOME+'/results/papers/inhibition/'
@@ -3845,6 +3855,9 @@ def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
  
  
     if typ=='burst3': 
+        # TODO: make sure that when proportion connected is 
+        # less than zero that the other proportion recieves inp
+        
         n_set_pre=params['n_set_pre']
         params_sets=params['params_sets']
         rep=params['repetitions']
@@ -3857,14 +3870,15 @@ def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
                 continue
             
             proportion_connected=d['proportion_connected']
+            
             m=int(n*proportion_connected)
             idx=list(range(k,m, n_set_pre))
-                
-            t=numpy.array(d['durations'])
-            r=d['rate']
+            idx0=list(range(k+m,n, n_set_pre))
+           
+            r=d['rate']   
             amp=d['amplitudes']   
             
-        
+            t=numpy.array(d['durations'])        
             times=numpy.array([[0]+list(numpy.cumsum(t)[0:-1])
                           +i*numpy.sum(t) for i in range(rep) ])
             times=list(times.ravel())
@@ -3873,6 +3887,15 @@ def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
             setup+=[{'rates':rates, 
                      'times':times, 
                      'idx':idx,
+                     't_stop':stop}] 
+            
+            if  not idx0:
+                continue
+            
+            rates0=list(r*numpy.ones(len(amp)))*rep
+            setup+=[{'rates':rates0, 
+                     'times':times, 
+                     'idx':idx0,
                      't_stop':stop}] 
                
     if typ=='oscillation':
@@ -4070,20 +4093,27 @@ def dummy_args(flag, **kwargs):
                                   'rate':10.0,
                                   }}}
         args.append([12, params, 25.0, 100.0, 1500.0, 'burst3'])                       
-        out.append([{'idx': [0, 3, 6, 9],
+        out.append( [{'idx': [0, 3, 6, 9],
                       'rates': [30.0, 30.0],
                       't_stop': 1500.0,
                       'times': [0.0, 100.0]},
                      {'idx': [1], 
-                      'rates': [20.0, 20.0], 
+                      'rates': [20.0, 20.0],
                       't_stop': 1500.0, 
                       'times': [0.0, 200.0]},
-                     {'idx': [2, 5],
-                      'rates': [10.0, 15.0, 10.0, 15.0],
+                     {'idx': [4, 7, 10], 
+                      'rates': [10.0, 10.0], 
                       't_stop': 1500.0,
-                      'times': [0.0, 100.0, 200.0, 300.0]}]) 
-        
-        
+                      'times': [0.0, 200.0]},
+                     {'idx': [2, 5], 
+                       'rates': [10.0, 15.0, 10.0, 15.0],
+                       't_stop': 1500.0,
+                       'times': [0.0, 100.0, 200.0, 300.0]},
+                    {'idx': [8, 11],
+                     'rates': [10.0, 10.0, 10.0, 10.0],
+                     't_stop': 1500.0,
+                     'times': [0.0, 100.0, 200.0, 300.0]}]) 
+
         #BURST COMPETE
         params={'duration':100.0,
                 'idx_sets':[0, 2],
