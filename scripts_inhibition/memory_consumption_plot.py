@@ -4,14 +4,20 @@ Created on Sep 12, 2013
 @author: lindahlm
 '''
 import csv, numpy, pylab
+add='memory_consumption_logs/'
+file_name=add+'stat141002105923.dat'
+file_name=add+'stat141002114940_simulate_beta_ZZZ112.py.dat'
+file_name=add+'stat141006200929_simulate_beta_ZZZ112.py_.dat'
+# file_name=add+'stat141013112617_simulate_beta_ZZZ112.py_.dat'
+# file_name=add+'stat141013114525_simulate_beta_ZZZ112.py_.dat'
+# file_name=add+'stat141013125013_simulate_beta_ZZZ112.py_.dat'
+# file_name=add+'stat141014180811_simulate_beta_ZZZ112.py_okt14.dat'
+# file_name=add+'stat141014181430_simulate_beta_ZZZ112.py_okt14.dat'
+file_name=add+'stat141015134146_simulate_beta_ZZZ112.py_come_on.dat'
+file_name=add+'stat141015232809_simulate_beta_ZZZ112.py_okt15.dat'
+# file_name=add+'stat141016001250_simulate_beta_ZZZ112.py_okt16.dat'
+# file_name=add+'stat141016130856_simulate_beta_ZZZ112.py_okt16.dat'
 
-#file_name='memory_consumption_logs/stat130912174515.dat'
-#file_name='memory_consumption_logs/stat130913085147.dat'
-file_name='memory_consumption_logs/stat130913092123.dat'
-#file_name='memory_consumption_logs/stat130912174515.csv'
-#file_name='memory_consumption_logs/stat130913115358.dat'
-#file_name='memory_consumption_logs/stat130913170305.dat'
-#file_name='memory_consumption_logs/stat130913170316.dat'
 def plot_csv(file_name):
 
     with open(file_name, 'rb') as csvfile:
@@ -58,11 +64,14 @@ def plot_dat(file_name):
         data.append(row)
     data=zip(*data)
     data=numpy.array(data)
-    
-    pylab.plot(data.transpose())
+    print data.transpose().shape
+    shape=data.transpose().shape
+    print numpy.mgrid[0:shape[0]*10:10,0:4][0].shape
+    pylab.plot(numpy.mgrid[0:shape[0]*10:10,0:4][0],
+               data.transpose())
     pylab.legend(lengend_names)
     pylab.ylabel('Memory (MB)')
-    pylab.ylabel('Time (sec)')
+    pylab.xlabel('Time (sec)')
     pylab.show()
 plot_dat(file_name)
 #print csv.list_dialects()       

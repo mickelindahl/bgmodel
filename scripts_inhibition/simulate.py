@@ -4,58 +4,20 @@ Created on May 10, 2014
 @author: mikael
 '''
 
+from copy import deepcopy
 from toolbox import misc
 from toolbox.network.manager import save, load, compute, run
 from toolbox.network import default_params
+from toolbox.network.default_params import Perturbation_list as pl
+from toolbox import my_socket
+
+from inhibition_gather_results import process
+
+import numpy
 import toolbox.plot_settings as ps
-
-from copy import deepcopy
-
 import pprint
 pp=pprint.pprint
 
-# def cmp_mean_rates_intervals_sets(d, intervals, x, repetitions):
-#     kwargs={'intervals':intervals,
-#             'repetitions':repetitions,
-#             'x':x[0: repetitions]}
-#     
-#     for keys, val in misc.dict_iter(d):
-#         
-#         val={}
-#         for j in [0,1]:
-#             v=val[:,j].get_mean_rate_slices(**kwargs)
-#             v.x=x[0: repetitions]
-#             val[j]=v
-#             
-#         d=misc.dict_recursive_add(d, (keys[0:-1]
-#                                       +['mean_rates_intervals']), val)
-#         
-#     return d
-# 
-# def cmp_mean_rates_intervals(d, intervals, x, repetitions,**k):
-#     kwargs={'intervals':intervals,
-#             'repetitions':repetitions}
-#     
-#     for keys, val in misc.dict_iter(d):
-#         
-#         if not keys[-1] =='spike_signal':
-#             continue
-#         
-#         if 'sets' in k.keys():
-#             for s in k['sets']:
-#                 v=val[:,s].get_mean_rate_slices(**kwargs)
-#                 v.x=x
-#                 d=misc.dict_recursive_add(d, (keys[0:-1]
-#                                       +['Set_'+str(s),'mean_rates_intervals']), v)
-#         else:
-#             v=val.get_mean_rate_slices(**kwargs)
-#         
-#         
-#             v.x=x
-#             d=misc.dict_recursive_add(d, (keys[0:-1]
-#                                       +['mean_rates_intervals']), v)
-#         
-#     return d
 
 
 def cmp_psd(d_pds, models, dd):
@@ -65,16 +27,32 @@ def cmp_psd(d_pds, models, dd):
             dd[key1][model]['psd'] = psd
 
 
-def get_file_name(script_name):
-    par=default_params.Inhibition()
+def get_conn_matricies(net, models, attr):
+    d={}
+    for model in models:
+        soruce, target, _=model.split('_')
+        d[model]={attr:net.get_conn_matrix(soruce, target, model)}
+    return d
+
+def get_file_name(script_name,  par=None):
+    if not par:
+        par=default_params.Inhibition()
     path=par.get_path_data()
     file_name = path + script_name
 #     file_name = home + '/results/papers/inhibition/network/' + script_name
     return file_name
 
+def get_path_nest(script_name, par=None):
+    if not par:
+        par=default_params.Inhibition()
+    path=par.get_path_data()
+    file_name = path +script_name.split('/')[0]+ '/nest/'
+#     file_name = home + '/results/papers/inhibition/network/' + script_name
+    return file_name
 
-def get_file_name_figs(script_name):
-    par=default_params.Inhibition()
+def get_file_name_figs(script_name, par=None):
+    if not par:
+        par=default_params.Inhibition()
     path=par.get_path_figure()
     file_name = path + script_name
 
@@ -83,14 +61,80 @@ def get_file_name_figs(script_name):
 #     file_name_figs = home + '/results/papers/inhibition/network/fig/' + script_name
     return file_name
 
+def get_runs_oscillation(builder, 
+                         do_obj, 
+                          do_runs,
+                          file_name, 
+                          freq_oscillation, 
+                          from_disk_0, 
+                          module,
+                          no_threads_postprocessing,  
+                          p_list, 
 
-def get_conn_matricies(net, models, attr):
-    d={}
-    for model in models:
-        soruce, target, _=model.split('_')
-        d[model]={attr:net.get_conn_matrix(soruce, target, model)}
-    return d
-        
+                          type_of_run):
+    args_list=[]
+    for j in range(from_disk_0, 3):
+        for i, p in enumerate(p_list):
+            
+            if (i not in do_runs) and do_runs:
+                continue
+            
+            script_name = (file_name + '/script_' + str(i) 
+                           + '_' + p.name + '_' + type_of_run)
+            setup = module.Setup(1000.0 / freq_oscillation, 
+                                 no_threads_postprocessing)
+            
+            obj = module.Main(**{'builder':builder, 
+                                 'from_disk':j, 
+                                 'perturbation_list':p, 
+                                 'script_name':script_name, 
+                                 'setup':setup})
+            
+            if do_obj:
+                obj.do()
+                
+            args_list.append([obj, script_name])
+
+    return args_list
+
+
+def get_path_logs(from_milner_on_supermicro, file_name):
+    _bool = my_socket.determine_host() == 'supermicro'
+    if from_milner_on_supermicro and _bool:
+        path_results = (default_params.HOME_DATA_BASE 
+                        + 'milner_supermicro/' 
+                        + file_name 
+                        + '/')
+    else:
+        path_results = (default_params.HOME_DATA 
+                        + file_name 
+                        + '/')
+    return path_results
+
+def get_path_rate_runs(simulation_name):
+    if my_socket.determine_computer() == 'milner':
+        path_rate_runs = default_params.HOME_DATA + simulation_name
+    else:
+        path_rate_runs = default_params.HOME_DATA + simulation_name
+    return path_rate_runs
+
+def get_threads_postprocessing(t_shared, t_mpi, shared):
+    if shared:
+        threads = t_shared
+    else:
+        threads = t_mpi
+    return threads
+
+def get_type_of_run(shared=False): 
+    if my_socket.determine_computer()=='milner':
+        type_of_run='mpi_milner'
+    else: 
+        if not shared:
+            type_of_run='mpi_supermicro'
+        else:
+            type_of_run='shared_memory'
+    return type_of_run
+    
 def main_loop_conn(from_disk, attr, models, sets, nets, kwargs_dic, sd):
     d = {}
     from_disks = [from_disk] * len(nets.keys())
@@ -125,6 +169,39 @@ def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd):
         d = misc.dict_update(d, dd)
     
     return from_disks, d
+
+
+def par_mpi_sim(cores_milner, cores_superm):
+    # core have to be multiple of 40 for milner
+    host = my_socket.determine_host() 
+    if host == 'milner':
+    
+        local_threads=10
+    
+        d={'cores_hosting_OpenMP_threads':40/local_threads, 
+           'memory_per_node':int(819*local_threads),
+           'num-mpi-task':cores_milner/local_threads,
+           'num-of-nodes':cores_milner/40,
+           'num-mpi-tasks-per-node':40/local_threads,
+           'num-threads-per-mpi-process':local_threads,
+           } 
+        
+    elif host == 'supermicro':
+        d={'num-mpi-task':min(cores_superm)}
+        
+    return d
+
+def par_milner_postprocess(cores=40):
+
+    d={'cores_hosting_OpenMP_threads':40, 
+       'num-mpi-task':cores,
+       'num-of-nodes':cores/20,
+       'num-mpi-tasks-per-node':20,
+       'num-threads-per-mpi-process':1,
+        } 
+    
+    return d
+
 
 def show_plot(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
     dd={}
@@ -308,3 +385,61 @@ def show_psd(d, models):
     for ax in axs:
         ax.set_xlim([0,50])
     return fig
+
+
+
+def pert_add_oscillations(freqs, 
+                          freq_oscillation, 
+                          local_num_threads,
+                          no_shared_memory_threads, 
+                          path_rate_runs,
+                          perturbation_list,
+                          sim_time, 
+                          size, 
+                          total_num_virtual_procs,
+                          ):
+    l=perturbation_list
+    for i in range(len(l)):
+        l[i] += pl({'simu':{'do_reset':True,
+                            'sd_params':{'to_file':True, 'to_memory':False},
+                            'sim_time':sim_time, 
+                            'sim_stop':sim_time,}, 
+                'netw':{'size':size}}, 
+            '=')
+    
+    damp = process(path_rate_runs, freqs)
+    for key in sorted(damp.keys()):
+        val = damp[key]
+        print numpy.round(val, 2), key
+    
+    ll = []
+    for j, _ in enumerate(freqs):
+        for i, _l in enumerate(l):
+            amp = [numpy.round(damp[_l.name][j], 2), 1]
+            d = {'type':'oscillation2', 
+                'params':{'p_amplitude_mod':amp[0], 
+                          'p_amplitude0':amp[1], 
+                          'freq':freq_oscillation}}
+            
+            _l = deepcopy(_l)
+            dd = {}
+            for key in ['C1', 'C2', 'CF', 'CS']:
+                dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
+            
+            _l += pl(dd, '=', **{'name':'amp_{0}-{1}'.format(*amp)})
+            ll.append(_l)
+    
+    return ll
+
+def pert_set_data_path_to_milner_on_supermicro(l, set_it):
+    if (my_socket.determine_host()=='milner') or (not set_it):
+        return l
+    
+    dp=default_params.HOME_DATA_BASE+'/milner/'
+    df=default_params.HOME_DATA_BASE+'milner_supermicro/fig/'
+    for i in range(len(l)):
+        l[i] += pl({'simu':{'path_data':dp, 
+                            'path_figure':df}}, 
+            '=')
+    
+    return l

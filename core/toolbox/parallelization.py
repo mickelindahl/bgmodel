@@ -2,27 +2,40 @@
 Created on Apr 9, 2014
 
 @author: lindahlm
-'''
-# import misc
-# import nest #Need to be imported before MPI is impoorted!!!
-import mpi4py.MPI as MPI
 
+MPI + threads is not possible in python due to GlobalInterpreterLock
+https://wiki.python.org/moin/GlobalInterpreterLock
+'''
+import misc
+import nest #Need to be imported before MPI is impoorted!!!
+import mpi4py.MPI as MPI
+import multiprocessing
+
+import inspect
 import math
+import subprocess
+import numpy
 # import threading
-import unittest
+
 import os
+import time  
 
 from os.path import expanduser
-from multiprocessing import Pool
+from multiprocessing import Pool, Process,  Queue, Array
+from toolbox import misc
+from itertools import izip
+
 
 class comm(object):
     
     '''dependancy injection'''
     obj=MPI.COMM_WORLD
     
+    
     @classmethod
-    def is_mpi_used(cls):
+    def is_mpi_used(cls):  
         return cls.obj.size-1
+        #return 1<nest.GetKernelStatus('total_num_virtual_procs')
      
     @classmethod
     def size(cls):
@@ -83,45 +96,66 @@ class Wrap(object):
     
     def use(self, args):
         return self.fun(*args)
-        
-        
+    
 
-def execute(fun, worker,  *args, **kwargs):
-    if comm.is_mpi_used():
-        return _mpi(fun, worker, *args, **kwargs)
+
+def chunkit(chunksize, i, *args):
+    a=[args[j][chunksize * i:chunksize * (i + 1)] 
+           for j in range(len(args))]
+    return a
+
+def my_map(i, chunksize, fun, out, args):
+    a=map(fun, *args)
+    out[chunksize*i:chunksize*(i+1)]=numpy.array(a)
+    
+     
+def map_local_threads(fun, args, kwargs):
+    
+    local_th=kwargs.get('local_threads', 1)
+    if local_th==1:
+        return map(fun, *args)
+
+    n=len(args[0])
+    chunksize=int(math.ceil(len(args[0]) / float(local_th)))
+
+    jobs=[]
+
+    tmp_args=[a[0] for a in args ]
+    tmp_r=fun(*tmp_args)
+    
+    if type(tmp_r)==int:
+        out = Array( 'l', numpy.zeros(n, dtype=numpy.int64) )
     else:
+        out = Array( 'd', numpy.zeros(n) )
+        
+    for i in xrange(local_th):
+        a=chunkit(chunksize, i, *args)
+        p=Process(target=my_map, args=(i, chunksize, fun, out, a))
+        jobs.append(p)
+        
+    for job in jobs: job.start()
+    for job in jobs: job.join()
 
-        pool = Pool(processes=kwargs.get('threads',2))
+    r=list(out[:])
+         
 
-        fun=Wrap(fun)
-        args=zip(*args)
-        
-#         fun.use(args[0])
+#     pool = Pool(processes=local_th)
+# 
+#     fun = Wrap(fun)
+#     args=izip(*args)    
+#     with misc.Stopwatch('inside map local'):
+#         
+#         f=fun.use
+#         r = pool.map(f, args)#, chunksize=len(args)/local_th)
+# 
+#     # Necessary to shut threads down. Otherwise just more and more threads
+#     # are created
+#         pool.close()
+#         pool.join()
+#     
+    return r
 
-        r=pool.map(fun.use, args)
-        
-        # Necessary to shut threads down. Otherwise just more and more threads 
-        # are created
-        
-        ''' 
-        close() 
-        Indicate that no more data will be put on this queue 
-        by the current process. The background thread will quit once it 
-        has flushed all buffered data to the pipe. This is called 
-        automatically when the queue is garbage collected.
-        '''
-        pool.close() 
-        
-        '''
-        join()
-        Block until all items in the queue have been gotten and processed.
-        '''
-        pool.join()
-        
-        return r
-        
-
-
+                
 def _fun_worker(fun, chunksize, i, outs, *args, **kwargs):
     """ The worker function, invoked in a thread. 'nums' is a
         list of numbers to factor. The results are placed in
@@ -134,122 +168,116 @@ def _fun_worker(fun, chunksize, i, outs, *args, **kwargs):
     elif outs==None:
         return map(fun, *a, **kwargs)
     
-def fun_parallel(fun, *args, **kwargs):
-    worker=_fun_worker
-    return execute(fun, worker,  *args, **kwargs) 
-            
-def _map_worker(fun, chunksize, i, outs, *args):
-    """ The worker function, invoked in a thread. 'nums' is a
-        list of numbers to factor. The results are placed in
-        outdict.
-    """
-    a=[args[j][chunksize * i:chunksize * (i + 1)] 
-           for j in range(len(args))]
-    if outs=={}:
-        outs[i]=map(fun, *a)
-    elif outs==None:
-        return map(fun, *a)
-          
+def lineno():
+    """Returns the current line number in our program."""
+    return inspect.currentframe().f_back.f_lineno
+
+
 def map_parallel(fun, *args, **kwargs):
-    worker=_map_worker
-    return execute(fun, worker,  *args, **kwargs)
 
+#     if comm.is_mpi_used():
+    
+    return map_mpi(fun, *args, **kwargs)
 
-def _mpi(fun, worker, *args, **kwargs):
+#     else:
+#         return map_pool(fun, args, kwargs)
+        
+
+def map_mpi(fun, *args, **kwargs):
     
     with Barrier():    
         chunksize = int(math.ceil(len(args[0]) / float(comm.size())))
-        l=worker(fun, chunksize, comm.rank(), None, *args)
-#         print l
         
+        a=chunkit(chunksize, comm.rank(), *args)
+        
+        out=map_local_threads(fun, a, kwargs)
+    
         if comm.rank() == 0: 
-            data=[l]+[comm.recv(source=i, tag=1) for i in range(1, comm.size())]
-            data=reduce(lambda x,y:x+y, data )
-              
+            data=[out]+[comm.recv(source=i, tag=1) for i in range(1, comm.size())]
+            data=reduce(lambda x,y:x+y, data )  
         else:
-            comm.send(l,dest=0, tag=1)
+            comm.send(out,dest=0, tag=1)
             data=None
-            
+                
     with Barrier():
         data=comm.bcast(data, root=0)
-    
-#     print 'returning'
+
     return data
 
 
-# def _threading(fun, worker, *args, **kwargs):
-#     # Each thread will get 'chunksize' nums and its own output dict
-#     nthreads=kwargs.get('threads',2)
-#     if 'threads' in kwargs.keys():del kwargs['threads']
-#     chunksize = int(math.ceil(len(args[0]) / float(nthreads)))
-#     threads = []
-#     outs = [{} for i in range(nthreads)]
-#     
-#     for i_thread in range(nthreads):
-#         # Create each thread, passing it its chunk of numbers to factor
-#         # and output dict.
-#         defaults=[fun, chunksize, i_thread, outs[i_thread]]
-#         t = threading.Thread( target=worker,
-#                               args=tuple(defaults+list(args)) ,
-#                               kwargs=kwargs)
-#         threads.append(t)
-#         t.start()
-# 
-#     # Wait for all threads to finish
-#     for t in threads:
-#         t.join()
-# 
-#     # Merge all partial output dicts into a single dict and return it
-#     #for key in outs
-#     
-#     d={k: v for out_d in outs for k, v in out_d.iteritems()}
-#     return reduce(lambda x,y:x+y, [d[i] for i in range(nthreads)])
-        
+def mpi_thread_tracker(file_name, s='as line '+str(lineno())):
 
+    with Barrier():
+        if comm.size()>1:
+            time.sleep(0.1)
+#             for i in range
+            print 'MPI rank:', comm.rank(), s, 'in', file_name         
+            time.sleep(0.1)
+            
+
+def mockup_fun(*args):
+    a,b=args 
+
+    if a % 2==0:
+        return a*b
+    else:
+        return a-b
+    
+import unittest
 class TestModule_functions(unittest.TestCase):
-
-    def fun(self, *args):
-        a,b=args 
-        #time.sleep(0.001)
-        if a % 2==0:
-            return a*b
-        else:
-            return 0
-        
     
     def setUp(self):
-        pass
+        self.home=expanduser("~")
         
+    def test_map_parallel(self):
+        a=range(10**3)
+#         a=[float(aa) for aa in a]
+        with misc.Stopwatch('Seriell'):
+            l1= map(mockup_fun, a, a)
+        with misc.Stopwatch('Seriell2s'):
+            l2=map_parallel(mockup_fun, a, a, **{'local_threads':4})
 
-#     def test_map_parallel(self):
-#         a=range(10**1)
-#         l1= map(self.fun,a,a)
-#         l2=map_parallel(self.fun, a, a, **{'threads':4})
-#         self.assertListEqual(l1,l2)
-                
-#         a=range(10**7)
-# 
-#         with misc.Stopwatch('Seriell...'):
-#             l1= map(self.fun,a,a)
-#         
-#         with misc.Stopwatch('Parallel...'):
-#             l2=map_parallel(self.fun, a, a, **{'threads':8})    
-# 
-#     def test_nest_connect_parallel(self):
-#         import numpy
-#         n=nest.Create('iaf_neuron', 100)
-#         pre=n*len(n)
-#         post=reduce(lambda x,y:x+y, [[i]*len(n) for i in n])
-#         weights=numpy.random.random(len(post))*10
-#         delays=numpy.random.random(len(post))+1
-#         kwargs={'model':'static_synapse','threads':4}
-#         nest.Connect(pre, post)#, weights, delays, **{'model':'static_synapse'})
-# #         fun_parallel(nest.Connect, pre, post, weights, delays, **kwargs)
+        self.assertListEqual(l1,l2)
+                 
+    def test_map_parallel_mpi(self):
+        from data_to_disk import pickle_save, pickle_load
+        from toolbox.data_to_disk import read_f_name
 
+        a=range(10**7+3)
+#         a=[float(aa) for aa in a]
+        with misc.Stopwatch('Seriell'):
+            l1= map(mockup_fun,a,a)
+        
+        data_path= self.home+'/results/unittest/parallelization/map_parallel_mpi/'
+        script_name=os.getcwd()+'/test_scripts_MPI/parallelization_map_parallel_mpi.py'
+        np=4
+            
+        for fname in read_f_name(data_path):
+            os.remove(data_path+fname)
+  
+        fileName = data_path + 'data_in.pkl'
+        fileOut = data_path + 'data_out.pkl'
+        pickle_save(a, fileName)
+
+        with misc.Stopwatch('Subp'):
+            p = subprocess.Popen(['mpirun',  '-np', str(np), 'python', 
+                                  script_name, fileName, fileOut, data_path], 
+        #                            stdout=subprocess.PIPE,
+        #                            stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+            
+            out, err = p.communicate()
+        
+        print len(a)
+        l2=pickle_load(fileOut) 
+        print l1[0:20]
+        print l2[0:20]
+        self.assertListEqual(l1[0:20],l2[0:20])
+        self.assertListEqual(l1[-20:],l2[-20:])
 class TestComm(unittest.TestCase):
 
     def test_is_mpi_used(self):
-        import subprocess
+
         import pickle
         from toolbox.data_to_disk import read_f_name
         s = expanduser("~")
@@ -277,6 +305,7 @@ class TestComm(unittest.TestCase):
         out, err = p.communicate()
 #         print out
 #         print err
+
         data=[]
         for fn in files:
             f=open(fn, 'rb') #open in binary mode
@@ -286,19 +315,26 @@ class TestComm(unittest.TestCase):
             
         data2=[1 for _ in range(np)]
         
-        self.assertListEqual(data, data2)          
-        
-if __name__ == '__main__':
-    
-    test_classes_to_run=[
-                            TestModule_functions,
-                            TestComm,
-                         ]
-    suites_list = []
-    for test_class in test_classes_to_run:
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        suites_list.append(suite)
 
-    big_suite = unittest.TestSuite(suites_list)
-    unittest.TextTestRunner(verbosity=2).run(big_suite)
+        self.assertListEqual(data, data2)          
+
+                               
+if __name__ == '__main__':
+    d={
+       TestModule_functions:[
+#                             'test_map_parallel',
+                            'test_map_parallel_mpi',
+                           ],
+       TestComm:[
+#                  'test_is_mpi_used'
+                 ]
+       } 
+    
+    test_classes_to_run=d
+    suite = unittest.TestSuite()
+    for test_class, val in  test_classes_to_run.items():
+        for test in val:            
+            suite.addTest(test_class(test))
+
+    unittest.TextTestRunner(verbosity=2).run(suite)
     

@@ -89,32 +89,15 @@ if my_socket.determine_host() in ['milner', 'milner_login']:
 else: 
     HOME = expanduser("~")
 
-COMPUTER=my_socket.determine_host()
+HOME_CODE=HOME+'/git/bgmodel/'
+HOME_DATA_BASE=HOME+'/results/papers/inhibition/network/'
+HOME_DATA=(HOME+'/results/papers/inhibition/network/'
+           +my_socket.determine_computer()+'/')
 
-#MODULE_PATH=  (HOME+'/tools/NEST/dist/'+
-#               'install-nest-2.2.2/lib/nest/ml_module')
-#MODULE_PATH= (HOME+'/opt/NEST/dist/install-nest-2.2.2/lib/nest/ml_module')
-    
-
-#MODULE_PATH= ('ml_module')
 
 path, sli_path=nest.get_default_module_paths(HOME)
 nest.install_module(path, sli_path, model_to_exist='my_aeif_cond_exp' )
 
-# if nest.version()=='NEST 2.2.2':
-#     s='nest-2.2.2'
-# if nest.version()=='NEST 2.4.1':
-#     s='nest-2.4.1'    
-# if nest.version()=='NEST 2.4.2':
-#     s='nest-2.4.2'   
-#       
-# MODULE_PATH= (HOME+'/opt/NEST/module/'
-#               +'install-module-130701-'+s+'/lib/nest/ml_module')
-# MODULE_SLI_PATH= (HOME+'/opt/NEST/module/'
-#                   +'install-module-130701-'+s+'/share/ml_module/sli')
- 
-# nest.Install(MODULE_PATH)
-# nest.Create('iaf_neuron', 2)
  
     
 #@todo: change name on Node to Surface
@@ -491,8 +474,8 @@ class Par_base(object):
 #         l=kwargs.get('perturbations', Perturbation_list())
 #         self.set_perturbation_list(l)
 
-        self.module_path=kwargs.get('module_path',MODULE_PATH)
-        self.module_sli_path=kwargs.get('module_sli_path',MODULE_SLI_PATH)
+#         self.module_path=kwargs.get('module_path',MODULE_PATH)
+#         self.module_sli_path=kwargs.get('module_sli_path',MODULE_SLI_PATH)
         
 #         if not 'my_aeif_cond_exp' in nest.Models(): 
 # #             print self.module_path
@@ -916,6 +899,12 @@ class Par_base(object):
     def get_stop_rec(self):
         return self.dic_con['simu']['stop_rec']  
 
+    def get_spikes_from_file(self):
+        return self.dic_con['simu']['sd_params']['to_file']
+
+    def get_do_reset(self):
+        return self.dic_con['simu']['do_reset']
+
     def get_surf(self):
         dic={}
         for key in self.get_node().keys():
@@ -929,6 +918,9 @@ class Par_base(object):
 
     def get_threads(self):
         return self.dic_con['simu']['threads']  
+
+    def get_threads_local(self):
+        return self.dic_con['simu']['threads_local'] 
 
     def get_unittest(self):
         return self.unittest
@@ -966,7 +958,9 @@ class Par_base(object):
 #         self.update_dic_rep({'simu':{'sim_stop':val}})
 #         self.update_dic_rep( {'simu':{'stop_rec':val}})
 
-
+    def set_path_nest(self, val):
+        d={'simu':{'path_nest':val}}
+        self.update_perturbations(Perturbation_list(d,  '='))
         
     def clear_dep(self):
         self.dep={}
@@ -1315,6 +1309,7 @@ class Unittest_base(object):
         inp='i1'
         net='n1'
         dic['simu']={}
+        dic['simu']['do_reset']=False
         dic['simu']['mm_params']={'interval':0.5, 
                                    'to_file':True, 
                                    'to_memory':False,
@@ -1322,6 +1317,7 @@ class Unittest_base(object):
         
         dic['simu']['print_time']=False
         dic['simu']['threads']=4
+        dic['simu']['threads_local']=1
         dic['simu']['save_conn']={'active':False, 'overwrite':False}
         dic['simu']['start_rec']=0.0
         dic['simu']['stop_rec']=numpy.Inf
@@ -1429,7 +1425,7 @@ class Unittest_extend_base(object):
         # ========================        
         dic['simu']={}
         dic['simu']['threads']=1
-        
+        dic['simu']['threads_local']=1
         
         
         # ========================
@@ -1914,6 +1910,7 @@ class Single_unit_base(object):
         # Default simu parameters 
         # ========================        
         dic['simu']=dic_other['simu']
+        
 
         dc=(HOME+'/results/papers/inhibition/single/conn/')        
         dp=(HOME+'/results/papers/inhibition/single/'
@@ -2054,13 +2051,13 @@ class InhibitionPar_base(object):
         # ========================
         
         dic['simu']={}
+        dic['simu']['do_reset']=False
         dic['simu']['mm_params']={'interval':0.5, 
                                    'to_file':True, 
                                    'to_memory':False,
                                    'record_from':['V_m'] }
 
-        dp=(HOME+'/results/papers/inhibition/'
-            +'network/'+COMPUTER+'/') 
+        dp=HOME_DATA 
         dco= dp + 'conn/'       
         dcl= dp + self.__class__.__name__+'/'
         df=  dp + 'fig/'
@@ -2079,6 +2076,7 @@ class InhibitionPar_base(object):
         dic['simu']['stop_rec']=2000.0
         dic['simu']['start_rec']=1000.0
         dic['simu']['threads']=1
+        dic['simu']['threads_local']=1
         
         # ========================
         # Default netw parameters 
@@ -2966,10 +2964,13 @@ class Slow_wave2_base(object):
     def _get_par_constant(self):
         dic_other=self.other.get_dic_con()
         
+              
         #self._dic_con['node']['M1']['n']
         
-        
-        dic={'netw':{'input':{}}}
+#         dic['nest']['CF']['type_id']='poisson_generator'
+        dic={'netw':{'input':{}},
+             'nest':{},
+             'node':{}}
         
         d={'type':'oscillation2', 
              'params':{'p_amplitude_mod':0.1,
@@ -2978,8 +2979,15 @@ class Slow_wave2_base(object):
                        'freq_min':None,
                        'freq_max':None,
                        'period':'constant'}} 
+        
+        
         for key in ['C1', 'C2', 'CF', 'CS']: 
-            dic['netw']['input'][key]=d      
+            dic['netw']['input'][key]=d  
+            new_name=key+'d' 
+            dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
+                                   'rates':[0.],
+                                   'timings':[1.]}   
+            dic['node'][key]={'model':new_name}
         
         dic = misc.dict_update(dic_other, dic)
         return dic
@@ -2995,7 +3003,9 @@ class Beta_base(object):
         #self._dic_con['node']['M1']['n']
         
         
-        dic={'netw':{'input':{}}}
+        dic={'netw':{'input':{}},
+             'nest':{},
+             'node':{}}
         
         d={'type':'oscillation2', 
              'params':{'p_amplitude_mod':0.1,
@@ -3004,8 +3014,15 @@ class Beta_base(object):
                        'freq_min':None,
                        'freq_max':None,
                        'period':'constant'}} 
+        
+        
         for key in ['C1', 'C2', 'CF', 'CS']: 
-            dic['netw']['input'][key]=d      
+            dic['netw']['input'][key]=d  
+            new_name=key+'d' 
+            dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
+                                   'rates':[0.],
+                                   'timings':[1.]}   
+            dic['node'][key]={'model':new_name}
         
         dic = misc.dict_update(dic_other, dic)
         return dic
@@ -3764,6 +3781,7 @@ def get_oscillation_time_rates(params, stop, testing, ru, rd):
         cycles = int(stop / (2 * step))
         rates = [rd, ru] * cycles
         times = list(numpy.arange(0, 2. * cycles * step, step))
+    
     if params['period'] == 'uniform':
         f_min =params['freq_min']
         f_max =params['freq_max']
@@ -3929,11 +3947,23 @@ def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
 #         times=list(numpy.arange(0, 2.*cycles*step, step))
         
         idx=range(n)
-
+       
         setup+=[{'rates':rates, 
                  'times':times, 
                  'idx':idx, 
                  't_stop':stop}]
+
+    if typ=='oscillation3':
+        ru=rate*(params['p_amplitude0']+params['p_amplitude_mod'])
+        rd=rate*max(0, (params['p_amplitude0']-params['p_amplitude_mod']))
+        
+        setup+=[{'rate_first':rd,
+                 'rate_second':ru,
+                 'period_first':params['period_first'], 
+                 'period_second':params['period_second'], 
+                 'idx':idx, 
+                 't_stop':stop}]
+
 
     if typ=='burst_compete':
         p=params['p_amplitude']
@@ -4383,7 +4413,7 @@ def dummy_unittest_bcpnn(flag=True):
 def dummy_perturbations_lists(flag, conn):
     args=[]
     if flag in ['unittest', 
-              'inhibition', 'thalamus', 'slow_wave',
+              'inhibition', 'thalamus', 'slow_wave','beta',
               'bcpnn_h0', 'bcpnn_h1', 'burst_compete']:
         args.append(Perturbation_list({'netw':{'size': 0.5}}, '*',
                                       **{'name':'label1'}))
@@ -4807,6 +4837,7 @@ class TestMixinPar_base(object):
     def test_nest_params_exist(self):
         d_nest=self.par.dic['nest']  
         d1, d2={}, {}
+        
         for dn in d_nest.values():
             if 'type_id' in dn.keys():
                 df=nest.GetDefaults(dn['type_id'])
@@ -4854,6 +4885,7 @@ class TestMixinPar_base(object):
               [val['model'] for val in self.par['node'].values()]+
               [val['syn'] for val in self.par['conn'].values()],
               )    
+        
         for model in keys[0]:
             params=self.par._get_nest_setup(model)
             if 'type_id' in params.keys():
@@ -4998,6 +5030,30 @@ class TestSlowwave(TestSlowWavePar_base, TestMixinPar_base, TestSetup_mixin):
     pass
 
 
+class TestSlowWave2Par_base(unittest.TestCase):
+    def setUp(self):
+        self.kwargs={'other':Inhibition(),
+                     'unittest':False}
+        self.the_class=Slow_wave2
+        self.pert=dummy_perturbations_lists('slow_wave', 'C1_M1_ampa')
+        self.test_node_model='M1'
+        self._setUp()
+
+class TestSlowwave2(TestSlowWave2Par_base, TestMixinPar_base, TestSetup_mixin):
+    pass
+
+class TestBetaPar_base(unittest.TestCase):
+    def setUp(self):
+        self.kwargs={'other':Inhibition(),
+                     'unittest':False}
+        self.the_class=Beta
+        self.pert=dummy_perturbations_lists('beta', 'C1_M1_ampa')
+        self.test_node_model='M1'
+        self._setUp()
+
+class TestBeta(TestBetaPar_base, TestMixinPar_base, TestSetup_mixin):
+    pass
+
 class TestInhibitionStriatumPar_base(unittest.TestCase):
     def setUp(self):
         self.kwargs={'other':Inhibition(),
@@ -5092,6 +5148,8 @@ if __name__ == '__main__':
 #                         TestMSNClusterCompetePar
 #                         TestThalamus,
 #                         TestSlowwave,
+#                         TestSlowwave2,
+                          TestBeta,  
 #                         TestGo_NoGo_compete,
 #                         TestBcpnnH0,
 #                         TestBcpnnH1,

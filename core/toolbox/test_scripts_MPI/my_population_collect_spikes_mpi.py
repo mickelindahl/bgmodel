@@ -8,8 +8,9 @@ import pickle
 import sys
 
 from toolbox.data_to_disk import mkdir
-from toolbox.my_population import collect_spikes_mpi
+from toolbox.my_nest import collect_spikes_mpi
 from toolbox.parallelization import comm
+print sys.argv
 fileName, =sys.argv[1:]
 
 fileName+='data'
@@ -18,9 +19,9 @@ s,e=numpy.ones(2)*comm.rank(),numpy.ones(2)*comm.rank()+1
 
 s, e= collect_spikes_mpi(s, e)
 
+mkdir('/'.join(fileName.split('/')[0:-1]))  
 
 if comm.rank()==0:
-    mkdir('/'.join(fileName.split('/')[0:-1]))  
     
     print 'File name'
     print fileName

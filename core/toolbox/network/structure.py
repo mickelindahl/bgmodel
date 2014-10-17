@@ -6,18 +6,20 @@ Created on Jun 24, 2013
 Tools for handling/setting up set/action based connections in models
 
 '''
-from copy import deepcopy
 import numpy
 import os
 import random
 import time
+import unittest
+import pylab
+import gc
 
+from copy import deepcopy
 from toolbox import data_to_disk, my_nest, my_population, misc
 from toolbox.misc import my_slice, Base_dic
 from toolbox.parallelization import map_parallel, comm, Barrier
 from toolbox.network import default_params
-import unittest
-import pylab
+from scipy import sparse
 
 import pprint
 pp=pprint.pprint
@@ -333,8 +335,8 @@ class Conn(object):
         self.name=name            
         self.netw_size=kwargs.get('netw_size', 'unknown')
         self.mask=kwargs.get('mask', [-0.25, 0.25])
-        self.pre=[]
-        self.post=[]
+        self.pre=None #sparse.coo_matrix()
+        self.post=None #sparse.coo_matrix()
         self.rule=kwargs.get('rule','all-all')
 
         self.save=kwargs.get('save', {'active':False,
@@ -345,14 +347,32 @@ class Conn(object):
         self.syn=kwargs.get('syn', 'CO_M1_ampa') # nest 
         self.target=kwargs.get('target', 'CO')
         self.tata_dop=kwargs.get('tata_dop', 0.8)
-        self.threads=kwargs.get('threads', 1)
+        
+        
+        self.threads=my_nest.GetThreads() 
+        
         self.weight=kwargs.get('weight', {'type':'constant', 
                                                 'params':1.0})
         
     @property
     def n(self):
-        return len(self.pre)
-         
+        if self.pre is None:
+            return 0
+        else:
+            return self.pre.shape[1]
+    @property
+    def n_pre(self):
+        if self.pre is None:
+            return 0
+        else:
+            return self.pre.shape[1]
+    @property
+    def n_post(self):
+        if not self.pre:
+            return 0
+        else:
+            return self.post.shape[1]
+                 
     @property
     def size(self):
         return self.n
@@ -362,7 +382,7 @@ class Conn(object):
         return self.__class__.__name__+':'+self.name    
     
     def __str__(self):
-        return self.name+':'+str(len(self.pre))
+        return self.name+':'+str(self.n)
     
     def _add_connections(self, d_slice, p_slice, driver, pool, fan_in, 
                          flag='Convergent'):
@@ -414,17 +434,30 @@ class Conn(object):
         n_of_conn_per_driver=map(len, pool_conn)
         driver_conn=map(fun_mul, d_idx, n_of_conn_per_driver)
         
-        n1=len(self.pre)
+        n1=self.n
         if flag=='Convergent':
             pre, post=pool_conn, driver_conn
         if flag=='Divergent':
             pre, post=driver_conn, pool_conn            
+        
+        pre_add=sparse.coo_matrix(reduce(fun_sum, pre))
+        post_add=sparse.coo_matrix(reduce(fun_sum, post)) 
+        if not self.pre:
+            self.pre= pre_add 
+        else:
+            self.pre=sparse.hstack([self.pre, pre_add])
             
-        self.pre+=reduce(fun_sum, pre)
-        self.post+=reduce(fun_sum, post) 
-        n2=len(self.pre)
+        if not self.post:    
+            self.post=post_add
+        else: 
+            self.post=sparse.hstack([self.post, post_add])
+        n2=self.n
+        
         self.sets.append(slice(n1, n2, 1))
     
+    def clear(self):
+        del self.pre
+        del self.post
                        
     def get_fan_in(self, driver):
         fan_in=self.fan_in 
@@ -441,16 +474,17 @@ class Conn(object):
         if 'constant' == x['type']:
             return numpy.ones(self.n)*x['params']
         elif 'uniform' == x['type']:
+            
             return list(numpy.random.uniform(low=x['params']['min'], 
                                              high=x['params']['max'], 
                                              size=self.n))      
 
     def get_post(self):
-        return self.post
-
+        return list(numpy.asarray((self.post.todense())).ravel())
+    
     def get_pre(self):
-        return self.pre
-
+        return list(numpy.asarray((self.pre.todense())).ravel())
+    
     def get_syn(self):
         return self.syn
     
@@ -483,7 +517,7 @@ class Conn(object):
     
     def _save(self):
         data_to_disk.pickle_save([self.pre, self.post, 
-                                   self.sets], self.save['path'] ) 
+                                  self.sets], self.save['path'] ) 
         comm.barrier()
 
     
@@ -510,15 +544,21 @@ class Conn(object):
         else:
             d=data_to_disk.pickle_load(self.save['path'] )
             
-            self.pre, self.post, self.sets=d
-                
+            
+            self.pre=sparse.coo_matrix(d[0])
+            self.post=sparse.coo_matrix(d[1])
+            self.sets=d[2]
+#             self.pre=numpy.array([[0]])#sparse.coo_matrix(d[0])
+#             self.post=numpy.array([[0]])#sparse.coo_matrix(d[1])
+#             self.sets=[0]#d[2]
+#                 
                    
         t=time.time()-t
-        if display_print:
+        if display_print and comm.rank()==0:
             s='Conn: {0:18} Connections: {1:8} Fan pool:{2:6} ({3:6}) Time:{4:5} sec Rule:{5}'
             a=[self.name, 
-               len(self.pre), 
-               round(float(len(self.pre))/driver.get_n(),0),
+               self.n, 
+               round(float(self.n)/driver.get_n(),0),
                self.fan_in,
                round(t,2),
                self.rule]
@@ -527,14 +567,9 @@ class Conn(object):
     def _set_mpi(self, *args):
 #         with Barrier(True):
         if comm.rank()==0:
-            print 'set_mpi'
             self._set(*args)
-            print 'post_in_set_mpi'
                 
         comm.barrier()
-#         self.pre=comm.bcast(self.pre,root=0)
-#         self.post=comm.bcast(self.post,root=0)    
-        print 'post_set_mpi'
     
     def _set(self, driver, pool):   
         '''
@@ -547,14 +582,17 @@ class Conn(object):
             if driver.get_n()!=pool.get_n(): 
                 raise Exception(('number of pre surfs needs to'
                                  + 'equal number of post'))
-            self.pre, self.post= pool.get_idx(),driver.get_idx()
+            self.pre= sparse.coo_matrix(pool.get_idx())
+            self.post= sparse.coo_matrix(driver.get_idx())
+            
         elif self.rule=='1-all':
             # Each presynaptic node connects to only one postsynaptic node.
             if pool.get_n()!=1 : 
                 raise Exception(('Pool population has to of size 1'))
             
             post=[driver.get_idx()[0] for _ in range(len(pool.get_idx()))]
-            self.pre, self.post= pool.get_idx(), post
+            self.pre= sparse.coo_matrix(pool.get_idx())
+            self.post= sparse.coo_matrix(post)
 
         elif self.rule=='divergent':
             # Each presynaptic node connects to only one postsynaptic node.
@@ -565,14 +603,15 @@ class Conn(object):
             
             
 #             post=[driver.get_idx()[0] for _ in range(len(pool.get_idx()))]
-            self.pre, self.post= pre, post
-        
+            self.pre = sparse.coo_matrix(pre)
+            self.post = sparse.coo_matrix(post)
         elif self.rule =='fan-1':
             
             if driver.get_n()*fan_in!=pool.get_n(): 
                 raise Exception(('number of pre surfs needs to'
                                  + 'equal number of post'))
-            self.pre, self.post= pool.get_idx(),driver.get_idx()*int(fan_in)
+            self.pre=sparse.coo_matrix(pool.get_idx())
+            self.post=sparse.coo_matrix(driver.get_idx()*int(fan_in))
          
         elif self.rule in ['all-all', 'set-set', 
                            'set-not_set', 'all_set-all_set']:
@@ -583,14 +622,14 @@ class Conn(object):
                 self._add_connections(slice_dr, slice_po, *args)
  
          
-        assert isinstance(self.pre, list)            
-        assert isinstance(self.post, list) 
+        assert isinstance(self.pre, sparse.coo_matrix)            
+        assert isinstance(self.post, sparse.coo_matrix) 
          
             
     def plot_hist(self, ax):
         if self.n_conn==0:
             self.set_conn()
-        pre, post=self.pre, self.post
+        pre, post=self.get_pre(), self.get_post()
         #ax.hist(post,self.target.get_n() )
         # numpy.histogram()
         n_pre, bins =   numpy.histogram(pre, bins=self.source.get_n() )
@@ -625,9 +664,11 @@ class Conn_dic(Base_dic):
         self.dic[a[0]]=the_class(*a, **k)
 
 
-def build(params_nest, params_surf, params_popu):   
+def build(params_nest, params_surf, params_popu): 
+ 
     surfs=create_surfaces(params_surf)
     popus=create_populations(params_nest, params_popu)      
+
     return surfs, popus
 
 def connect(popus, surfs, params_nest, params_conn, display_print=False):
@@ -640,11 +681,15 @@ def connect(popus, surfs, params_nest, params_conn, display_print=False):
     
     conns=create_connections(surfs, params_conn, display_print)
     connect_conns(params_nest, conns, popus, display_print)
-    return conns
+    
+    for s in surfs:
+        del s
+        gc.collect()
+#     return conns
 
 def connect_conns(params_nest, conns, popus, display_print=False):
     for c in conns:
-        if display_print:
+        if display_print and comm.rank()==0:
             print 'Connecting '+str(c)
         my_nest.MyCopyModel( params_nest[c.get_syn()], c.get_syn())
         #c.copy_model( params_nest )
@@ -656,31 +701,47 @@ def connect_conns(params_nest, conns, popus, display_print=False):
         delays=list(c.get_delays())
         pre=list(sr_ids[c.get_pre()])
         post=list(tr_ids[c.get_post()])
-#         print c, len(weights)
-#         print pre, post 
-
-        my_nest.Connect(pre, post , weights, delays, model=c.get_syn())    
+        model=c.get_syn()
+        
+        c.clear()
+        del c
+        gc.collect()
+         
+#         delete_and_gc_collect(c)
+        
+        my_nest.Connect_DC(pre, post , weights, delays, model)
+#         my_nest.Connect_speed(pre, post , weights, delays, model=model)    
        
-#         syn_list=[{'model':c.get_syn(),
-#                    'delay':delay,
-#                    'weight':weight} 
-#                   for delay, weight in zip(delays, weights)]
-#         my_nest.Connect(pre, post,# weights, delays, 
-#                         syn_spec = syn_list
-#                         )    
+#         delete_and_gc_collect(weights, delays, pre, post)
+#         
+        del weights
+        del delays
+        del pre
+        del post
+        gc.collect()
+        
+
+def delete_and_gc_collect(*args):
+    for arg in args:
+        del arg
+    gc.collect()    
+
+
 def create_populations(params_nest, params_popu):
     #! Create input surfs
     popus=Population_dic()
-    for name in params_popu.keys():
- 
+    for name in sorted(params_popu.keys()):
+        
         model=params_popu[name]['model']
         my_nest.MyCopyModel( params_nest[model], model)
-      
+
         args=[name]
-        kwargs=deepcopy(params_popu[name])   
-#         print name                         
+        kwargs=deepcopy(params_popu[name])                          
+        
+        print name
+
         popus.add(*args, **kwargs)
-            
+  
     return popus
 
 def create_connections(surfs, params_conn, display_print=False):
@@ -829,38 +890,40 @@ class TestConn(unittest.TestCase):
             c=Conn('n1_n2', **{'fan_in':fan_in, 'rule':rule})
             
             l.append(c)
-            self.assertEqual(len(c.pre), len(c.post))
+   
            
             if rule=='1-1':
                 c._set(self.source, self.target)
-                self.assertEqual(len(c.pre), self.target.get_n())
+                self.assertEqual(c.n_pre, self.target.get_n())
             elif rule=='divergent':
                 c._set(self.source2, self.target)
-                self.assertEqual(len(c.pre), 
+                self.assertEqual(c.n_pre, 
                                  self.target.get_n()*self.source2.get_n())
             else:
 #                 print rule
                 c._set(self.target, self.source2)
+#                 print c.n_pre
                 self.assertAlmostEquals(fan_in, 
-                                        float(len(c.pre))/self.target.get_n(), 
+                                        float(c.n_pre)/self.target.get_n(), 
                                         delta=3)
                 c=Conn('n1_n2', **{'fan_in':fan_in, 'rule':rule})
                 c._set(self.target, self.source3)
                 self.assertAlmostEquals(fan_in, 
-                                        float(len(c.pre))/self.target.get_n(), 
+                                        float(c.n_pre)/self.target.get_n(), 
                                         delta=3)          
                 
                 if rule=='set-not_set':
                     l=[]
-                    for pre, post in zip(c.pre, c.post):
+                    for pre, post in zip(c.get_pre(), c.get_post()):
                         n_sets=self.target.get_n_sets()
                         self.assertTrue(pre % n_sets != post % n_sets)
                 if rule=='set-set':
                     l=[]
-                    for pre, post in zip(c.pre, c.post):
+                    for pre, post in zip(c.get_pre(), c.get_post()):
                         n_sets=self.target.get_n_sets()
                         self.assertTrue(pre % n_sets == post % n_sets)
-
+         
+        self.assertEqual(c.n_pre, c.n_post)
                   
 #            for i, s in enumerate(c.sets):
 #                pylab.plot(c.pre[s], c.post[s], colors[i], marker='*',ls='')
@@ -1058,38 +1121,38 @@ class TestModuleFunctions(unittest.TestCase):
         
 if __name__ == '__main__':
     d={
-#        TestSurface:[
-#                     'test_create',
-#                     'test_get_set',
-#                     'test_apply_boundary_conditions',
-#                     'test_apply_kernel',
-#                     'test_apply_mask',
-#                     'test_get_connectables',
-#                     'test_pos_edge_wrap',
-#                     ],
-#        TestSurface_dic:[
-#                         'test_add',
-#                         ],
+        TestSurface:[
+                     'test_create',
+                     'test_get_set',
+                     'test_apply_boundary_conditions',
+                     'test_apply_kernel',
+                     'test_apply_mask',
+                     'test_get_connectables',
+                     'test_pos_edge_wrap',
+                     ],
+        TestSurface_dic:[
+                         'test_add',
+                         ],
        TestConn:[
-#                  'test_create',
-#                  'test_set_con',
-#                 'test_set_save_load',
-                'test_set_save_load_mpi',
-#                  'test_get_weight',
-#                  'test_get_delays',
+                 'test_create',
+                 'test_set_con',
+                'test_set_save_load',
+#                 'test_set_save_load_mpi',
+                'test_get_weight',
+                'test_get_delays',
                  ],
-#        TestConn_dic:[
-#                      'test_add'
-#                      ],
-#        TestModuleFunctions:[
-#                             'test_1_create_surfaces',
-#                             'test_2_create_populations',
-#                             'test_3_create_connections',
-#                             'test_4_connect_conns',
-#                             'test_5_build',
-#                             'test_6_connect',
-#                             'test_7_connect_with_save',
-#                             ],
+        TestConn_dic:[
+                      'test_add'
+                      ],
+        TestModuleFunctions:[
+                             'test_1_create_surfaces',
+                             'test_2_create_populations',
+                             'test_3_create_connections',
+                             'test_4_connect_conns',
+                             'test_5_build',
+                             'test_6_connect',
+                             'test_7_connect_with_save',
+                             ],
        }
     test_classes_to_run=d
     suite = unittest.TestSuite()

@@ -28,7 +28,7 @@ from toolbox.network.default_params import (Inhibition, Slow_wave, Bcpnn_h0,
                                             Unittest_bcpnn_dopa, Unittest_stdp,
                                             Unittest_bcpnn)
 
-
+from toolbox.parallelization import Barrier
 
 class Network_base(object):
     def __init__(self, name, *args,  **kwargs):
@@ -100,6 +100,10 @@ class Network_base(object):
     @property
     def threads(self):
         return self.par.get_threads()
+
+    @property
+    def threads_local(self):
+        return self.par.get_threads_local()
         
     @property
     def sim_time(self):      
@@ -277,6 +281,11 @@ class Network_base(object):
     def get_x0(self):
         return self.x0opt
 
+    def get_spikes_from_file(self):
+        return self.par.get_spikes_from_file()
+
+    def get_do_reset(self):
+        return self.par.get_do_reset()
 
     def init_optimization(self):
         self.record=['spike_signal']
@@ -306,6 +315,9 @@ class Network_base(object):
     def set_sim_stop(self, t):
         self.par.set_sim_stop(t)
     
+    def set_path_nest(self, v):
+        self.par.set_path_nest(v)
+    
     def simulation_loop(self):
         d={}
         self.do_reset()
@@ -313,13 +325,32 @@ class Network_base(object):
         while True:
             self.do_preprocessing()
             self.do_run()
+            
+            if self.get_do_reset():
+                import gc
+                print 'reseting_kernel in loop'
+                t=my_nest.GetKernelStatus('time')
+                my_nest.SetKernelTime(t)
+                with Barrier():
+                    my_nest.ResetKernel(**{'data_path':self.path_nest})
+                    gc.collect()
+#                 self.pops=None
+                self.do_reset()
+                import time
+#                 time.sleep(100)
+                 
+     
             self.do_postprocessing(d)
+
+
 
             if self.reset: 
                 self.do_reset()
            
             if self.sim_stop<=self.sim_time_progress:
                 break    
+            
+            
             
         self.do_delete_nest_data() 
         return d
@@ -378,7 +409,7 @@ class Network_base(object):
             idx.append(i)
             vals.append(x0[i])
             x0[i]=0.
-        print x0
+#         print x0
         l=self.get_perturbations_optimization(x0)
         
         for p in l:
@@ -493,8 +524,8 @@ class Network(Network_base):
         '''
         Possibility to change par.
         '''
-        
-        with Stop_stdout(not self.verbose), Stopwatch('Calibrating...\n',
+
+        with Stop_stdout(not self.verbose), Stopwatch('Calibrating',
                                                       self.stopwatch):
             pass
         
@@ -503,60 +534,72 @@ class Network(Network_base):
         Build network units as nodes and population. Nodes represent spacial 
         properties and populations holds the nest representation.
         '''
-          
-        with Stop_stdout(not self.verbose), Stopwatch('Building...\n',
+        with Stop_stdout(not self.verbose), Stopwatch('Building',
                                                       self.stopwatch):
             
-            my_nest.ResetKernel(threads=self.threads, print_time=False)  
+            my_nest.ResetKernel(threads=self.threads,
+                                threads_local=self.threads_local,
+                                print_time=False)  
 #             print self.par['simu']['sd_params']      
 #             t=self.params_surfs
-            self.surfs, self.pops=structure.build(self.params_nest, 
-                                                      self.params_surfs,
-                                                      self.params_popu)              
         
+            self.surfs, self.pops=structure.build(self.params_nest, 
+                                                  self.params_surfs,
+                                                  self.params_popu)     
+        
+#         from toolbox.parallelization import mpi_thread_tracker as mtt
+#         mtt(__file__)   
         
     def _do_connect(self):
         '''Connect all nodes in the model'''
      
-        with Stop_stdout(not self.verbose), Stopwatch('Connecting...\n',
+        with Stop_stdout(not self.verbose), Stopwatch('Connecting',
                                                       self.stopwatch):        
 #             print self.params_conn
             args=[self.pops, self.surfs, self.params_nest, 
                   self.params_conn, self.verbose]
             
-            self.conns=structure.connect(*args)
+            structure.connect(*args)
 #         import nest
 #         c=nest.GetConnections(self.pops['n1'].ids, 
 #                               self.pops['n2'].ids)
 #         pp(nest.GetStatus(c))
 #         nest.SetStatus(c, {'gain':2.})
+
     def do_run(self):
         
         if not self.connected: self.do_connect()
-       
+        from toolbox.parallelization import comm
+#         print 'Before mkdir', comm.rank()
         if not os.path.isdir(self.path_nest):
+#             print 'Inside mkdir'
             data_to_disk.mkdir(self.path_nest)
+#         print 'After mkdir', comm.rank()
+            
         s='Simulating {} ms from {} ms (rec from {} ms): ...'
         s=s.format(str(self.sim_time),
                    str(self.sim_time_progress), 
                    str(self.get_start_rec()))
+#         print 'After fromat', comm.rank()
         with Stop_stdout(not self.verbose), Stopwatch(s,  self.stopwatch):        
+#             print 'Before reset kernel', comm.rank()
+    
             self.set_kernel_status()
-            my_nest.Simulate(self.sim_time)       
-
+#             print 'After reset kernel', comm.rank()
+    
+#             my_nest.MySimulate(self.sim_time)       
+            my_nest.Simulate(self.sim_time) 
             self.sim_time_progress+=self.sim_time
               
        
     def do_delete_nest_data(self): 
         with Stop_stdout(not self.verbose):
-            for filename in os.listdir(self.path_nest):
-                if filename.endswith(".gdf"):
-                    print 'Deleting: ' +self.path_nest+'/'+filename
-                    os.remove(self.path_nest+'/'+filename)
+            my_nest.delete_data(self.path_nest)
+
        
     def do_preprocessing(self):
   
-        with Stop_stdout(not self.verbose), Stopwatch('Preprocessing...'):  
+        with Stop_stdout(not self.verbose), Stopwatch('Preprocessing'):  
             if self.update_par_rep:
                 self.update_dic_rep(self.update_par_rep[0])
                 del self.update_par_rep[0]
@@ -582,15 +625,17 @@ class Network(Network_base):
                           
     def do_postprocessing(self, d):
         
-        with Stop_stdout(not self.verbose), Stopwatch('Postprocessing...'):
+        with Stop_stdout(not self.verbose), Stopwatch('Postprocessing'):
             
-            for p in self.record:
+            for signal_type in self.record:
                 # Set data for data units for each data call
                 #print self.sim_time_progress
                 #print my_nest.GetStatus([12])[0]['events']['times']
-                dd=self.pops.get(p)
-                for name, v in dd.items():
-                    d=fill_duds_node(d, name, p, v)
+#                 print self.pops.keys()
+                d_signals=self.pops.get(signal_type)
+                
+                for name, signal in d_signals.items():
+                    d=fill_duds_node(d, name, signal_type, signal)
 #                 duds[p].add(p, self.pops.get(p))  
     
             for source, target, prop in self.record_weights_from:
@@ -651,35 +696,12 @@ class Network(Network_base):
         conns=my_nest.GetStatus(my_nest.GetConnections(s, t, synapse_model))
                 
         n=len(conns)
-# 
-#                 for c in conns:
-#                     out+=(fun(c,trans1, trans2))
         
         out+=map(fun,conns, [trans1]*n, [trans2]*n)
         out=numpy.array(out)
 #         pylab.scatter(out[:,0], out[:,1], **{'marker':'.'})
 #         pylab.show()
         return out            
-#                 
-                
-                
-      
-        
-        
-# class Inhibition(Network):
-# 
-#     def get_data_root_path(self):
-#         return toolbox.get_data_root_path('inhibition')
-# 
-#     def get_figure_root_path(self):
-#         return toolbox.get_figure_root_path('inhibition')
-    
-              
-# class Slow_wave(Network):  
-#     def __init__(self, dic_rep={}, perturbation=None, **kwargs):
-#         super( Slow_wave, self ).__init__(dic_rep, perturbation, **kwargs)       
-#         # In order to be able to convert super class object to subclass object   
-#         self.class_par=Slow_wave
 
 class Single_units_activity(Inhibition):    
     
@@ -990,25 +1012,24 @@ def plot_plastic_dopa(d):
     ax.legend()
              
 class TestMixin_1(object):
-    pass
-#     def test_1_build(self):
-#         network=self.class_network(self.name, **self.kwargs)
-#         network.do_build()
-#              
-#     def test_2_connect(self):
-#         network=self.class_network(self.name, **self.kwargs)
-#         network.do_connect()    
-#         
-#     def test_3_run(self):
-#         network=self.class_network(self.name, **self.kwargs)
-#         network.do_run()  
-#                 
-#     def test_4_reset(self):
-#         network=self.class_network(self.name, **self.kwargs)  
-#         network.do_run()
-#         network.do_reset()
-#         network.do_run() 
-
+    
+    def test_1_build(self):
+        network=self.class_network(self.name, **self.kwargs)
+        network.do_build()
+               
+    def test_2_connect(self):
+        network=self.class_network(self.name, **self.kwargs)
+        network.do_connect()    
+          
+    def test_3_run(self):
+        network=self.class_network(self.name, **self.kwargs)
+        network.do_run()  
+                  
+    def test_4_reset(self):
+        network=self.class_network(self.name, **self.kwargs)  
+        network.do_run()
+        network.do_reset()
+        network.do_run() 
 
 class TestMixin_2(object):
     def update_par_rep(self, node):
@@ -1104,6 +1125,7 @@ class TestMixin_2(object):
         spk.cmp('isi').hist(pylab.subplot(223))
 #         pylab.show()  
 # 
+
     def test_90_IV_curve(self):
         network=self.class_network(self.name, **self.kwargs)  
         kwargs={'stim':self.curr_IV,
@@ -1132,7 +1154,7 @@ class TestMixin_2(object):
         spk.cmp('IF_curve').plot(ax, part='first',**{'linewidth':3.0, 
                                                       'color':'g'})#       
 #         pylab.show() 
-                              
+                          
     def test_91_FF_curve(self):
         dic_rep={'simu':{'sd_params':{'to_file':False, 'to_memory':True}},
                          'netw':{'size':36.}}
@@ -1151,7 +1173,7 @@ class TestMixin_2(object):
         spk[:,0].cmp('mean_rate_parts').plot_FF(ax, x=self.rates,
                                                 **{'label':'Set 1'})
 #         pylab.show()
-# 
+
     def test_92_voltage_trace(self):
         dic_rep=deepcopy(self.dic_rep)
            
@@ -1179,7 +1201,7 @@ class TestMixin_2(object):
         obj.plot(ax, **{'id_list':[0]})
                  
 #         pylab.show()
- 
+
     def test_93_optimization(self):
         dic_rep=deepcopy(self.dic_rep)
           
@@ -1194,8 +1216,9 @@ class TestMixin_2(object):
         network=self.class_network(self.name, **self.kwargs)  
    
         e1=network.sim_optimization(x0)
+        network.pops=None
         e2=network.sim_optimization([3000.0+200.0])
-#         print e1,e2
+        print e1,e2
         self.assertAlmostEqual(e1[0], 18, delta=3)
         self.assertAlmostEqual(e2[0], 28, delta=2)
 #         #pylab.show()
@@ -1205,7 +1228,6 @@ class TestMixin_3(object):
         network=self.class_network(self.name, **self.kwargs)  
         conn=network.get_conn_matrix('M1', 'M1', 'M1_M1_gaba')
         
-    
 class TestMixinPlastic(object):           
     def test_simulation_loop(self):
         dic_rep=self.dic_rep
@@ -1288,7 +1310,6 @@ class TestUnittest_base(unittest.TestCase):
         self.input='i1'
         self._setUp()
 
- 
 class TestUnittest(
                    TestUnittest_base, 
                    TestMixin_1, 
@@ -1310,8 +1331,7 @@ class TestUnittestExtend_base(unittest.TestCase):
         self.node='n1'
         self.input='i1'
         self._setUp()
-
-        
+      
 class TestUnittestExtend(
                    TestUnittest_base, 
                    TestMixin_1, 
@@ -1319,6 +1339,7 @@ class TestUnittestExtend(
                    TestMixinSetup,
                    ):
     pass        
+
 class TestUnittestBcpnnDopa_base(unittest.TestCase):
     kwargs=network_kwargs()
     
@@ -1349,7 +1370,6 @@ class TestUnittestBcpnnDopa_base(unittest.TestCase):
         self.dic_rep=dic_rep
         self.name='net1'        
         
-   
 class TestUnittestBcpnnDopa(TestUnittestBcpnnDopa_base, TestMixin_1,
                         TestMixinPlasticDopa):
     pass
@@ -1382,7 +1402,6 @@ class TestUnittestStdp_base(unittest.TestCase):
         self.dic_rep=dic_rep
         self.name='net1'        
       
- 
 class TestUnittestStdp(
                        TestUnittestStdp_base, 
                        TestMixin_1,
@@ -1418,12 +1437,9 @@ class TestUnittestBcpnn_base(unittest.TestCase):
         self.dic_rep=dic_rep
         self.name='net1'        
       
- 
 class TestUnittestBcpnn(TestUnittestBcpnn_base, TestMixin_1,
                         TestMixinPlastic):
     pass
-
-
 
 class TestSinlge_unit_base(unittest.TestCase):
     kwargs=network_kwargs()
@@ -1461,8 +1477,7 @@ class TestSinlge_unit_base(unittest.TestCase):
         self.kwargs.update({'verbose':True,
                             'par':par})
         self.dic_rep=d
-
-        
+      
 class TestSingle_unit(
                    TestSinlge_unit_base, 
                    TestMixin_1, 
@@ -1521,220 +1536,42 @@ class TestNetwork_dic(unittest.TestCase):
         self.assertAlmostEquals(sum(e1),sum(e2[0:2]), delta=0.1)
         self.assertFalse(sum(e1)==sum(e2))
 
-
-
-                           
-# class TestStructureInhibition(unittest.TestCase):
-#     
-#     nest.sr("M_WARNING setverbosity") #silence nest output
-#     def do_reset(self):
-#         self.kwargs={'save_conn':False, 'sub_folder':'unit_testing', 'verbose':True}
-#         self.dic_rep={'simu':{'start_rec':1.0, 'stop':100.0,'sim_time':100., 
-#                               'sd_params':{'to_file':True, 'to_memory':False},
-#                               'threads':4, 'print_time':False},
-#              'netw':{'size':500.0},
-#              }
-#         
-#     def change_fan_in(self):
-#         self.dic_rep.update({'conn':{'M1_M1_gaba':{'fan_in0':5},
-#                                      'M1_M2_gaba':{'fan_in0':5},
-#                                      'M2_M1_gaba':{'fan_in0':5},
-#                                      'M2_M2_gaba':{'fan_in0':5},
-#                                      'M1_SN_gaba':{'fan_in0':5},
-#                                      'M2_GI_gaba':{'fan_in0':5}}})
-#         
-#     def build_connect(self):
-#         network=self.class_network(self.name, **self.kwargs)
-#         
-#         for key, val in network.par['conn'].items():
-#             #print key
-#             if val['delay_setup']['type']=='uniform':
-#                 val['delay_setup']['type']='constant'
-#                 val['delay_setup']['params']=(val['delay_setup']['params']['max']
-#                                               +val['delay_setup']['params']['min'])/2.
-#         
-#         network.do_build()
-#         network.do_connect()
-#         return network 
-#     
-#     def setUp(self):
-#         self.do_reset()
-#         self.change_fan_in()
-#         self.dic_rep['netw'].update({'size':50.0, 
-#                                      'sub_sampling':{'M1':20.0,'M2':20.0}})
-#         self.class_network=Inhibition
-#         
-#         self.fileName=self.class_network().path_data+'network'
-#         self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
-#             
-#     def test_a_build_connect_run(self):
-#         
-#         network=self.build_connect()
-#         network.do_run()
-#         data_to_disk.pickle_save(network, self.fileName)
-# 
-#         
-#     def test_reset(self):
-#         network=self.build_connect()    
-#         network.do_run()
-#         network.do_reset()
-#         network.do_run()
-#         self.assertEqual(network.start_rec, network.sim_start)
-#         
-#     def test_get_firing_rate(self):
-#         
-#         network=data_to_disk.pickle_load(self.fileName)
-#         my_nest.SetKernelStatus({'data_path':network.path_nest})
-#         fr=network.get_firing_rate(self.model_list)
-#         
-#         for k in self.model_list:
-#             self.assertEqual(len(fr[k]['times']), network.par['simu']['sim_time']-1)
-#             self.assertEqual(len(fr[k]['rates']), network.par['simu']['sim_time']-1)
-# 
-#     def test_get_firing_rate_sets(self):
-#         
-#         network=data_to_disk.pickle_load(self.fileName)
-#         my_nest.SetKernelStatus({'data_path':network.path_nest})
-#         d=network.get_firing_rate_sets(self.model_list)
-#         
-#         for k in self.model_list:
-#             self.assertEqual(len(d[k]['times']), network.par['simu']['sim_time']-1)
-#             self.assertEqual(d[k]['rates'].shape[1], network.par['simu']['sim_time']-1)
-#             self.assertEqual(d[k]['rates'].shape[0], network.par['node'][k]['n_sets'])
-# 
-#     def test_get_raster(self):
-#         
-#         network=data_to_disk.pickle_load(self.fileName)
-#         my_nest.SetKernelStatus({'data_path':network.path_nest})
-#         d=network.get_rasters(self.model_list)
-#         
-#         for k in self.model_list:
-#             self.assertIsInstance(d[k][0], numpy.ndarray)
-#             self.assertEqual(d[k][0].shape[0], 2)
-#             self.assertListEqual(list(d[k][1]), range(network.par['node'][k]['n']))
-# 
-#     def test_get_rasters_sets(self):
-#         
-#         network=data_to_disk.pickle_load(self.fileName)
-#         my_nest.SetKernelStatus({'data_path':network.path_nest})
-#         d=network.get_rasters_sets(self.model_list)
-#         
-#         for k in self.model_list:
-#             n_sets=network.par['node'][k]['n_sets']
-#             n=network.par['node'][k]['n']
-#             self.assertEqual(len(d[k]), n_sets)
-#             i=0
-#             acum=0
-#             for l in d[k]:
-#                 self.assertIsInstance(l[0], numpy.ndarray)
-#                 self.assertEqual(l[0].shape[0], 2)
-#                 self.assertEqual(len(l[0][0]),len(l[0][1]))
-#                 
-#                 
-#                 m=len(list(range(i, n, n_sets)))
-#                 self.assertListEqual(list(l[1]), range(acum, acum+m))
-#                 i+=1
-#                 acum+=m
-# 
-# 
-# class TestStructureSingle_units_activity_base(unittest.TestCase):
-#     def setUp(self):
-#         self.do_reset()
-#         self.class_network=Single_units_activity    
-#         self.dic_rep['netw'].update({'size':10})  
-#         #for key in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:
-#         #    del self.dic_rep['conn'][key]
-#         self.fileName=self.class_network().path_data+'network'             
-#         self.model_list=['M1']
-# 
-# class TestStructureSingle_units_activity(TestStructureSingle_units_activity_base, TestMixin_1):
-#     pass
-# 
-# 
-# class TestStructureSingle_units_in_vitro_base(unittest.TestCase):
-#     def setUp(self):
-#         self.do_reset()
-#         self.class_network=Single_units_activity    
-#         self.dic_rep['netw'].update({'size':10})  
-#         #for key in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:
-#         #    del self.dic_rep['conn'][key]
-#         self.fileName=self.class_network().path_data+'network'             
-#         self.model_list=['M1']
-# 
-# class TestStructureSingle_units_in_vitro(TestStructureSingle_units_activity_base, TestMixin_1):
-#     pass
-#  
-class TestStructureSlow_wave_base(unittest.TestCase):
-    def setUp(self):
-#         self.do_reset()
-        from toolbox.network.default_params import Perturbation_list as pl
-        self.class_network=Network    
-        self.name='Net_0'
-        self.kwargs={'par':Slow_wave(**{'other':Inhibition(),
-                                        'perturbations':pl({'netw':{'size':400.0},
-                                                            'node':{'M1':{'n_sets':3}},
-                                                            'conn':{'M1_M1_gaba':{'rule':'set-not_set'}}}, '=')})}
-        
-#         self.dic_rep['netw'].update({'size':10})  
-        #for key in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:
-        #    del self.dic_rep['conn'][key]
-#         self.fileName=self.class_network().path_data+'network'             
-        self.model_list=['M1']
- 
-class TestStructureSlow_wave(TestStructureSlow_wave_base,TestMixin_3):
-    pass       
-# class TestStructureSlow_wave(TestStructureInhibition):
-#     
-#     def setUp(self):
-#         self.do_reset()
-#         self.change_fan_in() 
-#         self.dic_rep['netw'].update({'size':50.0, 'sub_sampling':{'M1':20.0,'M2':20.0}}) 
-#         self.class_network=Slow_wave
-#         
-#         self.fileName=self.class_network().path_data+'network'
-#         self.model_list=['M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
-#         
-# class TestStructureBcpnn_h0(TestStructureInhibition):
-#     
-#     def setUp(self):
-#         self.do_reset()
-#         self.change_fan_in()
-#         self.dic_rep['netw'].update({'sub_sampling':{'M1':40.0,'M2':40.0, 'CO':600.0},
-#                                       'size':100.})     
-#         self.class_network=Bcpnn_h0
-#         
-#         self.fileName=self.class_network().path_data+'network'
-#         self.model_list=['CO', 'M1','M2', 'FS', 'GA', 'GI', 'ST', 'SN']
-#             
-# class TestStructureBcpnn_h1(TestStructureBcpnn_h0):
-# 
-#     def setUp(self):
-#         self.do_reset()
-#         self.change_fan_in()
-#         self.dic_rep['netw'].update({'sub_sampling':{'M1':40.0,'M2':40.0, 'CO':600.0},
-#                                       'size':100.})      
-#         self.class_network=Bcpnn_h1        
-#         self.fileName=self.class_network().path_data+'network'
-#         self.model_list=['CO', 'M1','M2', 'F1', 'F2', 'GA', 'GI', 'ST', 'SN']
-
        
 if __name__ == '__main__':
-    
-    test_classes_to_run=[
-#                         TestUnittest,
-#                         TestUnittestExtend,
-#                         TestUnittestBcpnnDopa,
-#                         TestUnittestStdp,
-#                         TestUnittestBcpnn,
-#                         TestSingle_unit
-#                         TestNetwork_dic,
-                          TestStructureSlow_wave,
-                       ]
-    suites_list = []
-    for test_class in test_classes_to_run:
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        suites_list.append(suite)
 
-    big_suite = unittest.TestSuite(suites_list)
-    unittest.TextTestRunner(verbosity=2).run(big_suite)  
+    d={
+        TestUnittest:[
+                    'test_1_build',
+                    'test_2_connect',
+                    'test_3_run',
+                    'test_4_reset',
+                    'test_5_simulation_loop', 
+                    'test_6_simulation_loop_x3_update_par_rep',
+                    'test_7_simulation_loop_x3_replace_pertubations',
+                    'test_90_IV_curve',   
+                    'test_90_IF_curve',
+                    'test_91_FF_curve', 
+                    'test_92_voltage_trace',
+                    'test_93_optimization',
+                      ],
+        TestUnittestExtend:[
+                           ],
+       TestUnittestBcpnnDopa:[
+                              ],
+       TestUnittestStdp:[
+                         ],
+       TestUnittestBcpnn:[],
+       TestSingle_unit:[],
+       TestNetwork_dic:[],
+
+
+       }
+    test_classes_to_run=d
+    suite = unittest.TestSuite()
+    for test_class, val in  test_classes_to_run.items():
+        for test in val:
+            suite.addTest(test_class(test))
+
+    unittest.TextTestRunner(verbosity=2).run(suite)   
+ 
                 

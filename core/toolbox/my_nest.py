@@ -11,9 +11,8 @@ setting random weight or delay on connections.
 
 '''
 
-
-
 # Imports
+import csv
 import numpy
 import numpy.random as rand
 
@@ -23,15 +22,33 @@ HOST=socket.gethostname().split('.')[0]
 # if 0:
 from nest import *
 import nest
-    
-    
+import nest.pynestkernel as _kernel        
+
 import time
 from copy import deepcopy
 from toolbox.parallelization import comm, Barrier
+from toolbox.misc import Stopwatch
 
+import pprint
+pp=pprint.pprint
+
+kernal_time=None
+
+def SetKernelTime(t):
+    global kernal_time
+    kernal_time=t
+
+
+def GetKernelTime():
+    global kernal_time
+    if kernal_time==None:
+        return nest.GetKernelStatus('time')
+    else:
+        return kernal_time
 
 def _Simulate_mpi(*args, **kwargs):
     with Barrier():
+        print 'Simulating rank %i' % ( Rank()) #seems like it it neccesary to avoid hangup for mpi??!!
         nest.Simulate(*args, **kwargs)
         
 def Simulate(*args, **kwargs):
@@ -51,6 +68,46 @@ def Create(*args, **kwargs):
         return nest.Create(*args, **kwargs)  
 
 
+def Connect_DC(*args, **kwargs):
+    if comm.is_mpi_used():
+        _Connect_DC_mpi(*args, **kwargs)
+    else:
+        _Connect_DC(*args, **kwargs)
+        
+def _Connect_DC_mpi(*args, **kwargs):
+    with Barrier():
+        _Connect_DC(*args, **kwargs)
+
+        
+def _Connect_DC(pre, post, weights, delays, model):
+    
+    
+    tp, receptor=nest.GetDefaults(model, ['type','receptor_type'])
+
+    from itertools import izip
+    with Stopwatch('Connecting DC', **{'only_rank_0_mpi':True}):   
+
+        post_ids=list(numpy.unique(post))
+        status=GetStatus(list(numpy.unique(post)), 'local')
+        lock_up=dict(zip(post_ids,status))
+        
+        params=[{'delay': d,
+               'receptor': receptor,
+               'source': s,
+               'synapse_model': model,
+               'target': t,
+               'type': tp,
+               'weight': w}   for s, t, d, w, in izip(pre, 
+                                                      post, 
+                                                      delays, 
+                                                      weights
+                                                         )
+               if lock_up[t]]
+
+
+        DataConnect(params)
+    del params
+
 def Connect(*args, **kwargs):
     if comm.is_mpi_used():
         _Connect_mpi(*args, **kwargs)
@@ -64,14 +121,38 @@ def _Connect_mpi(*args, **kwargs):
 
 
 
-        
-
 def _Connect(pre, post, *args, **kwargs):
+
+    def fun(pre, post, args, kwargs, sl):
+        args=[a[sl] for a in args]
+#         print sl
+        if hasattr(nest, 'OneToOneConnect'):
+            nest.OneToOneConnect(pre[sl], 
+                                 post[sl],  
+                                 *[a[sl] for a in args], **kwargs)
+        else:
+            nest.Connect(pre[sl], 
+                         post[sl],  
+                         *[a[sl] for a in args], **kwargs)
     
-    if hasattr(nest, 'OneToOneConnect'):
-        nest.OneToOneConnect(pre, post,  *args, **kwargs)
-    else:
-        nest.Connect(pre, post,  *args, **kwargs)
+    chunks=kwargs.pop('chunks',1)
+    n=len(pre)
+    step=n/chunks
+    
+    slice_list=[]
+    for i in range(chunks):
+        if i<chunks-1:
+            slice_list.append(slice(i*step,(i+1)*step))
+        else:
+            slice_list.append(slice(i*step, n))
+
+    with Stopwatch('Connecting'):
+        map(fun, [pre]*chunks, [post]*chunks, [args]*chunks,[kwargs]*chunks,slice_list)
+         
+#     if hasattr(nest, 'OneToOneConnect'):
+#         nest.OneToOneConnect(pre, post,  *args, **kwargs)
+#     else:
+#         nest.Connect(pre, post,  *args, **kwargs)
  
 #         if params:
 #             syn_list=[{'model':model,
@@ -89,105 +170,244 @@ def _Connect(pre, post, *args, **kwargs):
 #         for source, target, syn_dict in zip(pre,  post, syn_list):
 #             nest.Connect([source], [target], syn_spec=syn_dict)
 
-def C(pre, post, params = None, delay = None, model = "static_synapse" ):    
+def fun_pre_post(s,d,m):
+    pushsli=_kernel.pushsli
+    runsli=_kernel.runsli
+
+    pushsli(s) #s
+    pushsli(d) #d
+    runsl('/{} Connect'.format(m))    
     
-    '''
-    As NEST Connect, Make one-to-one connections of type model between 
-    the nodes in pre and the nodes in post. pre and post have to be lists 
-    of the same length. If params is given (as dictionary or list of
+    
+def fun_pre_post_params(*args):
+    
+    pushsli=_kernel.pushsli
+    runsli=_kernel.runsli
+    
+    pushsli(args[0]) #s
+    pushsli(args[1]) #d
+    pushsli(args[2]) #p
+    runsli('/%s Connect' % args[3])  
+    
+def fun_pre_post_weight_delay(*args):
+
+    pushsli=_kernel.pushsli
+    runsli=_kernel.runsli
+
+    pushsli(args[0]) #s
+    pushsli(args[1]) #d
+    pushsli(args[2]) #w
+    pushsli(args[3]) #dl
+    runsli('/%s Connect' % args[4])                  
+
+
+
+def _Connect_speed_internal(pre, post, params=None, delay=None, model="static_synapse"):
+    """
+    Make one-to-one connections of type model between the nodes in
+    pre and the nodes in post. pre and post have to be lists of the
+    same length. If params is given (as dictionary or list of
     dictionaries), they are used as parameters for the connections. If
     params is given as a single float or as list of floats, it is used
     as weight(s), in which case delay also has to be given as float or
     as list of floats.
-    '''
-    
-    if isinstance(model, str): model = [ model ]  
-    if isinstance(pre, int):   pre   = [ pre   ]                                # since NEST needs list objects
-    if isinstance(post, int):  post  = [ post  ]                                # since NEST needs list objects
-     
-    Connect(pre, post, params = params, delay = delay, model = model[ 0 ] ) 
-    
-    if len( model ) > 1:                                                        # pre -> post with model[1], model[2] etc  
-        for m in model[1:]:
-            Connect(pre, post, params = params, delay = delay, model = m ) 
-                
-def CC( pre,  post, 
-        params = { 'd_mu'  : [], 'w_mu'  : [], 'd_rel_std' : 0.0, 'w_rel_std' : 0.0 }, 
-        model = [ 'static_synapse' ] ):
-    '''
-    As NEST ConvergentConnect except that it can take severals models and make same
-    connections for both models. This can be used to connect same source with 
-    target with both AMPA and NMDA. Mean and standard deviation for delays and
-    weights can be given. Mean as a list of values one for each model and
-    standard deviation as single values applied to all synapse models.
-     
-    Inputs:
-        pre                      - list of source ids       
-        post                     - list of target ids  
-    	params[ 'd_mu' ]         - mean delay for each model
-    	params[ 'w_mu' ]       	 - mean weight for each model
-        params[ 'd_rel_std' ]    - relative mean standard deviation delays
-        params[ 'w_rel_std' ]    - relative mean standard deviation weights
-        model                    - synapse model, can be a list of models
-    '''
-    
-    for key, val in params.iteritems():
-        exec '%s = %s' % (key, str(val))                                        # params dictionary entries as variables
-    
-    
-    if isinstance(model, str): model = [model]                                  # if model is a string put into a list   
-    if isinstance(pre, int):   pre   = [ pre   ]                                # since NEST needs list objects
-    else:                      pre   = pre[ : ]                                 # else retreive list
-    if isinstance(post, int):  post  = [ post  ]                                # since NEST needs list objects
-    else:                      post   = post[ : ]                               # else retreive list
-    
+    """
+
+
+    if len(pre) != len(post):
+        raise NESTError("pre and post have to be the same length")
+
+    # pre post Connect
+    if params == None and delay == None:
+        map(connect_speed_fun.fun_pre_post, pre, post, [model]*len(pre))
+
+
+    # pre post params Connect
+    elif params != None and delay == None:
+        params = broadcast(params, len(pre), (dict,), "params")
+        if len(params) != len(pre):
+            raise NESTError("params must be a dict, or list of dicts of length 1 or len(pre).")
+
+        map(fun_pre_post_params, pre, post, params, [model]*len(pre))
+
+    # pre post w d Connect
+    elif params != None and delay != None:
+        params = broadcast(params, len(pre), (float,), "params")
+        if len(params) != len(pre):
+            raise NESTError("params must be a float, or list of floats of length 1 or len(pre) and will be used as weight(s).")
+        delay = broadcast(delay, len(pre), (float,), "delay")
+        if len(delay) != len(pre):
+            raise NESTError("delay must be a float, or list of floats of length 1 or len(pre).")
         
-    n = len( pre )
-    
-    d_mu=params['d_mu']
-    d_rel_std=params['d_rel_std']
-    w_mu=params['w_mu']
-    w_rel_std=params['w_rel_std']   
-    if not d_mu: d_mu = [ GetDefaults( m )[ 'delay' ] for m in model ]     # get mean delays d_mu
-    d_sigma  = [ d_rel_std*mu for mu in d_mu ]                                  # get delay standard deviation
-    
-    if not w_mu: w_mu = [ GetDefaults( m )[ 'weight' ] for m in model ]    # get mean weights w_mu   
-    w_sigma = [ w_rel_std*mu for mu in w_mu ]                                   # get weight standard deviation            
-    
-    delays  = [ rand.normal( mu, sigma, [ len( pre ), n ] )                     # calculate delays, randomized if sigma != 0
-               if sigma else numpy.ones( ( len( pre ), n ) )*mu           
-    		   for mu, sigma in zip( d_mu, d_sigma )   ]                                                                
-      
-    weights = [ rand.normal( mu, sigma, [ len( pre ), n ] )                     # calculate weights, randomized if sigma != 0
-               if sigma else numpy.ones( ( len( pre ), n ) )*mu           
-    		   for mu, sigma in zip( w_mu, w_sigma ) ]                                                                  
-    
-    
-    for i, post_id in enumerate( post ):                                        # connect with model[0]                                                                            
-        d = [ dj for dj in delays[  0 ][ i ] ] 
-        w = [ wj for wj in weights[ 0 ][ i ] ]
-        ConvergentConnect(  pre,  [ post_id ], weight = w , delay = d, 
-                                 model = model[ 0 ] )                        
-          
-        if len( model ) > 1:                                                    # pre -> post with model[1], model[2] etc  
-            for m, dlays, wghts, in zip( model[1:], delays[1:], weights[1:] ):
-            	d = [ dj for dj in dlays[ i ] ]
-                w = [ wj for wj in wghts[ i ] ]
-            	ConvergentConnect( pre, [ post_id ], weight = w, 
-                                        delay = d, model = m )                   
-    
-    
-# def Create(*args, **kwargs):
-#     try:
-#         return nest.Create(*args, **kwargs)
-#     except Exception as e:
-#         s='\nargs:{} \nkwargs:{} \nAvailable models: \n{}'.format(args, 
-#                                                            kwargs, 
-#                                                            nest.Models())
-#         if len(e.message)>40:
-#             e.message=e.message[0:40]+'\n'+e.message[40:]
-#         raise type(e)(e.message + s), None, sys.exc_info()[2]
+        map(fun_pre_post_weight_delay, pre, post, params, delay, [model]*len(pre))
         
+
+    else:
+        raise NESTError("Both 'params' and 'delay' have to be given.")
+
+
+def _Connect_speed(pre, post, *args, **kwargs):
+
+    def fun(pre, post, args, kwargs, sl):
+        args=[a[sl] for a in args]
+#         print sl
+
+        _Connect_speed_internal(pre[sl], 
+                         post[sl],  
+                         *[a[sl] for a in args], **kwargs)
+    
+    chunks=kwargs.pop('chunks',1)
+    n=len(pre)
+    step=10000 #n/chunks
+    
+    slice_list=[]
+    for i in range(chunks):
+        if i<chunks-1:
+            slice_list.append(slice(i*step,(i+1)*step))
+        else:
+            slice_list.append(slice(i*step, n))
+    from toolbox.misc import Stopwatch
+    with Stopwatch('Connecting'):
+        map(fun, [pre]*chunks, [post]*chunks, [args]*chunks,[kwargs]*chunks,slice_list)
+
+def Connect_speed(*args, **kwargs):
+    if comm.is_mpi_used():
+        _Connect_mpi(*args, **kwargs)
+    else:
+        _Connect_speed(*args, **kwargs)
+        
+
+def _Connect_speed_mpi(*args, **kwargs):
+    with Barrier():
+        _Connect_speed(*args, **kwargs)
+
+def ConvergentConnect(pre, post, weight=None, delay=None, model="static_synapse"):
+    """
+    Connect all neurons in pre to each neuron in post. pre and post
+    have to be lists. If weight is given (as a single float or as list
+    of floats), delay also has to be given as float or as list of
+    floats.
+    """
+
+    if weight == None and delay == None:
+        for d in post :
+            sps(pre)
+            sps(d)
+            sr('/%s ConvergentConnect' % model)
+
+    elif weight != None and delay != None:
+        weight = broadcast(weight, len(pre), (float,), "weight")
+        if len(weight) != len(pre):
+            raise NESTError("weight must be a float, or sequence of floats of length 1 or len(pre)")
+        delay = broadcast(delay, len(pre), (float,), "delay")
+        if len(delay) != len(pre):
+            raise NESTError("delay must be a float, or sequence of floats of length 1 or len(pre)")
+        
+        for d in post:
+            sps(pre)
+            sps(d)
+            sps(weight)
+            sps(delay)
+            sr('/%s ConvergentConnect' % model)
+
+    else:
+        raise NESTError("Both 'weight' and 'delay' have to be given.")
+
+
+def collect_spikes_mpi(*args): 
+    args=list(args)
+    
+    for i in range(len(args)):
+        with Barrier():
+            if comm.rank()==0:
+                for i_proc in xrange(1, comm.size()):
+                    args[i] = numpy.r_[args[i], 
+                                       comm.recv(source=i_proc)]
+                    
+            else:
+                comm.send(args[i],dest=0)
+        args[i]=comm.bcast(args[i], root=0)
+        
+    return args
+
+def _delete_data(path, **kwargs):
+    for filename in sorted(os.listdir(path)):
+        if filename.endswith(".gdf"):
+            if kwargs.get('display', True):
+                print 'Deleting: ' +path+'/'+filename
+            os.remove(path+'/'+filename)    
+
+def _delete_data_mpi(path, **kwargs):
+    with Barrier():
+        if comm.rank()==0:
+            _delete_data(path, **kwargs)
+
+def delete_data(path, **kwargs):
+    if comm.is_mpi_used():
+        return _delete_data_mpi(path, **kwargs)
+    else:
+        return _delete_data(path, **kwargs)
+
+def get_spikes_from_memory(sd_id):
+    e = GetStatus(sd_id)[0]['events'] # get events
+    s = e['senders'] # get senders
+    t = e['times'] # get spike times
+
+    if comm.is_mpi_used():
+        s,t=collect_spikes_mpi(s,t)    
+    return s,t
+            
+
+def get_spikes_from_file(file_names):
+    if comm.is_mpi_used():
+        return _get_spikes_from_file_mpi(file_names)
+    else:
+        return _get_spikes_from_file(file_names)
+    
+def _get_spikes_from_file_mpi(file_names):
+    with Barrier():
+        if comm.rank()==0:
+            data=_get_spikes_from_file(file_names)
+        else:
+            data=None
+            
+    with Barrier():        
+        data=comm.bcast(data, root=0)
+    return data
+            
+    
+def _get_spikes_from_file(file_names):
+    data=[]
+
+#     if my_nest.Rank!=0:
+#         return
+
+    for name in file_names: 
+        c=0
+        while c<2:
+            try:
+                with open(name, 'rb') as csvfile:
+                    csvreader = csv.reader(csvfile, delimiter='\t')
+                    for row in csvreader:
+                        data.append([float(row[0]), float(row[1])])
+                c=2
+            except:
+                name_split=name.split('-')
+                name=name_split[0]+'-0'+name_split[1]+'-'+name_split[2]
+                c+=1
+    data=numpy.array(data)
+    if len(data):
+        return data[:,0], data[:,1]
+    else:
+        return numpy.array([]), numpy.array([])
+
+def GetThreads():
+    if Rank()==1:
+        return GetKernelStatus('local_num_threads') #shared memory
+    else:
+        return GetKernelStatus('num_processes') #mpi
+        
+   
 def GetConn(soruces, targets):    
     c=[]
     
@@ -239,234 +459,6 @@ def GetConnProp(soruces, targets, prop_name, time):
         x[model].append(time)
     return x,y
 
-# def GetDopamine(soruces, targets):
-#     c=GetConn(soruces, targets)                                                 
-#     w=[]
-#     for conn in c:
-#         w.append(conn['n'])
-#     return w
-# 
-#     return w
-    
-def DC( pre, post,
-        params = { 'd_mu'  : [], 'w_mu'  : [], 'd_rel_std' : 0.0, 'w_rel_std' : 0.0 }, 
-        model = [ 'static_synapse' ] ):        
-    '''
-    As NEST DivergentConnect except that it can take severals models and make same
-    connections for both models. This can be used to connect same source with 
-    target with both AMPA and NMDA.Mean and standard deviation for delays and
-    weights can be given. Mean as a list of values one for each model and
-    standard deviation as single values applied to all synapse models.
-     
-    Inputs:
-        pre                      - list of source ids       
-        post                     - list of target ids  
-        params[ 'd_mu' ]         - mean delay for each model
-        params[ 'w_mu' ]            - mean weight for each model
-        params[ 'd_rel_std' ]    - relative mean standard deviation delays
-        params[ 'w_rel_std' ]    - relative mean standard deviation weights
-        model                    - synapse model, can be a list of models
-    '''
-  
-    for key, val in params.iteritems():
-        exec '%s = %s' % (key, str(val))                                        # params dictionary entries as variables  
-  
-    if isinstance(model, str): model = [model]                                  # if model is a string put into a list   
-    if isinstance(pre, int):   pre   = [ pre   ]                                # since NEST needs list objects
-    else:                      pre   = pre[ : ]                                 # else retreive list
-    if isinstance(post, int):  post  = [ post  ]                                # since NEST needs list objects
-    else:                      post   = post[ : ]                               # else retreive list
-
-    n = len( post )    
-    
-    d_mu=params['d_mu']
-    d_rel_std=params['d_rel_std']
-    w_mu=params['w_mu']
-    w_rel_std=params['w_rel_std']  
-    
-    if not d_mu: d_mu =  [GetDefaults( m )[ 'delay' ] for m in model ]     # get mean delays d_mu
-    d_sigma  = [ d_rel_std*mu for mu in d_mu ]                                  # get delay standard deviation
-    
-    if not w_mu: w_mu = [ GetDefaults( m )[ 'weight' ] for m in model ]    # get mean weights w_mu   
-    w_sigma = [ w_rel_std*mu for mu in w_mu ]                                   # get weight standard deviation            
-    
-    delays  = [ rand.normal( mu, sigma, [ len( pre ), n ] )                     # calculate delays, randomized if sigma != 0
-               if sigma else numpy.ones( ( len( pre ), n ) )*mu          
-			   for mu, sigma in zip( d_mu, d_sigma )   ]                                                                
-      
-    weights = [ rand.normal( mu, sigma, [ len( pre ), n ] )                     # calculate weights, randomized if sigma != 0
-               if sigma else numpy.ones( ( len( pre ), n ) )*mu           
-			   for mu, sigma in zip( w_mu, w_sigma ) ]                                                                  
-
-    
-    for i, pre_id in enumerate( pre ):                                          # connect with model[0                                    
-        d = [ dj for dj in delays[  0 ][ i ] ] 
-        w = [ wj for wj in weights[ 0 ][ i ] ]
-        DivergentConnect( [ pre_id  ], post, weight = w , delay = d, 
-                               model = model[ 0 ] )                          
-               
-        if len( model ) > 1:                                                    # pre -> post with model[1], model[2] etc   
-            for m, dlays, wghts, in zip( model[1:], delays[1:], weights[1:] ):
-            	d = [ dj for dj in dlays[ i ] ]
-                w = [ wj for wj in wghts[ i ] ]
-            	DivergentConnect( [ pre_id  ], post, weight = w, 
-                                       delay = d, model = m )                           
-             
-def RDC(pre, post, n, 
-        params = { 'd_mu'  : [], 'w_mu'  : [], 'd_rel_std' : 0.0, 'w_rel_std' : 0.0 },  
-        model = 'static_synapse' ):
-    '''
-    As NEST RandomDivergentConnect, except it can take severals models and 
-    make same connections for both models. This can be used to connect same
-    source with  target with both AMPA and NMDA.Mean and standard deviation 
-    for delays and weights can be given. Mean as a list of values one for 
-    each model and standard deviation as single values applied to all 
-    synapse models.
-     
-    Inputs:
-        pre                      - list of source ids       
-        post                     - list of target ids  
-        n                        - number of neurons each source neuron connects to
-        params[ 'd_mu' ]         - mean delay for each model
-        params[ 'w_mu' ]            - mean weight for each model
-        params[ 'd_rel_std' ]    - relative mean standard deviation delays
-        params[ 'w_rel_std' ]    - relative mean standard deviation weights
-        model                    - synapse model, can be a list of models
-    '''
-
-    rn = rand.normal                                                            # copy function for generation of normal distributed random numbers
-
-    for key, val in params.iteritems():
-        exec '%s = %s' % (key, str(val))                                        # params dictionary entries as variables
-    
-    if isinstance(model, str): model = [ model ]                                # if model is a string put into a list   
-    
-    d_mu=params['d_mu']
-    d_rel_std=params['d_rel_std']
-    w_mu=params['w_mu']
-    w_rel_std=params['w_rel_std']  
-    
-    if not d_mu: d_mu = [GetDefaults( m )[ 'delay' ] for m in model ]      # get mean delays d_mu
-    d_sigma  = [ d_rel_std*mu for mu in d_mu ]                                  # get delay standard deviation
-    
-    if not w_mu: w_mu = [GetDefaults( m )[ 'weight' ] for m in model ]     # get mean weights w_mu   
-    w_sigma = [ w_rel_std*mu for mu in w_mu ]                                   # get weight standard deviation            
-    
-    delays  = [ rand.normal( mu, sigma, [ len( pre ), n ] )                     # calculate delays, randomized if sigma != 0
-               if sigma else numpy.ones( ( len( pre ), n ) )*mu           
-			   for mu, sigma in zip( d_mu, d_sigma )   ]                                                                
-      
-    weights = [ rand.normal( mu, sigma, [ len( pre ), n ] )                     # calculate weights, randomized if sigma != 0
-               if sigma else numpy.ones( ( len( pre ), n ) )*mu            
-			   for mu, sigma in zip( w_mu, w_sigma ) ]                                                                  
-     
-    for i, pre_id in enumerate( pre ):                                                                              
-        j = 0
-        
-         
-        if d_sigma[ j ]: d = rn( d_mu[ j ], d_sigma[ j ], [ 1, n ] )[ 0 ]       # if sigma len( targets ) randomized delays                               
-        else:  d = numpy.ones( ( 1, n ) )[ 0 ]*d_mu[ j ]                        # else no randomized delays  
-                                  
-        if w_sigma[ j ]: w = rn( w_mu[ j ], w_sigma[ j ], [ 1, n ] )[ 0 ]       # if signa len( targets ) randomized weights                              
-        else: w = numpy.ones( ( 1, n ) )[ 0 ]*w_mu[ j ]                         # else no randomized weights
-             
-        d, w = list( d ), list( w )                                             # as lists             
-        RandomDivergentConnect( [ pre_id ], post, n, weight = w ,          # connect with model[0]
-                                     delay = d, model = model[ 0 ] )                  
-        
-        if len( model ) > 1:
-            targets = [ conn['target'] for conn in                              # find connections made by RandomDivergentConnect 
-                       GetStatus(FindConnections( [ pre_id ] ) ) 
-                       if conn[ 'synapse_type' ] == model[ 0 ]]                                                           
-            nt      = len( targets )
-            
-            for j, m in enumerate( model[ 1 : ], start = 1 ):                   # pre -> post with model[1], model[2] etc  
-                if d_sigma[ j ]: d = rn( d_mu[ j ], d_sigma[ j ], [ 1, nt ] )[ 0 ] # if sigma len( targets ) randomized delays 
-                else:            d = numpy.ones( ( 1, nt ) )[ 0 ]*d_mu[ j ]     # else no randomized delays   
-                                         
-                if w_sigma[ j ]: w =rn( w_mu[ j ], w_sigma[ j ], [ 1, nt ] )[ 0 ]  # if signa len( targets ) randomized delays 
-                else:            w = numpy.ones( ( 1, nt ) )[ 0 ]*w_mu[ j ]      # else not   
-                
-                d, w = list( d ), list( w )         
-                RandomDivergentConnect( [ pre_id ], targets, n, weight = w, 
-                                       delay = d, model = m )                           
-                            
-def RCC(pre, post, n, 
-        params = { 'd_mu'  : [], 'w_mu'  : [], 'd_rel_std' : 0.0, 'w_rel_std' : 0.0 },  
-        model = 'static_synapse' ):
-    '''
-    As NEST RandomDivergentConnect, except it can take severals models and 
-    make same connections for both models. This can be used to connect same
-    source with  target with both AMPA and NMDA.Mean and standard deviation 
-    for delays and weights can be given. Mean as a list of values one for 
-    each model and standard deviation as single values applied to all 
-    synapse models.
-     
-    Inputs:
-        pre                      - list of source ids       
-        post                     - list of target ids  
-        n                        - number of neurons each source neuron connects to
-        params[ 'd_mu' ]         - mean delay for each model
-        params[ 'w_mu' ]            - mean weight for each model
-        params[ 'd_rel_std' ]    - relative mean standard deviation delays
-        params[ 'w_rel_std' ]    - relative mean standard deviation weights
-        model                    - synapse model, can be a list of models
-    '''
-
-    rn = rand.normal                                                            # copy function for generation of normal distributed random numbers
-
-    for key, val in params.iteritems():
-        exec '%s = %s' % (key, str(val))                                        # params dictionary entries as variables
-    
-    if isinstance(model, str): model = [ model ]                                # if model is a string put into a list   
-    d_mu=params['d_mu']
-    d_rel_std=params['d_rel_std']
-    w_mu=params['w_mu']
-    w_rel_std=params['w_rel_std']  
-    if not d_mu: d_mu = [GetDefaults( m )[ 'delay' ] for m in model ]      # get mean delays d_mu
-    d_sigma  = [ d_rel_std*mu for mu in d_mu ]                                  # get delay standard deviation
-    
-    if not w_mu: w_mu = [GetDefaults( m )[ 'weight' ] for m in model ]     # get mean weights w_mu   
-    w_sigma = [ w_rel_std*mu for mu in w_mu ]                                   # get weight standard deviation            
-    
-    delays  = [ rand.normal( mu, sigma, [ len( pre ), n ] )                     # calculate delays, randomized if sigma != 0
-               if sigma else numpy.ones( ( len( pre ), n ) )*mu           
-               for mu, sigma in zip( d_mu, d_sigma )   ]                                                                
-      
-    weights = [ rand.normal( mu, sigma, [ len( pre ), n ] )                     # calculate weights, randomized if sigma != 0
-               if sigma else numpy.ones( ( len( pre ), n ) )*mu            
-               for mu, sigma in zip( w_mu, w_sigma ) ]                                                                  
-     
-    for i, pre_id in enumerate( pre ):                                                                              
-        j = 0
-        
-         
-        if d_sigma[ j ]: d = rn( d_mu[ j ], d_sigma[ j ], [ 1, n ] )[ 0 ]       # if sigma len( targets ) randomized delays                               
-        else:  d = numpy.ones( ( 1, n ) )[ 0 ]*d_mu[ j ]                        # else no randomized delays  
-                                  
-        if w_sigma[ j ]: w = rn( w_mu[ j ], w_sigma[ j ], [ 1, n ] )[ 0 ]       # if signa len( targets ) randomized weights                              
-        else: w = numpy.ones( ( 1, n ) )[ 0 ]*w_mu[ j ]                         # else no randomized weights
-             
-        d, w = list( d ), list( w )                                             # as lists             
-        RandomDivergentConnect( [ pre_id ], post, n, weight = w ,          # connect with model[0]
-                                     delay = d, model = model[ 0 ] )                  
-        
-        if len( model ) > 1:
-            targets = [ conn['target'] for conn in                              # find connections made by RandomDivergentConnect 
-                       GetStatus(FindConnections( [ pre_id ] ) ) 
-                       if conn[ 'synapse_type' ] == model[ 0 ]]                                                           
-            nt      = len( targets )
-            
-            for j, m in enumerate( model[ 1 : ], start = 1 ):                   # pre -> post with model[1], model[2] etc  
-                if d_sigma[ j ]: d = rn( d_mu[ j ], d_sigma[ j ], [ 1, nt ] )[ 0 ] # if sigma len( targets ) randomized delays 
-                else:            d = numpy.ones( ( 1, nt ) )[ 0 ]*d_mu[ j ]     # else no randomized delays   
-                                         
-                if w_sigma[ j ]: w =rn( w_mu[ j ], w_sigma[ j ], [ 1, nt ] )[ 0 ]  # if signa len( targets ) randomized delays 
-                else:            w = numpy.ones( ( 1, nt ) )[ 0 ]*w_mu[ j ]      # else not   
-                
-                d, w = list( d ), list( w )         
-                ConvergentConnect( [ pre_id ], targets, weight = w, 
-                                       delay = d, model = m )                  
 
 def MyLoadModels( model_setup, models ):
     '''
@@ -498,7 +490,7 @@ def MyCopyModel(params, new_name):
         
 def MySimulate(duration):
 
-    
+    print 'My simulate Rank %i' % ( Rank())
     start = time.time() 
     Simulate( duration )
     stop = time.time() 
@@ -507,8 +499,9 @@ def MySimulate(duration):
     m = s // 60
     s = s - m*60
     print 'Rank %i simulation time: %i minutes, %i seconds' % ( Rank(), m, s )    
-            
-def ResetKernel(threads=1, print_time=False, display=True):
+
+          
+def ResetKernel(threads=1, print_time=False, display=False, **kwargs):
 
     
     if display:
@@ -517,7 +510,175 @@ def ResetKernel(threads=1, print_time=False, display=True):
     #nest.SetKernelStatus({"resolution": .1, "print_time": print_time})
     nest.SetKernelStatus({ "print_time": print_time})
     
-    if comm.is_mpi_used():
-        nest.SetKernelStatus({"local_num_threads":  1})
+    n=nest.GetKernelStatus('total_num_virtual_procs')
+    
+    if n>1:
+        nest.SetKernelStatus({"local_num_threads": 2})
+        nest.SetKernelStatus({"local_num_threads":kwargs.get('threads_local',1)})
     else:    
         nest.SetKernelStatus({"local_num_threads":  threads})
+    
+    
+    if 'data_path' in kwargs.keys():
+        nest.SetKernelStatus({'data_path':kwargs.get('data_path')})
+
+def sim_group(data_path,**kwargs):
+
+
+    SetKernelStatus({"total_num_virtual_procs": kwargs.get("total_num_virtual_procs",4),
+                     'data_path':data_path,
+                     'overwrite_files':False})
+
+    pg = Create("poisson_generator", params={"rate": 2000.0})
+    n = Create('aeif_cond_exp', 10)
+    sd = Create("spike_detector", params={"to_file": kwargs.get('to_file', True),
+                                          "to_memory": kwargs.get('to_memory', False)})
+    
+    RandomConvergentConnect(pg, n, 100)
+    ConvergentConnect(n, sd)
+    Simulate(100.0)
+
+import unittest
+class TestModuleFunctions(unittest.TestCase):
+    def setUp(self):
+        from toolbox.network import default_params
+        from toolbox import data_to_disk
+        
+        self.path=default_params.HOME+'/results/unittest/my_nest/'
+        self.path_nest=self.path+'nest/'
+        data_to_disk.mkdir(self.path_nest)
+        
+        ResetKernel()
+        
+    def clear(self,path):
+
+        for _file in os.listdir(path):
+            os.remove(path+_file)
+
+    def get_nest_files(self):
+        fn=[]
+        for _file in os.listdir(self.path_nest):
+            fn.append(self.path_nest+_file)
+        return fn
+  
+  
+    def test_delete_data(self):
+
+        self.clear(self.path_nest)
+        for i in range(4):
+            fn=self.path_nest+'spk{}.gdf'.format(i)
+            f=open(fn, 'wb')
+            f.write('1')
+            f.close()
+            
+        self.assertTrue(self.get_nest_files())
+        delete_data(self.path_nest, **{'display':False})
+        self.assertFalse(self.get_nest_files())
+
+    def test_delete_data_mpi(self):
+
+        import subprocess
+
+        self.clear(self.path_nest)
+        for i in range(4):
+            fn=self.path_nest+'spk{}.gdf'.format(i)
+            f=open(fn, 'wb')
+            f.write('1')
+            f.close()
+                
+        script_name=os.getcwd()+'/test_scripts_MPI/my_nest_delete_data_mpi.py'
+
+        np=4
+        
+        p = subprocess.Popen(['mpirun',  '-np', str(np), 'python', 
+                              script_name, self.path_nest, str(np)], 
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+#             stderr=subprocess.STDOUT
+            )
+        out, err = p.communicate()
+    #         print out
+    #         print err
+        
+    def test_get_spikes_from_file(self):
+        
+        self.clear(self.path_nest)
+        sim_group(self.path_nest)
+
+        fn=self.get_nest_files()
+        self.assertTrue(get_spikes_from_file(fn)[0].shape==(184,))
+
+    def test_get_spikes_from_file_mpi(self):
+        import subprocess
+        
+        self.clear(self.path_nest)
+              
+        script_name=os.getcwd()+'/test_scripts_MPI/my_nest_get_spikes_from_file_mpi.py'
+
+        np=4
+        
+        p = subprocess.Popen(['mpirun',  '-np', str(np), 'python', 
+                              script_name, self.path_nest, str(np)], 
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+#             stderr=subprocess.STDOUT
+            )
+        out, err = p.communicate()
+    #         print out
+    #         print err
+
+        fn=self.get_nest_files()
+        self.assertTrue(get_spikes_from_file(fn)[0].shape==(184,))
+
+    def test_Connect_DC(self):
+        n=nest.Create('iaf_neuron', 10)
+        model='static_synapse'
+        delays=numpy.random.random(10)+2
+        weights=numpy.random.random(10)+1
+        
+        post=[]
+        for _id in n:
+            post+=[_id]*10 
+        
+        Connect_DC(n*10,post,weights,delays,  model)
+ 
+ 
+    def test_Connect_DC_mpi(self):
+        import subprocess        
+        self.clear(self.path_nest)
+
+        script_name=os.getcwd()+'/test_scripts_MPI/my_nest_Connect_DC_mpi.py'
+        data_out=self.path+'Connect_DC_mpi/'
+        np=4
+        
+        p = subprocess.Popen(['mpirun',  '-np', str(np), 'python', 
+                              script_name, data_out], 
+#                                 stdout=subprocess.PIPE,
+#                                 stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+            )
+        out, err = p.communicate()
+    #         print out
+    #         print err
+               
+    
+    
+if __name__ == '__main__':
+    d={
+        TestModuleFunctions:[
+                            'test_Connect_DC',
+#                             'test_Connect_DC_mpi',
+#                             'test_delete_data',
+#                             'test_delete_data_mpi',
+#                             'test_get_spikes_from_file',
+#                             'test_get_spikes_from_file_mpi',
+                             ],
+
+       }
+    test_classes_to_run=d
+    suite = unittest.TestSuite()
+    for test_class, val in  test_classes_to_run.items():
+        for test in val:
+            suite.addTest(test_class(test))
+
+    unittest.TextTestRunner(verbosity=2).run(suite)

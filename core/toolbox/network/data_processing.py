@@ -205,7 +205,7 @@ class Mixin_spk(object):
    
  
     def get_mean_rate_error(self, *args, **kwargs):
-        e=self.cmp('mean_rate', *args, **kwargs)['y']-self.target_rate
+        e=self.cmp('mean_rate', *args, **kwargs).y-self.target_rate
         return numpy.mean(numpy.mean(e))
             
     def get_spike_stats_text(self, **kwargs):

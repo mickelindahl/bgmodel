@@ -4,7 +4,7 @@ Created on Jun 18, 2013
 @author: lindahlm
 '''
 
-import csv
+
 import cPickle as pickle # Can be 1000 times faster than pickle
 import numpy
 import os
@@ -55,6 +55,7 @@ class Storage(object):
 
     def get_data_path(self):
         return self.data_path
+    
 
     def load_data(self):
         return pickle_load(self.data_path)
@@ -71,6 +72,9 @@ class Storage(object):
 
     def set_main_path(self, val):
         self.main_path=val
+    
+    def set_data_path(self, val):
+        self.data_path=val
 
     def values(self):
         return self.data_paths.values()
@@ -92,12 +96,16 @@ class Storage_dic(Base_dic):
         return Storage(self.directory)
 
     def add_info(self, info):
+        
         txt_save( info, self.file_name_info )
 
     def add_storage(self, keys):
         val=self.Factory_storage()
         self.dic=misc.dict_recursive_add(self.dic, keys, val)
         
+
+        
+    
     def clear(self):
         if os.path.isfile(self.file_name+'.pkl'):
             os.remove(self.file_name+'.pkl')        
@@ -113,7 +121,17 @@ class Storage_dic(Base_dic):
     def delete(self, k):
         del self.dic[k]
     
+    def force_update(self, file_name):
+        
+        self.file_name=file_name
+        self.directory=file_name+'/'
+        
+        for _, storage in misc.dict_iter(self.dic):
+            storage.set_main_path(self.directory)
+            file_name=storage.get_data_path().split('/')[-1]
+            storage.set_data_path(self.directory+file_name)
     
+
     def _garbage_collect_mpi(self):
         with Barrier():
             if comm.rank()==0:
@@ -172,6 +190,12 @@ class Storage_dic(Base_dic):
                 fig.savefig( self.file_name +extension+'_'+str(i)+'.'+format, 
                              format = format)              
     
+    def set_file_name(self, val):
+        self.file_name=val
+
+    def set_directory(self, val):
+        self.directory=val
+    
     @classmethod
     def load(cls, file_name, nets=None):
         '''It makes perfect sense that you should use foo=Foo.load(), 
@@ -181,13 +205,21 @@ class Storage_dic(Base_dic):
         calculations of variables stored in the instance, 
         it would be for nothing. '''
         
-        if os.path.isfile(file_name+'.pkl'):        
+        if os.path.isfile(file_name+'.pkl'):   
+
+                
+#             cls.file_name=file_name
+#             cls.directory=file_name+'/'   
             d= pickle_load(file_name)
+
+
             if nets:
                 for k in d.keys():
                     if k in nets:
                         continue
                     d.delete(k)
+            d.force_update(file_name)
+
             return d
         else:
             return Storage_dic(file_name)
@@ -234,55 +266,7 @@ class Storage_dic(Base_dic):
         self.save()
         
 
-    
-def nest_sd_load(file_names):
-    data=[]
 
-#     if my_nest.Rank!=0:
-#         return
-
-    for name in file_names: 
-        c=0
-        while c<2:
-            try:
-                with open(name, 'rb') as csvfile:
-                    csvreader = csv.reader(csvfile, delimiter='\t')
-                    for row in csvreader:
-                        data.append([float(row[0]), float(row[1])])
-                c=2
-            except:
-                name_split=name.split('-')
-                name=name_split[0]+'-0'+name_split[1]+'-'+name_split[2]
-                c+=1
-    data=numpy.array(data)
-    if len(data):
-        return data[:,0], data[:,1]
-    else:
-        return numpy.array([]), numpy.array([])
-     
-        #with open(name,'rb') as f:
-        #    f.read()
-
-def make_bash_script(path_bash0, path_bash, **kwargs):
-    s=text_load(path_bash0)
-    s=s.format(**kwargs)
-    text_save(s, path_bash)
-    p=subprocess.Popen(['chmod', '777',path_bash])
-    p.wait()
-
-def mkdir(path):
-    
-    # If a directory does not exist where a file is suppose to be stored  it is created    
-    path=path.split('/')
-    i=len(path)
-    while not os.path.isdir('/'.join(path[0:i])):
-        i-=1
-        
-    while i!=len(path):
-        if not os.path.isdir('/'.join(path[0:i+1])):
-            os.mkdir('/'.join(path[0:i+1])) 
-        i+=1
-        
 def dic_save(d, fileName):
     depth=misc.dict_depth(d)
     dr=misc.dict_reduce(d, deliminator=';')
@@ -300,91 +284,70 @@ def dic_save(d, fileName):
     
     
     
+def get_full_file_name(fileName, file_extension='' ):
     
     
-def txt_save(text, fileName, file_extension='txt' ):
+#     fileName=fileName.split('/')
+#     if  '~' in fileName:
+#         fileName[fileName.index('~')]=expanduser("~")
+#     fileName='/'.join(fileName)    
+# 
+#     if 4<len(fileName) and fileName[-4:]!=file_extension:
+#         fileName=fileName+file_extension
+
+    if 4<len(fileName) and fileName[-4:]!=file_extension:
+        fileName=fileName+file_extension
+    fileName=os.path.expanduser(fileName)
     
-    fileName=fileName.split('/')
-    if  '~' in fileName:
-        fileName[fileName.index('~')]=expanduser("~")
-    fileName='/'.join(fileName)    
+    return fileName    
+ 
 
 
-    mkdir('/'.join(fileName.split('/')[0:-1]))    
-    
-    if 4<len(fileName) and fileName[-4:]!='.txt':
-        fileName=fileName+'.txt'
-    f=open(fileName, 'wb') #open in binary mode
-     
-#     f=open(fileName,'w')
-    f.write(text)
-    f.close()    
 
+def make_bash_script(path_bash0, path_bash, **kwargs):
+    s=text_load(path_bash0)
+    s=s.format(**kwargs)
+    text_save(s, path_bash)
+    p=subprocess.Popen(['chmod', '777',path_bash])
+    p.wait()
+
+def _mkdir(path):
     
-def txt_save_to_label(text, label_in, fileName ):
-    mkdir('/'.join(fileName.split('/')[0:-1]))  
-    if 4>len(fileName)or fileName[-4:]!='.txt':
-        fileName=fileName+'.txt'
-    
-    if not os.path.isfile(fileName):  
-        f=open(fileName,'w')
-        f.close
-    f=open(fileName,'r')
-    lines=f.readlines()
-    f.close()
-    labels_list=[]
-    for line in lines:
-        labels_list.append(line.split(';')[-1].rstrip('\n'))
-    
-    i=0
-    row_id=len(labels_list)
-    for label in labels_list: 
-        if label==label_in:
-            row_id=i
-        i+=1
-    text=text +';'+label_in        
-    txt_save_to_row(text, row_id, fileName)        
-            
+    # If a directory does not exist where a file is suppose to be stored  it is created    
+    path=path.split('/')
+    i=len(path)
+    while not os.path.isdir('/'.join(path[0:i])):
+        i-=1
         
-def txt_save_to_row(text, row_id, fileName):
-    mkdir('/'.join(fileName.split('/')[0:-1]))    
-    if 4>len(fileName) or fileName[-4:]!='.txt':
-        fileName=fileName+'.txt'
-    
-    if not os.path.isfile(fileName):  
-        f=open(fileName,'w')
-        f.close
-    
-    f=open(fileName,'r')
-    
-    lines=f.readlines()
-    write_text=["\n"]*(row_id+1)
-    write_text[row_id]=text+'\n'
-    i=0
-    while i<len(lines):
-        if i!=row_id:
-            if i<len(write_text):
-                write_text[i]=lines[i]
-            else:
-                write_text.append(lines[i])
+    while i!=len(path):
+        if not os.path.isdir('/'.join(path[0:i+1])):
+            os.mkdir('/'.join(path[0:i+1])) 
         i+=1
-    f.close()
-    
-    f=open(fileName, 'w')
-    f.write(''.join(write_text))
-    f.close()
+
+def _mkdir_mpi(*args):
+    with Barrier():
+        if comm.rank()==0:
+            _mkdir(*args)
          
+#     comm.barrier()
+     
+def mkdir(*args, **kwargs):
+    '''
+     
+    Arguments:
+        data        - data to be pickled
+        fileName    - full path or just file name
+    '''
+     
+    if comm.is_mpi_used() and not kwargs.get('all_mpi', False):
+        _mkdir_mpi(*args)
+    else:
+        _mkdir(*args)
+     
+
+             
 def _pickle_save(data, fileName):
-    fileName=fileName.split('/')
-    if  '~' in fileName:
-        fileName[fileName.index('~')]=expanduser("~")
-    fileName='/'.join(fileName)    
 
-
-    mkdir('/'.join(fileName.split('/')[0:-1]))    
-    
-    if 4<len(fileName) and fileName[-4:]!='.pkl':
-        fileName=fileName+'.pkl'
     f=open(fileName, 'wb') #open in binary mode
     
     # With -1 pickle the list using the highest protocol available (binary).
@@ -396,28 +359,27 @@ def _pickle_save(data, fileName):
 def _pickle_save_mpi(*args):
     with Barrier():
         if comm.rank()==0:
-            print 'Saving mpi2'
+            # OBS!!! watch out for having barriers inside here.
+            # Will stall program
             _pickle_save(*args)
         
 #     comm.barrier()
     
-def pickle_save(*args, **kwargs):
+def pickle_save(data, fileName, file_extension='.pkl', **kwargs):
     '''
     
     Arguments:
         data        - data to be pickled
         fileName    - full path or just file name
     '''
-#     print 'Pickle save',kwargs
-#     print 'If state', comm.is_mpi_used() and not kwargs.get('all_mpi', False)
-#     print 'is mpi used', comm.is_mpi_used()
+
+    fileName=get_full_file_name(fileName, file_extension)  
+    mkdir('/'.join(fileName.split('/')[0:-1])) 
     
     if comm.is_mpi_used() and not kwargs.get('all_mpi', False):
-        print 'Saving mpi'
-        _pickle_save_mpi(*args)
+        _pickle_save_mpi(data, fileName)
     else:
-        print 'Saving normal'
-        _pickle_save(*args)
+        _pickle_save(data, fileName)
     
 def _pickle_load_mpi(f):
     with Barrier():
@@ -425,24 +387,28 @@ def _pickle_load_mpi(f):
             data=pickle.load(f)
         else:
             data=None
+    
     with Barrier():        
         data=comm.bcast(data, root=0)
+    
     return data
             
+ 
     
-def pickle_load(fileName):
+def pickle_load(fileName, file_extension='.pkl', **kwargs):
     '''
     
     Arguments:
         fileName    - full path or just file name
     '''
-    if 4<len(fileName) and fileName[-4:]!='.pkl':
-        fileName=fileName+'.pkl'
-    fileName=os.path.expanduser(fileName)
-        
+#     if 4<len(fileName) and fileName[-4:]!=file_extension:
+#         fileName=fileName+file_extension
+#     fileName=os.path.expanduser(fileName)
+
+    fileName=get_full_file_name(fileName, file_extension)      
     f=open(fileName, 'rb') # make sure file are read in binary mod
     
-    if comm.is_mpi_used():
+    if comm.is_mpi_used()and not kwargs.get('all_mpi', False):
         data=_pickle_load_mpi(f)
     else:  
         data=pickle.load(f)
@@ -450,6 +416,34 @@ def pickle_load(fileName):
     f.close()
     return data
 
+
+def _txt_save(text, fileName):
+        
+    f=open(fileName, 'wb') #open in binary mode
+     
+    f.write(text)
+    f.close()    
+
+def _txt_save_mpi(*args):
+    with Barrier():
+        if comm.rank()==0:
+            _txt_save(*args)
+        
+def txt_save(text, fileName, file_extension='.txt', **kwargs ):
+    '''
+    
+    Arguments:
+        data        - data to be pickled
+        fileName    - full path or just file name
+    '''
+       
+    fileName=get_full_file_name(fileName, file_extension)  
+    mkdir('/'.join(fileName.split('/')[0:-1])) 
+
+    if comm.is_mpi_used() and not kwargs.get('all_mpi', False):
+        _txt_save_mpi(text, fileName)
+    else:
+        _txt_save(text, fileName)
 
 def text_save(data, fileName):
     '''
@@ -682,8 +676,6 @@ class TestStorage_dic(unittest.TestCase):
         d5=self.sd.load_dic(self.file_name, *['net1', 'dummy1',
                                              'string','number'])
         self.assertDictEqual(d4, d5)
-        
-        
         
     def test_save(self):
         self.sd=Storage_dic(self.file_name)

@@ -1197,8 +1197,13 @@ def get_networks(Builder, kwargs_builder={}, kwargs_engine={}):
     return info, nets, builder
 
 def get_storage(file_name, info, nets=None):
+
+
     sd = Storage_dic.load(file_name, nets)
+
+    
     sd.add_info(info)
+    
     sd.garbage_collect()
     return sd
 

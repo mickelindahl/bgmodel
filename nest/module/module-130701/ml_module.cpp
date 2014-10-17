@@ -35,6 +35,9 @@
 #include "iaf_cond_alpha_bias.h"
 #include "izhik_cond_exp.h"
 #include "my_aeif_cond_exp.h"
+#include "poisson_generator_periodic.h"
+#include "my_poisson_generator.h"
+#include "poisson_generator_dynamic.h"
 //#include "tsodyks_beta_connection.h"
 //#include "drop_odd_spike_connection.h"
 
@@ -213,6 +216,13 @@ mynest::Ml_Module::~Ml_Module()
     nest::register_model<my_aeif_cond_exp>(nest::NestModule::get_network(),
                                                 "my_aeif_cond_exp");
 
+    nest::register_model<poisson_generator_periodic>(nest::NestModule::get_network(),
+                                                "poisson_generator_periodic");
+    nest::register_model<poisson_generator_dynamic>(nest::NestModule::get_network(),
+                                                "poisson_generator_dynamic");
+
+    nest::register_model<my_poisson_generator>(nest::NestModule::get_network(),
+                                                "my_poisson_generator");
     /* Register a synapse type.
        Give synapse type as template argument and the name as second argument.
        The first argument is always a reference to the network.

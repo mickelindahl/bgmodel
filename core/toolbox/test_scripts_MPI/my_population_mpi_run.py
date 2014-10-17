@@ -18,7 +18,7 @@ fileName, fileOut =sys.argv[1:]
 
 with Barrier():
     if comm.rank()==0:   
-        out=pickle_load(fileName) 
+        out=pickle_load(fileName, all_mpi=True) 
     else:
         out=None
 

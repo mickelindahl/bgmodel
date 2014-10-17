@@ -15,3 +15,11 @@ def determine_host():
         return 'milner_login'
     else:
         return HOST[0]
+
+def determine_computer():
+
+    HOST=socket.gethostname().split('.')
+    if (len(HOST)==1 and HOST[0]!='supermicro') or (HOST[0][0:6]=='milner'):
+        return 'milner'
+    else:
+        return HOST[0]

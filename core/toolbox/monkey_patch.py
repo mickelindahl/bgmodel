@@ -16,7 +16,8 @@ def patch_nest():
     
     _patch_nest(sys.modules[PATCH_MODULE] )
     
-    modules=['nest', 'my_nest', 'nest.topology']
+    modules=['nest', 'my_nest', 'nest.topology',
+             'nest.pynestkernel']
     for module in modules:
         sys.modules[module] = sys.modules[PATCH_MODULE]
         
@@ -30,14 +31,30 @@ def _patch_nest(target):
     def Models(target, *args, **kwargs):
         return []
 
+
     def Install(target, *args, **kwargs):
         pass
     
+    def GetDefaults(target, *args, **kwargs):
+        return {'receptor_types':{'AMPA_1':0,
+                                  'AMPA_2':0,
+                                  'NMDA_1':0,
+                                  'NMDA_2':0,
+                                  'GABAA_1':0,
+                                  'GABAA_2':0,
+                                  'GABAA_3':0}}
+        
+    def GetKernelStatus(target, *args, **kwargs):
+        return 1
+    
+    target.GetKernelStatus = types.MethodType(GetKernelStatus, target)
     target.sr = types.MethodType(sr, target)
     target.version = types.MethodType(version, target)
     target.Models = types.MethodType(Models, target)
     target.Install = types.MethodType(Install, target)
-
+    target.GetDefaults = types.MethodType(GetDefaults, target)
+    target.pynestkernel = types.ClassType('pynestkernel',(),{})
+    
 def patch_NeuroTools():
     _=__import__(PATCH_MODULE)
     
@@ -97,16 +114,21 @@ def _patch_mpi4py(target):
     def barrier(target, *args, **kwargs):
         pass
     
+    def bcast(target, *args, **kwargs):
+        pass
+    
     d={'size':1,
        'rank':0,
+       'bcast':types.MethodType(bcast, target),
        'barrier': types.MethodType(barrier, target)}  
 
     dd={'COMM_WORLD': types.ClassType('COMM_WORLD',(),d)}
     target.MPI = types.ClassType('MPI',(),dd)
 
 def patch_for_milner():
-    print 'Monkey pathc:', my_socket.determine_host()
+    
     if my_socket.determine_host()=='milner_login':
+        print 'Monkey patch:', my_socket.determine_host()
         patch_nest()
         patch_NeuroTools()
         patch_mpi4py()
@@ -158,7 +180,7 @@ class TestModuleFuncions(unittest.TestCase):
 #             import nest
             import parallelization
             import my_nest
-            import misc
+            from toolbox import misc
             from toolbox import data_to_disk 
 
         except Exception, err:

@@ -39,6 +39,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_odeiv.h>
 
+
 /* BeginDocumentation
 Name: my_aeif_cond_exp - Conductance based exponential integrate-and-fire neuron model according to Brette and Gerstner (2005).
 

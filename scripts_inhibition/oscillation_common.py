@@ -18,7 +18,8 @@ from toolbox.network.manager import Builder_slow_wave as Builder
 from toolbox.my_signals import Data_bar
 from simulate import (cmp_psd, show_fr, show_hr, show_psd,
                       show_coherence, show_phase_diff,
-                      get_file_name, get_file_name_figs)
+                      get_file_name, get_file_name_figs,
+                      get_path_nest)
 import toolbox.plot_settings as ps
 import pprint
 pp=pprint.pprint
@@ -555,11 +556,11 @@ def show_summed2(d, **k):
 
 class Setup(object):
     
-    def __init__(self, period, threads):
+    def __init__(self, 
+                 period, 
+                 threads):
         self.period=period
         self.threads=threads
-   
-   
    
     def activity_histogram(self):
         d = {'average':False,
@@ -579,7 +580,7 @@ class Setup(object):
         d = {'fs':1000.0, 'NFFT':1024 * 4, 
             'noverlap':int(1024 * 2), 
             'sample':30.,  
-             'threads':self.threads}
+            'threads':self.threads}
         return d
     
 
@@ -663,6 +664,10 @@ def simulate(builder=Builder,
          script_name=__file__.split('/')[-1][0:-3],
          setup=Setup(1000.0, THREADS)):
     
+    
+        
+
+    
     k = get_kwargs_builder()
 
     d_pds = setup.pds()
@@ -694,22 +699,34 @@ def simulate(builder=Builder,
                   'phases_diff_with_cohere':d_phases_diff_with_cohere,
                   'spike_statistic':{'t_start':k['start_rec'] + 1000.}}
     
-    file_name = get_file_name(script_name)
-    file_name_figs = get_file_name_figs(script_name)
-    
+        
     models = ['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN', 'GP']
     models_coher = ['GI_GA', 'GI_GI', 'GA_GA', 'GA_ST', 'GI_ST', 'GP_GP',
                      'ST_ST', 'GP_ST',]
     
+
+    
     info, nets, _ = get_networks(builder)
     add_perturbations(perturbation_list, nets)
+
+
+    file_name = get_file_name(script_name, nets['Net_0'].par)
+    file_name_figs = get_file_name_figs(script_name,  nets['Net_0'].par)
+    path_nest=get_path_nest(script_name, nets['Net_0'].par)
+
+    
+
+    for net in nets.values():
+        net.set_path_nest(path_nest)
+    
     sd = get_storage(file_name, info)
     
-    
     d = {}
-    
+        
     from_disks = [from_disk] * 2
     for net, fd in zip(nets.values(), from_disks):
+        
+        
         if fd == 0:
             dd = run(net)
             add_GPe(dd)
@@ -1031,7 +1048,7 @@ class TestOscillationMPI(unittest.TestCase):
 if __name__ == '__main__':
     d={
         TestOcsillation:[
-#                         'test_create_figs',
+                        'test_create_figs',
 #                         'test_isi',
 #                         'test_plot_mallet2008',
 #                         'testPlotStats',
@@ -1045,7 +1062,7 @@ if __name__ == '__main__':
 #                         'test_show_phase_diff',
                         ],
        TestOscillationMPI:[
-                        'test_run_simulation',
+#                         'test_run_simulation',
                            ]}
 
 

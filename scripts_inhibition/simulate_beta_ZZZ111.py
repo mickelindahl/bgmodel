@@ -2,110 +2,80 @@
 Created on Aug 12, 2013
 
 @author: lindahlm
+
 '''
-from copy import deepcopy
-from inhibition_gather_results import process
-from simulate import get_file_name
-from toolbox import misc
-from toolbox.network.default_params import Perturbation_list as pl
+
+from toolbox import monkey_patch as mp
+mp.patch_for_milner()
+
+from simulate import (get_threads, get_type_of_run, get_path_rate_runs,
+                      get_path_logs, get_runs_oscillation,
+                      pert_set_data_path_to_milner_on_supermicro, 
+                      pert_add_oscillations) 
+
+from toolbox.network import default_params
 from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
 
-import numpy
 import simulate_beta
 import oscillation_perturbations as op
 import pprint
 pp=pprint.pprint
 
+FILE_NAME=__file__.split('/')[-1][0:-3]
+FREQS=[0.5, 1.0, 1.5]
+FREQ_OSCILLATION=20.
+FROM_DISK_0=0
+
+LOAD_MILNER_ON_SUPERMICRO=False
+
+SIM_TIME=10000.0
+SIZE=5000.0 
+DO_RUNS=[0,1] #if not empty these runs are simulated
+DO_OBJ=True
  
-if misc.determine_host()=='milner':
-    type_of_run='mpi_milner'
-else: 
-    type_of_run='mpi_supermicro'
-#     type_of_run='shared_memory'
+THREADS_MILNER=40 #Should be multiple of 20
+THREADS_SUPERMICRO=10
 
-def perturbations():
-    sim_time=10000.0
-    size=5000.0
-    threads=5
+perturbation_list=op.get()
+type_of_run=get_type_of_run(shared=True) 
+threads=get_threads(THREADS_SUPERMICRO, THREADS_MILNER)
 
-    freqs=[0.5, 1.0, 1.5]
+path_code=default_params.HOME_CODE
+path_rate_runs = get_path_rate_runs('simulate_inhibition_ZZZ/')
+path_result_logs = get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
+                             FILE_NAME)
 
-    path=('/home/mikael/results/papers/inhibition'+
-       '/network/simulate_inhibition_ZZZ/')
-    l=op.get()
-
-    for i in range(len(l)):
-        l[i]+=pl({'simu':{'sim_time':sim_time,
-                          'sim_stop':sim_time,
-                          'threads':threads},
-                  'netw':{'size':size}},
-                  '=')
-    
-    damp=process(path, freqs)
-    for key in sorted(damp.keys()):
-        val=damp[key]
-        print numpy.round(val, 2), key
-
-    ll=[]
-    for j, _ in enumerate(freqs):
-        for i, _l in enumerate(l):
-            amp=[numpy.round(damp[_l.name][j],2), 1]
-            d={'type':'oscillation2', 
-               'params':{'p_amplitude_mod':amp[0],
-                         'p_amplitude0':amp[1],
-                         'freq': 20.}} 
-            _l=deepcopy(_l)
-            dd={}
-            for key in ['C1', 'C2', 'CF', 'CS']: 
-                dd=misc.dict_update(dd, {'netw': {'input': {key:d} } })     
-                      
-            _l+=pl(dd,'=',**{'name':'amp_{0}-{1}'.format(*amp)})
-
-            ll.append(_l)
-        
-
-    return ll, threads
-
-
-p_list, threads=perturbations()
-for i, p in enumerate(p_list):
-    print i, p
-args_list=[]
+p_list = pert_add_oscillations(SIM_TIME, SIZE, threads, 
+                               FREQS, path_rate_runs, FREQ_OSCILLATION, 
+                               perturbation_list)
  
+p_list=pert_set_data_path_to_milner_on_supermicro(p_list,
+                                                  LOAD_MILNER_ON_SUPERMICRO)
 
-# path=(home + '/results/papers/inhibition/network/'
-#       +__file__.split('/')[-1][0:-3]+'/')
-path=get_file_name(__file__.split('/')[-1][0:-3])
-n=len(p_list)
+for i, p in enumerate(p_list): print i, p
 
-j0=0
-for j in range(j0,3):
-    for i, p in enumerate(p_list):
-        
-# #         if i<n-9:
-        if i!=0:
-            continue
-
-
-        script_name=(__file__.split('/')[-1][0:-3]
-                     +'/script_'+str(i)+'_'+p.name+'_'+type_of_run)
-        setup=simulate_beta.Setup(1000.0/20.0, threads)
-        obj=simulate_beta.Main(**{'builder':Builder,
-                                'from_disk':j,
-                                'perturbation_list':p,
-                                'script_name':script_name,
-                                'setup':setup})
-        obj.do()
-        args_list.append([obj, script_name])
+args_list=get_runs_oscillation(Builder, DO_OBJ, DO_RUNS, FILE_NAME,
+                               FREQ_OSCILLATION,  FROM_DISK_0, 
+                               simulate_beta, p_list, threads,
+                               type_of_run)
 
 # for i, a in enumerate(args_list):
 #     print i, a
-
-loop(args_list, path, 1, 
+n_tasks_per_node=20
+loop(args_list, path_result_logs, path_code, 2,
      **{'type_of_run':type_of_run,
         'threads':threads,
-        'i0':j0, 
-        'debug':False})
+        'memory_per_node':int(819*(40/n_tasks_per_node)),
+        'n_nodes':int(threads/n_tasks_per_node),
+        'n_tasks_per_node':n_tasks_per_node, # 40 is maximum
+        'n_mpi_processes':threads,
+        
+        'i0':FROM_DISK_0, 
+        'debug':False,
+        'l_hours':['01','01','00'],
+        'job_name':'_'.join(FILE_NAME.split('_')[1:]),
+        'l_minutes':['00','00','5'],
+        'l_seconds':['00','00','00']})
 
         

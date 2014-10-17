@@ -1,0 +1,58 @@
+
+              -- N E S T --
+
+  Copyright (C) 2004 The NEST Initiative
+  Version 2.2.2 Oct  4 2014 20:54:02
+
+This program is provided AS IS and comes with
+NO WARRANTY. See the file LICENSE for details.
+
+Problems or suggestions?
+  Website     : http://www.nest-initiative.org
+  Mailing list: nest_user@nest-initiative.org
+
+Type 'nest.help()' to find out more about NEST.
+
+              -- N E S T --
+
+  Copyright (C) 2004 The NEST Initiative
+  Version 2.2.2 Oct  4 2014 20:54:02
+
+This program is provided AS IS and comes with
+NO WARRANTY. See the file LICENSE for details.
+
+Problems or suggestions?
+  Website     : http://www.nest-initiative.org
+  Mailing list: nest_user@nest-initiative.org
+
+Type 'nest.help()' to find out more about NEST.
+
+Oct 08 10:15:55 Simulate [Info]: 
+    Simulating 100 ms.
+
+Oct 08 10:15:55 Simulate [Info]: 
+    Simulating 100 ms.
+
+Oct 08 10:15:55 Scheduler::prepare_nodes [Info]: 
+    Please wait. Pr
+Oct 08 10:15:55 Scheduler::prepare_nodes [Info]: 
+    Please wait. Preparing elements.eparing elements.
+
+
+Oct 08 10:15:55 Scheduler::prepare_nodes [Info]: 
+    Simulating 10020 nodes.
+
+Oct 08 10:15:55 Scheduler::threaded_update_openmp [Info]: 
+    Simulating using OpenMP.
+
+Oct 08 10:15:55 Scheduler::prepare_nodes [Info]: 
+    Simulating 10020 nodes.
+
+Oct 08 10:15:55 Scheduler::threaded_update_openmp [Info]: 
+    Simulating using OpenMP.
+
+Oct 08 10:16:20 Scheduler::resume [Info]: 
+    Simulation finished.
+
+Oct 08 10:16:20 Scheduler::resume [Info]: 
+    Simulation finished.

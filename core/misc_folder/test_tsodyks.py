@@ -60,8 +60,8 @@ if __name__=='__main__':
     recordables=['g_AMPA_1']
     print nest.version()
     nest.Connect(sg, n, syn_spec={'model':'tsodyks_synapse',
-                                     'U':0.0192,
-                                     'tau_fac': 623., 
+                                  'U':0.0192,
+                                'tau_fac': 623., 
                                      'tau_rec':559. ,
                                      'receptor_type':df[receptor]})
     print nest.version()

@@ -1,3 +1,4 @@
+
 '''
 Mikael Lindahl 2010
 
@@ -21,6 +22,7 @@ import scipy.cluster.vq as clust
 import socket
 import sys
 import time
+import mpi4py
 
 
 from copy import deepcopy
@@ -133,17 +135,32 @@ class my_slice(object):
         return self.slice
 
 class Stopwatch():
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         self.msg = args[0]
         self.args=args
         self.time=None
+        self.only_rank_0_mpi=kwargs.get('only_rank_0_mpi',True)
+        
     def __enter__(self):
-        print self.msg,
+        
         self.time=time.time()
+        if self.only_rank_0_mpi:
+            if mpi4py.MPI.COMM_WORLD.rank==0:
+                print self.msg,
+        else: 
+            print self.msg, 'rank',mpi4py.MPI.COMM_WORLD.rank
+        
+
         
     def __exit__(self, type, value, traceback):
         t=round(time.time()-self.time,)
-        print '... finnish {} {} sec'.format(self.msg, t)
+        msg_out='... finnish {} {} sec'.format(self.msg, t)
+        if self.only_rank_0_mpi:
+            if mpi4py.MPI.COMM_WORLD.rank==0:            
+                print msg_out
+        else:
+            print self.msg, 'rank',mpi4py.MPI.COMM_WORLD.rank
+                   
         if len(self.args)>1:
             self.args[1][self.msg]=t
             
@@ -847,7 +864,8 @@ def fano_factor(d):
     mean=numpy.mean(d, axis=0)
     ff=var/mean
     return ff
-    
+
+  
 def mutual_information(count_sr_list):
     '''
     
@@ -958,6 +976,8 @@ def slice_line(line, xlim=False, ylim=False):
         
         line.set_ydata(y)
         line.set_ydata(x)
+
+
 
 def time_resolved_rate(binned_data, bin_extent, kernel_type, res):
     '''

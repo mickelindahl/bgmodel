@@ -161,6 +161,7 @@ def simulate(builder,
     
     add_perturbations(perturbation_list, nets)
     sd = get_storage(file_name, info)
+
     
     from_disks, d = main_loop(from_disk, attr, models, 
                               sets, nets, kwargs_dic, sd)

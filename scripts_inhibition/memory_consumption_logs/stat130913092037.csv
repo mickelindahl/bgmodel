@@ -1,8 +1,0 @@
-"Dstat 0.7.2 CSV output"
-"Author:","Dag Wieers <dag@wieers.com>",,,,"URL:","http://dag.wieers.com/home-made/dstat/"
-"Host:","selact.csc.kth.se",,,,"User:","lindahlm"
-"Cmdline:","dstat -tm --output memory_consumption_logs/stat130913092037.csv 10",,,,"Date:","13 Sep 2013 09:20:37 CEST"
-
-"system","memory usage",,,
-"time","used","buff","cach","free"
-13-09 09:20:37,2167513088.0,50421760.0,927203328.0,9448435712.0

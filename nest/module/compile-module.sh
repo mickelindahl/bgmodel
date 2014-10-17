@@ -1,5 +1,5 @@
 #!/bin/sh
-#Input: Take module-DATE, nest-version, nest-install-dir and nest-source-models-dir as input
+#Input: Take module-DATE, nest-version, nest-install-dir and nest-source-dir as input
 #Examples: 
 # compile-module-milner module-130701 nest-2.2.2 /pdc/vol/nest/2.2.2/ /afs/nada.kth.se/home/w/u1yxbcfw/opt/NEST/dist/nest-2.2.2/models
 #./compile-module.sh module-130701 nest-2.4.2 /home/mikael/opt/NEST/dist/install-nest-2.4.2/ /home/mikael/opt/NEST/dist/nest-2.4.2/models
@@ -82,7 +82,7 @@ cd $buildDir
 # To inform about where nest is installed --with-nest=${NEST_INSTALL_DIR}/bin/nest-config and with --prefix inform where to put module installation files
 
 
-$bootstrapDir"configure" --with-nest=${NEST_INSTALL_DIR}/bin/nest-config --prefix=$installDir/ 2>&1 | tee $logDir$1-$2-configure
+$bootstrapDir"configure" --with-nest="${NEST_INSTALL_DIR}/bin/nest-config" --prefix=$installDir/ 2>&1 | tee $logDir$1-$2-configure
 make -j $noProcs 2>&1 | tee $logDir$1-$2-make
 make -j $noProcs install 2>&1 | tee $logDir$1-$2-install
 #sudo make -j $noProcs installcheck

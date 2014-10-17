@@ -11,6 +11,7 @@ from scipy.interpolate import interp1d
 from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
 
+
 import pprint
 pp=pprint.pprint
 
@@ -37,6 +38,7 @@ def gather(path):
             continue
         file_name=path+name[:-4]
         sd = Storage_dic.load(file_name)
+        
         dd=sd.load_dic(*['Net_0', 'M1','mean_rate_slices'])
         d = misc.dict_update(d, {name[:-4]:dd['Net_0']})
     

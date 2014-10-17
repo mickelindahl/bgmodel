@@ -82,34 +82,23 @@ class MyGroup(object):
         n=kwargs.get('n', 1)
         params=kwargs.get('params',{})          
             
-        self.connections     = {}        # Set after network has been built with FindConnections
-#         print model
-        self.ids             = kwargs.get('ids', my_nest.Create(model, 
-                                                                n, 
-                                                                params))
+        ids = kwargs.get('ids', my_nest.Create(model,n, params))
+        self._ids=slice(ids[0],ids[-1],1)
+        
 
-        self._local_ids       = []
-        self.name            = name
+        self.local_ids=[]
+        for _id in self.ids:       
+            if my_nest.GetStatus([_id], 'local') :
+                self.local_ids.append(_id)
+        
+        self.model=model
+        self.name=name
         self.n=n
-        self.model           = model
-        self.params = my_nest.GetStatus(self.ids)
-        self.sets=kwargs.get('sets', [misc.my_slice(s, n, 1) for s in range(n)])
-
+        self.sets=kwargs.get('sets', misc.my_slice(0, n, 1))
 
     @property
-    def local_ids(self):
-        # Get local ids on this processor. Necessary to have for mpi run.
-        if not self._local_ids:
-            for _id in self.ids:           
-                nodetype=my_nest.GetStatus([_id])[0]['model']        
-                if nodetype == 'proxynode':
-                    continue
-                self._local_ids.append(_id)
-        return self._local_ids
-  
-    @local_ids.setter
-    def local_ids(self,val):
-        self._local_ids=val          
+    def ids(self):
+        return list(range(self._ids.start, self._ids.stop+1, self._ids.step))
                     
     def __getitem__(self, key):
         ''' 
@@ -136,39 +125,7 @@ class MyGroup(object):
     
     def __str__(self):
         return self.__class__.__name__+':'+self.name 
-
-    def count_afferents( self, connecting_group ):
-        ''' 
-        Calculated number off afferents from connecting_group onto each 
-        neuron in self.
-        '''
-        print 'Counting affarents from', self.models, 'onto', connecting_group.models
-        
-        connecting_group.FindConnections()
-        
-        d = {}
-        for id in self.ids: d[ id ] = 0
-        for source_id, targets in connecting_group.connections.iteritems():
-            for target_id in targets:
-                if target_id in self.ids: d[ target_id ] += 1                      # Check that it is self that is the target
-                    
-                
-        return d        
-                
-    def find_connections(self):
-        '''
-        FindConnections(self)
-        Find connections for each node in layer
-        '''
-        
-        # Clear 
-        self.connections={}
-        
-        for node in self.ids:
-            
-            self.connections[str(node)] = [target for target in 
-                                           my_nest.GetStatus(my_nest.FindConnections([node]), 'target') 
-                                           if target not in self.sd['id'] + self.mm['id']]
+                     
     def get(self, attr, **k):
                
         if hasattr(self, 'get_'+ attr): 
@@ -185,165 +142,19 @@ class MyGroup(object):
 
     def get_name(self):
         return self.name
-      
-    def get_conn_par(self, type='delay'): 
-        '''
-        Get all connections parameter values for type
-        '''
-        
-        conn_par={}
-        
-        if not self.connections: self.Find_connections() 
-        
-        for source, targets in self.connections.iteritems():
-        
-            conn_par[source]=[my_nest.GetStatus(my_nest.FindConnections([int(source)], 
-                                                                  [target]), 'delay')[0] 
-                              for target in targets] 
-        
-        return conn_par        
-    
-    def get_model_par(self, type='C_m'): 
-        '''
-        Retrieve one or several parameter values from all nodes
-        '''
-        model_par=[my_nest.GetStatus([node],type)[0] for node in self.ids]
-
-        return model_par
-    
            
     def set_random_states_nest(self):        
         msd = 1000 # masterseed
+
         n_vp = my_nest.GetKernelStatus ( 'total_num_virtual_procs' )
+
         msdrange1 = range(msd , msd+n_vp )
-        
+
         pyrngs = [numpy.random.RandomState(s) for s in msdrange1 ]
         msdrange2 = range(msd+n_vp+1 , msd+1+2*n_vp )
         my_nest.SetKernelStatus(params={'grng_seed': msd+n_vp ,'rng_seeds': msdrange2})   
         return pyrngs
              
-    def mean_weights(self):
-        '''
-        Return a dictionary with mean_weights for each synapse type with mean weight
-        and receptor type
-        '''
-        
-        print 'Calculating mean weights', self.models
-        
-        syn_dict = {}                                                                 # container weights per synapse type
-        rev_rt   = {}                                                                 # receptor type number dictionary
-        rt_nb    = []                                                                 # receptor type numbers
-
-            
-
-        for source in self.ids:                                                     # retrieve all weights per synapse type
-            for conn in my_nest.GetStatus( my_nest.FindConnections( [ source ] ) ):
-                st = conn[ 'synapse_type' ] 
-
-                if syn_dict.has_key( st ):
-                    syn_dict[ st ]['weights'].append( conn['weight'] )
-                else:
-                    syn_dict[ st ] = {}
-                    syn_dict[ st ]['weights']       = [ conn['weight'] ]
-                    syn_dict[ st ]['receptor_type'] = { st : my_nest.GetDefaults( st )[ 'receptor_type' ]  } 
-                    
-        
-        
-        mw = {}                                                                     # container mean weights per synapse type
-        for key, val in syn_dict.iteritems():
-            if len( val[ 'weights' ] ) > 0: 
-                syn_dict[ key ]['mean_weight'] = sum( val[ 'weights' ] )/len( val[ 'weights' ] )   # calculate mean weight             
-                syn_dict[ key ]['weights'] = numpy.array( syn_dict[ key ]['weights'] )    
-                syn_dict[ key ]['nb_conn'] = len( val[ 'weights' ] )
-            else:
-                syn_dict[ key ]['mean_weight'] = 0
-                syn_dict[ key ]['nb_conn']     = 0
-            
-        
-        return syn_dict   
-    
-
-    
-    def print_connections(self):
-        '''
-        PrintConnections(self)
-        Print connections for each node in the layer
-        '''
-        print 'Node targets:'
-
-        if not self.connections:
-            self.FindConnections() 
-        
-        for key, value in self.connections.iteritems():
-            print key + ' ' +str(value)         
-       
-
-        
-    def slice(self, ids ):
-        group=copy.deepcopy(self)    
-        
-        group.ids=ids
-        # Slice signals
-        if group.signals:
-            for key in group.signals.keys():
-                if key in ['spikes']:
-                    group.signals['spikes']=self.signals['spikes'].id_slice(group.ids)
-         
-        return group
-    
-    def stats_connections_weight_delays(self, source_group):
-        
-        print 'Connection stats for:',len(source_group) , 'sources', len(self.ids), 'targets'    
-        #print self
-        sources=source_group.ids
-        
-        l=len(sources)
-        
-        # Broadcast targets ids
-        tgtnrns=l*(self.ids,)
-        
-        conntgts = [my_nest.GetStatus(my_nest.FindConnections([sn]), 'target')
-                    for sn in sources]
-        
-        target_per_source=[list(set(ct).intersection(tn)) for ct,tn in zip(conntgts,tgtnrns)]
-        
-        n=[]
-       
-        tmp_sources=[]
-        tmp_targets=[]       
-        for source, targets in zip(sources, target_per_source):
-            tmp_sources.extend((source,)*len(targets))
-            tmp_targets.extend(targets)
-            n.append(len(targets))
-                
-        #    for node in self.ids:
-        conns=my_nest.FindConnections(tmp_sources, tmp_targets)
-        weights=my_nest.GetStatus(conns, 'weight')    
-        delays=my_nest.GetStatus(conns, 'delay')   
-
-            
-        #print self.model, target_group.model
-        mean_w=numpy.mean(numpy.array(weights))
-        mean_d=numpy.mean(numpy.array(delays))
-        mean_n_out_from_source_to_target=numpy.mean(numpy.array(n))
-        mean_n_in_to_target_from_source=mean_n_out_from_source_to_target*len(source_group.ids)/len(self.ids)        
-        
-
-        
-        std_w=numpy.std(numpy.array(weights))
-        std_d=numpy.std(numpy.array(delays))
-        std_n_out_from_source_to_target  =numpy.std(numpy.array(n))
-        std_n_in_to_target_from_source =std_n_out_from_source_to_target*len(self.ids)/len(source_group.ids)       
-        
-        data_dic={'mean_w':mean_w,'mean_d':mean_d,
-                  'mean_n_out_from_source_to_target':mean_n_out_from_source_to_target,
-                  'mean_n_in_to_target_from_source':mean_n_in_to_target_from_source,
-                  'std_w':std_w,'std_d':std_d,
-                  'std_n_out_from_source_to_target':std_n_out_from_source_to_target,
-                  'std_n_in_to_target_from_source':std_n_in_to_target_from_source} 
-        
-        return data_dic 
-
 class VolumeTransmitter(MyGroup):
     def __init__(self, *args, **kwargs):
     
@@ -358,25 +169,35 @@ class VolumeTransmitter(MyGroup):
 
 class MyNetworkNode(MyGroup):
     def __init__(self, *args, **kwargs):
-    
-        super( MyNetworkNode, self ).__init__(*args, **kwargs)        
+        
+        super( MyNetworkNode, self ).__init__(*args, **kwargs)     
+
         self._init_extra_attributes(**kwargs)
 
     def _init_extra_attributes(self,*args, **kwargs):
         # Add new attribute
-        
+           
 #         self.sd_params=kwargs.get('sd_parans')            
         self.mm=self.create_mm(self.name, kwargs.get('mm', {} ))  
+        
+
+        
         self.rand   = kwargs.get('rand',{})
+        
         self.receptor_types=my_nest.GetDefaults(self.model).get('receptor_types',{})   
         self.sd=self.create_sd(self.name, kwargs.get('sd', {} ))  
+
+ 
+        
         self.signals         = {}        # dictionary with signals for current, conductance, voltage or spikes                
         self._signaled        = {}        # for ech signal indicates if it have been loaded from nest or not
         self.target_rate=kwargs.get('rate', 10.0)
-          
+        
+
+        
         if not {}==self.rand:
             self.model_par_randomize()
-
+        
     @property
     def recordables(self):
         # Pick out recordables and receptor types using first model.
@@ -403,9 +224,11 @@ class MyNetworkNode(MyGroup):
   
     def is_new_recording(self, flag, recordable):
         if flag in ['s','spikes']:
-            stop=max(1,my_nest.GetKernelStatus('time')-1)
+#             stop=max(1,my_nest.GetKernelStatus('time')-1)
+            stop=max(1,my_nest.GetKernelTime()-1)
         else:
-            stop=my_nest.GetKernelStatus('time')
+#             stop=my_nest.GetKernelStatus('time')
+            stop=my_nest.GetKernelTime()
         if self.signals[recordable].t_stop==stop:
             return False
         else:
@@ -420,14 +243,14 @@ class MyNetworkNode(MyGroup):
         else:
             start=0.0
         
-        if not start==my_nest.GetKernelStatus('time'):
+        if not (start==my_nest.GetKernelTime()):
             if flag in ['s', 'spikes']:   
                 start=max(0,start-1)
                 #Todo with delay in spike recording I experienced
-                stop=max(1,my_nest.GetKernelStatus('time')-1)
+                stop=max(1,my_nest.GetKernelTime()-1)
                  
             else:
-                stop=my_nest.GetKernelStatus('time')
+                stop=my_nest.GetKernelTime()
                 
             signal=self.get_signal(flag, recordable=recordable, 
                                    start=start, 
@@ -479,38 +302,42 @@ class MyNetworkNode(MyGroup):
         
         return d 
 
-    def create_raw_spike_signal(self, start, stop, n_vp, data_path, network_size):
+    def create_raw_spike_signal(self, start, stop):
     #signal=load:spikes()
         if self.sd['params']['to_file']:
-            gid = str(self.sd['id'][0])
-            gid = '0' * (len(network_size) - len(gid)) + gid
-            n = len(str(n_vp))
-            s=data_path + '/' + self.sd['model'] + '-' + gid + '-'  
-            file_names = [s+ '0'* (n - len(str(vp))) + str(vp) 
-                           + '.gdf' for vp in range(n_vp)]
             
             
-            s, t = data_to_disk.nest_sd_load(file_names)
             
+            n_vp=my_nest.GetKernelStatus(['total_num_virtual_procs'])[0]
+            data_path=my_nest.GetKernelStatus(['data_path'])[0]
+            files=os.listdir(data_path)
+            file_names=[data_path+s for s in files 
+             if s.split('-')[0]==self.sd['model']]
+                
+#             network_size=str(my_nest.GetKernelStatus(['network_size'])[0])
             
-        else:
+#             gid = str(self.sd['id'][0])
+#             gid = '0' * (len(network_size) - len(gid)) + gid
+#             n = len(str(n_vp))
+#             s=data_path + '/' + self.sd['model'] + '-' + gid + '-'  
+#             file_names = [s+ '0'* (n - len(str(vp))) + str(vp) 
+#                            + '.gdf' for vp in range(n_vp)]
+#             
+            s, t = my_nest.get_spikes_from_file(file_names)
             
-
+        else:  
+            
+            s,t=my_nest.get_spikes_from_memory(self.sd['id'])
+            
             e = my_nest.GetStatus(self.sd['id'])[0]['events'] # get events
             s = e['senders'] # get senders
             t = e['times'] # get spike times
-            
+        
             
             if comm.is_mpi_used():
-                s,t=collect_spikes_mpi(s,t)
-                
+                s,t=my_nest.collect_spikes_mpi(s,t)
                 
 
-            
-#             if my_nest.GetKernelStatus()['time']==26:
-#                 print 'j'
-#             if list(t):
-#                 print t
         if stop:
             s, t = s[t < stop], t[t < stop] # Cut out data
             s, t = s[t >= start], t[t >= start] # Cut out data
@@ -542,24 +369,17 @@ class MyNetworkNode(MyGroup):
         files and dat for analog recordings. The label and file_extension of a 
         recording device can be set like any other parameter of a node using SetStatus.
         '''
-        
-        # Short cuts
+           
         ids=self.local_ids      # Eacj processor has its set of ids
-        mm_dt=self.mm['params']['interval']
-        
-        n_vp=my_nest.GetKernelStatus(['total_num_virtual_procs'])[0]
-        data_path=my_nest.GetKernelStatus(['data_path'])[0]
-        network_size=str(my_nest.GetKernelStatus(['network_size'])[0])
+            
         # Spike data
         if dataType in ['s', 'spikes']:    
-            signal = self.create_raw_spike_signal(start,
-                                                  stop, 
-                                                  n_vp, 
-                                                  data_path, 
-                                                  network_size)                   # create signal 
+            signal = self.create_raw_spike_signal(start,  stop) # create signal 
             
         # Mulitmeter data, conductance, current or voltage data    
         elif dataType in ['g', 'c', 'v']:     
+            mm_dt=self.mm['params']['interval']
+
             e = my_nest.GetStatus(self.mm['id'])[0]['events']    # get events 
             v = e[recordable]                           # get analog value
             s = e['senders']                            # get senders
@@ -580,11 +400,8 @@ class MyNetworkNode(MyGroup):
                 start = stop - len(s)/len(ids)*float(mm_dt)
             else:
                 start = t[0]        # start time for NeuroTools  
-#             print len(t)
 #             start, stop=t[0]-mm_dt/2, t[-1]+mm_dt/2    
             signal  = zip( s, v )                   # create signal  
-#             print stop-start
-#             print mm_dt * len(signal)
             #abs(self.t_stop-self.t_start - self.dt * len(self.signal)) > 0.1*self.dt
               
              
@@ -619,23 +436,7 @@ class MyNetworkNode(MyGroup):
         return signal
              
  
-    def get_random_number(self, pyrngs, vp, val):
-        
-        
-        if 'gaussian' in val.keys():
-            par=val['gaussian']
-            r=pyrngs[vp].normal(loc=par['my'], scale=par['sigma'])
-            if 'cut' in par.keys():
-                if r<par['my']-par['cut_at']*par['sigma']:
-                    r=par['my']-par['cut_at']*par['sigma']
-                elif r>par['my']+par['cut_at']*par['sigma']:
-                    r=par['my']+par['cut_at']*par['sigma']
-                    
-            return r
-        
-        if 'uniform' in val.keys():
-            par=val['uniform']
-            return pyrngs[vp].uniform(par['min'], par['max'])
+
         
     def get_target_rate(self):
         return self.target_rate
@@ -646,8 +447,6 @@ class MyNetworkNode(MyGroup):
     
     def get_voltage_signal(self):
         l=list(self.iter_voltage_signals(self.sets))
-#         for ll in l:
-#             print ll.t_start, ll.t_stop
         return VmListMatrix(l)
         
     def iter_spike_signals(self, sets):
@@ -665,10 +464,11 @@ class MyNetworkNode(MyGroup):
 
                 
     def isrecorded(self, flag):
+
         if flag in ['spike', 's', 'spikes', 'spike_signal']:
             v=self.sd['id']!=[] 
                
-        if flag in ['voltage', 'v', 'voltages', 'voltage_signal']:
+        elif flag in ['voltage', 'v', 'voltages', 'voltage_signal']:
             v= self.mm['id']!=[] 
         else:
             v=True   
@@ -684,32 +484,45 @@ class MyNetworkNode(MyGroup):
         '''
         pyrngs=self.set_random_states_nest()
         for p, val in self.rand.iteritems():
-            
             if not val['active']:
                 continue
-                       
-            st=my_nest.GetStatus(self.ids)
-            local_nodes=[(ni['global_id'], ni['vp']) for ni in st if ni['local']]
+            
+            local_nodes=[]           
+#             st=my_nest.GetStatus(self.ids, ['local', 'gloabal_id', 'vp'])
+            for _id in self.ids:
+                ni=my_nest.GetStatus([_id])[0]
+                if ni['local']:
+                    local_nodes.append((ni['global_id'], ni['vp']))
+            
+#             local_nodes=[(ni['global_id'], ni['vp']) 
+#                          for ni in st if ni['local']]
             
             for gid, vp in local_nodes:
-                my_nest.SetStatus([gid], {p:self.get_random_number(pyrngs, vp, val)})     
+                val_rand=numpy.round(get_random_number(pyrngs, vp, val),2)
+                my_nest.SetStatus([gid],{p:val_rand})     
 
-    def print_neuron(self):
-        '''
-        PrintNeuron(self)
-        Print layer info 
-        '''
-        print ' '
-        print 'Model: ' + self.models
-        print 'Ids: ' + str(self.ids)
-        print 'recordables: ' +  str(self.recordables) 
-        print 'sd: ' + str(self.sd['id']) 
-        print 'mm: ' + str(self.mm['id']) 
-        
-        print 'Params:'
-        for key, val in self.params.iteritems():
-            print key + ': ' + str(val)      
-            
+
+
+#  def model_par_randomize(pyrngs, rand_dic, ids):     
+#         '''
+#         Example:
+#         self.randomization={ 'C_m':{'active':True, 
+#                                     'gaussian':{'sigma':0.2*C_m, 'my':C_m}}}
+#         '''
+# #         pyrngs=self.set_random_states_nest()
+#         for p, val in rand_dic.iteritems():
+#             if not val['active']:
+#                 continue
+#                        
+#             st=my_nest.GetStatus(ids)
+#             local_nodes=[(ni['global_id'], ni['vp']) 
+#                          for ni in st if ni['local']]
+#             
+#             for gid, vp in local_nodes:
+#                 my_nest.SetStatus([gid], 
+#                                   {p:self.get_random_number(pyrngs, vp, val)})     
+
+             
     def voltage_response(self,  currents, times, start, sim_time, id):
                
         scg = my_nest.Create( 'step_current_generator', n=1 )  
@@ -775,7 +588,8 @@ class MyPoissonInput(MyGroup):
         model=kwargs.get('model', 'poisson_generator')
         
         df=my_nest.GetDefaults(model)
-        if df['type_id'] in ['spike_generator','mip_generator','poisson_generator']:
+        if df['type_id'] in ['spike_generator','mip_generator',
+                             'poisson_generator','poisson_generator_dynamic' ]:
             input_model=model
             type_model=df['type_id'] 
             kwargs['model']='parrot_neuron'
@@ -843,7 +657,7 @@ class MyPoissonInput(MyGroup):
             self.ids.append(new_ids)  
         
         # Poisson generator
-        elif 'poisson_generator' == self.type_model:
+        if 'poisson_generator' == self.type_model:
 
             t_starts=times
             t_stops=list(times[1:])+list([t_stop])
@@ -872,7 +686,23 @@ class MyPoissonInput(MyGroup):
             generators=list(set(source_nodes).union(generators))
             self.ids_generator[hash(tuple(idx))]=sorted(generators)
             self.local_ids=list(self.ids) # Nedd to put on locals also
-    
+        
+        if 'poisson_generator_dynamic'==self.type_model:
+            source_nodes=my_nest.Create(self.type_model, 1, 
+                                        {'timings':times,
+                                         'rates':rates})*len(ids)
+            target_nodes=self.ids
+            my_nest.Connect(source_nodes, target_nodes)         
+            
+            generators=[]
+            if hash(tuple(ids)) in self.ids_generator.keys():
+                generators=self.ids_generator[hash(tuple(idx))]
+                
+            generators=list(set(source_nodes).union(generators))
+            self.ids_generator[hash(tuple(idx))]=sorted(generators)
+                       
+            self.local_ids=list(self.ids) # Nedd to put on locals also
+           
  
     def update_spike_times(self,rates=[], times=[], t_stop=None, ids=None, seed=None, idx=None):
         if 'poisson_generator' == self.type_model:
@@ -955,7 +785,8 @@ class MyLayerGroup(MyGroup):
         
         fIsi, mIsi, lIsi  = [], [], []  # first, mean and last isi
         if not tStim: tStim = 500.0 
-        tAcum = my_nest.GetKernelStatus('time')   
+#         tAcum = my_nest.GetKernelStatus('time')   
+        tAcum = my_nest.GetKernelTime()
     
         I_e0=my_nest.GetStatus(id)[0]['I_e'] # Retrieve neuron base current
         
@@ -978,7 +809,7 @@ class MyLayerGroup(MyGroup):
                 
                 if signal.mean_rate()>0.1 or tAcum>20000:
                     simulate=False
-                #print my_nest.GetKernelStatus('time')     
+                    
             isi=signal.isi()[0]      
             if not any(isi): isi=[1000000.] 
               
@@ -1200,35 +1031,16 @@ class MyLayerPoissonInput(MyPoissonInput):
         self.id_mod=[]
     
     def sort_ids(self, pos=[[0,0]]):     
-#         print self.layer_id
         node=my_topology.FindCenterElement(self.layer_id)
-#         print node
+
         ids=self.ids
         d=numpy.array(my_topology.Distance(node*len(ids),ids))
         idx=sorted(range(len(d)), key=d.__getitem__, reverse=True)
-#         print d[idx]
+
         return idx 
     def plot(self, ax=None, nodecolor='b', nodesize=20):        
         my_topology.MyPlotLayer(self.layer_id, ax,nodecolor, nodesize)
     
-
-def collect_spikes_mpi(*args): 
-    args=list(args)
-    
-    for i in range(len(args)):
-        with Barrier():
-            if comm.rank()==0:
-                for i_proc in xrange(1, comm.size()):
-                    args[i] = numpy.r_[args[i], 
-                                       comm.recv(source=i_proc)]
-                    
-            else:
-                comm.send(args[i],dest=0)
-        args[i]=comm.bcast(args[i], root=0)
-        
-    return args
-
-
 def default_kwargs_net(n, n_sets):
     
     sets=[misc.my_slice(i, n,n_sets) for i in range(n_sets)]
@@ -1236,9 +1048,9 @@ def default_kwargs_net(n, n_sets):
              'model':'iaf_cond_exp', 
              'mm':{'active':True,
                    'params':{'interval':1.0,
-                          'to_memory':True, 
-                          'to_file':False,
-                          'record_from':['V_m']}},
+                             'to_memory':True, 
+                             'to_file':False,
+                             'record_from':['V_m']}},
              'params':{'I_e':280.0,
                        'C_m':200.0},
              'sd':{'active':True,
@@ -1262,6 +1074,24 @@ def default_spike_setup(n, stop):
        't_stop':stop,
        'idx':range(n)}
     return d
+
+def get_random_number(pyrngs, vp, val):
+    
+    
+    if 'gaussian' in val.keys():
+        par=val['gaussian']
+        r=pyrngs[vp].normal(loc=par['my'], scale=par['sigma'])
+        if 'cut' in par.keys():
+            if r<par['my']-par['cut_at']*par['sigma']:
+                r=par['my']-par['cut_at']*par['sigma']
+            elif r>par['my']+par['cut_at']*par['sigma']:
+                r=par['my']+par['cut_at']*par['sigma']
+                
+        return r
+    
+    if 'uniform' in val.keys():
+        par=val['uniform']
+        return pyrngs[vp].uniform(par['min'], par['max'])
 
 def sim_group(sim_time, *args, **kwargs):
         
@@ -1313,7 +1143,7 @@ class TestModule_functions(unittest.TestCase):
         
         f.close()
 
-
+from toolbox.data_to_disk import pickle_save, pickle_load
 class TestMyNetworkNode(unittest.TestCase):
     
     my_nest.sr("M_WARNING setverbosity") #silence nest output
@@ -1321,97 +1151,154 @@ class TestMyNetworkNode(unittest.TestCase):
     #print my_nest.GetKernelStatus()
 
     def setUp(self):
-
+        self.home=expanduser("~")
         self.n=12
         self.n_sets=3
         self.args=['unittest']
         self.kwargs=default_kwargs_net(self.n, self.n_sets)
-        self.sim_time=1000.
-        my_nest.ResetKernel(display=False)
+        self.sim_time=10000.
+        dp=self.home+'/results/unittest/my_population/nest/'
+        data_to_disk.mkdir(dp)
+        my_nest.ResetKernel(display=False, data_path=dp)
+        my_nest.SetKernelStatus({'overwrite_files':True})
     
-    @property
-    def sim_group(self):
+    def sim_group(self, **kwargs):
+        kwargs=misc.dict_update(self.kwargs, kwargs)
         return sim_group(self.sim_time, *self.args, **self.kwargs)  
         
-#     def test_1_create(self):
-#         g=MyNetworkNode(*self.args, **self.kwargs)
-#     
-#     def test_2_get_spike_signal(self):
-#         l=self.sim_group.get_spike_signal()
-#         self.assertEqual(l.shape[1], self.n_sets)
-#         
-#         mr=0
-#         for _,_,spk_list in my_signals.iter2d(l):
-#             mr+=spk_list.mean_rate()/l.shape[1]
-#         self.assertAlmostEqual(mr, 55.0, delta=0.1)
-#     
-#     def test_3_get_voltage_signal(self):
-#         l=self.sim_group.get_voltage_signal()
-#         self.assertEqual(l.shape[1], self.n_sets)
-# 
-#     def test_4_multiple_threads(self):
-#         my_nest.SetKernelStatus({'local_num_threads':2})
-#         _=self.sim_group.get_spike_signal()
-#     
-#     def test_5_load_from_disk(self):
-#         from os.path import expanduser
-#         s = expanduser("~")
-#         s= s+'/results/unittest/my_population'
-#         data_to_disk.mkdir(s)
-#         my_nest.SetKernelStatus({'local_num_threads':2,
-#                                  'data_path':s,
-#                                  'overwrite_files': True,})
-#         
-#         self.kwargs['sd']['params'].update({'to_memory':False, 
-#                                             'to_file':True})
-#         
-#         g=self.sim_group.get_spike_signal()
-#         g[0].firing_rate(1, display=True)
-# #         pylab.show()  
-#         for filename in os.listdir(s):
-#             if filename.endswith(".gdf"):
-#                 #print 'Deleting: ' +s+'/'+filename
-#                 os.remove(s+'/'+filename)        
-        
-    def test_6_mpi_run(self):
-        from toolbox.data_to_disk import pickle_save, pickle_load
-        
-        s = expanduser("~")
-        data_path= s+'/results/unittest/my_population/mpi_run/'
-        script_name=os.getcwd()+'/test_scripts_MPI/my_population_mpi_run.py'
-
-        fileName=data_path+'data_in.pkl'
-        fileOut=data_path+'data_out.pkl'
-        pickle_save([self.sim_time, self.args, self.kwargs], fileName)
-
-        np=4
-#         
-        p=subprocess.Popen(['mpirun', '-np', str(np), 'python', 
-                            script_name, fileName, fileOut],
-#                            stdout=subprocess.PIPE,
-#                            stderr=subprocess.PIPE,
-                           stderr=subprocess.STDOUT,
-                           )
+    def test_1_create(self):
+        g=MyNetworkNode(*self.args, **self.kwargs)
+     
+    def test_21_get_spike_signal_from_memory(self):
+        l=self.sim_group().get_spike_signal()
+        self.assertEqual(l.shape[1], self.n_sets)
          
-        out, err = p.communicate()
-#         print out
-#         print err
+        mr=0
+        for _,_,spk_list in my_signals.iter2d(l):
+            mr+=spk_list.mean_rate()/l.shape[1]
+        self.assertAlmostEqual(mr, 55.0, delta=0.1)
+
+    def test_22_get_spike_signal_from_file(self):
+        d={'sd':{'active':True,
+                   'params':{'to_memory':False, 
+                             'to_file':True}}}
+        l=self.sim_group(**d).get_spike_signal()
+        self.assertEqual(l.shape[1], self.n_sets)
+         
+        mr=0
+        for _,_,spk_list in my_signals.iter2d(l):
+            mr+=spk_list.mean_rate()/l.shape[1]
+        self.assertAlmostEqual(mr, 55.0, delta=0.1)
+    
+    def test_3_get_voltage_signal(self):
+        l=self.sim_group().get_voltage_signal()
+        self.assertEqual(l.shape[1], self.n_sets)
  
+    def test_4_multiple_threads(self):
+        my_nest.SetKernelStatus({'local_num_threads':2})
+        _=self.sim_group().get_spike_signal()
+     
+    def test_5_load_from_disk(self):
+        from os.path import expanduser
+        s = expanduser("~")
+        s= s+'/results/unittest/my_population'
+        data_to_disk.mkdir(s)
+        my_nest.SetKernelStatus({'local_num_threads':2,
+                                 'data_path':s,
+                                 'overwrite_files': True,})
+         
+        self.kwargs['sd']['params'].update({'to_memory':False, 
+                                            'to_file':True})
+         
+        g=self.sim_group().get_spike_signal()
+        g[0].firing_rate(1, display=True)
+#         pylab.show()  
+        for filename in os.listdir(s):
+            if filename.endswith(".gdf"):
+                os.remove(s+'/'+filename)        
         
+
+    def do_mpi(self, data_path, script_name, np):
+        fileName = data_path + 'data_in.pkl'
+        fileOut = data_path + 'data_out.pkl'
+        pickle_save([self.sim_time, self.args, self.kwargs], fileName)
+        p = subprocess.Popen(['mpirun', '-np', str(np), 'python', 
+                              script_name, fileName, fileOut, data_path], 
+    #                            stdout=subprocess.PIPE,
+    #                            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        out, err = p.communicate()
+    #         print out
+    #         print err
+        l = self.sim_group().get_spike_signal()
+        mr0 = l.mean_rate()
+        fr0 = l.firing_rate(1)
+        return fileOut, mr0, fr0
+
+    def test_61_mpi_run(self):
+        data_path= self.home+'/results/unittest/my_population/mpi_run/'
+        script_name=os.getcwd()+'/test_scripts_MPI/my_population_mpi_run.py'
+        np=4
         
-        l=self.sim_group.get_spike_signal()
+
+        
+        fileOut, mr0, fr0 = self.do_mpi(data_path, script_name, np)
         
         mr1, fr1=pickle_load(fileOut)      
-        
-        
-        mr0=l.mean_rate()
         self.assertEqual(mr0, mr1)
-        
-        fr0=l.firing_rate(1)
         self.assertListEqual(list(fr0), list(fr1))
         
-         
-     
+    def test_62_mpi_run_from_disk(self):
+        data_path= self.home+'/results/unittest/my_population/mpi_run_from_disk/'
+        script_name=os.getcwd()+'/test_scripts_MPI/my_population_mpi_run_from_disk.py'
+        np=4
+       
+        for filename in os.listdir(data_path):
+            path=data_path+'/'+filename
+            if os.path.isfile(path):
+                os.remove(path)   
+            
+       
+        fileOut, mr0, fr0 = self.do_mpi(data_path, script_name, np)
+        
+        ss=pickle_load(fileOut)      
+        mr1=ss.mean_rate()
+        fr1=ss.firing_rate(1)        
+
+        self.assertEqual(mr0, mr1)
+        self.assertListEqual(list(fr0), list(fr1))
+                 
+
+    def test_63_mpi_run_hyprid_from_disk(self):
+        data_path= self.home+'/results/unittest/my_population/mpi_run_hybrid_from_disk/'
+        script_name=os.getcwd()+'/test_scripts_MPI/my_population_mpi_run_hybrid_from_disk.py'
+        np=4
+            
+            
+#         os.environ['OMP_NUM_THREADS'] = '2'   
+        fileName = data_path + 'data_in.pkl'
+        fileOut = data_path + 'data_out.pkl'
+        pickle_save([self.sim_time, self.args, self.kwargs], fileName)
+        p = subprocess.Popen(['mpirun',  '-np', str(np), 'python', 
+                              script_name, fileName, fileOut, data_path], 
+    #                            stdout=subprocess.PIPE,
+    #                            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        out, err = p.communicate()
+    #         print out
+    #         print err
+        l = self.sim_group().get_spike_signal()
+        mr0 = l.mean_rate()
+        fr0 = l.firing_rate(1)
+        return fileOut, mr0, fr0
+        
+        g=pickle_load(fileOut)      
+        ss=g.get_spike_signal()
+        mr1=ss.mean_rate()
+        fr1=ss.firing_rate(1)        
+
+        self.assertEqual(mr0, mr1)
+        self.assertListEqual(list(fr0), list(fr1))     
             
 class TestMyPoissonInput(unittest.TestCase):
     def setUp(self):
@@ -1448,25 +1335,33 @@ class TestMyPoissonInput(unittest.TestCase):
 #         pylab.show()
 
 
-
-        
+               
 if __name__ == '__main__':
-    test_classes_to_run=[
-#                         TestModule_functions,
-                        TestMyNetworkNode,
-#                          TestMyPoissonInput
-                         ]
-    suites_list = []
-    for test_class in test_classes_to_run:
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        suites_list.append(suite)
+    d={
+        TestModule_functions:[
+#                               'test_collect_spikes_mpi',
+                              ],
+        TestMyNetworkNode:[
+#                            'test_1_create', 
+#                             'test_21_get_spike_signal_from_memory', 
+                            'test_22_get_spike_signal_from_file',
+#                            'test_3_get_voltage_signal',
+#                            'test_4_multiple_threads', 
+#                            'test_5_load_from_disk', 
+#                             'test_61_mpi_run',
+#                             'test_62_mpi_run_from_disk',
+#                             'test_63_mpi_run_hyprid_from_disk',
+                         ],
+       TestMyPoissonInput:[
+#                            'test_create',
+#                            'test_2_simulate_show',
+                           ],
 
-    big_suite = unittest.TestSuite(suites_list)
-    
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestNode)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestNode_dic)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestStructure)
-    unittest.TextTestRunner(verbosity=2).run(big_suite)
-    
-    #unittest.main()               
-         
+       }
+    test_classes_to_run=d
+    suite = unittest.TestSuite()
+    for test_class, val in  test_classes_to_run.items():
+        for test in val:
+            suite.addTest(test_class(test))
+
+    unittest.TextTestRunner(verbosity=2).run(suite)         
