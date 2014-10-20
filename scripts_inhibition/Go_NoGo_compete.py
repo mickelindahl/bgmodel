@@ -46,7 +46,7 @@ def get_kwargs_builder(**k_in):
             'start_rec':0.0,  
             'stop_rec':numpy.inf,
             'sub_sampling':sub,
-            'threads':THREADS,}   
+            'local_num_threads':THREADS,}   
     
 def get_kwargs_engine():
     return {'verbose':True}
@@ -416,7 +416,7 @@ class Setup(object):
                              'MSN lesioned (D1, D2)',
                              'FSN lesioned (D1, D2)',
                              'GPe TA lesioned (D1,D2)'])
-        self.threads=k.get('threads',1)
+        self.local_num_threads=k.get('local_num_threads',1)
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
         self.laptime=k.get('laptime',1500.0)
@@ -440,12 +440,12 @@ class Setup(object):
         d={'average':False, 
            'sets':[0,1],
            'time_bin':5,
-           'threads':self.threads,
+           'local_num_threads':self.local_num_threads,
            'proportion_connected':self.proportion_connected}
         return d
     
     def mean_rate_slices(self):
-        d={'threads':self.threads}
+        d={'local_num_threads':self.local_num_threads}
         return d
 
     def plot_fr(self):
@@ -491,8 +491,8 @@ class Setup(object):
 def simulate(builder, from_disk, perturbation_list, script_name, setup):
     home = expanduser("~")
     
-    file_name = get_file_name(script_name, home)
-    file_name_figs = get_file_name_figs(script_name, home)
+    file_name = get_file_name(script_name)
+    file_name_figs = get_file_name_figs(script_name)
     
     d_firing_rate = setup.firing_rate()
     d_mrs = setup.mean_rate_slices()
@@ -635,11 +635,22 @@ def create_figs(setup, file_name_figs, d, models,sd):
 
     sd_figs.save_figs(figs, format='png')
     sd_figs.save_figs(figs, format='svg')
+    
+class Main():    
+    def __init__(self, **kwargs):
+        self.kwargs=kwargs
+    
+    def __repr__(self):
+        return self.kwargs['script_name']
+
+    def do(self):
+        main(**self.kwargs)    
+
 def main(builder=Builder,
          from_disk=2,
          perturbation_list=None,
          script_name=__file__.split('/')[-1][0:-3],
-         setup=Setup(**{'threads':THREADS,
+         setup=Setup(**{'local_num_threads':THREADS,
                         'resolution':5,
                         'repetition':5})):
     
@@ -669,14 +680,14 @@ class TestMethods(unittest.TestCase):
         l_mean_rate_slices= ['mean_rate_slices']
 #         sim_time=rep*res*res*1500.0
       
-        threads=16
+        local_num_threads=16
         
         l=op.get()
         max_size=4000
         p=pl({'netw':{'size':int(p_size*max_size),
                       'sub_sampling':{'M1':ss,
                                       'M2':ss}},
-              'simu':{'threads':threads}},
+              'simu':{'local_num_threads':local_num_threads}},
                   '=')
         p+=l[4+3] #data2
 #         p+=l[4] #data        
@@ -685,7 +696,7 @@ class TestMethods(unittest.TestCase):
         self.setup=Setup(**{'duration':duration,
                             'laptime':laptime,
                             'l_mean_rate_slices':l_mean_rate_slices,
-                            'threads':threads,
+                            'local_num_threads':local_num_threads,
                             'resolution':res,
                             'repetition':rep})
         

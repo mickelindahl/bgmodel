@@ -7,6 +7,7 @@ import copy
 import numpy
 import pylab
 import random
+import sys
 import unittest
 
 from copy import deepcopy
@@ -433,7 +434,19 @@ class Data_units_relation(object):
         
     def cmp(self, attr, *args, **kwargs):
         kwargs['other']=self.du2.get_wrap()
+#         try:
         d=self.du1._cmp(attr, *args, **kwargs)
+#         except Exception as e:
+#             s='\nTrying to do du1._cmp in cmp'
+#              
+#             s+='\nself.du1: {}'.format(self.du1)
+#             s+='\nself.du2: {}'.format(self.du2)
+#      
+#             s+='\nargs: {}'.format(args)
+#             s+='\nkwargs: {}'.format(kwargs)
+#  
+#             raise type(e)(e.message + s), None, sys.exc_info()[2]
+         
         return d
     
     def get_mean_coherence(self,  *args, **kwargs):
@@ -934,7 +947,7 @@ class TestData_unit_relation(unittest.TestCase):
                                                  'NFFT':256,
                                                  'noverlap':int(256/2),
                                                  'sample':2.,
-                                                 'threads':2}], 
+                                                 'local_num_threads':2}], 
                            ['phase_diff', 
                             [],
                             {'lowcut': 15,
@@ -957,7 +970,7 @@ class TestData_unit_relation(unittest.TestCase):
            'NFFT':256,
            'noverlap':int(256/2),
            'sample':2.,
-           'threads':4}
+           'local_num_threads':4}
  
         self.obj.cmp('mean_coherence', **k ).plot(ax, **{'label':'Mean'})
         self.obj[:,0].cmp('mean_coherence',**k ).plot(ax, **{'label':'Set 1'})

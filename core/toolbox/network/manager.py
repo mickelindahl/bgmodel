@@ -1103,6 +1103,7 @@ def compute(d, models, attr, **kwargs_dic):
             continue
         for a in attr:
             
+            
             if a[-1].isdigit():
                 a_name=a[0:-2]
             else:
@@ -1184,7 +1185,7 @@ def get_simu(k):
        'sim_stop':k.get('sim_stop', 2000.0),
        'sim_time':k.get('sim_time', 2000.0),
        'stop_rec':k.get('stop_rec', numpy.inf),
-       'threads':k.get('threads', 2),
+       'local_num_threads':k.get('local_num_threads', 2),
        }
     return d    
 
@@ -1237,6 +1238,19 @@ def psd(data, **k):
     return data.get_psd(**k)
 
 def run(net):
+    from toolbox.network import default_params
+    from toolbox.data_to_disk import pickle_load, pickle_save
+    path=default_params.HOME_CODE+'/core/toolbox/network/manager/'
+    path_in=path+'data_in.pkl'
+    path_out=path+'data_out.pkl'
+    
+    pickle_save(net, path_in)
+    
+    
+    
+    
+    
+    
     d=net.simulation_loop()
     return {net.get_name():d}
 

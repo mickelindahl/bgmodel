@@ -98,12 +98,12 @@ class Network_base(object):
       
     
     @property
-    def threads(self):
-        return self.par.get_threads()
+    def local_num_threads(self):
+        return self.par.get_local_num_threads()
 
-    @property
-    def threads_local(self):
-        return self.par.get_threads_local()
+#     @property
+#     def threads_local(self):
+#         return self.par.get_threads_local()
         
     @property
     def sim_time(self):      
@@ -333,7 +333,8 @@ class Network_base(object):
                 my_nest.SetKernelTime(t)
                 with Barrier():
                     my_nest.ResetKernel(**{'data_path':self.path_nest})
-                    gc.collect()
+                    
+                gc.collect()
 #                 self.pops=None
                 self.do_reset()
                 import time
@@ -537,8 +538,8 @@ class Network(Network_base):
         with Stop_stdout(not self.verbose), Stopwatch('Building',
                                                       self.stopwatch):
             
-            my_nest.ResetKernel(threads=self.threads,
-                                threads_local=self.threads_local,
+            my_nest.ResetKernel(local_num_threads=self.local_num_threads,
+#                                 threads_local=self.threads_local,
                                 print_time=False)  
 #             print self.par['simu']['sd_params']      
 #             t=self.params_surfs
@@ -1218,7 +1219,7 @@ class TestMixin_2(object):
         e1=network.sim_optimization(x0)
         network.pops=None
         e2=network.sim_optimization([3000.0+200.0])
-        print e1,e2
+#         print e1,e2
         self.assertAlmostEqual(e1[0], 18, delta=3)
         self.assertAlmostEqual(e2[0], 28, delta=2)
 #         #pylab.show()
@@ -1285,7 +1286,7 @@ class TestMixinSetup(object):
     def _setUp(self, **kwargs):
         dic_rep=kwargs.get('dic_rep',{})
         d={'simu':{'sim_stop':3000.0,
-                    'threads':4,
+                    'local_num_threads':4,
                     'mm_params':{'to_file':False, 'to_memory':True},
                     'sd_params':{'to_file':False, 'to_memory':True}},
             'netw':{'size':9.},
@@ -1351,7 +1352,7 @@ class TestUnittestBcpnnDopa_base(unittest.TestCase):
 #         ['n_nuclei']={'n1':1, 'n2':1, 'm1':50}
         dic_rep.update({'simu':{'sim_stop':2000.0,
                                 'sim_time':100.0,
-                                'threads':1,
+                                'local_num_threads':1,
                          'mm_params':{'to_file':False, 'to_memory':True},
                          'sd_params':{'to_file':False, 'to_memory':True}},
                          'netw':{'size':52,
@@ -1388,7 +1389,7 @@ class TestUnittestStdp_base(unittest.TestCase):
         
         dic_rep.update({'simu':{'sim_stop':5000.0,
                                 'sim_time':100.0,
-                                'threads':1,
+                                'local_num_threads':1,
                          'mm_params':{'to_file':False, 'to_memory':True},
                          'sd_params':{'to_file':False, 'to_memory':True}},
                          'netw':{'size':11},
@@ -1423,7 +1424,7 @@ class TestUnittestBcpnn_base(unittest.TestCase):
         
         dic_rep.update({'simu':{'sim_stop':10000.0,
                                 'sim_time':100.0,
-                                'threads':2,
+                                'local_num_threads':2,
                          'mm_params':{'to_file':False, 'to_memory':True},
                          'sd_params':{'to_file':False, 'to_memory':True}},
                          'netw':{'size':2},
@@ -1459,7 +1460,7 @@ class TestSinlge_unit_base(unittest.TestCase):
                    'start_rec':0.0,
                    'stop_rec':3000.0,
                    'print_time':False,
-                    'threads':1,
+                    'local_num_threads':1,
                     'mm_params':{'to_file':False, 'to_memory':True},
                     'sd_params':{'to_file':False, 'to_memory':True},
                     },

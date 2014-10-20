@@ -582,7 +582,7 @@ class Par_base(object):
            'syn', 
            'target',
            'tata_dop',
-           'threads', 
+           'local_num_threads', 
            'weight']
         return l
     
@@ -916,11 +916,11 @@ class Par_base(object):
         
         return dic
 
-    def get_threads(self):
-        return self.dic_con['simu']['threads']  
+    def get_local_num_threads(self):
+        return self.dic_con['simu']['local_num_threads']  
 
-    def get_threads_local(self):
-        return self.dic_con['simu']['threads_local'] 
+#     def get_threads_local(self):
+#         return self.dic_con['simu']['threads_local'] 
 
     def get_unittest(self):
         return self.unittest
@@ -1139,7 +1139,7 @@ class Par_base_mixin(object):
             'source':source,
             'syn':syn, 
             'target':target,
-            'threads':GetSimu('threads'),
+            'local_num_threads':GetSimu('local_num_threads'),
             'tata_dop':DepNetw('calc_tata_dop'), 
             'weight':weight}
         
@@ -1229,7 +1229,7 @@ class Par_base_mixin(object):
         d=self.add(d, 'conn', 'netw_size')
         d=self.add(d, 'conn', 'save')
         d=self.add(d, 'conn', 'tata_dop')
-        d=self.add(d, 'conn', 'threads')
+        d=self.add(d, 'conn', 'local_num_threads')
         d=self.add(d, 'conn', 'weight') 
 
         
@@ -1316,8 +1316,8 @@ class Unittest_base(object):
                                    'record_from':['V_m'] }
         
         dic['simu']['print_time']=False
-        dic['simu']['threads']=4
-        dic['simu']['threads_local']=1
+        dic['simu']['local_num_threads']=4
+#         dic['simu']['threads_local']=1
         dic['simu']['save_conn']={'active':False, 'overwrite':False}
         dic['simu']['start_rec']=0.0
         dic['simu']['stop_rec']=numpy.Inf
@@ -1424,8 +1424,8 @@ class Unittest_extend_base(object):
         # Default simu parameters 
         # ========================        
         dic['simu']={}
-        dic['simu']['threads']=1
-        dic['simu']['threads_local']=1
+        dic['simu']['local_num_threads']=1
+#         dic['simu']['threads_local']=1
         
         
         # ========================
@@ -2075,8 +2075,8 @@ class InhibitionPar_base(object):
         dic['simu']['sim_stop']=2000.0
         dic['simu']['stop_rec']=2000.0
         dic['simu']['start_rec']=1000.0
-        dic['simu']['threads']=1
-        dic['simu']['threads_local']=1
+        dic['simu']['local_num_threads']=1
+#         dic['simu']['threads_local']=1
         
         # ========================
         # Default netw parameters 
@@ -2862,10 +2862,8 @@ class Inhibition_striatum_base(object):
 class Inhibition_striatum(Par_base, Inhibition_striatum_base, Par_base_mixin): 
     pass 
 
-def setup_burst3(dic_other, max_n_set_pre,  inps):
-    dic={}    
+def setup_burst3(dic_other, max_n_set_pre,  inps, dic={}):
 
-    
     l = []
     for inp in inps:
         l.append([inp, dic_other['node'][inp]['rate']])
@@ -2894,15 +2892,27 @@ def setup_burst3(dic_other, max_n_set_pre,  inps):
 class Compete_base(object):
 
     def _get_par_constant(self):
-        
+
+        dic={'netw':{'input':{}},
+             'nest':{},
+             'node':{}}
         
         dic_other=self.other.get_dic_con()
         max_n_set_pre=80
         inps=['C1', 'C2', 'CF', 'CS']
         
-        dic = setup_burst3(dic_other, max_n_set_pre, inps)
+        dic = setup_burst3(dic_other, max_n_set_pre, inps, dic)
     
+        for key in inps: 
+            new_name=key+'d'             
+            dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
+                                   'rates':[0.],
+                                   'timings':[1.]}   
+            dic['node'][key]={'model':new_name}
+        
         dic = misc.dict_update(dic_other, dic)
+        
+
         return dic
 
 
@@ -4229,7 +4239,7 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
                     'path':HOME+('/results/unittest/conn/'
                                  +format_connectionn_save_path(**k))}, 
             'tata_dop':0.0,
-            'threads':4,
+            'local_num_threads':4,
             'weight': {'params':10.0},
             }
 
@@ -4259,13 +4269,13 @@ def dummy_unittest_extend(flag=False):
                                           't_stop': 3000.0, 
                                           'idx': [0], 
                                           'times': [1.0]}]           
-    dic['conn']['i1_n1']['threads']=1
+    dic['conn']['i1_n1']['local_num_threads']=1
     
     path=('/afs/nada.kth.se/home/w/u1yxbcfw/results/unittest/'
           +'conn/10_i2-n1s1_n2-n1s3_bfi-0.0_r-1-1')
     
     dic['conn']['i2_n2']['save']['path']=path
-    dic['conn']['i2_n2']['threads']=1
+    dic['conn']['i2_n2']['local_num_threads']=1
 
     
     
@@ -4276,7 +4286,7 @@ def dummy_unittest_extend(flag=False):
                 'path':(HOME+'/results/unittest/'
                         +'conn/10_n1-n9s3_n2-n1s3_bfi-0.0_r-set-set')}, 
         'tata_dop':0.0,
-        'threads':1.,
+        'local_num_threads':1.,
         'weight': {'params':10.0}, 
        }
     dic['conn'].update({'n1_n2':d1})
@@ -4327,7 +4337,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'netw_size':52,
         'save':{'active':True,
                 'path':HOME+'/results/unittest/conn/52_i1-n1s1_n1-n1s1_bfi-0.0_r-1-1'}, 
-        'threads':4,
+        'local_num_threads':4,
        }
 
     dic['conn']['i1_n1'].update(d1)    
@@ -4338,7 +4348,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'save':{'active':True,
                 'path':HOME+'/results/unittest/conn/52_n1-n1s1_n2-n1s1_bfi-0.0_r-1-1'}, 
         'tata_dop':0.0,
-        'threads':4,
+        'local_num_threads':4,
         'weight': {'params':0.0}, 
        }
 
@@ -4351,7 +4361,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'save':{'active':True,
                 'path':HOME+'/results/unittest/conn/52_n1-n1s1_n2-n1s1_bfi-0.0_r-1-1'}, 
         'tata_dop':0.0,
-        'threads':4,
+        'local_num_threads':4,
         'weight': {'params':0.0}, 
        }
     
@@ -4364,7 +4374,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'save':{'active':True,
                 'path':HOME+'/results/unittest/conn/52_i2-n1s1_n2-n1s1_bfi-0.0_r-1-1'}, 
         'tata_dop':0.0,
-        'threads':4,
+        'local_num_threads':4,
         'weight': {'params':10.0}, 
        }
     
@@ -4376,7 +4386,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'save':{'active':True,
                 'path':HOME+'/results/unittest/conn/52_m1-n50s1_v1-n1s1_bfi-0.0_r-all-all'}, 
         'tata_dop':0.0,
-        'threads':4,
+        'local_num_threads':4,
         'weight': {'params':1.0}, 
        }    
     dic['conn'].update({'m1_v1':d})
@@ -4388,7 +4398,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'save':{'active':True,
                 'path':HOME+'/results/unittest/conn/52_i3-n50s1_m1-n50s1_bfi-0.0_r-1-1'}, 
         'tata_dop':0.0,
-        'threads':4,
+        'local_num_threads':4,
         'weight': {'params':10.0}, 
        }    
     dic['conn'].update({'i3_m1':d})
@@ -5149,8 +5159,8 @@ if __name__ == '__main__':
 #                         TestThalamus,
 #                         TestSlowwave,
 #                         TestSlowwave2,
-                          TestBeta,  
-#                         TestGo_NoGo_compete,
+#                           TestBeta,  
+                        TestGo_NoGo_compete,
 #                         TestBcpnnH0,
 #                         TestBcpnnH1,
 

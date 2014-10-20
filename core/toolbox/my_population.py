@@ -691,7 +691,7 @@ class MyPoissonInput(MyGroup):
             source_nodes=my_nest.Create(self.type_model, 1, 
                                         {'timings':times,
                                          'rates':rates})*len(ids)
-            target_nodes=self.ids
+            target_nodes=ids
             my_nest.Connect(source_nodes, target_nodes)         
             
             generators=[]
@@ -700,8 +700,9 @@ class MyPoissonInput(MyGroup):
                 
             generators=list(set(source_nodes).union(generators))
             self.ids_generator[hash(tuple(idx))]=sorted(generators)
-                       
-            self.local_ids=list(self.ids) # Nedd to put on locals also
+            
+#             v=my_nest.GetStatus(ids, 'local')
+#             self.local_ids=[_id for _id in zip(ids,v) if  # Nedd to put on locals also
            
  
     def update_spike_times(self,rates=[], times=[], t_stop=None, ids=None, seed=None, idx=None):

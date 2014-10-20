@@ -8,7 +8,7 @@ Created on Aug 12, 2013
 from toolbox import monkey_patch as mp
 mp.patch_for_milner()
 
-from simulate import (get_threads, get_type_of_run, get_path_rate_runs,
+from simulate import (get_type_of_run, get_path_rate_runs,
                       get_path_logs, get_runs_oscillation,
                       pert_set_data_path_to_milner_on_supermicro, 
                       pert_add_oscillations) 

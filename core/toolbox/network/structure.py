@@ -15,6 +15,7 @@ import pylab
 import gc
 
 from copy import deepcopy
+from itertools import izip
 from toolbox import data_to_disk, my_nest, my_population, misc
 from toolbox.misc import my_slice, Base_dic
 from toolbox.parallelization import map_parallel, comm, Barrier
@@ -332,6 +333,7 @@ class Conn(object):
         self.delay=kwargs.get('delay', {'type':'constant', 
                                               'params':1.0})
         self.fan_in=kwargs.get('fan_in', 10)
+        self.local_lockup=None
         self.name=name            
         self.netw_size=kwargs.get('netw_size', 'unknown')
         self.mask=kwargs.get('mask', [-0.25, 0.25])
@@ -349,10 +351,23 @@ class Conn(object):
         self.tata_dop=kwargs.get('tata_dop', 0.8)
         
         
-        self.threads=my_nest.GetThreads() 
+        self.local_num_threads=kwargs.get('local_num_threads', 2) 
         
         self.weight=kwargs.get('weight', {'type':'constant', 
                                                 'params':1.0})
+
+
+    def set_local_lockup(self, tr_id):
+        post=self.get_post()
+        post_ids=list(numpy.unique(post))
+        status=my_nest.GetStatus(list(numpy.unique(tr_id[post])), 'local')
+        
+        lockup=dict(zip(post_ids,status))
+
+        l=[1 if lockup[p] else 0 for p in post ]
+
+        self.local_lockup=sparse.coo_matrix(l)
+
         
     @property
     def n(self):
@@ -427,7 +442,7 @@ class Conn(object):
 
         # Necessary to ensure all mpi proc gets the same data
         pool_conn=map_parallel(pool_get_connectables, 
-                          *arg, **{'threads':self.threads})
+                          *arg, **{'local_num_threads':self.local_num_threads})
         
         # For each driver get number of pool neurons that have been chosen
         # and then expand d_idx accordingly to get 
@@ -468,22 +483,49 @@ class Conn(object):
                                  +'to be bigger than number driver sets'))
         return int(fan_in)
 
+
                  
-    def get_delays(self):
+    def _get_delays(self):
         x=self.delay
         if 'constant' == x['type']:
             return numpy.ones(self.n)*x['params']
         elif 'uniform' == x['type']:
             
-            return list(numpy.random.uniform(low=x['params']['min'], 
+            return numpy.random.uniform(low=x['params']['min'], 
                                              high=x['params']['max'], 
-                                             size=self.n))      
-
+                                             size=self.n)  
+    def get_delays(self):
+        return list(self._get_delays())
+    
+    def get_delays_local(self):
+        a=self._get_delays()
+        b=self._get_local_lockup()
+        return list(a[b==1])
+       
+    def _get_local_lockup(self):
+        return numpy.asarray((self.local_lockup.todense())).ravel()
+   
     def get_post(self):
-        return list(numpy.asarray((self.post.todense())).ravel())
+        return list(self._get_post())
+    
+    def _get_post(self):
+        return numpy.asarray((self.post.todense())).ravel()
+    
+    def get_post_local(self):
+        a=self._get_post()
+        b=self._get_local_lockup()
+        return list(a[b==1])
     
     def get_pre(self):
-        return list(numpy.asarray((self.pre.todense())).ravel())
+        return list(self._get_pre())
+    
+    def _get_pre(self):
+        return numpy.asarray((self.pre.todense())).ravel()
+ 
+    def get_pre_local(self):
+        a=self._get_pre()
+        b=self._get_local_lockup()
+        return list(a[b==1])
     
     def get_syn(self):
         return self.syn
@@ -494,21 +536,29 @@ class Conn(object):
     def get_target(self):
         return self.name.split('_')[1]
     
-    def get_weights(self):
+    def _get_weights(self):
         x=self.weight
         if 'constant' == x['type']:
             return numpy.ones(self.n)*x['params']
         if 'uniform' == x['type']:
-            return list(numpy.random.uniform(low=x['params']['min'], 
+            return numpy.random.uniform(low=x['params']['min'], 
                                              high=x['params']['max'], 
-                                             size=self.n))    
+                                             size=self.n)
         if 'learned' == x['type']:
             weights=data_to_disk.pickle_load(x['path'])
             
             conns=numpy.zeros(self.n)
             for i, sl in enumerate(self.sets):
                 conns[sl]=weights[i]
-            return list(conns*x['params'])    
+            return conns*x['params']    
+
+    def get_weights(self):
+        return list(self._get_weights())
+    
+    def get_weights_local(self):
+        a=self._get_weights()
+        b=self._get_local_lockup()
+        return list(a[b==1])
 
     def _save_mpi(self):
         with Barrier():
@@ -697,20 +747,38 @@ def connect_conns(params_nest, conns, popus, display_print=False):
         sr_ids=numpy.array(popus[c.get_source()].ids)
         tr_ids=numpy.array(popus[c.get_target()].ids)
 
-        weights=list(c.get_weights())
-        delays=list(c.get_delays())
-        pre=list(sr_ids[c.get_pre()])
-        post=list(tr_ids[c.get_post()])
+
+        c.set_local_lockup(tr_ids)
+
+        weights=list(c.get_weights_local())
+        delays=list(c.get_delays_local())
+        pre=list(sr_ids[c.get_pre_local()])
+        post=list(tr_ids[c.get_post_local()])
+         
+        import time
+#         time.sleep(0.1*my_nest.Rank())
+#         print c,'lu',c._get_local_lockup()
+#         print c,'pre', c.get_pre_local()[0:10], len(pre) 
+#         print c,'post', c.get_post_local()[0:10], len(pre)  
+#         print sr_ids[0:10]
+#         print tr_ids[0:10]
+#         print c,'pre2', pre[0:10], len(pre) 
+#         print c,'pos2t', post[0:10], len(pre)  
+#         comm.barrier()
+#         weights=list(c.get_weights())
+#         delays=list(c.get_delays())
+#         pre=list(sr_ids[c.get_pre()])
+#         post=list(tr_ids[c.get_post()])
         model=c.get_syn()
-        
+
         c.clear()
         del c
         gc.collect()
          
 #         delete_and_gc_collect(c)
         
-        my_nest.Connect_DC(pre, post , weights, delays, model)
-#         my_nest.Connect_speed(pre, post , weights, delays, model=model)    
+#         my_nest.Connect_DC(pre, post , weights, delays, model, only_local=True)
+        my_nest.Connect_speed(pre, post , weights, delays, model=model)    
        
 #         delete_and_gc_collect(weights, delays, pre, post)
 #         
@@ -738,10 +806,10 @@ def create_populations(params_nest, params_popu):
         args=[name]
         kwargs=deepcopy(params_popu[name])                          
         
-        print name
+        
 
         popus.add(*args, **kwargs)
-  
+        print name, popus[name].n
     return popus
 
 def create_connections(surfs, params_conn, display_print=False):
@@ -1145,11 +1213,11 @@ if __name__ == '__main__':
                       'test_add'
                       ],
         TestModuleFunctions:[
-                             'test_1_create_surfaces',
-                             'test_2_create_populations',
-                             'test_3_create_connections',
-                             'test_4_connect_conns',
-                             'test_5_build',
+                            'test_1_create_surfaces',
+                            'test_2_create_populations',
+                            'test_3_create_connections',
+                            'test_4_connect_conns',
+                            'test_5_build',
                              'test_6_connect',
                              'test_7_connect_with_save',
                              ],

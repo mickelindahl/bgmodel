@@ -24,7 +24,7 @@ import time
 import pprint
 pp=pprint.pprint
 
-
+from itertools import izip
 from toolbox import misc
 from toolbox import data_to_disk 
 from toolbox.network import default_params
@@ -50,14 +50,14 @@ def chunk(l, n):
 
 def do(*args, **kwargs):
     
-    path_out, path_err, args_call, type_of_run=args
+    path_out, path_err, args_call=args
         
     path='/'.join(path_out.split('/')[0:-1])
     if not os.path.isdir(path):
         data_to_disk.mkdir(path)
         
-    f_out=open(path_out+'_'+type_of_run, "wb", 0)
-    f_err=open(path_err+'_'+type_of_run, "wb", 0)
+    f_out=open(path_out, "wb", 0)
+    f_err=open(path_err, "wb", 0)
     
     if kwargs.get('debug', False):
         p=subprocess.Popen(args_call, stderr=subprocess.STDOUT)
@@ -92,32 +92,25 @@ def generate_args(*args):
 
 
 def loop(*args, **kwargs):
-    args_list, path_results, path_code, chunks, kwargs_list=args 
-    
-    type_of_run=kwargs.pop('type_of_run', 'shared_memory')
-    i0=kwargs.pop('i0', 0)
-    n_mpi_processes=kwargs.get('n_mpi_processes', 2)
-    
-    
-
-    
-    if not os.path.isdir(path_results):
-        data_to_disk.mkdir(path_results)
+    chunks, args_list,  kwargs_list=args 
     
     args_list_chunked= chunk(args_list, chunks)  
+    kwargs_list_chunked= chunk(kwargs_list, chunks)
+    host=my_socket.determine_computer()
     
-    i=0
-    p_list=[]
-    for args_list in args_list_chunked:
-        for args in args_list:
-            script_name=args[0]
-            kwargs=kwargs_list[i]
+    jobs=[]
+    for al, kl in izip(args_list_chunked, kwargs_list_chunked):
+        
+        for obj, kwargs in zip(al, kl):
+                        
+            path_code=kwargs.get('path_code')
+            path_results=kwargs.get('path_results')
             
-            type_of_run=kwargs.pop('type_of_run', 'shared_memory')
-            i0=kwargs.pop('i0', 0)
-            n_mpi_processes=kwargs.get('n_mpi_processes', 2)
+            if not os.path.isdir(path_results):
+                data_to_disk.mkdir(path_results)
             
-            index=str(i)
+            num_mpi_task=kwargs.get('num-mpi-task', 2)     
+            index=kwargs['index']
             
             path_out=path_results+"std/subp/out{}".format(index)
             path_err=path_results+'std/subp/err{}'.format(index)
@@ -132,22 +125,10 @@ def loop(*args, **kwargs):
             data_to_disk.mkdir('/'.join(path_sbatch_out.split('/')[0:-1]))
             data_to_disk.mkdir('/'.join(path_tee_out.split('/')[0:-1]))
 
-            obj=args[0]
-
             save_params(path_params, path_script, obj)
             
-            if type_of_run=='shared_memory':
-                args_call=['python', path_script, path_params]
-                p=do(path_out, path_err, 
-                                    args_call, type_of_run, 
-                                    **kwargs)
-                
-#                 args=[path_out, path_err]+args
-#                 p=Process(target=do, args=args, kwargs=kwargs)  
-#                 p.start()
-            
-            if type_of_run=='mpi_milner':
-#                 print 'on milner'
+            if host=='milner':
+
                 o=generate_milner_bash_script(path_sbatch_err,
                                               path_sbatch_out,
                                               path_tee_out,
@@ -157,31 +138,31 @@ def loop(*args, **kwargs):
                                               path_bash,
                                                **kwargs )
                 args_bash_call=o
-                p=do(path_out, path_err, args_bash_call, type_of_run, 
-                    **kwargs)
-#                 print 'bash genereated'
+                p=do(path_out, path_err, args_bash_call, **kwargs)
+
                 
-            if type_of_run=='mpi_supermicro':
-                
-                args_call=['mpirun', '-np', str(n_mpi_processes), 'python', 
-                           path_script, path_params,
-                           '2>&1','|', 'tee', path_tee_out]
-                
-                p=do(path_out, path_err, args_call, type_of_run, 
-                     **kwargs)
+            if host=='supermicro':
+                if num_mpi_task==1:
+                    args_call=['python', path_script, path_params]
+                else:
+                    args_call=['mpirun', '-np', str(num_mpi_task), 'python', 
+                               path_script, path_params,
+                               '2>&1','|', 'tee', path_tee_out]
+                    
+                p=do(path_out, path_err, args_call,  **kwargs)
                 
             
-            p_list.append(p)
+            jobs.append(p)
             
-            i+=1
+
             
         s='Waiting for {} processes to complete ...'.format(chunks)
         with misc.Stopwatch(s):
-            for p in p_list:    
+            for p in jobs:    
                 p.wait()
 #                 p.terminate()
 
-        if type_of_run=='mpi_milner':
+        if host=='milner':
             from toolbox import jobb_handler
             
             path=default_params.HOME_DATA+'/active_jobbs.pkl'
@@ -190,10 +171,6 @@ def loop(*args, **kwargs):
             print obj
             obj.loop(loop_print=True)
             
-            
-
-        import time
-        time.sleep(1)
 
 def save_params(path_params, path_script, obj):
     data_to_disk.pickle_save([obj, 
@@ -204,15 +181,18 @@ def save_params(path_params, path_script, obj):
 def generate_milner_bash_script(*args, **kwargs):
     
     p_mil_err, p_mil_out, p_tee_out, p_par, p_script, p_bash0, p_bash=args
-     
+    local_threads=10
     _kwargs={'home':default_params.HOME,
              'hours':'00',
              'deptj':1,
              'job_name':'dummy_job',
-             'n_nodes':1,
-             'n_tasks_per_node':20, # 40 is maximum
-             'n_mpi_processes':20,
-             'memory_per_node':819*2,
+             'cores_hosting_OpenMP_threads':40/local_threads,
+             'local_num_threads':local_threads, 
+             'memory_per_node':int(819*local_threads),
+             'num-mpi-task':40/local_threads,
+             'num-of-nodes':40/40,
+             'num-mpi-tasks-per-node':40/local_threads,
+             'num-threads-per-mpi-process':local_threads, 
              'minutes':'10',
              'path_sbatch_err':p_mil_err,
              'path_sbatch_out':p_mil_out,
@@ -224,17 +204,25 @@ def generate_milner_bash_script(*args, **kwargs):
         }
     _kwargs.update(kwargs) 
      
-    host=my_socket.determine_host()
-    if host in ['milner', 'milner_login']: 
-        call=('aprun -n {n_mpi_processes} -N {n_tasks_per_node} '
-              +'-d {depth} '
-              +'-m {memory_per_node} python {path_script}'
-              +' {path_params} 2>&1 | tee {path_tee_out}')
+    host=my_socket.determine_computer()
+    if host=='milner':
+#             call='aprun -n 2 -N 1 -d 20 python {SCRIPT} 2>&1 | tee delme_simulation'
+        call=('aprun -n {num-mpi-task} '
+              +'-N {num-mpi-tasks-per-node} '
+              +'-d {num-threads-per-mpi-process} '
+              +'-m {memory_per_node} '
+              +'python {script} {num-threads-per-mpi-process} '
+              +'{path_nest} 2>&1 | tee {output}')
+ 
+#         call=('aprun -n {n_mpi_processes} -N {n_tasks_per_node} '
+#               +'-d {depth} '
+#               +'-m {memory_per_node} python {path_script}'
+#               +' {path_params} 2>&1 | tee {path_tee_out}')
         _kwargs['on_milner']=1
         args_bash_call=['sbatch', p_bash]
         
     else:
-        call=('mpirun -np 10 python {path_script}'
+        call=('mpirun -np 20 python {path_script}'
               +' {path_params} 2>&1 | tee {path_tee_out}')
         _kwargs['on_milner']=0
         args_bash_call=[p_bash]
@@ -264,7 +252,6 @@ class Mockup_class():
         
     def __repr__(self):
         return __file__.split('/')[-1][0:-4]
-    
     
     def __getstate__(self):
         #print '__getstate__ executed'
@@ -332,18 +319,14 @@ class TestModuleFuncions(unittest.TestCase):
         
         p=do(self.path_subprocess_out, 
              self.path_subprocess_err,  
-             args_call, 
-             'mpi_supermicro', 
-            **{'debug':False})        
+             args_call,**{'debug':True})        
         p.wait()
           
         l=data_to_disk.pickle_load(self.path_out_data)
         self.assertListEqual(l, [1])
          
-        self.assertTrue(os.path.isfile(self.path_subprocess_out
-                                       +'_mpi_supermicro'))
-        self.assertTrue(os.path.isfile(self.path_subprocess_err
-                                       +'_mpi_supermicro'))
+        self.assertTrue(os.path.isfile(self.path_subprocess_out))
+        self.assertTrue(os.path.isfile(self.path_subprocess_err))
 
     def test_do_shared_memory(self):
 #         run_generate_script(self.path_script)
@@ -352,18 +335,16 @@ class TestModuleFuncions(unittest.TestCase):
                         self.obj)
         args_call=['python', self.path_script, self.path_params]
         p=do(self.path_subprocess_out, self.path_subprocess_err, 
-                            args_call, 
-                            'shared_memory', 
-                            **{'debug':False})    
+                            args_call, **{'debug':False})    
         p.wait()    
         l=data_to_disk.pickle_load(self.path_out_data)
         self.assertListEqual(l, [1])
           
-        self.assertTrue(os.path.isfile(self.path_subprocess_out
-                                       +'_shared_memory'))
-        self.assertTrue(os.path.isfile(self.path_subprocess_err
-                                       +'_shared_memory'))
-
+        self.assertTrue(os.path.isfile(self.path_subprocess_out))
+        self.assertTrue(os.path.isfile(self.path_subprocess_err))
+        os.remove(self.path_subprocess_out)
+        os.remove(self.path_subprocess_err)
+        
     def test_do_milner(self):
 
         kwargs={'hours':'00',
@@ -403,7 +384,6 @@ class TestModuleFuncions(unittest.TestCase):
         p=do(self.path_subprocess_out, 
              self.path_subprocess_err, 
              args_call, 
-             'mpi_milner', 
             **kwargs)
         
         if my_socket.determine_host()=='milner_login':
@@ -447,7 +427,7 @@ if __name__ == '__main__':
                             'test_do_supermicro',
                             'test_do_shared_memory',
                             'test_do_milner',
-                            'test_mpi_script',
+#                             'test_mpi_script',
                            ]} 
     test_classes_to_run=d
     suite = unittest.TestSuite()

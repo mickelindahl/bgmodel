@@ -17,9 +17,9 @@ THREADS=10
 
 class Setup(object):
 
-    def __init__(self, period, threads):
+    def __init__(self, period, local_num_threads):
         self.period=period
-        self.threads=threads
+        self.local_num_threads=local_num_threads
 
 
     def activity_histogram(self):
@@ -31,7 +31,7 @@ class Setup(object):
     def pds(self):
         d = {'NFFT':256, 'fs':1000., 
              'noverlap':256/2, 
-             'threads':self.threads}
+             'local_num_threads':self.local_num_threads}
         return d
     
       
@@ -39,7 +39,7 @@ class Setup(object):
         d = {'fs':1000.0, 'NFFT':256, 
             'noverlap':int(256/2), 
             'sample':30., 
-             'threads':self.threads}
+             'local_num_threads':self.local_num_threads}
         return d
     
 
@@ -53,7 +53,7 @@ class Setup(object):
              'kernel_type':'gaussian', 
              'params':{'std_ms':10., 
                        'fs':250.0}, 
-             'threads':self.threads}
+             'local_num_threads':self.local_num_threads}
         
         return d
 
@@ -73,12 +73,12 @@ class Setup(object):
              'params':{'std_ms':10., 
                        'fs':1000.0}, 
       
-                'threads':self.threads}
+                'local_num_threads':self.local_num_threads}
         return d
 
     def firing_rate(self):
         d={'average':False, 
-           'threads':THREADS,
+           'local_num_threads':self.local_num_threads,
            'win':100.0}
         return d
 

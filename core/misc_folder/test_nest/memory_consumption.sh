@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROGRAM=test_nest_speed_and_memory.py
+PROGRAM=test_nest_speed_and_memory2.py
 
 current=$(date '+%y%m%d%H%M%S')
 output_file_dat='memory_consumption_logs/stat'$current'_'$PROGRAM'.dat'

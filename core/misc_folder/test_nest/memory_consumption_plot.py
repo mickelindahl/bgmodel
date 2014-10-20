@@ -7,7 +7,7 @@ import csv, numpy, pylab
 add='memory_consumption_logs/'
 file_names=[
 #             add+'stat141006152858_test_nest_speed_and_memory.py.dat',
-            add+'stat141006160634_test_nest_speed_and_memory.py.dat',
+            add+'stat141018130421_test_nest_speed_and_memory2.py.dat',
             ]
 def plot_csv(file_name):
 

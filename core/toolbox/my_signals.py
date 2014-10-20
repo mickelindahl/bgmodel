@@ -26,6 +26,7 @@ from copy import deepcopy
 import numpy
 import pylab
 import scipy.stats
+import sys
 import unittest
 import subprocess
 
@@ -1434,6 +1435,7 @@ class MySpikeList(SpikeList):
         signals1=sl1.firing_rate(time_bin, average=False, **kwargs)
         signals2=sl2.firing_rate(time_bin, average=False, **kwargs) 
         
+                
         x, y=sp.mean_coherence(signals1, signals2, **kwargs)
 
         L=float(len(signals1[0])/kwargs.get('NFFT'))
@@ -1606,8 +1608,12 @@ class MySpikeList(SpikeList):
               [binary]*n, 
               [nbins]*n, 
               self.id_list]
+        
         spike_hist=map_parallel(spike_histogram_fun, *args, 
-                                **{'threads': kwargs.get('threads',1)})
+                                **{'local_num_threads': kwargs.get('local_num_threads',1)})
+        
+        out=numpy.array(spike_hist, dtype=numpy.float32)
+        print 'hej', len(self.ids),kwargs.get('local_num_threads',1), out.shape
 #         for idx, id in enumerate(self.id_list):
 #  
 #             self.fun(time_bin, normalized, binary, nbins, spike_hist, id)
@@ -1629,9 +1635,7 @@ class MySpikeList(SpikeList):
         if proportion_connected:
             upper = int(proportion_connected*result.shape[0])
             result=result[0:upper,:]
- 
-            
-        
+
         if average:
             return numpy.mean(result, axis=0)
         else:
@@ -1640,8 +1644,15 @@ class MySpikeList(SpikeList):
 #         return call.firing_rate(time_bin, display, average, binary, kwargs)
 
     def get_mean_coherence(self,*args, **kwargs):
-        return self.Factory_mean_coherence(*args, **kwargs)
-
+        
+#         try:
+            return self.Factory_mean_coherence(*args, **kwargs)
+#         except Exception as e:
+#             s='\nTrying to do Factory_mean_coherence in get_mean_coherence'
+#             s+='\nargs: {}'.format(args)
+#             s+='\nkwargs: {}'.format(kwargs)
+#             
+#             raise type(e)(e.message + s), None, sys.exc_info()[2]
  
     def get_firing_rate(self, *args, **kwargs):
         return self.Factory_firing_rate(*args, **kwargs)
@@ -1763,12 +1774,12 @@ class MySpikeList(SpikeList):
         t_stops=[t_stop]*n
         l_spiketrains=[self.spiketrains]*n
         
-        threads=kwargs.pop('threads',1)
+        local_num_threads=kwargs.pop('local_num_threads',1)
         rates=map_parallel(wrap_compute_mean_rate, *[l_spiketrains,
                                                           self.id_list, 
                                                           t_starts, 
                                                           t_stops], 
-                                **{'threads': threads})
+                                **{'local_num_threads': local_num_threads})
         
         
 
@@ -2543,14 +2554,17 @@ class TestDataElement(unittest.TestCase):
                                          'sim_time':self.sim_time})
 
 
-#     def test_bar(self):
-#         ax=pylab.subplot(111)
-#         data=[[1.5,1.2]] 
-#         obj=Data_bar(**{'y':data,})
-#         obj.bar(ax, **{ 'colors':['r', 'r'], 'hatchs':['-', 'x'], 'edgecolor':'k'})
-#         ax.set_xticklabels(['Label 1', 'Label 2'])
+    def test_bar(self):
+        ax=pylab.subplot(111)
+        data=[1.5,1.2] 
+        obj=Data_bar(**{'y':data,})
+        obj.bar(ax, **{'edgecolor':'k'})
+        ax.set_xticklabels(['Label 1', 'Label 2'])
 #         pylab.show()
-            
+ 
+ 
+
+           
     def test_bar2(self):
         ax=pylab.subplot(111)
         data=[[1, 2, 4],
@@ -2563,7 +2577,7 @@ class TestDataElement(unittest.TestCase):
                         'hatchs':['-', 'x', 'x'], 
                         'edgecolor':'k'})
         ax.set_xticklabels(['Label 1', 'Label 2'])
-        pylab.show()
+#         pylab.show()
 
     def test_spike_stat(self):    
         obj=self.sl.Factory_spike_stat()
@@ -2572,12 +2586,15 @@ class TestDataElement(unittest.TestCase):
 #         pylab.show()
 
  
-#     def test_element(self):
-#         d={'x':1,'y':2, 'z':3}
-#         obj=Data_element_base(**d)
-#         for key in d.keys():
-#             self.assertTrue(key in dir(obj))
-# 
+    def test_element(self):
+        d={'x':1,'y':2, 'z':3}
+        obj=Data_element_base(**d)
+        for key in d.keys():
+            self.assertTrue(key in dir(obj))
+ 
+
+
+
     def test_firing_rate_plot(self):    
         obj=self.sl.Factory_firing_rate(**{'average':False})
         ax=pylab.subplot(111)
@@ -2587,122 +2604,125 @@ class TestDataElement(unittest.TestCase):
                                            'ids':[0,1,8,9]})
         obj.plot(ax, win=20.0)
         
-        pylab.show()
-# # 
-#     def test_activity_histogram(self):
-#         obj1=self.sl.Factory_firing_rate()
-#         obj2=obj1.get_activity_histogram()
-#         self.assertAlmostEqual(obj2.get_activity_histogram_stat().y, 
-#                                0.0, delta=0.001) 
-#          
-#         obj1=self.slnm.Factory_firing_rate()
-#         obj2=obj1.get_activity_histogram()
-#         self.assertAlmostEqual(obj2.get_activity_histogram_stat().y, 
-#                                1.0, delta=0.05) 
-#          
-#         obj1=self.sl.Factory_firing_rate(**{'average':False})
-#         obj2=obj1.get_activity_histogram(**{'average':False})
-#          
-#         self.assertAlmostEqual(numpy.mean(obj2.get_activity_histogram_stat(**{'average':False}).y), 
-#                                0.0, delta=0.001) 
+#         pylab.show()
+ 
+    def test_activity_histogram(self):
+        obj1=self.sl.Factory_firing_rate()
+        obj2=obj1.get_activity_histogram()
+        self.assertAlmostEqual(obj2.get_activity_histogram_stat().y, 
+                               0.0, delta=0.001) 
+          
+        obj1=self.slnm.Factory_firing_rate()
+        obj2=obj1.get_activity_histogram()
+        self.assertAlmostEqual(obj2.get_activity_histogram_stat().y, 
+                               1.0, delta=0.05) 
+          
+        obj1=self.sl.Factory_firing_rate(**{'average':False})
+        obj2=obj1.get_activity_histogram(**{'average':False})
+          
+        self.assertAlmostEqual(numpy.mean(obj2.get_activity_histogram_stat(**{'average':False}).y), 
+                               0.0, delta=0.001) 
 
-#         
-#     def test_phases_diff_cohere_plot(self):
-#           
-#         other=self.sl
-#         kwargs={
-#                 'NTFF':256,
-#                 'fs':100.0,
-#                 'NFFT':256,
-#                 'noverlap':int(256/2),
-#                 'other':other,
-#                 'sample':10.,   
-#                   
-#                 'lowcut':10,
-#                 'highcut':20,
-#                 'order':3,
-#                 'bin_extent':10.,
-#                 'kernel_type':'gaussian',
-#                 'params':{'std_ms':5.,
-#                           'fs': 100.0},
-#                 
-#                 'full_data':True,
-#         
-#                 }
-#                   
-#         obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
-#         ax=pylab.subplot(111)
-#         obj.hist(ax)
-#         obj.hist2(ax)
+         
+    def test_phases_diff_cohere_plot(self):
+           
+        other=self.sl
+        kwargs={
+                'NTFF':256,
+                'fs':100.0,
+                'NFFT':256,
+                'noverlap':int(256/2),
+                'other':other,
+                'sample':10.,   
+                   
+                'lowcut':10,
+                'highcut':20,
+                'order':3,
+                'bin_extent':10.,
+                'kernel_type':'gaussian',
+                'params':{'std_ms':5.,
+                          'fs': 100.0},
+                 
+                'full_data':True,
+         
+                }
+                   
+        obj=self.sl.Factory_phases_diff_with_cohere(**kwargs)
+        ax=pylab.subplot(111)
+        obj.hist(ax)
+        obj.hist2(ax)
 #         pylab.show()
 
-#     def test_IF_curve_plot(self):
-#           
-#         self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
-#                                        'sim_time':self.sim_time})
-#         obj=self.sl.Factory_IF_curve()
-#         obj.plot(pylab.subplot(111), part='mean')
-# #         pylab.show()
-#          
-#     def test_IV_curve_plot(self):
-#         
-#         self.vlm=dummy_data_matrix('voltage', **{'run':0, 'set':0, 'n_sets':1,
-#                                        'sim_time':self.sim_time})
-#         pylab.figure()
-#         obj=self.vlm.Factory_IV_curve()
-#         obj.plot(pylab.subplot(111))
-# #         pylab.show()         
-#          
-#     def test_isis_hist(self):    
-#         obj=self.sl.Factory_isis()
-#         pylab.figure()
-#         obj.hist(pylab.subplot(111))
-# #         pylab.show()
-#  
-#     def test_mean_rates_hist(self):
-#         obj=self.sl.Factory_mean_rates()
-#         pylab.figure()
-#         obj.hist(pylab.subplot(111))
-# #         pylab.show(obj)   
-#  
-#     def test_mean_rate_parts_plot(self):
-#           
-#         #OBS merge over axis 1
-#         self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
-#                                        'sim_time':self.sim_time})
-#         obj=self.sl.Factory_mean_rate_parts()
-#         obj.plot(pylab.subplot(111))
-# #         pylab.show()
-# 
-#     def test_voltage_traces(self):
-#         pylab.figure()
-#         obj=self.vl.Factory_voltage_traces()
-#         obj.plot(pylab.subplot(111))        
-# #         pylab.show() 
 
-#     def test_mean_rate_slices(self):
-#         obj=self.sl.Factory_mean_rate_slices(**{'intervals':[[0,100], [200, 300], [300, 400],
-#                                                      [600,700], [800, 900], [900, 1000]],
-#                                         'repetition':2, 'threads':1})
-#         obj.plot(pylab.subplot(111))
+
+    def test_IF_curve_plot(self):
+           
+        self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
+                                       'sim_time':self.sim_time})
+        obj=self.sl.Factory_IF_curve()
+        obj.plot(pylab.subplot(111), part='mean')
+#         pylab.show()
+      
+
+    def test_IV_curve_plot(self):
+         
+        self.vlm=dummy_data_matrix('voltage', **{'run':0, 'set':0, 'n_sets':1,
+                                       'sim_time':self.sim_time})
+        pylab.figure()
+        obj=self.vlm.Factory_IV_curve()
+        obj.plot(pylab.subplot(111))
+#         pylab.show()         
+          
+    def test_isis_hist(self):    
+        obj=self.sl.Factory_isis()
+        pylab.figure()
+        obj.hist(pylab.subplot(111))
+#         pylab.show()
+  
+    def test_mean_rates_hist(self):
+        obj=self.sl.Factory_mean_rates()
+        pylab.figure()
+        obj.hist(pylab.subplot(111))
+#         pylab.show(obj)   
+  
+    def test_mean_rate_parts_plot(self):
+           
+        #OBS merge over axis 1
+        self.sl=dummy_data_matrix('spike', **{'run':0, 'set':0, 'n_sets':1,
+                                       'sim_time':self.sim_time})
+        obj=self.sl.Factory_mean_rate_parts()
+        obj.plot(pylab.subplot(111))
+#         pylab.show()
+ 
+    def test_voltage_traces(self):
+        pylab.figure()
+        obj=self.vl.Factory_voltage_traces()
+        obj.plot(pylab.subplot(111))        
+#         pylab.show() 
+
+    def test_mean_rate_slices(self):
+        obj=self.sl.Factory_mean_rate_slices(**{'intervals':[[0,100], [200, 300], [300, 400],
+                                                     [600,700], [800, 900], [900, 1000]],
+                                        'repetition':2, 'local_num_threads':1})
+        obj.plot(pylab.subplot(111))
 #         pylab.show()
 
-#     def test_firing_rate_get_mean_rate_slices(self):
-#         obj_fr=self.sl.Factory_firing_rate(1)
-#         obj1=obj_fr.get_mean_rate_slices(**{'intervals':[[0,100], [200, 300], [300, 400],
-#                                                      [600,700], [800, 900], [900, 1000]],
-#                                         'repetition':2, 
-#                                         'xticklabels':['i', 'ii', 'iii'],
-#                                         'threads':2})
-#         obj1.plot(pylab.subplot(111))
-#         obj2=self.sl.Factory_mean_rate_slices(**{'intervals':[[0,100], [200, 300], [300, 400],
-#                                                      [600,700], [800, 900], [900, 1000]],
-#                                         'repetition':2, 'threads':1})
-#         self.assertListEqual(list(obj1.y), list(obj2.y))
-#         self.assertListEqual(list(obj1.y_std), list(obj2.y_std))
-# #         obj.plot(pylab.subplot(111))
+    def test_firing_rate_get_mean_rate_slices(self):
+        obj_fr=self.sl.Factory_firing_rate(1)
+        obj1=obj_fr.get_mean_rate_slices(**{'intervals':[[0,100], [200, 300], [300, 400],
+                                                     [600,700], [800, 900], [900, 1000]],
+                                        'repetition':2, 
+                                        'xticklabels':['i', 'ii', 'iii'],
+                                        'local_num_threads':2})
+        obj1.plot(pylab.subplot(111))
+        obj2=self.sl.Factory_mean_rate_slices(**{'intervals':[[0,100], [200, 300], [300, 400],
+                                                     [600,700], [800, 900], [900, 1000]],
+                                        'repetition':2, 'local_num_threads':1})
+        self.assertListEqual(list(obj1.y), list(obj2.y))
+        self.assertListEqual(list(obj1.y_std), list(obj2.y_std))
+#         obj.plot(pylab.subplot(111))
 #         pylab.show()
-#         
+         
 class TestSpikeList(unittest.TestCase):
     def setUp(self):
     
@@ -2711,38 +2731,44 @@ class TestSpikeList(unittest.TestCase):
                                        'sim_time':self.sim_time})
         
         self.home=expanduser("~")
-#     def test_1_get_phase(self):
-#         kwargs={'bin_extent':100.0,
-#                 'inspect':False,
-#                 'kernel_type':'gaussian',
-#                 'params':{'std_ms':20,
-#                           'fs': 1000.0}}
-#         lowcut, highcut, order, fs=10.0, 20.0, 3, 1000.0
-#         d=self.sl.get_phase(lowcut, highcut, order, fs, **kwargs)
-#         self.assertEqual(d['x'].shape, d['y'].shape)
-#         
-#     def test_2_get_psd(self):
-# 
-#         NFFT, Fs=256, 1000.0
-#         d=self.sl.get_psd( NFFT, Fs)
-#         self.assertEqual(d.x.shape, d.y.shape)        
-#         
-#         
-#     def test_3_mean_rate(self):
-#         r=self.sl.mean_rate(t_start=0, t_stop=1000, **{'threads':1})
-#         r2=self.sl.mean_rate(t_start=0, t_stop=1000,  **{'threads':2})
-#         r3=self.sl.mean_rate(t_start=0, t_stop=1000,  **{'threads':3})
-#         self.assertEqual(r, r2)
-#         self.assertEqual(r, r3)
-# #         print r, r2, r3
-#         
-#         
-#     def test_4_firing_rate(self):
-#         fr=self.sl.firing_rate(1, **{'threads':1})
-#         fr2=self.sl.firing_rate(1, **{'threads':3})
-#         self.assertListEqual(list(fr), list(fr2))
-# #         print fr
-# #         print fr2
+        
+
+    def test_1_get_phase(self):
+        kwargs={'bin_extent':100.0,
+                'inspect':False,
+                'kernel_type':'gaussian',
+                'params':{'std_ms':20,
+                          'fs': 1000.0}}
+        lowcut, highcut, order, fs=10.0, 20.0, 3, 1000.0
+        d=self.sl.get_phase(lowcut, highcut, order, fs, **kwargs)
+        self.assertEqual(d['x'].shape, d['y'].shape)
+         
+
+
+    def test_2_get_psd(self):
+ 
+        NFFT, Fs=256, 1000.0
+        d=self.sl.get_psd( NFFT, Fs)
+        self.assertEqual(d.x.shape, d.y.shape)        
+         
+         
+
+
+    def test_3_mean_rate(self):
+        r=self.sl.mean_rate(t_start=0, t_stop=1000, **{'local_num_threads':1})
+        r2=self.sl.mean_rate(t_start=0, t_stop=1000,  **{'local_num_threads':2})
+        r3=self.sl.mean_rate(t_start=0, t_stop=1000,  **{'local_num_threads':3})
+        self.assertEqual(r, r2)
+        self.assertEqual(r, r3)
+#         print r, r2, r3
+         
+         
+    def test_4_firing_rate(self):
+        fr=self.sl.firing_rate(1, **{'local_num_threads':1})
+        fr2=self.sl.firing_rate(1, **{'local_num_threads':3})
+        self.assertListEqual(list(fr), list(fr2))
+#         print fr
+#         print fr2
 
 
     def test_41_firing_rate_mpi(self):
@@ -2777,7 +2803,7 @@ class TestSpikeList(unittest.TestCase):
 #         print out
 #         print err
 
-        fr=self.sl.firing_rate(1, **{'threads':1})    
+        fr=self.sl.firing_rate(1, **{'local_num_threads':1})    
         
         f=open(fileOut, 'rb') #open in binary mode
         fr2=pickle.load(f)
@@ -2785,16 +2811,16 @@ class TestSpikeList(unittest.TestCase):
         
         self.assertListEqual(list(fr), list(fr2))
         
-#     def test_5_mean_rate_slices(self):
-#         mrs=self.sl.mean_rate_slices(**{'intervals':[[0,100], [300, 400],
-#                                                      [600,700], [900, 1000]],
-#                                         'repetition':2, 'threads':1})
-#         mrs2=self.sl.mean_rate_slices(**{'intervals':[[0,100], [300, 400],
-#                                                      [600,700], [900, 1000]],
-#                                         'repetition':2, 'threads':3})
-# 
-#         self.assertListEqual([list(a) for a in mrs], 
-#                              [list(a) for a in mrs2])
+    def test_5_mean_rate_slices(self):
+        mrs=self.sl.mean_rate_slices(**{'intervals':[[0,100], [300, 400],
+                                                     [600,700], [900, 1000]],
+                                        'repetition':2, 'local_num_threads':1})
+        mrs2=self.sl.mean_rate_slices(**{'intervals':[[0,100], [300, 400],
+                                                     [600,700], [900, 1000]],
+                                        'repetition':2, 'local_num_threads':3})
+ 
+        self.assertListEqual([list(a) for a in mrs], 
+                             [list(a) for a in mrs2])
 #         print mrs
 #         print mrs2
 
@@ -2829,7 +2855,7 @@ class TestSpikeListMatrix(unittest.TestCase):
 
 
     
-        
+
     def test_1_create(self):
         slc=SpikeListMatrix(self.spike_lists) 
         #print slc
@@ -2845,7 +2871,7 @@ class TestSpikeListMatrix(unittest.TestCase):
         other=SpikeListMatrix(self.spike_lists2)
         calls=[
                ['firing_rate', [100], {'average':True,
-                                       'threads':2}],
+                                       'local_num_threads':2}],
 
                ['get_firing_rate', [100],{'average':True}],
                ['get_isi',[],{}],
@@ -2882,7 +2908,7 @@ class TestSpikeListMatrix(unittest.TestCase):
                                         'fs': 1000.0},
                  }],
                ['get_spike_stats', [],{}],
-               ['mean_rate', [], {'t_start':250, 't_stop':4000, 'threads':2}], 
+               ['mean_rate', [], {'t_start':250, 't_stop':4000, 'local_num_threads':2}], 
                ['mean_rates', [], {}], 
                ['merge', [], {}],
                ['my_raster', [], {}],
@@ -2898,7 +2924,7 @@ class TestSpikeListMatrix(unittest.TestCase):
             if call in [
                         'get_mean_rate',
                         ]:        
-                self.assertEqual(d['x'].shape, d['y'].shape)
+                self.assertEqual(d.x.shape, d.y.shape)
             if call in ['get_firing_rates',
                         'get_mean_rates',
                         'get_mean_coherence',
@@ -2980,25 +3006,48 @@ class TestVm_list_matrix(unittest.TestCase):
         
         
 if __name__ == '__main__':
-    test_classes_to_run=[
-#                         TestDataElement,
-                        TestSpikeList,
-#                         TestSpikeListMatrix,
-#                         TestVm_list_matrix
-                         ]
-    suites_list = []
-    for test_class in test_classes_to_run:
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        suites_list.append(suite)
+    d={
+        TestDataElement:[
+                    'test_bar',
+                    'test_bar2',
+                    'test_spike_stat',
+                    'test_element',
+                    'test_firing_rate_plot',
+                    'test_activity_histogram',
+                    'test_phases_diff_cohere_plot',
+                    'test_IF_curve_plot',  
+                    'test_IV_curve_plot',  
+                    'test_isis_hist',
+                    'test_mean_rates_hist',
+                    'test_mean_rate_parts_plot',
+                    'test_voltage_traces',
+                    'test_mean_rate_slices',
+                    ],
+          TestSpikeList:[
+                     'test_1_get_phase',
+                     'test_2_get_psd',
+                     'test_3_mean_rate',
+                     'test_4_firing_rate',
+                     'test_41_firing_rate_mpi',
+                     'test_5_mean_rate_slices',
+                     ],
+        TestSpikeListMatrix:[
+                     'test_1_create',
+                     'test_10_item',
+                     'test_2_calls_wrapped_class',
+                     'test_3_class_methods',
+                     'test_4_merge_spike_matrix',
+                     'test_5_concatenate',
+                     ],
+        TestVm_list_matrix:[
+                     'test_1_create',
+                     'test_2_calls_wrapped_class',
+                     ]
+       }
+    test_classes_to_run=d
+    suite = unittest.TestSuite()
+    for test_class, val in  test_classes_to_run.items():
+        for test in val:
+            suite.addTest(test_class(test))
 
-    big_suite = unittest.TestSuite(suites_list)
-    
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestNode)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestNode_dic)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestStructure)
-    unittest.TextTestRunner(verbosity=2).run(big_suite)
-    
-    #unittest.main()    
-
-    
-       
+    unittest.TextTestRunner(verbosity=2).run(suite)

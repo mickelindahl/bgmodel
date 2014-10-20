@@ -238,7 +238,7 @@ def add_GPe(d):
 
 def get_kwargs_builder(**k_in):
     return {'print_time':False, 
-            'threads':THREADS, 
+            'local_num_threads':THREADS, 
             'save_conn':{'overwrite':False},
             'sim_time':10000.0, 
             'sim_stop':10000.0, 
@@ -558,9 +558,9 @@ class Setup(object):
     
     def __init__(self, 
                  period, 
-                 threads):
+                 local_num_threads):
         self.period=period
-        self.threads=threads
+        self.local_num_threads=local_num_threads
    
     def activity_histogram(self):
         d = {'average':False,
@@ -572,7 +572,7 @@ class Setup(object):
         d = {'NFFT':1024 * 4, 
              'fs':1000., 
              'noverlap':1024 * 2, 
-             'threads':self.threads}
+             'local_num_threads':self.local_num_threads}
         return d
     
    
@@ -580,7 +580,7 @@ class Setup(object):
         d = {'fs':1000.0, 'NFFT':1024 * 4, 
             'noverlap':int(1024 * 2), 
             'sample':30.,  
-            'threads':self.threads}
+            'local_num_threads':self.local_num_threads}
         return d
     
 
@@ -594,7 +594,7 @@ class Setup(object):
              'kernel_type':'gaussian', 
              'params':{'std_ms':125., 
                        'fs':1000.0}, 
-             'threads':self.threads}
+             'local_num_threads':self.local_num_threads}
         
         return d
     
@@ -614,12 +614,12 @@ class Setup(object):
              'params':{'std_ms':125., 
                        'fs':100.0}, 
       
-                'threads':self.threads}
+                'local_num_threads':self.local_num_threads}
         return kwargs
     
     def firing_rate(self):
         d={'average':False, 
-           'threads':self.threads, 
+           'local_num_threads':self.local_num_threads, 
            'win':100.0,}
         return d
     
@@ -680,7 +680,8 @@ def simulate(builder=Builder,
     attr = [
         'firing_rate', 
         'mean_rates', 
-        'spike_statistic']
+        'spike_statistic'
+        ]
     
     attr2=['psd',
            'activity_histogram',
@@ -730,18 +731,21 @@ def simulate(builder=Builder,
         if fd == 0:
             dd = run(net)
             add_GPe(dd)
-            dd = compute(dd, models, attr, **kwargs_dic)
+#             dd = compute(dd, models, attr, **kwargs_dic)
             save(sd, dd)
+        
         elif fd == 1:
-            filt = [net.get_name()] + models + ['spike_signal']
+            print net.get_name()
+            filt = [net.get_name()] + models + ['spike_signal']+ attr
             dd = load(sd, *filt)    
+            
             dd = compute(dd, models, attr, **kwargs_dic)
             save(sd, dd)
-                        
+#             print 'saved', sd, dd    
             for keys, val in misc.dict_iter(dd):
                 if keys[-1]=='spike_signal':
                     val.wrap.allowed.append('get_phases_diff_with_cohere')
-            
+            print 'create_relations'
             create_relations(models_coher, dd)
             dd = compute(dd, models_coher, attr_coher, **kwargs_dic)
             
@@ -750,6 +754,7 @@ def simulate(builder=Builder,
             cmp_activity_hist_stat(models, dd, **{'average':False})          
             
             save(sd, dd)
+            
         elif fd == 2:
             filt = ([net.get_name()] 
                     + models + models_coher 
@@ -840,18 +845,18 @@ def main(*args, **kwargs):
     return d
 
 
-def run_simulation(from_disk=0, threads=12, type_of_run='shared_memory'):
+def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory'):
     from toolbox.network.default_params import Perturbation_list as pl
 
     sim_time=10000.0
     size=250.0
-    threads=12
+    local_num_threads=12
     sub_sampling=25
     
     p=pl({'simu':{
                   'sim_time':sim_time,
                   'sim_stop':sim_time,
-                  'threads':threads
+                  'local_num_threads':local_num_threads
                   },
               'netw':{'size':size,
                       'sub_sampling':{'M1':sub_sampling,
@@ -889,7 +894,7 @@ import unittest
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
         
-        v=run_simulation(from_disk=0, threads=12)
+        v=run_simulation(from_disk=0, local_num_threads=12)
         d, file_name_figs, from_disks, models, models_coher, setup=v
 
         self.setup=setup

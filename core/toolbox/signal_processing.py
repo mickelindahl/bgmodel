@@ -5,6 +5,7 @@ Created on Jul 11, 2013
 '''
 from __future__ import division
 import numpy
+import sys
 from numpy import mean, hanning, cov
 from numpy import zeros, ones, diagonal, transpose, matrix
 from numpy import resize, sqrt, divide, array
@@ -98,32 +99,39 @@ def csd(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
     # for real x, ignore the negative frequencies
     if x.dtype==Complex: numFreqs = NFFT
     else: numFreqs = NFFT//2+1
+    freqs = fs/NFFT*arange(0,numFreqs)    
+    
+    if not numpy.any(x-y):
+        return numpy.zeros(freqs.shape), freqs 
+    
+    else:
+        windowVals = window(ones((NFFT,),x.dtype))
+        step = NFFT-noverlap
+        ind = range(0,len(x)-NFFT+1,step)
+        n = len(ind)
+        Pxy = zeros((numFreqs,n), Complex)
+    
+  
+        # do the ffts of the slices
+        for i in range(n):
+            thisX = x[ind[i]:ind[i]+NFFT]
+            thisX = windowVals*detrend(thisX)
+            thisY = y[ind[i]:ind[i]+NFFT]
+            try:
+                thisY = windowVals*detrend(thisY)
+            except:
+                print 'l'
+            fx = fft(thisX)
+            fy = fft(thisY)
+            Pxy[:,i] = fy[:numFreqs]*conjugate(fx[:numFreqs])
+    
+        # Scale the spectrum by the norm of the window to compensate for
+        # windowing loss; see Bendat & Piersol Sec 11.5.2
+        if n>1: Pxy = mean(Pxy,1)
+        Pxy = divide(Pxy, norm(windowVals)**2)
+#         print Pxy.shape, x.shape
         
-    windowVals = window(ones((NFFT,),x.dtype))
-    step = NFFT-noverlap
-    ind = range(0,len(x)-NFFT+1,step)
-    n = len(ind)
-    Pxy = zeros((numFreqs,n), Complex)
-
-    # do the ffts of the slices
-    for i in range(n):
-        thisX = x[ind[i]:ind[i]+NFFT]
-        thisX = windowVals*detrend(thisX)
-        thisY = y[ind[i]:ind[i]+NFFT]
-        try:
-            thisY = windowVals*detrend(thisY)
-        except:
-            print 'l'
-        fx = fft(thisX)
-        fy = fft(thisY)
-        Pxy[:,i] = fy[:numFreqs]*conjugate(fx[:numFreqs])
-
-    # Scale the spectrum by the norm of the window to compensate for
-    # windowing loss; see Bendat & Piersol Sec 11.5.2
-    if n>1: Pxy = mean(Pxy,1)
-    Pxy = divide(Pxy, norm(windowVals)**2)
-    freqs = fs/NFFT*arange(0,numFreqs)
-    return Pxy, freqs
+        return Pxy, freqs
 
 def cohere_wrap_parallel(args):
     return cohere(*args)
@@ -204,9 +212,22 @@ def coherences(signals1, signals2, **kwargs):
 
     args=[[s1,s2, kwargs] 
           for s1, s2 in iter_double(signals1, signals2) 
-          if numpy.any(s1-s2)] 
+#           if numpy.any(s1-s2)
+          ] 
+    
+    
+
     args=zip(*args)
-    l=map_parallel(cohere, *args, **{'threads': kwargs.get('threads',1)})
+#     try:
+    l=map_parallel(cohere, *args, **{'local_num_threads': kwargs.get('local_num_threads',1)})
+# 
+#     except Exception as e:
+#         s='\nTrying to do map_parallel in coherence'
+#         s+='\nSignal1: {}'.format(signals1)
+#         s+='\nSignal2: {}'.format(signals2)
+#         s+='\nkwargs: {}'.format(kwargs)
+#         raise type(e)(e.message + s), None, sys.exc_info()[2]
+        
 #     l=map(cohere, *args)
     l=numpy.array(l,dtype=float)
     Cxy, f=l[:,0,:], l[:,1,:]
@@ -365,7 +386,8 @@ def phases_diff(signals1, signals2, **kwargs):
 #     
     args=[[s1,s2, kwargs] 
           for s1, s2 in iter_double(signals1, signals2)
-          if numpy.any(s1-s2)] 
+#           if numpy.any(s1-s2)
+          ] 
     
     if numpy.any(idx_filter):
         args=[args[idx] for idx in idx_filter]
@@ -374,10 +396,10 @@ def phases_diff(signals1, signals2, **kwargs):
     
 #     args=[[s1,s2, kwargs] for s1, s2 in iter_double(signals1, signals2)] 
 #     args=zip(*args)
-#     l=map_parallel(cohere, *args, **{'threads': kwargs.get('threads',1)})
+#     l=map_parallel(cohere, *args, **{'local_num_threads': kwargs.get('local_num_threads',1)})
 
     
-    l=map_parallel(phase_diff, *args, **{'threads': kwargs.get('threads',1)})
+    l=map_parallel(phase_diff, *args, **{'local_num_threads': kwargs.get('local_num_threads',1)})
     x=numpy.array(l)
     #x=numpy.array(l).ravel()
     
@@ -517,7 +539,7 @@ def get_kwargs_cohere(m=1):
     kwargs = {'fs':1000, 'inspect':False, 
         'NFFT':256 * m, 
         'noverlap':int(256 / 2 * m), 
-        'threads':8}
+        'local_num_threads':8}
     return kwargs
 
 def get_kwargs_phase_diff(fs=1000.0):
@@ -539,91 +561,92 @@ class Test_signal_processing(unittest.TestCase):
         
         self.home=expanduser("~")
         
-#     def test_1_phase(self):
-#         fs=1000.0
-#         lowcut, highcut, order,  fs,=10,30,3, fs
-#         kwargs={'lowcut':lowcut,
-#                 'highcut':highcut,
-#                 'order':order,
-#                 'fs':fs,
-#                 'bin_extent':10.,
-#                 'inspect':False,
-#                 'kernel_type':'gaussian',
-#                 'params':{'std_ms':5.,
-#                           'fs': 1000.0}}
-#         a=dummy_data_pop(self.n_pop, **{'fs':fs,
-#                                         'sim_time':self.sim_time})
-#         mean_a=numpy.mean(a, axis=0)
-#         p1=phase(mean_a,  **kwargs)
-#         p2=phases(a,  **kwargs)  
-# 
-#         self.assertEqual(mean_a.shape, p1.shape)
-#         self.assertEqual(a.shape, p2.shape)      
-#          
-#     def test_2_pds(self):
-#         m=4
-#         kwargs={'fs':1000.,
-#                 'numpyinspect':False,
-#                 'NFFT':256*m,
-#                 'noverlap':int(256/2*m),
-#                 'normalize':True}
-#         a=dummy_data_pop(100, **{'scale':1,'sim_time':40000.0})
-#  
-#         mean_a=numpy.mean(a, axis=0)
-#         p,f=psd(mean_a, **kwargs)
-#         self.assertEqual(p.shape, f.shape)
-#        
-# 
-# 
-# 
-#     def test_3_coherences(self):
-#         m=2
-#         kwargs = get_kwargs_cohere(m)
-#         n_pop, sim_time=25, 20000.0 
-#         x=dummy_data_pop(n_pop, **{'scale':0.01,'sim_time':sim_time})
-#         y=dummy_data_pop(n_pop, **{'scale':0.01,'sim_time':sim_time,
-#                                    'shift':0})
-#   
-#         f, c1=coherences(x,y,**kwargs)
-#             #kwargs['inspect']=True
-#           
-#         c2=mean_coherence(x,y,**kwargs)
-#               
-#  
-#  
-# 
-#     def test_4_phase_diff(self):
-# 
-#         fs=1000.0
-#         kwargs = get_kwargs_phase_diff(fs)
-#         
-#         n_pop, sim_time=50, 5000.0 
-#         x=dummy_data_pop(n_pop, **{'fs':fs,
-#                                    'scale':0.5,'sim_time':sim_time})
-#         y=dummy_data_pop(n_pop, **{'fs':fs,
-#                                    'scale':0.5,'sim_time':sim_time,
-#                                    'shift':0.})
-# 
-#         kwargs['inspect']=False
-#         p0=phase_diff(x[0,:], y[0,:],  kwargs)
-#         n_pop, sim_time=10, 500.0 
-#         
-#         mean_x=numpy.mean(x, axis=0)
-#         
-#         mean_y=numpy.mean(y, axis=0)
-#         kwargs['inspect']=False
-#         p1=phase_diff(mean_x, mean_y,  kwargs)
-#         n_pop, sim_time=10, 500.0 
-#         
-#         
-#         x=dummy_data_pop(n_pop, **{'fs':fs,
-#                                    'scale':0.5,'sim_time':sim_time})
-#         y=dummy_data_pop(n_pop, **{'fs':fs,
-#                                    'scale':0.5,'sim_time':sim_time,
-#                                    'shift':0.})
-#         kwargs['inspect']=False
-#         kwargs['threads']=8
-#         p2=phases_diff(x, y,  **kwargs)    
+    def test_1_phase(self):
+        fs=1000.0
+        lowcut, highcut, order,  fs,=10,30,3, fs
+        kwargs={'lowcut':lowcut,
+                'highcut':highcut,
+                'order':order,
+                'fs':fs,
+                'bin_extent':10.,
+                'inspect':False,
+                'kernel_type':'gaussian',
+                'params':{'std_ms':5.,
+                          'fs': 1000.0}}
+        a=dummy_data_pop(self.n_pop, **{'fs':fs,
+                                        'sim_time':self.sim_time})
+        mean_a=numpy.mean(a, axis=0)
+        p1=phase(mean_a,  **kwargs)
+        p2=phases(a,  **kwargs)  
+ 
+        self.assertEqual(mean_a.shape, p1.shape)
+        self.assertEqual(a.shape, p2.shape)      
+          
+    def test_2_pds(self):
+        m=4
+        kwargs={'fs':1000.,
+                'numpyinspect':False,
+                'NFFT':256*m,
+                'noverlap':int(256/2*m),
+                'normalize':True}
+        a=dummy_data_pop(100, **{'scale':1,'sim_time':40000.0})
+  
+        mean_a=numpy.mean(a, axis=0)
+        p,f=psd(mean_a, **kwargs)
+        self.assertEqual(p.shape, f.shape)
+        
+ 
+ 
+ 
+    def test_3_coherences(self):
+        m=2
+        kwargs = get_kwargs_cohere(m)
+        n_pop, sim_time=25, 20000.0 
+        x=dummy_data_pop(n_pop, **{'scale':0.01,'sim_time':sim_time,
+                                   'local_num_threads':4})
+        y=dummy_data_pop(n_pop, **{'scale':0.01,'sim_time':sim_time,
+                                   'shift':0,'local_num_threads':4})
+   
+        f, c1=coherences(x,y,**kwargs)
+            #kwargs['inspect']=True
+           
+        c2=mean_coherence(x,y,**kwargs)
+               
+  
+  
+ 
+    def test_4_phase_diff(self):
+ 
+        fs=1000.0
+        kwargs = get_kwargs_phase_diff(fs)
+         
+        n_pop, sim_time=50, 5000.0 
+        x=dummy_data_pop(n_pop, **{'fs':fs,
+                                   'scale':0.5,'sim_time':sim_time})
+        y=dummy_data_pop(n_pop, **{'fs':fs,
+                                   'scale':0.5,'sim_time':sim_time,
+                                   'shift':0.})
+ 
+        kwargs['inspect']=False
+        p0=phase_diff(x[0,:], y[0,:],  kwargs)
+        n_pop, sim_time=10, 500.0 
+         
+        mean_x=numpy.mean(x, axis=0)
+         
+        mean_y=numpy.mean(y, axis=0)
+        kwargs['inspect']=False
+        p1=phase_diff(mean_x, mean_y,  kwargs)
+        n_pop, sim_time=10, 500.0 
+         
+         
+        x=dummy_data_pop(n_pop, **{'fs':fs,
+                                   'scale':0.5,'sim_time':sim_time})
+        y=dummy_data_pop(n_pop, **{'fs':fs,
+                                   'scale':0.5,'sim_time':sim_time,
+                                   'shift':0.})
+        kwargs['inspect']=False
+        kwargs['local_num_threads']=8
+        p2=phases_diff(x, y,  **kwargs)    
 
 
     def test_41_phase_diff_mpi(self):
@@ -635,14 +658,14 @@ class Test_signal_processing(unittest.TestCase):
         fs=1000.0
         kwargs = get_kwargs_phase_diff(fs)
          
-        n_pop, sim_time=5, 2000.0 
+        n_pop, sim_time=10, 500.0 
         x=dummy_data_pop(n_pop, **{'fs':fs,
                                    'scale':0.5,'sim_time':sim_time})
         y=dummy_data_pop(n_pop, **{'fs':fs,
                                    'scale':0.5,'sim_time':sim_time,
                                    'shift':0.})
         kwargs['inspect']=False
-        kwargs['threads']=2
+        kwargs['local_num_threads']=2
 
         
         data_path= self.home+('/results/unittest/signal_processing'
@@ -669,7 +692,7 @@ class Test_signal_processing(unittest.TestCase):
         out, err = p.communicate()
 #         print out
 #         print err
-
+        kwargs['local_num_threads']=2*4
         p0=phases_diff(x, y,  **kwargs)   
         
         f=open(fileOut, 'rb') #open in binary mode
@@ -684,43 +707,43 @@ class Test_signal_processing(unittest.TestCase):
         self.assertListEqual(l0,l1 )
         
 
-#     def test_4_coherence_and_phase_diff(self):
-#         fs=1000.0
-#         kwargs_phase_diff = get_kwargs_phase_diff(fs)
-#         
-#         m=2
-#         kwargs_cohere = get_kwargs_cohere(m)
-#         
-#         n_pop, sim_time=10, 10000.0 
-#         x=dummy_data_pop(n_pop, **{'fs':fs,
-#                                    'scale':0.5,
-#                                    'sim_time':sim_time})        
-#         y=dummy_data_pop(n_pop, **{'fs':fs,
-#                                    'scale':0.5,
-#                                    'sim_time':sim_time})     
-#         
-#   
-#         
-#         f, c1=coherences(x, y,**kwargs_cohere)
-#         idx, v =sort_coherences(f, c1, 19, 21)
-#         
-#         L=float(len(x[0])/kwargs_cohere.get('NFFT'))
-#         p_conf95=numpy.ones(len(f[0, 2:]))*(1-0.05**(1/(L-1)))
-#         p=[]
-#         p+=[phases_diff(x, y, idx_filter=idx[0:10], **kwargs_phase_diff).ravel()]
-#         p+=[phases_diff(x, y, idx_filter=idx[0:50], **kwargs_phase_diff).ravel()]
-#         p+=[phases_diff(x, y, idx_filter=idx[90:], **kwargs_phase_diff).ravel()]
-#         p+=[phases_diff(x, y, idx_filter=idx[v[idx]>p_conf95[0]], **kwargs_phase_diff).ravel()]
-#         p+=[phases_diff(x, y, **kwargs_phase_diff).ravel()]
-#         if 1:
-#             for x in p:
-#                 bins=numpy.linspace(-numpy.pi,numpy.pi, 100.0)
-#                 pylab.hist(x, bins,**{'histtype':'step', 'normed':True} )
-#             pylab.xlim((-numpy.pi, 2*numpy.pi))  
-#             pylab.xlabel('Angle')
-#             pylab.ylabel('Occurance') 
-#             pylab.show() 
-#             pylab.plot()
+    def test_4_coherence_and_phase_diff(self):
+        fs=1000.0
+        kwargs_phase_diff = get_kwargs_phase_diff(fs)
+         
+        m=2
+        kwargs_cohere = get_kwargs_cohere(m)
+         
+        n_pop, sim_time=10, 10000.0 
+        x=dummy_data_pop(n_pop, **{'fs':fs,
+                                   'scale':0.5,
+                                   'sim_time':sim_time})        
+        y=dummy_data_pop(n_pop, **{'fs':fs,
+                                   'scale':0.5,
+                                   'sim_time':sim_time})     
+         
+   
+         
+        f, c1=coherences(x, y,**kwargs_cohere)
+        idx, v =sort_coherences(f, c1, 19, 21)
+         
+        L=float(len(x[0])/kwargs_cohere.get('NFFT'))
+        p_conf95=numpy.ones(len(f[0, 2:]))*(1-0.05**(1/(L-1)))
+        p=[]
+        p+=[phases_diff(x, y, idx_filter=idx[0:10], **kwargs_phase_diff).ravel()]
+        p+=[phases_diff(x, y, idx_filter=idx[0:50], **kwargs_phase_diff).ravel()]
+        p+=[phases_diff(x, y, idx_filter=idx[90:], **kwargs_phase_diff).ravel()]
+        p+=[phases_diff(x, y, idx_filter=idx[v[idx]>p_conf95[0]], **kwargs_phase_diff).ravel()]
+        p+=[phases_diff(x, y, **kwargs_phase_diff).ravel()]
+        if 0:
+            for x in p:
+                bins=numpy.linspace(-numpy.pi,numpy.pi, 100.0)
+                pylab.hist(x, bins,**{'histtype':'step', 'normed':True} )
+            pylab.xlim((-numpy.pi, 2*numpy.pi))  
+            pylab.xlabel('Angle')
+            pylab.ylabel('Occurance') 
+            pylab.show() 
+            pylab.plot()
 #         
         
         
@@ -735,18 +758,21 @@ def sort_coherences(f, c, low, high):
     
                
 if __name__ == '__main__':
-    test_classes_to_run=[
-                         Test_signal_processing,
-                         ]
-    suites_list = []
-    for test_class in test_classes_to_run:
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        suites_list.append(suite)
+    d={
+        Test_signal_processing:[
+#                                 'test_1_phase', 
+#                                 'test_2_pds', 
+                                'test_3_coherences', 
+#                                 'test_4_phase_diff',
+#                                 'test_41_phase_diff_mpi',
+#                                 'test_4_coherence_and_phase_diff',
+                                 ],
+       }
+    test_classes_to_run=d
+    suite = unittest.TestSuite()
+    for test_class, val in  test_classes_to_run.items():
+        for test in val:
+            suite.addTest(test_class(test))
 
-    big_suite = unittest.TestSuite(suites_list)
-    
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestNode)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestNode_dic)
-    #suite =unittest.TestLoader().loadTestsFromTestCase(TestStructure)
-    unittest.TextTestRunner(verbosity=2).run(big_suite)    
+    unittest.TextTestRunner(verbosity=2).run(suite)  
     

@@ -34,28 +34,7 @@ pp=pprint.pprint
 
 kernal_time=None
 
-def SetKernelTime(t):
-    global kernal_time
-    kernal_time=t
 
-
-def GetKernelTime():
-    global kernal_time
-    if kernal_time==None:
-        return nest.GetKernelStatus('time')
-    else:
-        return kernal_time
-
-def _Simulate_mpi(*args, **kwargs):
-    with Barrier():
-        print 'Simulating rank %i' % ( Rank()) #seems like it it neccesary to avoid hangup for mpi??!!
-        nest.Simulate(*args, **kwargs)
-        
-def Simulate(*args, **kwargs):
-    if comm.is_mpi_used():
-        _Simulate_mpi(*args, **kwargs)    
-    else:
-        nest.Simulate(*args, **kwargs)   
 
 def _Create_mpi(*args, **kwargs):
     with Barrier():
@@ -78,35 +57,147 @@ def _Connect_DC_mpi(*args, **kwargs):
     with Barrier():
         _Connect_DC(*args, **kwargs)
 
-        
-def _Connect_DC(pre, post, weights, delays, model):
-    
-    
-    tp, receptor=nest.GetDefaults(model, ['type','receptor_type'])
 
+def _Connect_DC_fun(d, r, s, sm, t, tp, w):
+    return  {'delay': d,
+             'receptor': r,
+             'source': s,
+             'synapse_model': sm,
+             'target': t,
+             'type': tp,
+             'weight': w} 
+     
+def _Connect_DC(pre, post, weights, delays, model, only_local=False):
+    
     from itertools import izip
-    with Stopwatch('Connecting DC', **{'only_rank_0_mpi':True}):   
-
-        post_ids=list(numpy.unique(post))
-        status=GetStatus(list(numpy.unique(post)), 'local')
-        lock_up=dict(zip(post_ids,status))
+    tp, receptor=nest.GetDefaults(model, ['type','receptor_type'])
+    if not only_local:
         
-        params=[{'delay': d,
-               'receptor': receptor,
-               'source': s,
-               'synapse_model': model,
-               'target': t,
-               'type': tp,
-               'weight': w}   for s, t, d, w, in izip(pre, 
-                                                      post, 
-                                                      delays, 
-                                                      weights
-                                                         )
-               if lock_up[t]]
+#         with Stopwatch('Connecting DC', **{'only_rank_0_mpi':True}):   
+#             post_ids=list(numpy.unique(post))
+#             status=GetStatus(list(numpy.unique(post)), 'local')
+#             lock_up=dict(zip(post_ids,status))         
+#               
+#             dic={}
+#             for d, s, t, w in izip(delays, pre, post, weights):
+#                 if not lock_up[t]:
+#                     continue
+# #                 pp(lock_up)
+#                 if s not in dic.keys():  
+#                     dic[s]={'target':[t*1.0],
+#                             'weight':[w],
+#                             'delay':[d]}
+#                 else:
+#                     dic[s]['target'].append(t*1.0)
+#                     dic[s]['weight'].append(w)
+#                     dic[s]['delay'].append(d)
+#             pp(dic) 
+#             key=dic.keys()
+#             DataConnect(key, [dic[k] for k in key], model)
+                
+        with Stopwatch('Connecting DC', **{'only_rank_0_mpi':True}):   
+            
+            
+    
+            post_ids=list(numpy.unique(post))
+            status=GetStatus(list(numpy.unique(post)), 'local')
+            lock_up=dict(zip(post_ids,status))
+            
+            step=100000 #n/chunks
+            n=len(pre)
+            chunks=int(numpy.ceil(n/float(step)))
+            slice_list=[]
+            for i in range(chunks):
+                if i<chunks-1:
+                    slice_list.append(slice(i*step,(i+1)*step))
+                else:
+                    slice_list.append(slice(i*step, n))       
+            
+            for s in slice_list:
+                params=[{'delay': d,
+                         'receptor': receptor,
+                         'source': s,
+                         'synapse_model': model,
+                         'target': t,
+                         'type': tp,
+                         'weight': w}   for s, t, d, w, in izip(pre[s], 
+                                                                post[s], 
+                                                                delays[s], 
+                                                                weights[s]
+                                                                 )
+                       if lock_up[t]]
+                DataConnect(params)
+                del params
+                import gc
+                gc.collect()
+    elif only_local:
+        
+#         with Stopwatch('Connecting DC', **{'only_rank_0_mpi':True}):   
+#             
+#             dic={}
+#             for d, s, t, w in izip(delays, pre, post, weights):
+#                 if s not in dic.keys():  
+#                     dic[s]={'target':[t],
+#                             'weight':[w],
+#                             'delay':[d]}
+#                 else:
+#                     dic[s]['target'].append(t)
+#                     dic[s]['weight'].append(w)
+#                     dic[s]['delay'].append(d)
+#                 
+#                 key, val=dic.items()
+#                 DataConnect(key, val, model)
+                
+        with Stopwatch('Connecting DC', **{'only_rank_0_mpi':True}):   
+              
+#             step=20000 #n/chunks
+#             n=len(pre)
+#             chunks=int(numpy.ceil(n/float(step)))
+#             slice_list=[]
+#             for i in range(chunks):
+#                 if i<chunks-1:
+#                     slice_list.append(slice(i*step,(i+1)*step))
+#                 else:
+#                     slice_list.append(slice(i*step, n))       
+# 
+# 
+#             for s in slice_list:
+#                 params=[{'delay': d,
+#                          'receptor': receptor,
+#                          'source': s,
+#                          'synapse_model': model,
+#                          'target': t,
+#                          'type': tp,
+#                          'weight': w}   for s, t, d, w, in izip(pre[s], 
+#                                                                 post[s], 
+#                                                                 delays[s], 
+#                                                                 weights[s]
+#                                                                  )]
+#                 DataConnect(params)
+#                 del params
+#                 import gc
+#                 gc.collect()
+                          
+#             for s in slice_list:
+#             lnt=nest.GetKernelStatus('local_num_threads')
+#             nest.SetKernelStatus({'local_num_threads':1})
+            m=len(delays)
+            params=map(_Connect_DC_fun,
+                       delays, 
+                       [receptor]*m,
+                       pre, 
+                       [model]*m, 
+                       post,  
+                       [tp]*m,
+                       weights)
+            
+            DataConnect(params)
+            nest.SetKernelStatus({'local_num_threads':1})
+            del params
+            import gc
+            gc.collect()
+            print 'hej'
 
-
-        DataConnect(params)
-    del params
 
 def Connect(*args, **kwargs):
     if comm.is_mpi_used():
@@ -123,52 +214,12 @@ def _Connect_mpi(*args, **kwargs):
 
 def _Connect(pre, post, *args, **kwargs):
 
-    def fun(pre, post, args, kwargs, sl):
-        args=[a[sl] for a in args]
-#         print sl
-        if hasattr(nest, 'OneToOneConnect'):
-            nest.OneToOneConnect(pre[sl], 
-                                 post[sl],  
-                                 *[a[sl] for a in args], **kwargs)
-        else:
-            nest.Connect(pre[sl], 
-                         post[sl],  
-                         *[a[sl] for a in args], **kwargs)
-    
-    chunks=kwargs.pop('chunks',1)
-    n=len(pre)
-    step=n/chunks
-    
-    slice_list=[]
-    for i in range(chunks):
-        if i<chunks-1:
-            slice_list.append(slice(i*step,(i+1)*step))
-        else:
-            slice_list.append(slice(i*step, n))
 
-    with Stopwatch('Connecting'):
-        map(fun, [pre]*chunks, [post]*chunks, [args]*chunks,[kwargs]*chunks,slice_list)
-         
-#     if hasattr(nest, 'OneToOneConnect'):
-#         nest.OneToOneConnect(pre, post,  *args, **kwargs)
-#     else:
-#         nest.Connect(pre, post,  *args, **kwargs)
- 
-#         if params:
-#             syn_list=[{'model':model,
-#                        'delay':delay,
-#                        'weight':weight} 
-#                       for delay, weight in zip(delay, params)]
-#         else:
-#             syn_list=[{'model':model}]*len(pre)
-#         conn_list=[None]*len(pre)
-#         
-#         
-#         pre=[[v] for v in pre] 
-#         post=[[v] for v in post]
-#         map(nest.Connect, pre, post, conn_list, syn_list) 
-#         for source, target, syn_dict in zip(pre,  post, syn_list):
-#             nest.Connect([source], [target], syn_spec=syn_dict)
+    if hasattr(nest, 'OneToOneConnect'):
+        nest.OneToOneConnect(pre, post,  *args, **kwargs)
+    else:
+        nest.Connect(pre, post,  *args, **kwargs)
+
 
 def fun_pre_post(s,d,m):
     pushsli=_kernel.pushsli
@@ -176,7 +227,7 @@ def fun_pre_post(s,d,m):
 
     pushsli(s) #s
     pushsli(d) #d
-    runsl('/{} Connect'.format(m))    
+    runsli('/{} Connect'.format(m))    
     
     
 def fun_pre_post_params(*args):
@@ -219,7 +270,7 @@ def _Connect_speed_internal(pre, post, params=None, delay=None, model="static_sy
 
     # pre post Connect
     if params == None and delay == None:
-        map(connect_speed_fun.fun_pre_post, pre, post, [model]*len(pre))
+        map(fun_pre_post, pre, post, [model]*len(pre))
 
 
     # pre post params Connect
@@ -249,70 +300,40 @@ def _Connect_speed_internal(pre, post, params=None, delay=None, model="static_sy
 def _Connect_speed(pre, post, *args, **kwargs):
 
     def fun(pre, post, args, kwargs, sl):
-        args=[a[sl] for a in args]
+#         args=[a[sl] for a in args]
 #         print sl
 
         _Connect_speed_internal(pre[sl], 
                          post[sl],  
                          *[a[sl] for a in args], **kwargs)
     
-    chunks=kwargs.pop('chunks',1)
-    n=len(pre)
+
     step=10000 #n/chunks
-    
+    n=len(pre)
+    chunks=int(numpy.ceil(n/float(step)))
     slice_list=[]
     for i in range(chunks):
         if i<chunks-1:
             slice_list.append(slice(i*step,(i+1)*step))
         else:
             slice_list.append(slice(i*step, n))
+    
     from toolbox.misc import Stopwatch
+#     print 'hej'
     with Stopwatch('Connecting'):
         map(fun, [pre]*chunks, [post]*chunks, [args]*chunks,[kwargs]*chunks,slice_list)
 
 def Connect_speed(*args, **kwargs):
     if comm.is_mpi_used():
-        _Connect_mpi(*args, **kwargs)
+        _Connect_speed_mpi(*args, **kwargs)
     else:
         _Connect_speed(*args, **kwargs)
         
 
 def _Connect_speed_mpi(*args, **kwargs):
     with Barrier():
+        print 'Connecting rank %i' % ( Rank()) #To avoid hangup similar as in Simulation
         _Connect_speed(*args, **kwargs)
-
-def ConvergentConnect(pre, post, weight=None, delay=None, model="static_synapse"):
-    """
-    Connect all neurons in pre to each neuron in post. pre and post
-    have to be lists. If weight is given (as a single float or as list
-    of floats), delay also has to be given as float or as list of
-    floats.
-    """
-
-    if weight == None and delay == None:
-        for d in post :
-            sps(pre)
-            sps(d)
-            sr('/%s ConvergentConnect' % model)
-
-    elif weight != None and delay != None:
-        weight = broadcast(weight, len(pre), (float,), "weight")
-        if len(weight) != len(pre):
-            raise NESTError("weight must be a float, or sequence of floats of length 1 or len(pre)")
-        delay = broadcast(delay, len(pre), (float,), "delay")
-        if len(delay) != len(pre):
-            raise NESTError("delay must be a float, or sequence of floats of length 1 or len(pre)")
-        
-        for d in post:
-            sps(pre)
-            sps(d)
-            sps(weight)
-            sps(delay)
-            sr('/%s ConvergentConnect' % model)
-
-    else:
-        raise NESTError("Both 'weight' and 'delay' have to be given.")
-
 
 def collect_spikes_mpi(*args): 
     args=list(args)
@@ -348,6 +369,14 @@ def delete_data(path, **kwargs):
     else:
         return _delete_data(path, **kwargs)
 
+
+def GetKernelTime():
+    global kernal_time
+    if kernal_time==None:
+        return nest.GetKernelStatus('time')
+    else:
+        return kernal_time 
+
 def get_spikes_from_memory(sd_id):
     e = GetStatus(sd_id)[0]['events'] # get events
     s = e['senders'] # get senders
@@ -379,9 +408,6 @@ def _get_spikes_from_file_mpi(file_names):
 def _get_spikes_from_file(file_names):
     data=[]
 
-#     if my_nest.Rank!=0:
-#         return
-
     for name in file_names: 
         c=0
         while c<2:
@@ -401,12 +427,6 @@ def _get_spikes_from_file(file_names):
     else:
         return numpy.array([]), numpy.array([])
 
-def GetThreads():
-    if Rank()==1:
-        return GetKernelStatus('local_num_threads') #shared memory
-    else:
-        return GetKernelStatus('num_processes') #mpi
-        
    
 def GetConn(soruces, targets):    
     c=[]
@@ -431,6 +451,15 @@ def get_default_module_paths(home):
                       +'install-module-130701-'+s+'/share/ml_module/sli')
     
     return path, sli_path
+# 
+# def GetThreads():
+#     # Should return number of local threads if shared memory run 
+#     # eler number of mpi processes
+#     
+#     if Rank()==1:
+#         return GetKernelStatus('local_num_threads') #shared memory
+#     else:
+#         return GetKernelStatus('num_processes') #mpi
 
 def install_module(path, sli_path, model_to_exist='my_aeif_cond_exp'):
     
@@ -503,24 +532,31 @@ def MySimulate(duration):
           
 def ResetKernel(threads=1, print_time=False, display=False, **kwargs):
 
-    
     if display:
         print 'Reseting kernel'
+        
     nest.ResetKernel()
-    #nest.SetKernelStatus({"resolution": .1, "print_time": print_time})
-    nest.SetKernelStatus({ "print_time": print_time})
-    
-    n=nest.GetKernelStatus('total_num_virtual_procs')
-    
-    if n>1:
-        nest.SetKernelStatus({"local_num_threads": 2})
-        nest.SetKernelStatus({"local_num_threads":kwargs.get('threads_local',1)})
-    else:    
-        nest.SetKernelStatus({"local_num_threads":  threads})
+    nest.SetKernelStatus({"local_num_threads":kwargs.get('local_num_threads',1),
+                          "print_time": print_time})
     
     
     if 'data_path' in kwargs.keys():
         nest.SetKernelStatus({'data_path':kwargs.get('data_path')})
+
+def SetKernelTime(t):
+    global kernal_time
+    kernal_time=t
+
+def _Simulate_mpi(*args, **kwargs):
+    with Barrier():
+        print 'Simulating rank %i' % ( Rank()) #seems like it it neccesary to avoid hangup for mpi??!!
+        nest.Simulate(*args, **kwargs)
+        
+def Simulate(*args, **kwargs):
+    if comm.is_mpi_used():
+        _Simulate_mpi(*args, **kwargs)    
+    else:
+        nest.Simulate(*args, **kwargs)  
 
 def sim_group(data_path,**kwargs):
 
@@ -633,14 +669,14 @@ class TestModuleFunctions(unittest.TestCase):
     def test_Connect_DC(self):
         n=nest.Create('iaf_neuron', 10)
         model='static_synapse'
-        delays=numpy.random.random(10)+2
-        weights=numpy.random.random(10)+1
+        delays=numpy.random.random(100)+2
+        weights=numpy.random.random(100)+1
         
         post=[]
         for _id in n:
             post+=[_id]*10 
         
-        Connect_DC(n*10,post,weights,delays,  model)
+        Connect_DC(n*10, post, weights,delays,  model)
  
  
     def test_Connect_DC_mpi(self):
@@ -667,11 +703,11 @@ if __name__ == '__main__':
     d={
         TestModuleFunctions:[
                             'test_Connect_DC',
-#                             'test_Connect_DC_mpi',
-#                             'test_delete_data',
-#                             'test_delete_data_mpi',
-#                             'test_get_spikes_from_file',
-#                             'test_get_spikes_from_file_mpi',
+                            'test_Connect_DC_mpi',
+                            'test_delete_data',
+                            'test_delete_data_mpi',
+                            'test_get_spikes_from_file',
+                            'test_get_spikes_from_file_mpi',
                              ],
 
        }

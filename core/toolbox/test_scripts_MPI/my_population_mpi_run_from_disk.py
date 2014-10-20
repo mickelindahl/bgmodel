@@ -13,7 +13,7 @@ from toolbox import misc
 from toolbox import my_nest
 # Necessary for pickle se
 # http://stefaanlippens.net/pickleproblem
-from toolbox.signal_processing import phases_diff
+
 
 from toolbox.parallelization import comm, Barrier
 fileName, fileOut, data_path =sys.argv[1:]

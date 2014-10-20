@@ -111,7 +111,7 @@ def my_map(i, chunksize, fun, out, args):
      
 def map_local_threads(fun, args, kwargs):
     
-    local_th=kwargs.get('local_threads', 1)
+    local_th=int(kwargs.get('local_num_threads', 1))
     if local_th==1:
         return map(fun, *args)
 
@@ -123,36 +123,35 @@ def map_local_threads(fun, args, kwargs):
     tmp_args=[a[0] for a in args ]
     tmp_r=fun(*tmp_args)
     
-    if type(tmp_r)==int:
-        out = Array( 'l', numpy.zeros(n, dtype=numpy.int64) )
-    else:
-        out = Array( 'd', numpy.zeros(n) )
-        
-    for i in xrange(local_th):
-        a=chunkit(chunksize, i, *args)
-        p=Process(target=my_map, args=(i, chunksize, fun, out, a))
-        jobs.append(p)
-        
-    for job in jobs: job.start()
-    for job in jobs: job.join()
-
-    r=list(out[:])
+    if not type(tmp_r) in [list, tuple, numpy.ndarray]:
+        if type(tmp_r)==int:
+            out = Array( 'l', numpy.zeros(n, dtype=numpy.int64) )
+        else:
+            out = Array( 'd', numpy.zeros(n) )
+            
+        for i in xrange(local_th):
+            a=chunkit(chunksize, i, *args)
+            p=Process(target=my_map, args=(i, chunksize, fun, out, a))
+            jobs.append(p)
+            
+        for job in jobs: job.start()
+        for job in jobs: job.join()
+    
+        r=list(out[:])
          
-
-#     pool = Pool(processes=local_th)
-# 
-#     fun = Wrap(fun)
-#     args=izip(*args)    
-#     with misc.Stopwatch('inside map local'):
-#         
-#         f=fun.use
-#         r = pool.map(f, args)#, chunksize=len(args)/local_th)
-# 
-#     # Necessary to shut threads down. Otherwise just more and more threads
-#     # are created
-#         pool.close()
-#         pool.join()
-#     
+    else:
+        pool = Pool(processes=local_th)
+     
+        fun = Wrap(fun)
+        args=izip(*args)    
+        f=fun.use
+        r = pool.map(f, args)#, chunksize=len(args)/local_th)
+     
+        # Necessary to shut threads down. Otherwise just more and more threads
+        # are created
+        pool.close()
+        pool.join()
+       
     return r
 
                 
@@ -173,19 +172,22 @@ def lineno():
     return inspect.currentframe().f_back.f_lineno
 
 
-def map_parallel(fun, *args, **kwargs):
+
 
 #     if comm.is_mpi_used():
     
-    return map_mpi(fun, *args, **kwargs)
+#     return map_mpi(fun, *args, **kwargs)
 
 #     else:
 #         return map_pool(fun, args, kwargs)
         
-
-def map_mpi(fun, *args, **kwargs):
+def map_parallel(fun, *args, **kwargs):
+# def map_mpi(fun, *args, **kwargs):
     
-    with Barrier():    
+    with Barrier():
+        
+        
+            
         chunksize = int(math.ceil(len(args[0]) / float(comm.size())))
         
         a=chunkit(chunksize, comm.rank(), *args)
@@ -235,7 +237,7 @@ class TestModule_functions(unittest.TestCase):
         with misc.Stopwatch('Seriell'):
             l1= map(mockup_fun, a, a)
         with misc.Stopwatch('Seriell2s'):
-            l2=map_parallel(mockup_fun, a, a, **{'local_threads':4})
+            l2=map_parallel(mockup_fun, a, a, **{'local_num_threads':4})
 
         self.assertListEqual(l1,l2)
                  

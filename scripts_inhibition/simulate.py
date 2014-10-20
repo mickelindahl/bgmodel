@@ -61,28 +61,28 @@ def get_file_name_figs(script_name, par=None):
 #     file_name_figs = home + '/results/papers/inhibition/network/fig/' + script_name
     return file_name
 
-def get_runs_oscillation(builder, 
-                         do_obj, 
-                          do_runs,
-                          file_name, 
-                          freq_oscillation, 
-                          from_disk_0, 
-                          module,
-                          no_threads_postprocessing,  
-                          p_list, 
+def get_args_list_oscillation(p_list, **kwargs):
+    
+    builder=kwargs.get('Builder')
+    do_obj=kwargs.get('do_obj') 
+    do_runs=kwargs.get('do_runs')
+    file_name=kwargs.get('file_name')
+    from_disk_0=kwargs.get('from_disk_0')
+    freq_oscillation=kwargs.get('freq_oscillation')
+    module=kwargs.get('module')
+    local_num_threads=kwargs.get('local_num_threads')
 
-                          type_of_run):
     args_list=[]
-    for j in range(from_disk_0, 3):
+
+    for j in range(0, 3):
         for i, p in enumerate(p_list):
-            
-            if (i not in do_runs) and do_runs:
-                continue
+            if (i not in do_runs) and do_runs:continue
+            if j < from_disk_0:  continue
             
             script_name = (file_name + '/script_' + str(i) 
-                           + '_' + p.name + '_' + type_of_run)
+                           + '_' + p.name)
             setup = module.Setup(1000.0 / freq_oscillation, 
-                                 no_threads_postprocessing)
+                                 local_num_threads)
             
             obj = module.Main(**{'builder':builder, 
                                  'from_disk':j, 
@@ -93,11 +93,73 @@ def get_runs_oscillation(builder,
             if do_obj:
                 obj.do()
                 
-            args_list.append([obj, script_name])
-
+            args_list.append(obj)
     return args_list
 
+def get_args_list_Go_NoGo_compete(p_list, **kwargs):
+    
+    builder=kwargs.get('Builder')
+    do_obj=kwargs.get('do_obj') 
+    do_runs=kwargs.get('do_runs')
+    duration=kwargs.get('duration')
+    file_name=kwargs.get('file_name')
+    from_disk_0=kwargs.get('from_disk_0')
+    laptime=kwargs.get('laptime')
+    l_mean_rate_slices=kwargs.get('l_mean_rate_slices')
+    local_num_threads=kwargs.get('local_num_threads')
+    module=kwargs.get('module')
+    res=kwargs.get('res')
+    rep=kwargs.get('rep')
+    
+    
+    args_list=[]
+    for j in range(from_disk_0, 3):
+        for i, p in enumerate(p_list):
+            if (i not in do_runs) and do_runs:
+                continue 
+                      
+            script_name = (file_name + '/script_' + str(i) 
+                           + '_' + p.name)
+            setup = module.Setup(**{'duration':duration,
+                                    'laptime':laptime,
+                                    'l_mean_rate_slices':l_mean_rate_slices,
+                                    'local_num_threads':local_num_threads,
+                                    'resolution':res,
+                                    'repetition':rep})
+           
+            obj = module.Main(**{'builder':builder, 
+                                 'from_disk':j, 
+                                 'perturbation_list':p, 
+                                 'script_name':script_name, 
+                                 'setup':setup})
+            if do_obj:
+                obj.do()
+                
+            args_list.append(obj)
+    
+def get_kwargs_list(n_pert, kwargs):
+    do_runs=kwargs.get('do_runs')
+    from_disk_0=kwargs.get('from_disk_0')
+    
+    kwargs_list=[]
+    index=-1
+    for j in range(0, 3):
+        for i, p in range(n_pert):
+            index+=1
+            if (i not in do_runs) and do_runs:
+                continue
+            
+            if j < from_disk_0:
+                continue
+            kwargs['hours']=kwargs['l_hours'][j]
+            kwargs['minutes']=kwargs['l_seconds'][j]
+            kwargs['seconds']=kwargs['l_minutes'][j]
+            kwargs['index']=index
+            kwargs_list.append(kwargs.copy())
+    
+    return kwargs_list
 
+        
 def get_path_logs(from_milner_on_supermicro, file_name):
     _bool = my_socket.determine_host() == 'supermicro'
     if from_milner_on_supermicro and _bool:
@@ -171,14 +233,24 @@ def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd):
     return from_disks, d
 
 
-def par_mpi_sim(cores_milner, cores_superm):
+def par_process_and_thread(**kwargs):
+    
+    cores_milner=kwargs.get('cores_milner',40)
+    cores_superm=kwargs.get('cores_superm',20)
+    local_threads_milner=kwargs.get('local_threads_superm',10)
+    local_threads_superm=kwargs.get('local_threads_superm',5)
+    
     # core have to be multiple of 40 for milner
     host = my_socket.determine_host() 
+
+    
     if host == 'milner':
+        local_threads=local_threads_milner
+        
     
-        local_threads=10
-    
-        d={'cores_hosting_OpenMP_threads':40/local_threads, 
+        d={
+           'cores_hosting_OpenMP_threads':40/local_threads,
+           'local_num_threads':local_threads, 
            'memory_per_node':int(819*local_threads),
            'num-mpi-task':cores_milner/local_threads,
            'num-of-nodes':cores_milner/40,
@@ -187,21 +259,101 @@ def par_mpi_sim(cores_milner, cores_superm):
            } 
         
     elif host == 'supermicro':
-        d={'num-mpi-task':min(cores_superm)}
+        local_threads=local_threads_superm
+        d={
+           'num-mpi-task':cores_superm/local_threads,
+           'local_num_threads':local_threads, 
+           'num-threads-per-mpi-process':local_threads,
+           }
         
     return d
 
-def par_milner_postprocess(cores=40):
 
-    d={'cores_hosting_OpenMP_threads':40, 
-       'num-mpi-task':cores,
-       'num-of-nodes':cores/20,
-       'num-mpi-tasks-per-node':20,
-       'num-threads-per-mpi-process':1,
-        } 
+def pert_add_go_nogo_ss(**kwargs):
+
+    l=kwargs.get('perturbation_list')
+
+    p_sizes=kwargs.get('p_sizes')
+    p_subsamp=kwargs.get('p_subsamp')
+    max_size=kwargs.get('max_size')
+    local_num_threads=kwargs.get('local_num_threads')
     
-    return d
+    ll=[]
 
+    p_sizes=[p/p_sizes[0] for p in p_sizes]
+    for ss, p_size in zip(p_subsamp, p_sizes): 
+        
+        for i, _l in enumerate(l):
+            _l=deepcopy(_l)
+            per=pl({'netw':{'size':int(p_size*max_size), 
+                            'sub_sampling':{'M1':ss,
+                                            'M2':ss},}},
+                      '=', 
+                      **{'name':'ss-'+str(ss)})
+            _l+=per
+    
+            _l+=pl({'simu':{'local_num_threads':local_num_threads}},'=')
+            ll.append(_l)
+
+    return ll
+
+def pert_add_oscillations(**kwargs):
+    
+    
+    freqs=kwargs.get('freqs') 
+    freq_oscillation=kwargs.get('freq_oscillation') 
+    local_num_threads=kwargs.get('local_num_threads')
+    path_rate_runs=kwargs.get('path_rate_runs')
+    perturbation_list=kwargs.get('perturbation_list')
+    sim_time=kwargs.get('sim_time')
+    size=kwargs.get('size')
+    
+    l=perturbation_list
+    for i in range(len(l)):
+        l[i] += pl({'simu':{'do_reset':True,
+                            'sd_params':{'to_file':True, 'to_memory':False},
+                            'sim_time':sim_time, 
+                            'sim_stop':sim_time,
+                            'local_num_threads':local_num_threads}, 
+                'netw':{'size':size}}, 
+            '=')
+    
+    damp = process(path_rate_runs, freqs)
+    for key in sorted(damp.keys()):
+        val = damp[key]
+        print numpy.round(val, 2), key
+    
+    ll = []
+    for j, _ in enumerate(freqs):
+        for i, _l in enumerate(l):
+            amp = [numpy.round(damp[_l.name][j], 2), 1]
+            d = {'type':'oscillation2', 
+                'params':{'p_amplitude_mod':amp[0], 
+                          'p_amplitude0':amp[1], 
+                          'freq':freq_oscillation}}
+            
+            _l = deepcopy(_l)
+            dd = {}
+            for key in ['C1', 'C2', 'CF', 'CS']:
+                dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
+            
+            _l += pl(dd, '=', **{'name':'amp_{0}-{1}'.format(*amp)})
+            ll.append(_l)
+    
+    return ll
+
+def pert_set_data_path_to_milner_on_supermicro(l, set_it):
+    if (my_socket.determine_host()=='milner') or (not set_it):
+        return l
+    
+    dp=default_params.HOME_DATA_BASE+'/milner/'
+    df=default_params.HOME_DATA_BASE+'milner_supermicro/fig/'
+    for i in range(len(l)):
+        l[i] += pl({'simu':{'path_data':dp, 
+                            'path_figure':df}}, 
+            '=')
+    
+    return l
 
 def show_plot(name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
     dd={}
@@ -388,58 +540,3 @@ def show_psd(d, models):
 
 
 
-def pert_add_oscillations(freqs, 
-                          freq_oscillation, 
-                          local_num_threads,
-                          no_shared_memory_threads, 
-                          path_rate_runs,
-                          perturbation_list,
-                          sim_time, 
-                          size, 
-                          total_num_virtual_procs,
-                          ):
-    l=perturbation_list
-    for i in range(len(l)):
-        l[i] += pl({'simu':{'do_reset':True,
-                            'sd_params':{'to_file':True, 'to_memory':False},
-                            'sim_time':sim_time, 
-                            'sim_stop':sim_time,}, 
-                'netw':{'size':size}}, 
-            '=')
-    
-    damp = process(path_rate_runs, freqs)
-    for key in sorted(damp.keys()):
-        val = damp[key]
-        print numpy.round(val, 2), key
-    
-    ll = []
-    for j, _ in enumerate(freqs):
-        for i, _l in enumerate(l):
-            amp = [numpy.round(damp[_l.name][j], 2), 1]
-            d = {'type':'oscillation2', 
-                'params':{'p_amplitude_mod':amp[0], 
-                          'p_amplitude0':amp[1], 
-                          'freq':freq_oscillation}}
-            
-            _l = deepcopy(_l)
-            dd = {}
-            for key in ['C1', 'C2', 'CF', 'CS']:
-                dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
-            
-            _l += pl(dd, '=', **{'name':'amp_{0}-{1}'.format(*amp)})
-            ll.append(_l)
-    
-    return ll
-
-def pert_set_data_path_to_milner_on_supermicro(l, set_it):
-    if (my_socket.determine_host()=='milner') or (not set_it):
-        return l
-    
-    dp=default_params.HOME_DATA_BASE+'/milner/'
-    df=default_params.HOME_DATA_BASE+'milner_supermicro/fig/'
-    for i in range(len(l)):
-        l[i] += pl({'simu':{'path_data':dp, 
-                            'path_figure':df}}, 
-            '=')
-    
-    return l
