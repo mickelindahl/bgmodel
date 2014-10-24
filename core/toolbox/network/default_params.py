@@ -69,7 +69,6 @@ network  - define layers and populations
 from copy import deepcopy
 from toolbox import misc
 from toolbox.misc import my_slice
-
 import sys
 
 from toolbox import my_nest as nest # Has to after misc. 
@@ -94,8 +93,8 @@ HOME_DATA_BASE=HOME+'/results/papers/inhibition/network/'
 HOME_DATA=(HOME+'/results/papers/inhibition/network/'
            +my_socket.determine_computer()+'/')
 
-
 path, sli_path=nest.get_default_module_paths(HOME)
+
 nest.install_module(path, sli_path, model_to_exist='my_aeif_cond_exp' )
 
  
@@ -319,6 +318,8 @@ class Perturbation(object):
                  *(self.val==other.val)
                  *(self.op==other.op))
          
+         
+         
     def __hash__(self):
         return hash((tuple(self.keys), self.val, self.op))
      
@@ -356,8 +357,6 @@ class Perturbation_list(object):
     def __eq__(self, other):
         return not set(self.list).isdisjoint(set(other.list))
         
-    
-    
     def __str__(self):
         return  self.name+':'+str(self.list)
 

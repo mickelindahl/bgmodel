@@ -321,6 +321,7 @@ class Network_base(object):
     def simulation_loop(self):
         d={}
         self.do_reset()
+        self.do_delete_nest_data() #clear data before run
         
         while True:
             self.do_preprocessing()
@@ -332,18 +333,11 @@ class Network_base(object):
                 t=my_nest.GetKernelStatus('time')
                 my_nest.SetKernelTime(t)
                 with Barrier():
-                    my_nest.ResetKernel(**{'data_path':self.path_nest})
-                    
+                    my_nest.ResetKernel(**{'data_path':self.path_nest})    
                 gc.collect()
-#                 self.pops=None
                 self.do_reset()
-                import time
-#                 time.sleep(100)
-                 
-     
+
             self.do_postprocessing(d)
-
-
 
             if self.reset: 
                 self.do_reset()
@@ -351,9 +345,7 @@ class Network_base(object):
             if self.sim_stop<=self.sim_time_progress:
                 break    
             
-            
-            
-        self.do_delete_nest_data() 
+        self.do_delete_nest_data()  #clear data after run
         return d
         
     def _sim_XX_curve(self, flag, stim=[], stim_time=0, model='',  **kwargs):    

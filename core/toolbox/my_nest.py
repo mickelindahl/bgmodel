@@ -16,10 +16,6 @@ import csv
 import numpy
 import numpy.random as rand
 
-import socket
-HOST=socket.gethostname().split('.')[0]
-# if 'milner-login1.pdc.kth.se'==HOST:
-# if 0:
 from nest import *
 import nest
 import nest.pynestkernel as _kernel        
@@ -28,7 +24,7 @@ import time
 from copy import deepcopy
 from toolbox.parallelization import comm, Barrier
 from toolbox.misc import Stopwatch
-
+from toolbox import my_socket
 import pprint
 pp=pprint.pprint
 
@@ -439,7 +435,11 @@ def GetConn(soruces, targets):
 def get_default_module_paths(home):
 
     if nest.version()=='NEST 2.2.2':
-        s='nest-2.2.2'
+        if my_socket.determine_computer()=='milner':
+            s='nest-2.2.2-wo-music'
+        else:
+            s='nest-2.2.2'
+            
     if nest.version()=='NEST 2.4.1':
         s='nest-2.4.1'    
     if nest.version()=='NEST 2.4.2':

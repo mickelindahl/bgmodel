@@ -39,20 +39,25 @@ class Director(object):
     def set_builder(self, builder):
         self.builder=builder
         
-    def get_networks(self, **kwargs):
+    def get_networks(self, kwargs_director, kwargs_engine):
         
         per=self.builder.get_perturbations()
         
+        get_these=kwargs_director.get('nets_to_run',[])
+                
         nets={}
         info=''
         for i, p in enumerate(per):
             name='Net_'+str(i)
+            if get_these and not (name in get_these):
+                continue
             info+='Net_'+str(i)+':'+ p.name+'\n'
             par=self.builder.get_parameters(p)
 #             perturbation_consistency(p, par)
-            net=self.builder.get_network(name, par, **kwargs)
+            net=self.builder.get_network(name, par, **kwargs_engine)
             nets[net.get_name()]=net
         return info, nets
+
 
 def set_networks_names(names, nets):
     for name, net in zip(names, nets):
@@ -155,25 +160,7 @@ class Builder_abstract(object):
         
         l=[]
         l+=[pl(**{'name':'no_pert'})]
-#         l+=[pl({'netw':{'size':val}}, '*', **{'name':'Size-'+str(val)}) 
-#             for val in [0.5, 1.0, 1.5]] 
-#         l+=[pl({'node':{'C2':{'rate':val}}}, '*', **{'name':'M2r-'+str(val)}) 
-#             for val in [1.3, 1.2, 1.1, 0.9, 0.8]] 
-#         l+=[pl({'node':{'EA':{'rate':val}}}, '*', **{'name':'GAr-'+str(val)}) 
-#             for val in [0.8, 0.6, 0.4, 0.2]] 
-#         l+=[pl({'nest':{'GI_ST_gaba':{'delay':0.5}}}, '*', 
-#                **{'name':'GISTd-0.5'})]    # from GPe type I to STN  
-#         l+=[pl({'nest':{'ST_GA_ampa':{'delay':0.5}}}, '*',
-#                **{'name':'STGId-0.5'})]     # from STN to GPe type I and A  
-#         l+=[pl({'nest':{'GI_ST_gaba':{'delay':0.5}, 
-#                         'ST_GA_ampa':{'delay':0.5}}}, '*', 
-#                **{'name':'Bothd-0.5'})]
-#         l+=[pl({'netw':{'V_th_sigma':0.5}}, '*', **{'name':'V_th-0.5'})]
-#         l+=[pl({'netw':{'prop_fan_in_GPE_A':val}}, '*', 
-#                **{'name':'GAfan-'+str(val)}) 
-#             for val in [2, 4, 6]]
-#         l+=[pl('GArV-0.5', [['netw.V_th_sigma',0.5, '*'], 
-#                             ['nest.GI_ST_gaba.delay', 0.5, '*']])]
+
         
         return l
 
@@ -518,37 +505,49 @@ def get_intervals(rep, durations, d, sequence):
         out.append([[d1, d2] for d1, d2 in zip(intervals[i::sequence], intervals[i+1::sequence])])
     return out
 
+
+def _get_input_go_nogo_p0_and_p1(res, dur):
+    v = numpy.linspace(1, 3, res)
+    x, y = numpy.meshgrid(v, v)
+    x, y = x.ravel(), y.ravel()
+    p0 = reduce(lambda x, y:x + y, [[1, p] for p in y])
+    p1 = reduce(lambda x, y:x + y, [[1, p] for p in x])
+    durations = dur * res * res
+    return durations, p0,  p1, x, y
+
+
 def get_input_Go_NoGo(kwargs):
     n_sets=kwargs.get('n_sets', 2)
     
-    res = kwargs.get('resolution', 5)
-    rep = kwargs.get('repetition', 5)
+    res = kwargs.get('resolution', 2)
+    rep = kwargs.get('repetition', 2)
     dur = kwargs.get('duration', [1000., 500.])
     prop_conn=kwargs.get('proportion_connected', 1)
     
     act=kwargs.get('act',['M1', 'M2', 'GI', 'SN'])
     act_input=kwargs.get('act_input', ['C1', 'C2'])
     no_act=kwargs.get('no_act',['FS', 'GA', 'ST'])
+    other_scenario=kwargs.get('other_scenario',False)
     
-    
+    if other_scenario:
+        conn_setup=[['M1_SN_gaba', 'M2_GI_gaba', 'GI_SN_gaba'], 
+                     ['set-set', 'set-set',  'set-set']] 
+    else:
+        conn_setup=[['M1_SN_gaba', 'M2_GI_gaba', 'GI_SN_gaba'], 
+                    ['set-set', 'set-set', 'all-all']]
+      
     input_lists = kwargs.get('input_lists', [['C1'], ['C1', 'C2']])
-    v = numpy.linspace(1, 3, res)
     
-    x, y = numpy.meshgrid(v, v)
-    x, y = x.ravel(), y.ravel()
-    p0 = reduce(lambda x, y:x + y, [[1, p] for p in y])
-    p1 = reduce(lambda x, y:x + y, [[1, p] for p in x])
-    durations = dur * res * res
+    durations, p0,  p1, x, y = _get_input_go_nogo_p0_and_p1(res, dur)
+ 
     l = []
     for inp_list in input_lists:
         d = {}
         for node in act:
             d = misc.dict_update(d, {'node':{node:{'n_sets':2}}})
         for node in no_act:
-            d = misc.dict_update(d, {'node':{node:{'n_sets':1}}}) 
-                   
-        for conn, rule in zip(['M1_SN_gaba', 'M2_GI_gaba', 'GI_SN_gaba'], 
-            ['set-set', 'set-set', 'all-all']):
+            d = misc.dict_update(d, {'node':{node:{'n_sets':1}}})                
+        for conn, rule in zip(*conn_setup):
             d = misc.dict_update(d, {'conn':{conn:{'rule':rule}}})
 
         for inp in inp_list :
@@ -557,8 +556,14 @@ def get_input_Go_NoGo(kwargs):
             d = misc.dict_update(d, {'node':{inp:{'n_sets':n_sets}}})
             params = {'type':'burst3', 
                 'params':{'n_set_pre':n_sets, 
-                    'repetitions':rep}}
+                          'repetitions':rep}}
             d_sets = {}
+            
+            if inp=='C2' and other_scenario:
+                p_tmp=p0
+                p0=p1
+                p1=p_tmp
+                
             d_sets.update({str(0):{'active':True, 
                                    'amplitudes':p0, 
                                    'durations':durations, 
@@ -621,6 +626,7 @@ def get_input_Go_NoGo(kwargs):
     dic['x'] = x
     dic['y'] = y
     return l, dic
+
 
 class Builder_Go_NoGo_compete_base(Builder_network):    
 
@@ -731,13 +737,11 @@ class Builder_Go_NoGo_with_lesion_base(Builder_network):
         
         return l    
 
-
 class Builder_Go_NoGo_with_lesion(Builder_Go_NoGo_with_lesion_base, 
                       Mixin_dopamine, 
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass     
-
 
 class Builder_Go_NoGo_with_nodop_base(Builder_network):    
 
@@ -755,15 +759,12 @@ class Builder_Go_NoGo_with_nodop_base(Builder_network):
         
         return l    
 
-
 class Builder_Go_NoGo_with_nodop(Builder_Go_NoGo_with_nodop_base, 
                       Mixin_dopamine, 
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass     
-  
-        
-        
+      
 class Builder_Go_NoGo_with_lesion_FS_base(Builder_network):    
 
     def get_parameters(self, per):
@@ -788,14 +789,12 @@ class Builder_Go_NoGo_with_lesion_FS_base(Builder_network):
 
         
         return l    
-
-
+    
 class Builder_Go_NoGo_with_lesion_FS(Builder_Go_NoGo_with_lesion_FS_base, 
                                      Mixin_dopamine, 
                                      Mixin_general_network, 
                                      Mixin_reversal_potential_striatum):
     pass
-
 
 class Builder_Go_NoGo_with_lesion_FS_ST_base(Builder_network):    
 
@@ -1189,12 +1188,12 @@ def get_simu(k):
        }
     return d    
 
-def get_networks(Builder, kwargs_builder={}, kwargs_engine={}):
+def get_networks(Builder, k_builder={}, k_director={}, k_engine={}):
     
-    builder = Builder(**kwargs_builder)
+    builder = Builder(**k_builder)
     director = Director()
     director.set_builder(builder)
-    info, nets = director.get_networks(**kwargs_engine)
+    info, nets = director.get_networks(k_director, k_engine)
     return info, nets, builder
 
 def get_storage(file_name, info, nets=None):
@@ -1238,19 +1237,18 @@ def psd(data, **k):
     return data.get_psd(**k)
 
 def run(net):
-    from toolbox.network import default_params
-    from toolbox.data_to_disk import pickle_load, pickle_save
-    path=default_params.HOME_CODE+'/core/toolbox/network/manager/'
-    path_in=path+'data_in.pkl'
-    path_out=path+'data_out.pkl'
-    
-    pickle_save(net, path_in)
-    
-    
-    
-    
-    
-    
+#     from toolbox.network import default_params
+#     from toolbox.data_to_disk import pickle_load, pickle_save
+#     path=default_params.HOME_CODE+'/core/toolbox/network/manager/'
+#     path_in=path+'data_in.pkl'
+#     path_out=path+'data_out.pkl'
+#     
+#     pickle_save(net, path_in)
+#     
+#     
+#     
+#     
+
     d=net.simulation_loop()
     return {net.get_name():d}
 
@@ -1294,8 +1292,13 @@ class TestModuleFunctions(unittest.TestCase):
         
         kwargs={'duration':[1000.0, 500.0],
                 'input_lists': [['C1', 'FS'], 
-                                ['C1', 'C2', 'FS']]}
+                                ['C1', 'C2', 'FS']],
+                'other_scenario':True}
         l=get_input_Go_NoGo(kwargs)
+        for ll in l[0]:
+            for p in ll:
+                print p
+                
         
 #     def test_load(self):
 #         self.test_save()
@@ -1394,7 +1397,7 @@ class TestDirectorMixin(object):
     def test_4_director(self):
         director=Director()
         director.set_builder(self.builder)
-        _, nets=director.get_networks()
+        _, nets=director.get_networks({},{})
         for net in nets.values():
             self.assertTrue(isinstance(net, Network_base))
         

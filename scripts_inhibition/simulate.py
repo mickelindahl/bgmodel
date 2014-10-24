@@ -11,11 +11,13 @@ from toolbox.network import default_params
 from toolbox.network.default_params import Perturbation_list as pl
 from toolbox import my_socket
 
+
 from inhibition_gather_results import process
 
 import numpy
 import toolbox.plot_settings as ps
 import pprint
+from toolbox import data_to_disk
 pp=pprint.pprint
 
 
@@ -42,13 +44,7 @@ def get_file_name(script_name,  par=None):
 #     file_name = home + '/results/papers/inhibition/network/' + script_name
     return file_name
 
-def get_path_nest(script_name, par=None):
-    if not par:
-        par=default_params.Inhibition()
-    path=par.get_path_data()
-    file_name = path +script_name.split('/')[0]+ '/nest/'
-#     file_name = home + '/results/papers/inhibition/network/' + script_name
-    return file_name
+
 
 def get_file_name_figs(script_name, par=None):
     if not par:
@@ -108,6 +104,7 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
     l_mean_rate_slices=kwargs.get('l_mean_rate_slices')
     local_num_threads=kwargs.get('local_num_threads')
     module=kwargs.get('module')
+    other_scenario=kwargs.get('other_scenario', False)
     res=kwargs.get('res')
     rep=kwargs.get('rep')
     
@@ -115,28 +112,72 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
     args_list=[]
     for j in range(from_disk_0, 3):
         for i, p in enumerate(p_list):
-            if (i not in do_runs) and do_runs:
-                continue 
-                      
-            script_name = (file_name + '/script_' + str(i) 
-                           + '_' + p.name)
-            setup = module.Setup(**{'duration':duration,
-                                    'laptime':laptime,
-                                    'l_mean_rate_slices':l_mean_rate_slices,
-                                    'local_num_threads':local_num_threads,
-                                    'resolution':res,
-                                    'repetition':rep})
-           
-            obj = module.Main(**{'builder':builder, 
-                                 'from_disk':j, 
-                                 'perturbation_list':p, 
-                                 'script_name':script_name, 
-                                 'setup':setup})
-            if do_obj:
-                obj.do()
+            
+            if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
+            else: nets_list=[kwargs.get('nets')]
+        
+            for nets in nets_list:
+                if (i not in do_runs) and do_runs:
+                    continue 
+             
+                name_nets='_'.join(nets)         
+                script_name = (file_name + '/script'
+                               + '_' + str(i) 
+                               + '_' + p.name)
+                d={'duration':duration,
+                    'laptime':laptime,
+                    'l_mean_rate_slices':l_mean_rate_slices,
+                    'local_num_threads':local_num_threads,
+                    'nets_to_run':nets,
+                    'other_scenario':other_scenario,
+                    'resolution':res,
+                    'repetition':rep}
+                setup = module.Setup(**d)
+               
+                d={'builder':builder, 
+                   'from_disk':j, 
+                   'perturbation_list':p, 
+                   'script_name':script_name, 
+                   'setup':setup}
                 
-            args_list.append(obj)
+                obj = module.Main(**d)
+                
+                if do_obj:
+                    obj.do()
+                         
+                args_list.append(obj)
+
+            
+    return args_list
     
+def get_kwargs_list_indv_nets(n_pert, kwargs):
+    do_runs=kwargs.get('do_runs')
+    from_disk_0=kwargs.get('from_disk_0')
+    
+    kwargs_list=[]
+    index=-1
+    for j in range(from_disk_0, 3):
+        for i in range(n_pert):
+            
+            if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
+            else: nets_list=[kwargs.get('nets')]
+        
+            for nets in nets_list:
+                if (i not in do_runs) and do_runs:
+                    continue 
+                
+                index+=1
+                if (i not in do_runs) and do_runs:
+                    continue
+
+                kwargs['hours']=kwargs['l_hours'][j]
+                kwargs['minutes']=kwargs['l_seconds'][j]
+                kwargs['seconds']=kwargs['l_minutes'][j]
+                kwargs['index']=index
+                kwargs_list.append(kwargs.copy())
+    
+    return kwargs_list
+
 def get_kwargs_list(n_pert, kwargs):
     do_runs=kwargs.get('do_runs')
     from_disk_0=kwargs.get('from_disk_0')
@@ -144,7 +185,7 @@ def get_kwargs_list(n_pert, kwargs):
     kwargs_list=[]
     index=-1
     for j in range(0, 3):
-        for i, p in range(n_pert):
+        for i in range(n_pert):
             index+=1
             if (i not in do_runs) and do_runs:
                 continue
@@ -158,7 +199,6 @@ def get_kwargs_list(n_pert, kwargs):
             kwargs_list.append(kwargs.copy())
     
     return kwargs_list
-
         
 def get_path_logs(from_milner_on_supermicro, file_name):
     _bool = my_socket.determine_host() == 'supermicro'
@@ -172,6 +212,16 @@ def get_path_logs(from_milner_on_supermicro, file_name):
                         + file_name 
                         + '/')
     return path_results
+
+def get_path_nest(script_name, keys, par=None):
+    if not par:
+        par=default_params.Inhibition()
+    path=par.get_path_data()
+    file_name = path +script_name.split('/')[0]+ '/nest/'+'_'.join(keys)+'/'
+#     file_name = home + '/results/papers/inhibition/network/' + script_name
+    data_to_disk.mkdir(file_name)
+
+    return file_name
 
 def get_path_rate_runs(simulation_name):
     if my_socket.determine_computer() == 'milner':
@@ -216,7 +266,17 @@ def main_loop_conn(from_disk, attr, models, sets, nets, kwargs_dic, sd):
 def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd):
     d = {}
     from_disks = [from_disk] * len(nets.keys())
-    for net, fd in zip(nets.values(), from_disks):
+    
+    if type(sd)==list:
+        iter=[nets.values(), from_disks, sd]
+    else:
+        iter=[nets.values(), from_disks]
+    
+    for vals in zip(*iter):
+        if type(sd)==list:
+            net, fd, sd=vals
+        else:
+            net, fd=vals
         if fd == 0:
             dd = run(net)
             save(sd, dd)
@@ -237,11 +297,11 @@ def par_process_and_thread(**kwargs):
     
     cores_milner=kwargs.get('cores_milner',40)
     cores_superm=kwargs.get('cores_superm',20)
-    local_threads_milner=kwargs.get('local_threads_superm',10)
+    local_threads_milner=kwargs.get('local_threads_milner',10)
     local_threads_superm=kwargs.get('local_threads_superm',5)
     
     # core have to be multiple of 40 for milner
-    host = my_socket.determine_host() 
+    host = my_socket.determine_computer() 
 
     
     if host == 'milner':
@@ -273,6 +333,7 @@ def pert_add_go_nogo_ss(**kwargs):
 
     l=kwargs.get('perturbation_list')
 
+
     p_sizes=kwargs.get('p_sizes')
     p_subsamp=kwargs.get('p_subsamp')
     max_size=kwargs.get('max_size')
@@ -292,7 +353,10 @@ def pert_add_go_nogo_ss(**kwargs):
                       **{'name':'ss-'+str(ss)})
             _l+=per
     
-            _l+=pl({'simu':{'local_num_threads':local_num_threads}},'=')
+            _l+=pl({'simu':{'local_num_threads':local_num_threads,
+                            'do_reset':True,
+                            'sd_params':{'to_file':True, 'to_memory':False}
+                            }},'=')
             ll.append(_l)
 
     return ll

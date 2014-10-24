@@ -1,10 +1,10 @@
 #!/bin/bash -l
 
 # The name of the script is myjob
-#SBATCH -J dummy_job
+#SBATCH -J {job_name}
 
 # Wall-clock time will be given to this job
-#SBATCH -t 00:10:00
+#SBATCH -t {hours}:{minutes}:{seconds}
 
 # Number of MPI tasks.
 #SBATCH -n {num-mpi-task}
@@ -39,7 +39,7 @@ HOME={home}
 NEURO_TOOLS=$HOME/local/lib/python2.7/site-packages
 PYTHON=/pdc/vol/nest/2.2.2-wo-music/lib/python2.7/site-packages
 PYTHON_GNU=/pdc/vol/python/2.7.6-gnu/lib/python2.7/site-packages
-SRC=$HOME/git/bgmodel/core
+SRC=$HOME/git/bgmodel/core:HOME/git/bgmodel/
 
 export PYTHONPATH=$PYTHONPATH:$NEURO_TOOLS:$PYTHON:$PYTHON_GNU:$SRC
 export OMP_NUM_THREADS={num-threads-per-mpi-process}

@@ -17,7 +17,7 @@ from simulate import get_file_name
 import pprint
 pp=pprint.pprint
 
-from toolbox.
+# from toolbox.
 
 def gather(path, nets, models, attrs): 
     
@@ -208,7 +208,7 @@ if __name__=='__main__':
     path='/home/mikael/results/papers/inhibition/network/simulate_slow_wave_ZZZ5/'
     home = expanduser("~")
     script_name=__file__.split('/')[-1][0:-3]
-    file_name = get_file_name(script_name, home)
+    file_name = get_file_name(script_name)
     from_disk=0
     
     sd = get_storage(file_name, '')

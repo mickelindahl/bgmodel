@@ -13,10 +13,8 @@ import unittest
 
 import toolbox.misc as misc
 import toolbox.my_nest as my_nest # need to have it othervice imprt crashes somtimes
-
 from toolbox.misc import Base_dic
 from toolbox.parallelization import comm, Barrier
-
 from os.path import expanduser
 HOME = expanduser("~")
 
@@ -78,8 +76,8 @@ class Storage(object):
 
     def values(self):
         return self.data_paths.values()
-                       
-class Storage_dic(Base_dic):
+
+class Storage_dic2(Base_dic):
     '''dictionary of storage objects'''
     
     def __setitem__(self, key, val):
@@ -88,9 +86,18 @@ class Storage_dic(Base_dic):
     def _init_extra_attributes(self, *args, **kwargs):
         self.allowed=[]
         self.file_name=args[0] 
+        self.nets=args[1]
         self.directory= self.file_name+'/'   
         self.file_name_info=self.directory+'info.txt'
            
+
+    @property
+    def file_names(self):
+        return [self.filename+net for net in self.nets]
+
+    @property
+    def directories(self):
+        return [self.directory+net+'/' for net in self.nets]
 
     def Factory_storage(self):
         return Storage(self.directory)
@@ -102,9 +109,6 @@ class Storage_dic(Base_dic):
     def add_storage(self, keys):
         val=self.Factory_storage()
         self.dic=misc.dict_recursive_add(self.dic, keys, val)
-        
-
-        
     
     def clear(self):
         if os.path.isfile(self.file_name+'.pkl'):
@@ -179,15 +183,203 @@ class Storage_dic(Base_dic):
             fig.savefig( self.file_name +extension+'.'+format, 
                          format = format) 
     
-    def save_figs(self, figs, extension='', format='svg'):
+    def save_figs(self, figs, extension='', format='svg', in_folder=''):
         
-        path='/'.join(self.file_name .split('/')[0:-1])
+        path='/'.join(self.file_name .split('/')[0:-1])+'/'
+        name=self.file_name .split('/')[-1]
+        
+        if in_folder:
+            path+=in_folder+'/'
+            
         if not os.path.isdir(path):
             mkdir(path)
         
         with misc.Stopwatch('Saving figures...'):
             for i, fig in enumerate(figs):
-                fig.savefig( self.file_name +extension+'_'+str(i)+'.'+format, 
+                fig.savefig( path+name +extension+'_'+str(i)+'.'+format, 
+                             format = format)              
+    
+    def set_file_name(self, val):
+        self.file_name=val
+
+    def set_directory(self, val):
+        self.directory=val
+    @classmethod
+    def load_mpi(cls, file_name, nets):
+        '''It makes perfect sense that you should use foo=Foo.load(), 
+        and not foo=Foo();foo.load(). for example, if Foo has some 
+        variables that MUST be passed in to the init, you would need 
+        to make them up for foo=Foo(); or if the init does some heavy 
+        calculations of variables stored in the instance, 
+        it would be for nothing. '''
+        
+        if os.path.isfile(file_name+'.pkl'):   
+
+                
+#             cls.file_name=file_name
+#             cls.directory=file_name+'/'
+            out={}
+            for net in nets:   
+                file_name=file_name+'/'+net
+                d= pickle_load(file_name) 
+                d.force_update(file_name)
+                misc.dict_update(out, d)
+            return out
+        else:
+            return Storage_dic2(file_name, nets)
+                    
+#     @classmethod
+    def load_dic(self, *filt):
+              
+        d={}
+        for keys, storage in misc.dict_iter(self):
+            if filt==():
+                pass
+            else:
+                a=False
+                i=0
+                for key in keys:
+                    if key not in filt:
+                        a=True
+                    i+=1
+                    if i==3:
+                        break
+                if a:
+                    continue
+                       
+            val=storage.load_data()
+            d=misc.dict_recursive_add(d, keys, val)
+                
+        return d
+            
+    
+    def save(self):
+        pickle_save(self, self.file_name)
+    
+    def save_dic(self, d, **k):
+
+
+        for keys, data in misc.dict_iter(d):
+            
+            if not misc.dict_haskey(self.dic, keys):
+                self.add_storage(keys)
+        
+            s=misc.dict_recursive_get(self.dic, keys)
+            s.save_data('-'.join(keys), data, **k)
+        
+        self.save()
+                  
+class Storage_dic(Base_dic):
+    '''dictionary of storage objects'''
+    
+    def __setitem__(self, key, val):
+        raise AttributeError('Can set item for Storage_dic, use add_storage')
+    
+    def _init_extra_attributes(self, *args, **kwargs):
+        self.allowed=[]
+        self.file_name=args[0] 
+        self.directory= self.file_name+'/'   
+        self.file_name_info=self.directory+'info.txt'
+           
+
+    def Factory_storage(self):
+        return Storage(self.directory)
+
+    def add_info(self, info):
+        
+        txt_save( info, self.file_name_info )
+
+    def add_storage(self, keys):
+        val=self.Factory_storage()
+        self.dic=misc.dict_recursive_add(self.dic, keys, val)
+    
+    def clear(self):
+        if os.path.isfile(self.file_name+'.pkl'):
+            os.remove(self.file_name+'.pkl')        
+        
+        path=self.directory
+        if os.path.isdir(path):
+            l=os.listdir(path)
+            l=[path+ll for ll in l]
+            for p in l:
+                os.remove(p)
+            os.rmdir(path)
+    
+    def delete(self, k):
+        del self.dic[k]
+    
+    def force_update(self, file_name):
+        
+        self.file_name=file_name
+        self.directory=file_name+'/'
+        
+        for _, storage in misc.dict_iter(self.dic):
+            storage.set_main_path(self.directory)
+            file_name=storage.get_data_path().split('/')[-1]
+            storage.set_data_path(self.directory+file_name)
+    
+
+    def _garbage_collect_mpi(self):
+        with Barrier():
+            if comm.rank()==0:
+                self._garbage_collect()
+                
+            
+    def garbage_collect(self):
+        if comm.is_mpi_used():
+            self._garbage_collect_mpi()
+        else:
+            self._garbage_collect()
+            
+    def _garbage_collect(self):
+        
+        files1=[self.file_name_info]
+        for _, storage in misc.dict_iter(self.dic):
+            files1.append(storage.get_data_path())
+        
+        mypath=self.directory
+        if not os.path.isdir(mypath):
+            return
+            
+        files2=[ os.path.join(mypath,f) for f in os.listdir(mypath) 
+               if os.path.isfile(os.path.join(mypath,f)) ]
+        
+        for f in files2:
+            if f in files1:
+                continue
+            else:
+                os.remove(f)
+
+    def save_fig(self, *args):
+        if comm.is_mpi_used():
+            with Barrier():
+                if comm.rank()==0:
+                    self._save_fig(*args)
+        else:
+            self._save_fig(*args)
+                    
+
+     
+    def _save_fig(self, fig, extension='', format='svg'):
+        
+        with misc.Stopwatch('Saving figure...'):
+            fig.savefig( self.file_name +extension+'.'+format, 
+                         format = format) 
+    
+    def save_figs(self, figs, extension='', format='svg', in_folder=''):
+        
+        path='/'.join(self.file_name .split('/')[0:-1])+'/'
+        name=self.file_name .split('/')[-1]
+        
+        if in_folder:
+            path+=in_folder+'/'
+            
+        if not os.path.isdir(path):
+            mkdir(path)
+        
+        with misc.Stopwatch('Saving figures...'):
+            for i, fig in enumerate(figs):
+                fig.savefig( path+name +extension+'_'+str(i)+'.'+format, 
                              format = format)              
     
     def set_file_name(self, val):
@@ -218,12 +410,37 @@ class Storage_dic(Base_dic):
                     if k in nets:
                         continue
                     d.delete(k)
+                    
             d.force_update(file_name)
 
             return d
         else:
             return Storage_dic(file_name)
 
+
+    @classmethod
+    def load_mpi(cls, file_name, nets):
+        '''It makes perfect sense that you should use foo=Foo.load(), 
+        and not foo=Foo();foo.load(). for example, if Foo has some 
+        variables that MUST be passed in to the init, you would need 
+        to make them up for foo=Foo(); or if the init does some heavy 
+        calculations of variables stored in the instance, 
+        it would be for nothing. '''
+        
+        if os.path.isfile(file_name+'.pkl'):   
+
+                
+#             cls.file_name=file_name
+#             cls.directory=file_name+'/'
+            out={}
+            for net in nets:   
+                file_name=file_name+'/'+net
+                d= pickle_load(file_name) 
+                d.force_update(file_name)
+                misc.dict_update(out, d)
+            return out
+        else:
+            return Storage_dic(file_name)
                     
 #     @classmethod
     def load_dic(self, *filt):
@@ -703,7 +920,15 @@ class TestStorage_dic(unittest.TestCase):
         self.s.save_fig(fig)
         self.assertTrue(os.path.isfile(self.file_name+'.svg'))
         os.remove(self.file_name+'.svg')  
-   
+
+    def test_save_figs(self):
+        import pylab
+        fig=pylab.figure()
+        self.s=Storage_dic(self.file_name)
+        self.s.save_figs([fig])
+        self.assertTrue(os.path.isfile(self.file_name+'.svg'))
+        os.remove(self.file_name+'.svg') 
+
     def tearDown(self):
         if os.path.isfile(self.file_name+'.pkl'):
             os.remove(self.file_name+'.pkl')        

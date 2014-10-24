@@ -47,12 +47,12 @@ kwargs={
         
         'jobb_name':'_'.join(FILE_NAME.split('_')[1:]),
         
-        'l_hours':['01','01','00'],
+        'l_hours':  ['01','01','00'],
         'l_minutes':['00','00','5'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,
-        'local_threads_superm':20,
+        'local_threads_superm':10,
         
         'module':module,
         
@@ -67,6 +67,7 @@ kwargs={
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)
+pp(d_process_and_thread)
 kwargs.update(d_process_and_thread)
 
 pp(kwargs)
@@ -82,7 +83,7 @@ p_list = pert_set_data_path_to_milner_on_supermicro(p_list,
 for i, p in enumerate(p_list): print i, p
 
 a_list=get_args_list_oscillation(p_list, **kwargs)
-k_list=get_kwargs_list(len(p_list, kwargs))
+k_list=get_kwargs_list(len(p_list), kwargs)
 
 loop(1, a_list, k_list )
 

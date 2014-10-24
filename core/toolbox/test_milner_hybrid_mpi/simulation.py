@@ -7,7 +7,13 @@ import sys
 import pprint
 pp=pprint.pprint
 
+
+
 from nest import *
+
+def fun(x):
+    return [x,x*x]
+    
 
 local_th, path_nest, =sys.argv[1:]
  
@@ -26,3 +32,13 @@ sd = Create("spike_detector", params={"to_file": True,
 RandomConvergentConnect(pg, n, 100)
 ConvergentConnect(n, sd)
 Simulate(100.0)
+
+
+from toolbox.parallelization import map_parallel
+ 
+num=10**7
+print num
+
+r=map_parallel(fun, range(num),
+               **{"local_num_threads": int(local_th)})
+print r[0:10]

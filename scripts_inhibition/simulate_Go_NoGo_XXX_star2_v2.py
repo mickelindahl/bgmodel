@@ -59,6 +59,8 @@ kwargs={
         
         'nets':['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4'],
         
+        'other_scenario':True,
+        
         'path_code':default_params.HOME_CODE,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
@@ -78,6 +80,8 @@ kwargs={
                      ],
         'res':10,
         'rep':40,
+        'sim_time':10000.0,
+        'size':20000.0 ,
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)

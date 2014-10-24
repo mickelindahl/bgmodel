@@ -1612,8 +1612,8 @@ class MySpikeList(SpikeList):
         spike_hist=map_parallel(spike_histogram_fun, *args, 
                                 **{'local_num_threads': kwargs.get('local_num_threads',1)})
         
-        out=numpy.array(spike_hist, dtype=numpy.float32)
-        print 'hej', len(self.ids),kwargs.get('local_num_threads',1), out.shape
+#         out=numpy.array(spike_hist, dtype=numpy.float32)
+#         print 'hej', len(self.ids),kwargs.get('local_num_threads',1), out.shape
 #         for idx, id in enumerate(self.id_list):
 #  
 #             self.fun(time_bin, normalized, binary, nbins, spike_hist, id)

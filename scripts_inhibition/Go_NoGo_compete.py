@@ -11,7 +11,7 @@ import toolbox.plot_settings as ps
 
 from os.path import expanduser
 from simulate import (main_loop, show_fr, get_file_name, 
-                      get_file_name_figs)
+                      get_file_name_figs, get_path_nest)
 
 from toolbox.data_to_disk import Storage_dic
 from toolbox import misc
@@ -34,7 +34,7 @@ def get_kwargs_builder(**k_in):
     laptime=k_in.get('laptime',1500.0)
     duration=k_in.get('duration',[1000.,500.])
     prop_conn=k_in.get('proportion_connected', 1)
-    return {'duration':duration,
+    d= {'duration':duration,
             'print_time':False,
             'proportion_connected':prop_conn,
             'save_conn':{'overwrite':False},
@@ -46,14 +46,17 @@ def get_kwargs_builder(**k_in):
             'start_rec':0.0,  
             'stop_rec':numpy.inf,
             'sub_sampling':sub,
-            'local_num_threads':THREADS,}   
+            'local_num_threads':THREADS,} 
+    k_in.update(d)
+    return  d
     
 def get_kwargs_engine():
     return {'verbose':True}
 
-def get_networks(builder, **k_in):
+def get_networks(builder, k_builder, k_director):
     info, nets, builder=manager.get_networks(builder,
-                                             get_kwargs_builder(**k_in),
+                                             get_kwargs_builder(**k_builder),
+                                             k_director,
                                              get_kwargs_engine())
     
     intervals=builder.dic['intervals']
@@ -386,7 +389,6 @@ def plot_optimal(size):
             
     return fig
     
-
 # def plot_uniformity(d,attr,**k):
 #     models=['SN']
 #     res=k.get('resolution')
@@ -411,20 +413,23 @@ def plot_optimal(size):
 class Setup(object):
 
     def __init__(self, **k):
-        self.labels=k.get('labels',['Only D1', 
-                             'D1,D2',
-                             'MSN lesioned (D1, D2)',
-                             'FSN lesioned (D1, D2)',
-                             'GPe TA lesioned (D1,D2)'])
-        self.local_num_threads=k.get('local_num_threads',1)
-        self.res=k.get('resolution',2)
-        self.rep=k.get('repetition',2)
-        self.laptime=k.get('laptime',1500.0)
         self.duration=k.get('duration',[1000.,500.])
+        self.laptime=k.get('laptime',1500.0)
+        self.labels=k.get('labels',['Only D1', 
+                           'D1,D2',
+                           'MSN lesioned (D1, D2)',
+                           'FSN lesioned (D1, D2)',
+                           'GPe TA lesioned (D1,D2)'])
+        self.local_num_threads=k.get('local_num_threads',1)
         self.l_mean_rate_slices=k.get('l_mean_rate_slices', ['mean_rate_slices', 
                                                              'mean_rate_slices_0',
                                                              'mean_rate_slices_1'])
+        self.nets_to_run=k.get('nets_to_run',[])
         self.proportion_connected=k.get('proportion_connected',1)
+        self.other_scenario=k.get('other_scenario',2)
+        self.res=k.get('resolution',2)
+        self.rep=k.get('repetition',2)
+ 
     def builder(self):
         d= {'repetition':self.rep,
             'resolution':self.res,
@@ -433,8 +438,12 @@ class Setup(object):
             'sub_sampling':6.25,
             'laptime':self.laptime,                
             'duration':self.duration,
+            'other_scenario':self.other_scenario,
             'proportion_connected':self.proportion_connected}
         return d
+
+    def director(self):
+        return {'nets_to_run':self.nets_to_run}
 
     def firing_rate(self):
         d={'average':False, 
@@ -491,9 +500,11 @@ class Setup(object):
 def simulate(builder, from_disk, perturbation_list, script_name, setup):
     home = expanduser("~")
     
-    file_name = get_file_name(script_name)
-    file_name_figs = get_file_name_figs(script_name)
-    
+
+   
+#     file_name = get_file_name(script_name)
+#     file_name_figs = get_file_name_figs(script_name)
+     
     d_firing_rate = setup.firing_rate()
     d_mrs = setup.mean_rate_slices()
     
@@ -502,7 +513,17 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
     sets = ['set_0', 'set_1']
     
     info, nets, intervals, rep, x_set, y_set = get_networks(builder, 
-                                                            **setup.builder())
+                                                            setup.builder(),
+                                                            setup.director())
+
+    print nets.keys()
+    key=nets.keys()[0]
+    file_name = get_file_name(script_name, nets[key].par)
+    file_name_figs = get_file_name_figs(script_name,  nets[key].par)
+    path_nest=get_path_nest(script_name,nets.keys(), nets[key].par)
+
+    for net in nets.values():
+        net.set_path_nest(path_nest)
 
     x=range(len(x_set))
     xticklabels=[str(a)+'*'+str(b) for a, b in zip(x_set, y_set) ]
@@ -528,36 +549,37 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
                   }
 
 
-    add_perturbations(perturbation_list, nets)    
-    sd = get_storage(file_name, info)
-    
-#     net=nets['Net_0']
-#     for key in sorted(net.par['nest']): 
-#         if 'weight' in net.par['nest'][key]: 
-#             print net.par['nest'][key]['weight']
-#     
-#     for key in sorted(net.par['nest']): 
-#         if 'weight' in net.par['nest'][key]: 
-#             print key
+    add_perturbations(perturbation_list, nets)
+    t=0
+    sd_list=[]
+    for net in nets.keys(): 
+        sd_list.append(get_storage(file_name+'/'+net, info))
+        print sd_list, nets
 
-# l=[]
-# for key in sorted(net.par['conn']):
-#      
-#     if 'weight' in net.par['conn'][key] and key not in l: 
-# #         print net.par['conn'][key]['fan_in']
-#         print key
-#         l.append(key)
-# for key in sorted(net.par['conn']): 
-#     if 'weight' in net.par['conn'][key]: 
-#         print key
-#      
+#     from toolbox.network.manager import compute, run
+#     d = {}
+#     from_disks = [from_disk] * len(nets.keys())
+#     for net, fd, sd in zip(nets.values(), from_disks, sd_list):
+#         if fd == 0:
+#             dd = run(net)
+#             sd.save_dic(dd, **{'use_hash':False})
+#         elif fd == 1:
+#             filt = [net.get_name()] + models + ['spike_signal']
+#             dd = sd.load_dic(*filt)
+#             dd = compute(dd, models, attr, **kwargs_dic)
+#             sd.save_dic(dd, **{'use_hash':False})
+#         elif fd == 2:
+#             filt = [net.get_name()] + sets + models + attr
+#             dd = sd.load_dic(*filt)
+#         d = misc.dict_update(d, dd)
+            
     from_disks, d = main_loop(from_disk, attr, models, 
-                              sets, nets, kwargs_dic, sd)
-    
-    return file_name, file_name_figs, from_disks, d, models, sd
+                              sets, nets, kwargs_dic, sd_list)
+     
+    return file_name, file_name_figs, from_disks, d, models
 
 
-def create_figs(setup, file_name_figs, d, models,sd):
+def create_figs(setup, file_name_figs, d, models):
     
     sd_figs = Storage_dic.load(file_name_figs)
     figs = []
@@ -634,7 +656,7 @@ def create_figs(setup, file_name_figs, d, models,sd):
             
 
     sd_figs.save_figs(figs, format='png')
-    sd_figs.save_figs(figs, format='svg')
+    sd_figs.save_figs(figs, format='svg', in_folder='svg')
     
 class Main():    
     def __init__(self, **kwargs):
@@ -656,10 +678,10 @@ def main(builder=Builder,
     
     
     v=simulate(builder, from_disk, perturbation_list, script_name, setup)
-    file_name, file_name_figs, from_disks, d, models, sd = v
+    file_name, file_name_figs, from_disks, d, models= v
     
-    if numpy.all(numpy.array(from_disks) > 0):
-        create_figs(setup, file_name_figs, d, models, sd)
+    if numpy.all(numpy.array(from_disks) > 1):
+        create_figs(setup, file_name_figs, d, models)
     
     
 #     pylab.show()

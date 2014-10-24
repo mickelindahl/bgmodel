@@ -20,11 +20,11 @@ import numpy
 import os
 import time  
 
-from os.path import expanduser
-from multiprocessing import Pool, Process,  Queue, Array
-from toolbox import misc
 from itertools import izip
-
+from multiprocessing import Pool, Process,  Queue, Array
+from os.path import expanduser
+from toolbox import misc
+from toolbox import my_socket
 
 class comm(object):
     
@@ -107,12 +107,19 @@ def chunkit(chunksize, i, *args):
 def my_map(i, chunksize, fun, out, args):
     a=map(fun, *args)
     out[chunksize*i:chunksize*(i+1)]=numpy.array(a)
-    
+
+class MyMap(object):
+    def __init__(self, fun, i):
+        self.__fun = fun
+        self.__id=i
+    def __call__(self, *args):
+        return  map(self.__fun, *args) 
      
 def map_local_threads(fun, args, kwargs):
-    
+
+
     local_th=int(kwargs.get('local_num_threads', 1))
-    if local_th==1:
+    if (local_th==1) or my_socket.determine_computer()=='milner':
         return map(fun, *args)
 
     n=len(args[0])
@@ -123,7 +130,9 @@ def map_local_threads(fun, args, kwargs):
     tmp_args=[a[0] for a in args ]
     tmp_r=fun(*tmp_args)
     
+    
     if not type(tmp_r) in [list, tuple, numpy.ndarray]:
+        print 'array', comm.rank()
         if type(tmp_r)==int:
             out = Array( 'l', numpy.zeros(n, dtype=numpy.int64) )
         else:
@@ -140,15 +149,17 @@ def map_local_threads(fun, args, kwargs):
         r=list(out[:])
          
     else:
+
         pool = Pool(processes=local_th)
      
         fun = Wrap(fun)
         args=izip(*args)    
         f=fun.use
         r = pool.map(f, args)#, chunksize=len(args)/local_th)
-     
+
         # Necessary to shut threads down. Otherwise just more and more threads
         # are created
+        comm.barrier()
         pool.close()
         pool.join()
        
@@ -185,22 +196,18 @@ def map_parallel(fun, *args, **kwargs):
 # def map_mpi(fun, *args, **kwargs):
     
     with Barrier():
-        
-        
-            
+         
         chunksize = int(math.ceil(len(args[0]) / float(comm.size())))
         
         a=chunkit(chunksize, comm.rank(), *args)
         
-        out=map_local_threads(fun, a, kwargs)
-    
+        out=map_local_threads(fun, a, kwargs) 
         if comm.rank() == 0: 
             data=[out]+[comm.recv(source=i, tag=1) for i in range(1, comm.size())]
             data=reduce(lambda x,y:x+y, data )  
         else:
             comm.send(out,dest=0, tag=1)
-            data=None
-                
+            data=None    
     with Barrier():
         data=comm.bcast(data, root=0)
 
@@ -324,8 +331,8 @@ class TestComm(unittest.TestCase):
 if __name__ == '__main__':
     d={
        TestModule_functions:[
-#                             'test_map_parallel',
-                            'test_map_parallel_mpi',
+                            'test_map_parallel',
+#                             'test_map_parallel_mpi',
                            ],
        TestComm:[
 #                  'test_is_mpi_used'

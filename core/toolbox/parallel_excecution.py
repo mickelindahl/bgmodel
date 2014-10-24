@@ -155,22 +155,24 @@ def loop(*args, **kwargs):
             jobs.append(p)
             
 
-            
+        print jobs
         s='Waiting for {} processes to complete ...'.format(chunks)
         with misc.Stopwatch(s):
             for p in jobs:    
                 p.wait()
 #                 p.terminate()
 
-        if host=='milner':
-            from toolbox import jobb_handler
-            
-            path=default_params.HOME_DATA+'/active_jobbs.pkl'
-            
-            obj=jobb_handler.Handler(path, 1)
-            print obj
-            obj.loop(loop_print=True)
-            
+            if host=='milner':
+                
+                from toolbox import jobb_handler
+                
+                path=default_params.HOME_DATA+'/active_jobbs.pkl'
+                
+                obj=jobb_handler.Handler(path, 1)
+                print obj
+                time.sleep(5)
+                obj.loop(loop_print=True)
+                
 
 def save_params(path_params, path_script, obj):
     data_to_disk.pickle_save([obj, 
@@ -207,12 +209,13 @@ def generate_milner_bash_script(*args, **kwargs):
     host=my_socket.determine_computer()
     if host=='milner':
 #             call='aprun -n 2 -N 1 -d 20 python {SCRIPT} 2>&1 | tee delme_simulation'
-        call=('aprun -n {num-mpi-task} '
+        call=('aprun '
+              +'-n {num-mpi-task} '
               +'-N {num-mpi-tasks-per-node} '
               +'-d {num-threads-per-mpi-process} '
               +'-m {memory_per_node} '
-              +'python {script} {num-threads-per-mpi-process} '
-              +'{path_nest} 2>&1 | tee {output}')
+              +'python {path_script} {path_params} '
+              +'2>&1 | tee {path_tee_out}')
  
 #         call=('aprun -n {n_mpi_processes} -N {n_tasks_per_node} '
 #               +'-d {depth} '

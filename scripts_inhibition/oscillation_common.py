@@ -8,7 +8,10 @@ import os
 
 
 from os.path import expanduser
+
 from toolbox import misc, pylab
+
+
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
 from toolbox.network.data_processing import Data_units_relation
@@ -710,12 +713,10 @@ def simulate(builder=Builder,
     info, nets, _ = get_networks(builder)
     add_perturbations(perturbation_list, nets)
 
-
-    file_name = get_file_name(script_name, nets['Net_0'].par)
-    file_name_figs = get_file_name_figs(script_name,  nets['Net_0'].par)
-    path_nest=get_path_nest(script_name, nets['Net_0'].par)
-
-    
+    key=nets.keys()[0]
+    file_name = get_file_name(script_name, nets[key].par)
+    file_name_figs = get_file_name_figs(script_name,  nets[key].par)
+    path_nest=get_path_nest(script_name, nets[key].par)
 
     for net in nets.values():
         net.set_path_nest(path_nest)

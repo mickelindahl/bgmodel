@@ -17,6 +17,7 @@ import numpy as np
 import os
 import pylab
 import random
+print 'imported scipy'
 import scipy.signal as signal
 import scipy.cluster.vq as clust
 import socket

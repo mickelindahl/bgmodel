@@ -3,7 +3,9 @@ Created on Aug 12, 2013
 
 @author: lindahlm
 '''
+print 'before oscillation_common import'
 import oscillation_common
+print 'after oscillation_common import'
 import os
 
 from toolbox.network.manager import Builder_beta as Builder

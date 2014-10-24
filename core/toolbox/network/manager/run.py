@@ -6,6 +6,7 @@ Created on Oct 18, 2014
 
 import sys
 from toolbox.data_to_disk import pickle_load, pickle_save
+
 path_in,path_out, =sys.argv[1:]
 
 net=pickle_load(path_in)
