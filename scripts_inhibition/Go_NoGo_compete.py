@@ -16,7 +16,7 @@ from simulate import (main_loop, show_fr, get_file_name,
 from toolbox.data_to_disk import Storage_dic
 from toolbox import misc
 from toolbox.network import manager
-from toolbox.network.manager import (add_perturbations, get_storage)
+from toolbox.network.manager import (add_perturbations, get_storage_list)
 # from toolbox.network.manager import Builder_Go_NoGo_with_lesion as Builder
 from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS_ST_base as Builder
 from toolbox.my_signals import Data_bar
@@ -133,7 +133,7 @@ def show_bulk(d, models, attr, **k):
     
     fig, axs=ps.get_figure(n_rows=7, n_cols=1, w=1200.0, h=800.0, fontsize=10)    
     
-    for k, model in enumerate(models):
+    for k, model in enumerate(models):        
         ax=axs[k]
         max_set=0
         for j, name in enumerate(sorted(d.keys())):
@@ -173,7 +173,7 @@ def show_bulk(d, models, attr, **k):
         #Create legend from custom artist/label lists
         ax.legend([handle for i,handle in enumerate(handles) 
                    if i in display]+linetype_handles,
-                  [label for i,label in enumerate(_labels) 
+          [label for i,label in enumerate(_labels) 
                    if i in display]+linetype_labels, bbox_to_anchor=(1.22, 1.))
         
     return fig       
@@ -240,6 +240,22 @@ def show_3d(d,attr,**k):
     return fig
 
 
+
+def set_action_selection_marker(axs, i, performance, key, z, d0, d1, _vmin, _vmax, x1, y1, x2, y2, thr, marker):
+    if marker=='d':
+        x2 = numpy.ma.array(x2, mask=(d0 > thr) + (d1 > thr))
+        y2 = numpy.ma.array(y2, mask=(d0 > thr) + (d1 > thr)) #             x0,y0,z0=get_optimal(z.shape[0])
+
+    if marker=='s':
+        x2 = numpy.ma.array(x2, mask=((d0 > thr)*(d1 < thr)+(d0 < thr)*(d1 > thr)))
+        y2 = numpy.ma.array(y2, mask=((d0 > thr)*(d1 < thr)+(d0 < thr)*(d1 > thr))) #             x0,y0,z0=get_optimal(z.shape[0])
+
+    performance[key] = numpy.round(numpy.sum(numpy.abs(z)), 2)
+    im = axs[i].pcolor(x1, y1, z, cmap='coolwarm', 
+        vmin=_vmin, vmax=_vmax)
+    axs[i].scatter(x2, y2, color='k', edgecolor='k', s=100, marker=marker)
+    return im
+
 def show_heat_map(d,attr,**k):
     models=['SN']
     res=k.get('resolution')
@@ -289,21 +305,18 @@ def show_heat_map(d,attr,**k):
             stepy=(y[-1,0]-y[0,0])/res
             x1,y1=numpy.meshgrid(numpy.linspace(x[0,0], x[0,-1], res+1),
                                numpy.linspace(y[0,0], y[-1,0], res+1))
-            x2,y2=numpy.meshgrid(numpy.linspace(x[0,0]+stepx/2, x[0,-1]-stepx/2, res),
-                                 numpy.linspace(y[0,0]+stepy/2, y[-1,0]-stepy/2, res))
+            x2,y2=numpy.meshgrid(numpy.linspace(x[0,0]+stepx/2, 
+                                                x[0,-1]-stepx/2, res),
+                                 numpy.linspace(y[0,0]+stepy/2, 
+                                                y[-1,0]-stepy/2, res))
             
             thr=k.get('threshold',14)
            
-            x2=numpy.ma.array(x2, mask=(d0>thr)+(d1>thr))
-            y2=numpy.ma.array(y2, mask=(d0>thr)+(d1>thr))
-#             x0,y0,z0=get_optimal(z.shape[0])
-            
-            performance[key]=numpy.round(numpy.sum(numpy.abs(z)) ,2)
-             
- 
-            im=axs[i].pcolor(x1, y1, z, cmap='coolwarm',  vmin=_vmin, vmax=_vmax)
-            
-            axs[i].scatter(x2,y2, color='k', edgecolor='k', s=100, marker='o')
+            im = set_action_selection_marker(axs, i, performance, key, z, d0, d1, 
+                                             _vmin, _vmax, x1, y1, x2, y2, thr, marker='d')
+            im = set_action_selection_marker(axs, i, performance, key, z, d0, d1, 
+                                             _vmin, _vmax, x1, y1, x2, y2, thr, marker='s')
+  
             
             box = axs[i].get_position()
             
@@ -331,6 +344,7 @@ def show_heat_map(d,attr,**k):
                 cbar=pylab.colorbar(im, cax = axColor, orientation="vertical")
                 cbar.ax.set_ylabel('Contrast (spike/s)', rotation=270)
                 from matplotlib import ticker
+                
                 tick_locator = ticker.MaxNLocator(nbins=5)
                 cbar.locator = tick_locator
                 cbar.update_ticks()
@@ -421,9 +435,10 @@ class Setup(object):
                            'FSN lesioned (D1, D2)',
                            'GPe TA lesioned (D1,D2)'])
         self.local_num_threads=k.get('local_num_threads',1)
-        self.l_mean_rate_slices=k.get('l_mean_rate_slices', ['mean_rate_slices', 
-                                                             'mean_rate_slices_0',
-                                                             'mean_rate_slices_1'])
+        self.l_mean_rate_slices=k.get('l_mean_rate_slices', 
+                                      ['mean_rate_slices', 
+                                       'mean_rate_slices_0',
+                                       'mean_rate_slices_1'])
         self.nets_to_run=k.get('nets_to_run',[])
         self.proportion_connected=k.get('proportion_connected',1)
         self.other_scenario=k.get('other_scenario',2)
@@ -550,29 +565,9 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
 
 
     add_perturbations(perturbation_list, nets)
-    t=0
-    sd_list=[]
-    for net in nets.keys(): 
-        sd_list.append(get_storage(file_name+'/'+net, info))
-        print sd_list, nets
+    
+    sd_list=get_storage_list(nets, file_name, info)
 
-#     from toolbox.network.manager import compute, run
-#     d = {}
-#     from_disks = [from_disk] * len(nets.keys())
-#     for net, fd, sd in zip(nets.values(), from_disks, sd_list):
-#         if fd == 0:
-#             dd = run(net)
-#             sd.save_dic(dd, **{'use_hash':False})
-#         elif fd == 1:
-#             filt = [net.get_name()] + models + ['spike_signal']
-#             dd = sd.load_dic(*filt)
-#             dd = compute(dd, models, attr, **kwargs_dic)
-#             sd.save_dic(dd, **{'use_hash':False})
-#         elif fd == 2:
-#             filt = [net.get_name()] + sets + models + attr
-#             dd = sd.load_dic(*filt)
-#         d = misc.dict_update(d, dd)
-            
     from_disks, d = main_loop(from_disk, attr, models, 
                               sets, nets, kwargs_dic, sd_list)
      

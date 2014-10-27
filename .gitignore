@@ -1,3 +1,7 @@
+# .project, .pydevproject and .settings are specific to eclipse
+/.project
+/.pydevproject
+/.settings/
 *.pyc
 *~
 *.txt

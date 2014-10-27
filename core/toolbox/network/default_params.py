@@ -806,7 +806,10 @@ class Par_base(object):
     
     def get_dic_con(self):
         return self.dic_con    
-    
+
+    def get_do_reset(self):
+        return self.dic_con['simu']['do_reset']
+   
     def get_FF_input(self):
         return self.dic_con['netw']['FF_curve']['input']
    
@@ -815,6 +818,9 @@ class Par_base(object):
 
     def get_fopt(self):
         return self.dic_con['netw']['optimization']['f']
+
+    def get_local_num_threads(self):
+        return self.dic_con['simu']['local_num_threads']  
 
     def _get_nest(self):
         return self.dic_con['nest']
@@ -898,12 +904,7 @@ class Par_base(object):
     def get_stop_rec(self):
         return self.dic_con['simu']['stop_rec']  
 
-    def get_spikes_from_file(self):
-        return self.dic_con['simu']['sd_params']['to_file']
-
-    def get_do_reset(self):
-        return self.dic_con['simu']['do_reset']
-
+    
     def get_surf(self):
         dic={}
         for key in self.get_node().keys():
@@ -914,13 +915,13 @@ class Par_base(object):
             del dic[key]['class_surface']
         
         return dic
-
-    def get_local_num_threads(self):
-        return self.dic_con['simu']['local_num_threads']  
-
-#     def get_threads_local(self):
-#         return self.dic_con['simu']['threads_local'] 
-
+ 
+    def get_to_file(self):
+        return self.dic_con['simu']['sd_params']['to_file']
+ 
+    def get_to_memory(self):
+        return self.dic_con['simu']['sd_params']['to_memory']
+        
     def get_unittest(self):
         return self.unittest
 

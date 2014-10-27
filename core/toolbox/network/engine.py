@@ -281,8 +281,11 @@ class Network_base(object):
     def get_x0(self):
         return self.x0opt
 
-    def get_spikes_from_file(self):
-        return self.par.get_spikes_from_file()
+    def get_to_file(self):
+        return self.par.get_to_file()
+
+    def get_to_memory(self):
+        return self.par.get_to_memory()
 
     def get_do_reset(self):
         return self.par.get_do_reset()
@@ -327,7 +330,7 @@ class Network_base(object):
             self.do_preprocessing()
             self.do_run()
             
-            if self.get_do_reset():
+            if self.get_do_reset() and not self.get_to_memory():
                 import gc
                 print 'reseting_kernel in loop'
                 t=my_nest.GetKernelStatus('time')
@@ -581,7 +584,7 @@ class Network(Network_base):
 #             print 'After reset kernel', comm.rank()
     
 #             my_nest.MySimulate(self.sim_time)       
-            my_nest.Simulate(self.sim_time) 
+            my_nest.Simulate(self.sim_time, chunksize=20000.) 
             self.sim_time_progress+=self.sim_time
               
        

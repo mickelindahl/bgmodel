@@ -208,6 +208,11 @@ def map_parallel(fun, *args, **kwargs):
         else:
             comm.send(out,dest=0, tag=1)
             data=None    
+    
+    if data:
+        print 'len data', len(data)
+        print data
+    
     with Barrier():
         data=comm.bcast(data, root=0)
 

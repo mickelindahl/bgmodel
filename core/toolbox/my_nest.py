@@ -547,16 +547,40 @@ def SetKernelTime(t):
     global kernal_time
     kernal_time=t
 
+def _Simulate(sim_time, chunksize=None):
+    if chunksize:
+#         print chunksize
+        while sim_time>0:
+            if sim_time<chunksize:
+                chunksize=sim_time
+#             print 'inside', chunksize
+#             with Barrier():
+#             if Rank()==0:
+#                 print 'Time left:{}'.format(sim_time)
+            
+            k={'only_rank_0_mpi':True,
+               'relative_to':chunksize/1000.}    
+            with Stopwatch('Time left {}'.format(sim_time), **k):
+                nest.Simulate(chunksize)
+            
+            sim_time-=chunksize
+    else:
+        nest.Simulate(time)
+
+
 def _Simulate_mpi(*args, **kwargs):
     with Barrier():
         print 'Simulating rank %i' % ( Rank()) #seems like it it neccesary to avoid hangup for mpi??!!
-        nest.Simulate(*args, **kwargs)
+        _Simulate(*args, **kwargs)
+
+          
+
         
 def Simulate(*args, **kwargs):
     if comm.is_mpi_used():
         _Simulate_mpi(*args, **kwargs)    
     else:
-        nest.Simulate(*args, **kwargs)  
+        _Simulate(*args, **kwargs)  
 
 def sim_group(data_path,**kwargs):
 

@@ -263,31 +263,39 @@ def main_loop_conn(from_disk, attr, models, sets, nets, kwargs_dic, sd):
             
     return from_disks, d
 
-def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd):
+def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd_list, **kwargs):
+    
+    run_method=kwargs.get('run',run)
+    compute_method=kwargs.get('compute',compute)
+    
     d = {}
     from_disks = [from_disk] * len(nets.keys())
     
-    if type(sd)==list:
-        iter=[nets.values(), from_disks, sd]
+    if type(sd_list)==list:
+        iterator=[nets.values(), from_disks, sd_list]
     else:
-        iter=[nets.values(), from_disks]
+        iterator=[nets.values(), from_disks]
     
-    for vals in zip(*iter):
-        if type(sd)==list:
+    for vals in zip(*iterator):
+        if type(sd_list)==list:
             net, fd, sd=vals
         else:
             net, fd=vals
+            
         if fd == 0:
-            dd = run(net)
+            dd = run_method(net)
             save(sd, dd)
+        
         elif fd == 1:
             filt = [net.get_name()] + models + ['spike_signal']
             dd = load(sd, *filt)
-            dd = compute(dd, models, attr, **kwargs_dic)
+            dd = compute_method(dd, models, attr, **kwargs_dic)
             save(sd, dd)
+        
         elif fd == 2:
             filt = [net.get_name()] + sets + models + attr
             dd = load(sd, *filt)
+        
         d = misc.dict_update(d, dd)
     
     return from_disks, d
@@ -338,6 +346,8 @@ def pert_add_go_nogo_ss(**kwargs):
     p_subsamp=kwargs.get('p_subsamp')
     max_size=kwargs.get('max_size')
     local_num_threads=kwargs.get('local_num_threads')
+    to_memory=kwargs.get('to_memory',False)
+    to_file=kwargs.get('to_file',True)
     
     ll=[]
 
@@ -355,7 +365,8 @@ def pert_add_go_nogo_ss(**kwargs):
     
             _l+=pl({'simu':{'local_num_threads':local_num_threads,
                             'do_reset':True,
-                            'sd_params':{'to_file':True, 'to_memory':False}
+                            'sd_params':{'to_file':to_file, 
+                                         'to_memory':to_memory}
                             }},'=')
             ll.append(_l)
 
@@ -603,4 +614,38 @@ def show_psd(d, models):
     return fig
 
 
+import unittest
+class TestModuleFunctions(unittest.TestCase):
+    def setUp(self):
+        def run(net):
+            return {net:{'unittest_1':'spike_signa'}}
+        
+        def compute(d, *args, **kwargs):
+            d={}
+            for net in d.keys():
+                return {net:{'unittest_1':'spike_signa'}}
+            
+            
+    def test_main_loop(self):
+        from toolbox import data_to_disk
+        data_to_disk.Storage_dic
+        
+#         main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd_list)
+        pass
 
+if __name__ == '__main__':
+    d={
+
+       TestMyPoissonInput:[
+#                            'test_create',
+#                            'test_2_simulate_show',
+                           ],
+
+       }
+    test_classes_to_run=d
+    suite = unittest.TestSuite()
+    for test_class, val in  test_classes_to_run.items():
+        for test in val:
+            suite.addTest(test_class(test))
+
+    unittest.TextTestRunner(verbosity=2).run(suite) 

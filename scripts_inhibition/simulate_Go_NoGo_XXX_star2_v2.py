@@ -46,7 +46,7 @@ kwargs={
         
         'job_name':'_'.join(FILE_NAME.split('_')[1:]),
 
-        'l_hours':['02','01','00'],
+        'l_hours':['04','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],             
@@ -80,8 +80,8 @@ kwargs={
                      ],
         'res':10,
         'rep':40,
-        'sim_time':10000.0,
-        'size':20000.0 ,
+        'to_memory':False,
+        'to_file':True
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)

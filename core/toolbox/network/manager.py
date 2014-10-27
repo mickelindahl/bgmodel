@@ -1207,6 +1207,12 @@ def get_storage(file_name, info, nets=None):
     sd.garbage_collect()
     return sd
 
+def get_storage_list(nets, path, info):        
+    sd_list=[]  
+    for net in nets.keys(): 
+        sd_list.append(get_storage(path+'/'+net, info))
+    return sd_list
+
 def IV_curve(data):
     return data.get_IV_curve()
 

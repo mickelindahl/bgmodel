@@ -15,6 +15,8 @@ from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS as Builder
 from toolbox.parallel_excecution import loop
 
 import scripts_inhibition.Go_NoGo_compete as module
+
+
 # from scripts inhibition import Go_NoGo_compete as module
 import oscillation_perturbations4 as op
 import pprint
@@ -23,7 +25,7 @@ pp=pprint.pprint
 from copy import deepcopy
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
+FROM_DISK_0=1
 LOAD_MILNER_ON_SUPERMICRO=False
 
 kwargs={
@@ -46,7 +48,7 @@ kwargs={
         
         'job_name':'_'.join(FILE_NAME.split('_')[1:]),
 
-        'l_hours':['02','01','00'],
+        'l_hours':['04','00','05'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],             

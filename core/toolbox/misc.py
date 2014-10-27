@@ -141,7 +141,7 @@ class Stopwatch():
         self.args=args
         self.time=None
         self.only_rank_0_mpi=kwargs.get('only_rank_0_mpi',True)
-        
+        self.relative_to=kwargs.get('relative_to',None)
     def __enter__(self):
         
         self.time=time.time()
@@ -155,7 +155,12 @@ class Stopwatch():
         
     def __exit__(self, type, value, traceback):
         t=round(time.time()-self.time,)
-        msg_out='... finnish {} {} sec'.format(self.msg, t)
+        if self.relative_to:
+            t_rel=round(self.relative_to/t, 6)
+            msg_out='... finnish {} {} real time factor {} sec '.format(self.msg, t_rel, t)
+        else:
+            msg_out='... finnish {} {} sec '.format(self.msg, t)
+            
         if self.only_rank_0_mpi:
             if mpi4py.MPI.COMM_WORLD.rank==0:            
                 print msg_out

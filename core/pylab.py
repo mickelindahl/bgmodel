@@ -13,6 +13,7 @@ if not os.environ.get('DISPLAY'):
     matplotlib.use('Agg')
     print 'hej'
     import matplotlib.pylab as plt
+    
     plt.ioff()
 
 from matplotlib.pylab import *
