@@ -1599,10 +1599,11 @@ class MySpikeList(SpikeList):
 #         subplot    = get_display(display)
 #  
 #         def fun(): 
- 
+        t_stop=kwargs.get('t_stop', numpy.Inf)
  
         n=len(self.id_list)
-        args=[[self.spiketrains[_id].spike_times for _id in self.id_list],
+        args=[[self.spiketrains[_id].spike_times[self.spiketrains[_id].spike_times<t_stop]  
+               for _id in self.id_list],
               [time_bin]*n, 
               [normalized]*n,
               [binary]*n, 
@@ -1622,12 +1623,12 @@ class MySpikeList(SpikeList):
 
              
     def firing_rate(self, time_bin, **kwargs):
-        display=kwargs.get('display', False)
+#         display=kwargs.get('display', False)
         average=kwargs.get('average', True)
-        binary=kwargs.get('binary', False)
+#         binary=kwargs.get('binary', False)
         ids=kwargs.get('ids', False)
         proportion_connected=kwargs.get('proportion_connected', False)
-        call=super(MySpikeList, self)
+#         call=super(MySpikeList, self)
         result = self.spike_histogram(time_bin, **kwargs)
         
         if ids:
@@ -2764,9 +2765,15 @@ class TestSpikeList(unittest.TestCase):
          
          
     def test_4_firing_rate(self):
-        fr=self.sl.firing_rate(1, **{'local_num_threads':1})
-        fr2=self.sl.firing_rate(1, **{'local_num_threads':3})
+        fr=self.sl.firing_rate(1, **{'local_num_threads':1,
+                                     't_stop':500})
+        fr2=self.sl.firing_rate(1, **{'local_num_threads':3,
+                                      't_stop':500})
+        pylab.plot(fr)
+        pylab.plot(fr2)
+        pylab.show()
         self.assertListEqual(list(fr), list(fr2))
+        
 #         print fr
 #         print fr2
 
@@ -3008,41 +3015,41 @@ class TestVm_list_matrix(unittest.TestCase):
 if __name__ == '__main__':
     d={
         TestDataElement:[
-                    'test_bar',
-                    'test_bar2',
-                    'test_spike_stat',
-                    'test_element',
-                    'test_firing_rate_plot',
-                    'test_activity_histogram',
-                    'test_phases_diff_cohere_plot',
-                    'test_IF_curve_plot',  
-                    'test_IV_curve_plot',  
-                    'test_isis_hist',
-                    'test_mean_rates_hist',
-                    'test_mean_rate_parts_plot',
-                    'test_voltage_traces',
-                    'test_mean_rate_slices',
+#                     'test_bar',
+#                     'test_bar2',
+#                     'test_spike_stat',
+#                     'test_element',
+#                     'test_firing_rate_plot',
+#                     'test_activity_histogram',
+#                     'test_phases_diff_cohere_plot',
+#                     'test_IF_curve_plot',  
+#                     'test_IV_curve_plot',  
+#                     'test_isis_hist',
+#                     'test_mean_rates_hist',
+#                     'test_mean_rate_parts_plot',
+#                     'test_voltage_traces',
+#                     'test_mean_rate_slices',
                     ],
           TestSpikeList:[
-                     'test_1_get_phase',
-                     'test_2_get_psd',
-                     'test_3_mean_rate',
+#                      'test_1_get_phase',
+#                      'test_2_get_psd',
+#                      'test_3_mean_rate',
                      'test_4_firing_rate',
-                     'test_41_firing_rate_mpi',
-                     'test_5_mean_rate_slices',
+#                      'test_41_firing_rate_mpi',
+#                      'test_5_mean_rate_slices',
                      ],
-        TestSpikeListMatrix:[
-                     'test_1_create',
-                     'test_10_item',
-                     'test_2_calls_wrapped_class',
-                     'test_3_class_methods',
-                     'test_4_merge_spike_matrix',
-                     'test_5_concatenate',
-                     ],
-        TestVm_list_matrix:[
-                     'test_1_create',
-                     'test_2_calls_wrapped_class',
-                     ]
+#         TestSpikeListMatrix:[
+#                      'test_1_create',
+#                      'test_10_item',
+#                      'test_2_calls_wrapped_class',
+#                      'test_3_class_methods',
+#                      'test_4_merge_spike_matrix',
+#                      'test_5_concatenate',
+#                      ],
+#         TestVm_list_matrix:[
+#                      'test_1_create',
+#                      'test_2_calls_wrapped_class',
+#                      ]
        }
     test_classes_to_run=d
     suite = unittest.TestSuite()

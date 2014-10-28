@@ -24,7 +24,7 @@ from copy import deepcopy
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=0
-LOAD_MILNER_ON_SUPERMICRO=False
+LOAD_MILNER_ON_SUPERMICRO=True
 
 kwargs={
         'Builder':Builder,

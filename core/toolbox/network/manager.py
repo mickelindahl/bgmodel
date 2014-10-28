@@ -542,6 +542,10 @@ def get_input_Go_NoGo(kwargs):
  
     l = []
     for inp_list in input_lists:
+        
+        inp_no_ch=[name for name in ['CF', 'CS', 'C2'] 
+                   if name not in inp_list]
+        
         d = {}
         for node in act:
             d = misc.dict_update(d, {'node':{node:{'n_sets':2}}})
@@ -595,22 +599,20 @@ def get_input_Go_NoGo(kwargs):
             params['params'].update({'params_sets':d_sets})
             d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
         
-        if ('CF' not in inp_list) or ('CS' not in inp_list):
-            for inp in ['CF', 'CS']:
-#             inp='CF'
-                d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
-                params = {'type':'burst3', 
-                          'params':{'n_set_pre':1, 
-                                    'repetitions':1}}
-                d_sets = {}
-                
-                d_sets.update({str(0):{'active':True, 
-                                       'amplitudes':[1], 
-                                       'durations':[sum(durations)], 
-                                       'proportion_connected':1}})
-                
-                params['params'].update({'params_sets':d_sets})
-                d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
+        for inp in inp_no_ch:
+            d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
+            params = {'type':'burst3', 
+                      'params':{'n_set_pre':1, 
+                                'repetitions':1}}
+            d_sets = {}
+            
+            d_sets.update({str(0):{'active':True, 
+                                   'amplitudes':[1], 
+                                   'durations':[sum(durations)], 
+                                   'proportion_connected':1}})
+            
+            params['params'].update({'params_sets':d_sets})
+            d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
    
             
         
@@ -1459,7 +1461,7 @@ class TestBuilder_Go_NoGo_with_lesion_FS(TestBuilder_Go_NoGo_with_lesion_FS_base
 if __name__ == '__main__':
     
     test_classes_to_run=[
-                        TestModuleFunctions,
+#                         TestModuleFunctions,
 #                         TestBuilder_network,
 #                          TestBuilder_single,
 #                         TestBuilder_inhibition_striatum,

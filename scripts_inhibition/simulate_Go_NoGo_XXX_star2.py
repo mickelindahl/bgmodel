@@ -25,14 +25,14 @@ pp=pprint.pprint
 from copy import deepcopy
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=1
+FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 kwargs={
         'Builder':Builder,
         
         'cores_milner':40*4,
-        'cores_superm':8,
+        'cores_superm':40,
         
         'debug':False,
         'do_runs':[0],
@@ -48,13 +48,13 @@ kwargs={
         
         'job_name':'_'.join(FILE_NAME.split('_')[1:]),
 
-        'l_hours':['04','00','05'],
+        'l_hours':['04','05','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],             
         'laptime':1000.0,
-        'local_threads_milner':20,
-        'local_threads_superm':4,
+        'local_threads_milner':10,
+        'local_threads_superm':40,
                  
         'max_size':4000,
         'module':module,

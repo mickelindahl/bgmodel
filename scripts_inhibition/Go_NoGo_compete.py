@@ -18,7 +18,7 @@ from toolbox import misc
 from toolbox.network import manager
 from toolbox.network.manager import (add_perturbations, get_storage_list)
 # from toolbox.network.manager import Builder_Go_NoGo_with_lesion as Builder
-from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS_ST_base as Builder
+from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS as Builder
 from toolbox.my_signals import Data_bar
 
 import pprint
@@ -48,7 +48,7 @@ def get_kwargs_builder(**k_in):
             'sub_sampling':sub,
             'local_num_threads':THREADS,} 
     k_in.update(d)
-    return  d
+    return  k_in
     
 def get_kwargs_engine():
     return {'verbose':True}
@@ -241,20 +241,28 @@ def show_3d(d,attr,**k):
 
 
 
-def set_action_selection_marker(axs, i, performance, key, z, d0, d1, _vmin, _vmax, x1, y1, x2, y2, thr, marker):
+def set_action_selection_marker(axs, i, d0, d1, x2, y2, thr, marker):
+    if marker=='n':
+        m=(d0 > thr)*(d1 > thr)==False
+        x = numpy.ma.array(x2, mask=m)
+        y = numpy.ma.array(y2, mask=m) #             x0,y0,z0=get_optimal(z.shape[0])
+
     if marker=='d':
-        x2 = numpy.ma.array(x2, mask=(d0 > thr) + (d1 > thr))
-        y2 = numpy.ma.array(y2, mask=(d0 > thr) + (d1 > thr)) #             x0,y0,z0=get_optimal(z.shape[0])
+        m=(d0 < thr)*(d1 < thr)==False
+        x = numpy.ma.array(x2, mask=m)
+        y = numpy.ma.array(y2, mask=m) #             x0,y0,z0=get_optimal(z.shape[0])
 
+#     print m
+#     print x
     if marker=='s':
-        x2 = numpy.ma.array(x2, mask=((d0 > thr)*(d1 < thr)+(d0 < thr)*(d1 > thr)))
-        y2 = numpy.ma.array(y2, mask=((d0 > thr)*(d1 < thr)+(d0 < thr)*(d1 > thr))) #             x0,y0,z0=get_optimal(z.shape[0])
+        m=((d0 > thr)*(d1 < thr)+(d0 < thr)*(d1 > thr))==False
+        x = numpy.ma.array(x2, mask=m)
+        y = numpy.ma.array(y2, mask=m) #             x0,y0,z0=get_optimal(z.shape[0])
 
-    performance[key] = numpy.round(numpy.sum(numpy.abs(z)), 2)
-    im = axs[i].pcolor(x1, y1, z, cmap='coolwarm', 
-        vmin=_vmin, vmax=_vmax)
-    axs[i].scatter(x2, y2, color='k', edgecolor='k', s=100, marker=marker)
-    return im
+
+    axs[i].scatter(x, y, color='k', edgecolor='k',
+                   s=100, marker=r'$'+marker+'$')
+#     r"$Lisa$"
 
 def show_heat_map(d,attr,**k):
     models=['SN']
@@ -311,12 +319,21 @@ def show_heat_map(d,attr,**k):
                                                 y[-1,0]-stepy/2, res))
             
             thr=k.get('threshold',14)
+            
+            im = axs[i].pcolor(x1, y1, z, cmap='coolwarm', 
+                               vmin=_vmin, vmax=_vmax)
+        
            
-            im = set_action_selection_marker(axs, i, performance, key, z, d0, d1, 
-                                             _vmin, _vmax, x1, y1, x2, y2, thr, marker='d')
-            im = set_action_selection_marker(axs, i, performance, key, z, d0, d1, 
-                                             _vmin, _vmax, x1, y1, x2, y2, thr, marker='s')
-  
+            set_action_selection_marker(axs, i,  d0, d1, 
+                                              x2, y2, thr, 
+                                             marker='d')
+            set_action_selection_marker(axs, i, d0, d1,x2, y2, thr, 
+                                             marker='s')
+   
+            set_action_selection_marker(axs, i, d0, d1, x2, y2, 
+                                             thr, marker='n')
+             
+            performance[key] = numpy.round(numpy.sum(numpy.abs(z)), 2)
             
             box = axs[i].get_position()
             
@@ -439,11 +456,13 @@ class Setup(object):
                                       ['mean_rate_slices', 
                                        'mean_rate_slices_0',
                                        'mean_rate_slices_1'])
+
         self.nets_to_run=k.get('nets_to_run',[])
         self.proportion_connected=k.get('proportion_connected',1)
         self.other_scenario=k.get('other_scenario',2)
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
+        self.time_bin=k.get('time_bin',5)
  
     def builder(self):
         d= {'repetition':self.rep,
@@ -463,7 +482,8 @@ class Setup(object):
     def firing_rate(self):
         d={'average':False, 
            'sets':[0,1],
-           'time_bin':5,
+           't_stop':50000.,
+           'time_bin':self.time_bin,
            'local_num_threads':self.local_num_threads,
            'proportion_connected':self.proportion_connected}
         return d
@@ -685,11 +705,11 @@ import unittest
 class TestMethods(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=2
+        from_disk=0
         
         import oscillation_perturbations4 as op
         
-        rep, res=4, 2
+        rep, res=2, 3
         duration=[900.,100.0]
         laptime=1000.0
         p_size=0.1608005821
@@ -724,14 +744,13 @@ class TestMethods(unittest.TestCase):
                                          +'/data2'),
                             setup=self.setup)
         
-        file_name, file_name_figs, from_disks, d, models, sd= v
+        file_name, file_name_figs, from_disks, d, models= v
         
         self.res=res
         self.file_name_figs=file_name_figs
         self.from_disks=from_disks
         self.d=d
         self.models=models
-        self.sd=sd
         
 
     def test_create_figs(self):
@@ -739,8 +758,7 @@ class TestMethods(unittest.TestCase):
                     self.setup,
                     self.file_name_figs, 
                     self.d, 
-                    self.models,
-                    self.sd)
+                    self.models)
         pylab.show()
     
 #     def test_show_fr(self):

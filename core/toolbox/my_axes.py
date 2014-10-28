@@ -5,7 +5,7 @@ from matplotlib.ticker import MaxNLocator
 
 import numpy
 
-from toolbox import pylab
+import pylab
 
 
 # import toolbox.plot_settings as pl

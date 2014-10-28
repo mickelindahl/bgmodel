@@ -156,20 +156,21 @@ def get_kwargs_list_indv_nets(n_pert, kwargs):
     
     kwargs_list=[]
     index=-1
-    for j in range(from_disk_0, 3):
+    for j in range(0, 3):
         for i in range(n_pert):
             
             if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
             else: nets_list=[kwargs.get('nets')]
         
             for nets in nets_list:
-                if (i not in do_runs) and do_runs:
-                    continue 
-                
                 index+=1
+            
                 if (i not in do_runs) and do_runs:
                     continue
-
+                
+                if j < from_disk_0:
+                    continue
+    
                 kwargs['hours']=kwargs['l_hours'][j]
                 kwargs['minutes']=kwargs['l_seconds'][j]
                 kwargs['seconds']=kwargs['l_minutes'][j]
@@ -190,8 +191,6 @@ def get_kwargs_list(n_pert, kwargs):
             if (i not in do_runs) and do_runs:
                 continue
             
-            if j < from_disk_0:
-                continue
             kwargs['hours']=kwargs['l_hours'][j]
             kwargs['minutes']=kwargs['l_seconds'][j]
             kwargs['seconds']=kwargs['l_minutes'][j]
@@ -204,7 +203,7 @@ def get_path_logs(from_milner_on_supermicro, file_name):
     _bool = my_socket.determine_host() == 'supermicro'
     if from_milner_on_supermicro and _bool:
         path_results = (default_params.HOME_DATA_BASE 
-                        + 'milner_supermicro/' 
+                        + 'milner/' 
                         + file_name 
                         + '/')
     else:

@@ -209,9 +209,10 @@ def map_parallel(fun, *args, **kwargs):
             comm.send(out,dest=0, tag=1)
             data=None    
     
-    if data:
-        print 'len data', len(data)
-        print data
+#     if data:
+#         print 'len data', len(data)
+#         for d in data:
+#             print d.shape
     
     with Barrier():
         data=comm.bcast(data, root=0)
