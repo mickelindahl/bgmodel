@@ -38,8 +38,6 @@ kwargs={
         'duration':[900.,100.0],
         
         'file_name':FILE_NAME,
-        'freqs':[0.5, 1.0, 1.5],
-        'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
@@ -51,7 +49,7 @@ kwargs={
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],             
         'laptime':1000.0,
-        'local_threads_milner':20,
+        'local_threads_milner':40,
         'local_threads_superm':4,
                  
         'max_size':4000,
@@ -79,7 +77,7 @@ kwargs={
                      25
                      ],
         'res':10,
-        'rep':40,
+        'rep':80,
         'to_memory':False,
         'to_file':True
         }

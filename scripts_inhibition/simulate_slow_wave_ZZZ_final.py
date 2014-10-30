@@ -16,31 +16,31 @@ from simulate import (get_path_rate_runs,
                       pert_add_oscillations) 
 
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_beta as Builder
+from toolbox.network.manager import Builder_slow_wave2 as Builder
 from toolbox.parallel_excecution import loop
 
-import simulate_beta as module
-import oscillation_perturbations as op
+import simulate_slow_wave as module
+import oscillation_perturbations4 as op
 import pprint
 pp=pprint.pprint
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
+FROM_DISK_0=2
 LOAD_MILNER_ON_SUPERMICRO=False
 
 kwargs={
         'Builder':Builder,
         
         'cores_milner':40*1,
-        'cores_superm':40,
+        'cores_superm':20,
         
         'debug':True,
-        'do_runs':[0], #A run for each perturbation
+        'do_runs':[7],#range(10), #A run for each perturbation
         'do_obj':False,
         
         'file_name':FILE_NAME,
-        'freqs':[0.5, 1.0, 1.5],
-        'freq_oscillation':20.,
+        'freqs':[0.75],
+        'freq_oscillation':1.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
@@ -52,19 +52,19 @@ kwargs={
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,
-        'local_threads_superm':10,
+        'local_threads_superm':4,
         
         'module':module,
         
         'nets':['Net_0','Net_1'], #The nets for each run
         
         'path_code':default_params.HOME_CODE,
-        'path_rate_runs':get_path_rate_runs('simulate_inhibition_ZZZ/'),
+        'path_rate_runs':get_path_rate_runs('simulate_inhibition_ZZZ4/'),
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
         'perturbation_list':op.get(),
         
-        'sim_time':10000.0,
+        'sim_time':20000.0,
         'size':20000.0 ,
         }
 

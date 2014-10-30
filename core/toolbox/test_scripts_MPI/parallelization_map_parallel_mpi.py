@@ -26,6 +26,6 @@ out=comm.bcast(out, root=0)
 print comm.rank()
 
 with misc.Stopwatch('mpi'):
-    a=map_parallel(mockup_fun, out, out, **{'local_threads':np_local})  
+    a=map_parallel(mockup_fun, out, out, **{'local_num_threads':np_local})  
 
 pickle_save(a, fileOut)

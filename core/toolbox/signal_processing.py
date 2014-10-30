@@ -229,7 +229,15 @@ def coherences(signals1, signals2, **kwargs):
 #         raise type(e)(e.message + s), None, sys.exc_info()[2]
         
 #     l=map(cohere, *args)
-    l=numpy.array(l,dtype=float)
+    try:
+        l=numpy.array(l,dtype=float)
+    except Exception as e:
+        s='\nTrying to do map_parallel in coherence'
+        s+='\nl: {}'.format(l)
+#         s+='\nSignal2: {}'.format(signals2)
+#         s+='\nkwargs: {}'.format(kwargs)
+        raise type(e)(e.message + s), None, sys.exc_info()[2]
+        
     Cxy, f=l[:,0,:], l[:,1,:]
 
     if kwargs.get('inspect', False):

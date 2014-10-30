@@ -19,10 +19,19 @@ THREADS=10
 
 class Setup(object):
 
-    def __init__(self, period, threads):
+    def __init__(self, period, threads, **kwargs):
         self.period=period
         self.threads=threads
 
+        self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
+                                                    'Net_1' ])
+        
+
+    def builder(self):
+        return {}
+    
+    def director(self):
+        return {'nets_to_run':self.nets_to_run}  
 
     def activity_histogram(self):
         d = {'average':False,
@@ -130,9 +139,21 @@ def main(builder=Builder,
                             script_name, 
                             Setup(1000.0, threads))
  
-if __name__ == "__main__":
-    # stuff only to run when not called via 'import' here
-    main()
+class Main():    
+    def __init__(self, **kwargs):
+        self.kwargs=kwargs
+    
+    def __repr__(self):
+        return self.kwargs['script_name']
+    
+    
+    def do(self):
+        oscillation_common.main(**self.kwargs)
+       
+ 
+# if __name__ == "__main__":
+#     # stuff only to run when not called via 'import' here
+#     main()
 
 
 

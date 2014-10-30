@@ -70,26 +70,33 @@ def get_args_list_oscillation(p_list, **kwargs):
 
     args_list=[]
 
-    for j in range(0, 3):
+    for j in range(from_disk_0, 3):
         for i, p in enumerate(p_list):
-            if (i not in do_runs) and do_runs:continue
-            if j < from_disk_0:  continue
-            
-            script_name = (file_name + '/script_' + str(i) 
-                           + '_' + p.name)
-            setup = module.Setup(1000.0 / freq_oscillation, 
-                                 local_num_threads)
-            
-            obj = module.Main(**{'builder':builder, 
-                                 'from_disk':j, 
-                                 'perturbation_list':p, 
-                                 'script_name':script_name, 
-                                 'setup':setup})
-            
-            if do_obj:
-                obj.do()
+            if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
+            else: nets_list=[kwargs.get('nets')]
+        
+            for nets in nets_list:
+                if (i not in do_runs) and do_runs:continue
                 
-            args_list.append(obj)
+                script_name = (file_name + '/script_' + str(i) 
+                               + '_' + p.name)
+                
+                
+                d={'nets_to_run':nets,  }
+                setup = module.Setup(1000.0 / freq_oscillation, 
+                                     local_num_threads,
+                                     **d)
+                
+                obj = module.Main(**{'builder':builder, 
+                                     'from_disk':j, 
+                                     'perturbation_list':p, 
+                                     'script_name':script_name, 
+                                     'setup':setup})
+                
+                if do_obj:
+                    obj.do()
+                    
+                args_list.append(obj)
     return args_list
 
 def get_args_list_Go_NoGo_compete(p_list, **kwargs):
@@ -100,14 +107,23 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
     duration=kwargs.get('duration')
     file_name=kwargs.get('file_name')
     from_disk_0=kwargs.get('from_disk_0')
+    labels=kwargs.get('labels',['Only D1', 
+                                'D1,D2',
+                                'MSN lesioned (D1, D2)',
+                                'FSN lesioned (D1, D2)',
+                                'GPe TA lesioned (D1,D2)'])
     laptime=kwargs.get('laptime')
     l_mean_rate_slices=kwargs.get('l_mean_rate_slices')
     local_num_threads=kwargs.get('local_num_threads')
     module=kwargs.get('module')
     other_scenario=kwargs.get('other_scenario', False)
+    props_conn=kwargs.get('proportion_connected', 1.)
     res=kwargs.get('res')
     rep=kwargs.get('rep')
     
+    
+    if type(props_conn) != list:
+        props_conn=[props_conn]*len(p_list)
     
     args_list=[]
     for j in range(from_disk_0, 3):
@@ -119,17 +135,18 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
             for nets in nets_list:
                 if (i not in do_runs) and do_runs:
                     continue 
-             
-                name_nets='_'.join(nets)         
+                   
                 script_name = (file_name + '/script'
                                + '_' + str(i) 
                                + '_' + p.name)
                 d={'duration':duration,
-                    'laptime':laptime,
                     'l_mean_rate_slices':l_mean_rate_slices,
+                    'labels':labels,
+                    'laptime':laptime,
                     'local_num_threads':local_num_threads,
                     'nets_to_run':nets,
                     'other_scenario':other_scenario,
+                    'proportion_connected':props_conn[i],
                     'resolution':res,
                     'repetition':rep}
                 setup = module.Setup(**d)
@@ -216,7 +233,7 @@ def get_path_nest(script_name, keys, par=None):
     if not par:
         par=default_params.Inhibition()
     path=par.get_path_data()
-    file_name = path +script_name.split('/')[0]+ '/nest/'+'_'.join(keys)+'/'
+    file_name = path +script_name+ '/nest/'+'_'.join(keys)+'/'
 #     file_name = home + '/results/papers/inhibition/network/' + script_name
     data_to_disk.mkdir(file_name)
 
@@ -350,7 +367,7 @@ def pert_add_go_nogo_ss(**kwargs):
     
     ll=[]
 
-    p_sizes=[p/p_sizes[0] for p in p_sizes]
+    p_sizes=[p/max(p_sizes) for p in p_sizes]
     for ss, p_size in zip(p_subsamp, p_sizes): 
         
         for i, _l in enumerate(l):
@@ -635,7 +652,7 @@ class TestModuleFunctions(unittest.TestCase):
 if __name__ == '__main__':
     d={
 
-       TestMyPoissonInput:[
+       TestModuleFunctions:[
 #                            'test_create',
 #                            'test_2_simulate_show',
                            ],

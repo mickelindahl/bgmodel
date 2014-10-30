@@ -130,7 +130,11 @@ class Surface(object):
         idx=idx[dist<=r] 
          
         if not mask_ids:pass
-        else: idx=set(idx).intersection(mask_ids)         
+        else: 
+            if type(mask_ids)!=list:
+                mask_ids=mask_ids.get_as_list()
+            idx=set(idx).intersection(mask_ids)         
+#             idx[mask_ids.get_slice()]
         
         return list(idx)
      
@@ -179,8 +183,11 @@ class Surface(object):
         return idx
     
     
-    def get_idx(self, slice_objs=None):
+    def get_idx(self, slice_objs=None, index=None, as_slice=False):
         
+        if index!=None:
+            return [self.idx[index]] 
+           
         if not slice_objs:
             return self.idx
         
@@ -204,7 +211,11 @@ class Surface(object):
     def get_n_sets(self):
         return self.n_sets
     
-    def get_pos(self, slice_objs=None):
+    def get_pos(self, slice_objs=None,  index=None):
+        
+        if index!=None:
+            return [self.pos[index]] 
+        
         if not slice_objs:
             return self.pos
         
@@ -399,6 +410,9 @@ class Conn(object):
     def __str__(self):
         return self.name+':'+str(self.n)
     
+    
+#     def _add_connections_parallell
+    
     def _add_connections(self, d_slice, p_slice, driver, pool, fan_in, 
                          flag='Convergent'):
         '''
@@ -428,9 +442,11 @@ class Conn(object):
         pool_mask_dist=[self.mask]*d_n 
         pool_mask_ids=[pool.get_idx(p_slice)]*d_n 
         
+#         pool_mask_ids=[p_slice]*d_n 
         # arg consists of list of length of driver nodes. Thus 
         # get_connectables is applied to each driver with arguments from the
         # lists
+        
         arg=[d_pos, pool_fan_driver_to, pool_mask_dist, pool_mask_ids]
        # arg=zip(*arg)    
 
@@ -582,7 +598,6 @@ class Conn(object):
         driver=surfs[self.target]
         pool=surfs[self.source]
         
-
         if not (self.save['active'] 
                 and not self.save['overwrite']
                 and os.path.isfile(self.save['path'] +'.pkl')): 
@@ -668,9 +683,31 @@ class Conn(object):
      
             driver_sets=driver.get_sets(self.rule.split('-')[0]) 
             pool_sets=pool.get_sets(self.rule.split('-')[1]) 
-            for slice_dr, slice_po in zip(driver_sets, pool_sets):     
-                self._add_connections(slice_dr, slice_po, *args)
- 
+            pre,post=[],[]
+            for slice_dr, slice_po in zip(driver_sets, pool_sets): 
+                
+                self._add_connections(slice_dr, slice_po, *args)    
+                          
+#                 list_dr=slice_dr.get_as_list()
+#                 n=len(list_dr)
+#                 map_args=([list_dr, 
+#                               [slice_po]*n]
+#                               +[[a]*n for a in args]
+#                               +[['Convergent']*n, 
+#                                 [self]*n])
+#  
+#                 fun=_add_connections
+#                 k={'local_num_threads':self.local_num_threads}
+#                 l=map_parallel(fun, *map_args, **k)
+#                 for v in l:
+#                     pre+=reduce(lambda x,y:x+y,v[0])
+#                     post+=reduce(lambda x,y:x+y,v[1])
+#                       
+#             v=add_pre_post(self.pre, self.post, self.sets, 
+#                                    pre, post)
+#              
+#             self.pre, self.post, self.sets=v
+  
          
         assert isinstance(self.pre, sparse.coo_matrix)            
         assert isinstance(self.post, sparse.coo_matrix) 
@@ -714,6 +751,79 @@ class Conn_dic(Base_dic):
         self.dic[a[0]]=the_class(*a, **k)
 
 
+def _add_connections(d_id, p_slice, driver, pool, fan_in, flag, obj):
+    '''
+    For each node driver not surfs from the pool is considered 
+    
+    d_slice - slice for drivers (should be target=convergent connect). 
+              Drivers if the surface in which each
+              node is considered. Thus for each node in driver a set of 
+              pool nodes are chosen. get_connectables is applied on
+              each driver node.
+    '''
+    
+    # For each driver as set of pool surfs considered depending on
+    # driver position and allowed idx. Then the fan governs the probability
+    # of making a connection to the set of pool surfs.
+    d_idx=driver.get_idx(index=d_id)
+    d_pos=driver.get_pos(index=d_id)
+    d_n=len(d_idx)#pool.get_n()        
+    
+    # Short cuts for speed up
+    pool_get_connectables=pool.get_connectables
+    fun_mul=lambda x,y: (x,)*y 
+
+    # All of length d_n    
+    pool_fan_driver_to=[fan_in]*d_n
+    pool_mask_dist=[obj.mask]*d_n 
+    pool_mask_ids=[pool.get_idx(p_slice)]*d_n 
+    
+    # arg consists of list of length of driver nodes. Thus 
+    # get_connectables is applied to each driver with arguments from the
+    # lists
+    arg=[d_pos, pool_fan_driver_to, pool_mask_dist, pool_mask_ids]
+
+    pool_conn=map(pool_get_connectables, *arg) #get connectables belong to pool
+
+
+    # For each driver get number of pool neurons that have been chosen
+    # and then expand d_idx accordingly to get 
+    n_of_conn_per_driver=map(len, pool_conn)
+    driver_conn=map(fun_mul, d_idx, n_of_conn_per_driver)
+    
+   
+    if flag=='Convergent':
+        pre, post=pool_conn, driver_conn
+    if flag=='Divergent':
+        pre, post=driver_conn, pool_conn            
+
+    
+    return pre, post
+    
+    
+def add_pre_post(pre, post, sets, pre_add, post_add):
+    
+    n1=pre.shape[1]if pre else 0
+    if type(pre_add)==list:
+        pre_add=sparse.coo_matrix(pre_add)
+    if type(post_add)==list:
+        post_add=sparse.coo_matrix(post_add) 
+    if not pre:
+        pre= pre_add 
+    else:
+        pre=sparse.hstack([pre, pre_add])
+         
+    if not post:    
+        post=post_add
+    else: 
+        post=sparse.hstack([post, post_add])
+    
+    n2=pre.shape[1]
+#     print n2
+    sets.append(slice(n1, n2, 1))
+    return pre, post, sets
+    
+    
 def build(params_nest, params_surf, params_popu): 
  
     surfs=create_surfaces(params_surf)
@@ -950,12 +1060,20 @@ class TestConn(unittest.TestCase):
 
     
     def test_set_con(self):
-        rules=[ 'all-all',  '1-1', 'set-set', 'set-not_set', 'all_set-all_set',
-               'divergent']     
+        rules=[ 
+#                 'all-all', 
+#                 '1-1', 
+                'set-set', 
+#                 'set-not_set', 
+#                 'all_set-all_set',
+#                 'divergent'
+                ]     
         l=[]
         fan_in=15
         for rule in rules:
-            c=Conn('n1_n2', **{'fan_in':fan_in, 'rule':rule})
+            c=Conn('n1_n2', **{'fan_in':fan_in,
+                               'local_num_threads':2,
+                                'rule':rule})
             
             l.append(c)
    
@@ -989,6 +1107,8 @@ class TestConn(unittest.TestCase):
                     l=[]
                     for pre, post in zip(c.get_pre(), c.get_post()):
                         n_sets=self.target.get_n_sets()
+#                         print pre % n_sets, pre
+#                         print post % n_sets, post
                         self.assertTrue(pre % n_sets == post % n_sets)
          
         self.assertEqual(c.n_pre, c.n_post)
@@ -1033,21 +1153,21 @@ class TestConn(unittest.TestCase):
         script_name=os.getcwd()+('/test_scripts_MPI/'
                                  +'structure_set_save_load_mpi.py')
         
-        np=20
+        np=1
 
         
         p=subprocess.Popen(['mpirun', '-np', str(np), 'python', 
                             script_name, data_path],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-#                             stderr=subprocess.STDOUT,
+#                             stdout=subprocess.PIPE,
+#                             stderr=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
                            )
         
         out, err = p.communicate()
 #         print out
 #         print err
         
-        threads=4
+        threads=np
         
         for i in range(threads):
             fileName= data_path+'data'+str(i)
@@ -1189,38 +1309,38 @@ class TestModuleFunctions(unittest.TestCase):
         
 if __name__ == '__main__':
     d={
-        TestSurface:[
-                     'test_create',
-                     'test_get_set',
-                     'test_apply_boundary_conditions',
-                     'test_apply_kernel',
-                     'test_apply_mask',
-                     'test_get_connectables',
-                     'test_pos_edge_wrap',
-                     ],
-        TestSurface_dic:[
-                         'test_add',
-                         ],
+#         TestSurface:[
+#                      'test_create',
+#                      'test_get_set',
+#                      'test_apply_boundary_conditions',
+#                      'test_apply_kernel',
+#                      'test_apply_mask',
+#                      'test_get_connectables',
+#                      'test_pos_edge_wrap',
+#                      ],
+#         TestSurface_dic:[
+#                          'test_add',
+#                          ],
        TestConn:[
-                 'test_create',
-                 'test_set_con',
-                'test_set_save_load',
-#                 'test_set_save_load_mpi',
-                'test_get_weight',
-                'test_get_delays',
+#                  'test_create',
+#                 'test_set_con',
+#                 'test_set_save_load',
+                'test_set_save_load_mpi',
+#                 'test_get_weight',
+#                 'test_get_delays',
                  ],
-        TestConn_dic:[
-                      'test_add'
-                      ],
-        TestModuleFunctions:[
-                            'test_1_create_surfaces',
-                            'test_2_create_populations',
-                            'test_3_create_connections',
-                            'test_4_connect_conns',
-                            'test_5_build',
-                             'test_6_connect',
-                             'test_7_connect_with_save',
-                             ],
+#         TestConn_dic:[
+#                       'test_add'
+#                       ],
+#         TestModuleFunctions:[
+#                             'test_1_create_surfaces',
+#                             'test_2_create_populations',
+#                             'test_3_create_connections',
+#                             'test_4_connect_conns',
+#                             'test_5_build',
+#                              'test_6_connect',
+#                              'test_7_connect_with_save',
+#                              ],
        }
     test_classes_to_run=d
     suite = unittest.TestSuite()

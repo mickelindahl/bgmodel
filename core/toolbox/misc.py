@@ -109,6 +109,10 @@ class my_slice(object):
                 +'({},{},{})'.format(self.slice.start, 
                                      self.slice.stop,
                                      self.slice.step))
+    def get_as_list(self):
+        return range(self.slice.start, 
+                     self.slice.stop,
+                     self.slice.step if self.slice.step else 1 )
    
     @property    
     def start(self):

@@ -99,15 +99,22 @@ class Wrap(object):
     
 
 
-def chunkit(chunksize, i, *args):
-    a=[args[j][chunksize * i:chunksize * (i + 1)] 
-           for j in range(len(args))]
+def chunkit(chunksize, i, last, *args):
+    if not last:
+        a=[args[j][chunksize * i:chunksize * (i + 1)] 
+            for j in range(len(args))]
+    elif last:
+        a=[args[j][chunksize * i:] 
+            for j in range(len(args))]
     return a
 
-def my_map(i, chunksize, fun, out, args):
+def my_map(i, chunksize, last, fun, out, args):
     a=map(fun, *args)
-    out[chunksize*i:chunksize*(i+1)]=numpy.array(a)
-
+    if not last:
+        out[chunksize*i:chunksize*(i+1)]=numpy.array(a)
+    else:
+        out[chunksize*i:]=numpy.array(a)       
+         
 class MyMap(object):
     def __init__(self, fun, i):
         self.__fun = fun
@@ -123,11 +130,11 @@ def map_local_threads(fun, args, kwargs):
         return map(fun, *args)
 
     n=len(args[0])
-    chunksize=int(math.ceil(len(args[0]) / float(local_th)))
+    chunksize=int(math.floor(len(args[0]) / float(local_th)))
 
     jobs=[]
-
-    tmp_args=[a[0] for a in args ]
+    
+    tmp_args=[a[0] for a in args ]    
     tmp_r=fun(*tmp_args)
     
     
@@ -139,8 +146,9 @@ def map_local_threads(fun, args, kwargs):
             out = Array( 'd', numpy.zeros(n) )
             
         for i in xrange(local_th):
-            a=chunkit(chunksize, i, *args)
-            p=Process(target=my_map, args=(i, chunksize, fun, out, a))
+            last=i==local_th-1
+            a=chunkit(chunksize, i, last, *args)
+            p=Process(target=my_map, args=(i, chunksize, last, fun, out, a))
             jobs.append(p)
             
         for job in jobs: job.start()
@@ -196,11 +204,13 @@ def map_parallel(fun, *args, **kwargs):
 # def map_mpi(fun, *args, **kwargs):
     
     with Barrier():
-         
-        chunksize = int(math.ceil(len(args[0]) / float(comm.size())))
         
-        a=chunkit(chunksize, comm.rank(), *args)
+        n=len(args[0]) 
+        chunksize = int(math.floor(n / float(comm.size())))
         
+        last=comm.rank()==comm.size()-1          
+        a=chunkit(chunksize, comm.rank(), last, *args)
+
         out=map_local_threads(fun, a, kwargs) 
         if comm.rank() == 0: 
             data=[out]+[comm.recv(source=i, tag=1) for i in range(1, comm.size())]
@@ -258,14 +268,15 @@ class TestModule_functions(unittest.TestCase):
         from data_to_disk import pickle_save, pickle_load
         from toolbox.data_to_disk import read_f_name
 
-        a=range(10**7+3)
+#         a=range(10**7+5)
+        a=range(72)
 #         a=[float(aa) for aa in a]
         with misc.Stopwatch('Seriell'):
             l1= map(mockup_fun,a,a)
         
         data_path= self.home+'/results/unittest/parallelization/map_parallel_mpi/'
         script_name=os.getcwd()+'/test_scripts_MPI/parallelization_map_parallel_mpi.py'
-        np=4
+        np=10
             
         for fname in read_f_name(data_path):
             os.remove(data_path+fname)
@@ -287,6 +298,7 @@ class TestModule_functions(unittest.TestCase):
         l2=pickle_load(fileOut) 
         print l1[0:20]
         print l2[0:20]
+#         self.assertListEqual(l1,l2)
         self.assertListEqual(l1[0:20],l2[0:20])
         self.assertListEqual(l1[-20:],l2[-20:])
 class TestComm(unittest.TestCase):
@@ -338,7 +350,7 @@ if __name__ == '__main__':
     d={
        TestModule_functions:[
                             'test_map_parallel',
-#                             'test_map_parallel_mpi',
+                            'test_map_parallel_mpi',
                            ],
        TestComm:[
 #                  'test_is_mpi_used'

@@ -11,7 +11,7 @@ from simulate import (pert_add_go_nogo_ss, get_path_logs,
                       get_args_list_Go_NoGo_compete,
                       get_kwargs_list_indv_nets)
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS as Builder
+from toolbox.network.manager import Builder_Go_NoGo_only_D1D2_FS_base as Builder
 from toolbox.parallel_excecution import loop
 
 import scripts_inhibition.Go_NoGo_compete as module
@@ -32,16 +32,14 @@ kwargs={
         'Builder':Builder,
         
         'cores_milner':40*4,
-        'cores_superm':40,
+        'cores_superm':12,
         
         'debug':False,
-        'do_runs':[0],
+        'do_runs':[0, 1, 2],
         'do_obj':False,
         'duration':[900.,100.0],
         
         'file_name':FILE_NAME,
-        'freqs':[0.5, 1.0, 1.5],
-        'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
@@ -53,13 +51,13 @@ kwargs={
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],             
         'laptime':1000.0,
-        'local_threads_milner':40,
-        'local_threads_superm':40,
+        'local_threads_milner':20,
+        'local_threads_superm':4,
                  
-        'max_size':4000,
+        'max_size':5000,
         'module':module,
         
-        'nets':['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4'],
+        'nets':['Net_0'],
         
         'path_code':default_params.HOME_CODE,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
@@ -67,19 +65,17 @@ kwargs={
         'perturbation_list':[op.get()[4+3]],
         
         'p_sizes':[
-                   0.200,  
-                   0.161,    
-                   0.123, 
-                   0.085
+                    1,
+                    0.523,   
+                    0.4278185787,
                   ],
         'p_subsamp':[
-                     6.25, 
-                     8.3, 
-                     12.5, 
-                     25
+                     1., 
+                    2.5,
+                     5.,
                      ],
-        'res':10,
-        'rep':80,
+        'res':3,
+        'rep':2,
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)
@@ -92,5 +88,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(5, a_list, k_list )
+loop(3, a_list, k_list )
         

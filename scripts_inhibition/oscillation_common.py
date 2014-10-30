@@ -16,7 +16,7 @@ from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
 from toolbox.network.data_processing import Data_units_relation
 from toolbox.network.manager import (add_perturbations, compute, 
-                                     run, save, load, get_storage)
+                                     run, save, load, get_storage_list)
 from toolbox.network.manager import Builder_slow_wave as Builder
 from toolbox.my_signals import Data_bar
 from simulate import (cmp_psd, show_fr, show_hr, show_psd,
@@ -252,10 +252,11 @@ def get_kwargs_builder(**k_in):
 def get_kwargs_engine():
     return {'verbose':True}
 
-def get_networks(builder, **k_in):
+def get_networks(builder, k_bulder, k_director):
     return manager.get_networks(builder, 
-                                get_kwargs_builder(**k_in), 
-                                get_kwargs_engine())
+                                get_kwargs_builder(**k_bulder),
+                                k_director,  
+                                get_kwargs_engine(),)
 
 def create_relations(models_coher, dd):
     for key in dd.keys():
@@ -561,16 +562,35 @@ class Setup(object):
     
     def __init__(self, 
                  period, 
-                 local_num_threads):
+                 local_num_threads, **kwargs):
         self.period=period
         self.local_num_threads=local_num_threads
+        self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
+                                                    'Net_1' ])
+        
    
+  
+    def builder(self):
+        return {}
+    
+    def director(self):
+        return {'nets_to_run':self.nets_to_run}  
+ 
     def activity_histogram(self):
         d = {'average':False,
              'period':self.period}
         
         return d
-    
+
+
+
+    def coherence(self):
+        d = {'fs':1000.0, 'NFFT':1024 * 4, 
+            'noverlap':int(1024 * 2), 
+            'sample':30.,  
+            'local_num_threads':self.local_num_threads}
+        return d
+ 
     def pds(self):
         d = {'NFFT':1024 * 4, 
              'fs':1000., 
@@ -579,12 +599,7 @@ class Setup(object):
         return d
     
    
-    def coherence(self):
-        d = {'fs':1000.0, 'NFFT':1024 * 4, 
-            'noverlap':int(1024 * 2), 
-            'sample':30.,  
-            'local_num_threads':self.local_num_threads}
-        return d
+
     
 
     def phase_diff(self):
@@ -633,13 +648,13 @@ class Setup(object):
            'labels':['Control', 'Lesion'],
            
             'fig_and_axes':{'n_rows':8, 
-                                        'n_cols':1, 
-                                        'w':800.0*0.55*2, 
-                                        'h':600.0*0.55*2, 
-                                        'fontsize':11*2,
-                                        'frame_hight_y':0.8,
-                                        'frame_hight_x':0.78,
-                                        'linewidth':3.}}
+                            'n_cols':1, 
+                            'w':800.0*0.55*2, 
+                            'h':600.0*0.55*2, 
+                            'fontsize':11*2,
+                            'frame_hight_y':0.8,
+                            'frame_hight_x':0.78,
+                            'linewidth':3.}}
         return d
 
     def plot_coherence(self):
@@ -662,14 +677,10 @@ class Setup(object):
         return d
     
 def simulate(builder=Builder,
-         from_disk=0,
-         perturbation_list=None,
-         script_name=__file__.split('/')[-1][0:-3],
-         setup=Setup(1000.0, THREADS)):
-    
-    
-        
-
+             from_disk=0,
+             perturbation_list=None,
+             script_name=__file__.split('/')[-1][0:-3],
+             setup=Setup(1000.0, THREADS)):
     
     k = get_kwargs_builder()
 
@@ -710,25 +721,41 @@ def simulate(builder=Builder,
     
 
     
-    info, nets, _ = get_networks(builder)
+    info, nets, _ = get_networks(builder, 
+                                 setup.builder(), 
+                                 setup.director())
     add_perturbations(perturbation_list, nets)
 
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
     file_name_figs = get_file_name_figs(script_name,  nets[key].par)
-    path_nest=get_path_nest(script_name, nets[key].par)
+    path_nest=get_path_nest(script_name, nets.keys(), nets[key].par)
+
+    print nets.keys()
 
     for net in nets.values():
         net.set_path_nest(path_nest)
     
-    sd = get_storage(file_name, info)
+#     sd = get_storage(file_name, info)
+
+    # Adding nets no file name
+    sd_list=get_storage_list(nets, file_name, info)
     
     d = {}
         
-    from_disks = [from_disk] * 2
-    for net, fd in zip(nets.values(), from_disks):
-        
-        
+    from_disks = [from_disk] * len(nets.keys())
+    
+    if type(sd_list)==list:
+        iterator=[nets.values(), from_disks, sd_list]
+    else:
+        iterator=[nets.values(), from_disks]
+    
+    for vals in zip(*iterator):
+        if type(sd_list)==list:
+            net, fd, sd=vals
+        else:
+            net, fd=vals
+               
         if fd == 0:
             dd = run(net)
             add_GPe(dd)
@@ -736,16 +763,16 @@ def simulate(builder=Builder,
             save(sd, dd)
         
         elif fd == 1:
-            print net.get_name()
+  
             filt = [net.get_name()] + models + ['spike_signal']+ attr
             dd = load(sd, *filt)    
-            
             dd = compute(dd, models, attr, **kwargs_dic)
+
             save(sd, dd)
-#             print 'saved', sd, dd    
             for keys, val in misc.dict_iter(dd):
                 if keys[-1]=='spike_signal':
                     val.wrap.allowed.append('get_phases_diff_with_cohere')
+            
             print 'create_relations'
             create_relations(models_coher, dd)
             dd = compute(dd, models_coher, attr_coher, **kwargs_dic)
@@ -830,7 +857,7 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
             ax.my_set_no_ticks(yticks=3)
         
         sd_figs.save_figs(figs, format='png')
-        sd_figs.save_figs(figs, format='svg')
+        sd_figs.save_figs(figs, format='svg', in_folder='svg')
 
 def main(*args, **kwargs):
     
@@ -850,7 +877,7 @@ def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory
     from toolbox.network.default_params import Perturbation_list as pl
 
     sim_time=10000.0
-    size=250.0
+    size=500.0
     local_num_threads=12
     sub_sampling=25
     
@@ -887,6 +914,8 @@ def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory
                              +'/script_'+p.name+'_'+type_of_run),
                 setup=setup)
     
+    
+    
     file_name_figs, from_disks, d, models, models_coher = v
     return d, file_name_figs, from_disks, models, models_coher, setup 
   
@@ -895,7 +924,8 @@ import unittest
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
         
-        v=run_simulation(from_disk=0, local_num_threads=12)
+        v=run_simulation(from_disk=0, 
+                         local_num_threads=12)
         d, file_name_figs, from_disks, models, models_coher, setup=v
 
         self.setup=setup
@@ -1017,7 +1047,7 @@ class TestOscillationMPI(unittest.TestCase):
         script_name=(os.getcwd()+'/test_scripts_MPI/'
                      +'oscillation_common_run_simulation_mpi.py')
 
-        from_disk=0
+        from_disk=1
 
         fileName=data_path+'data_in.pkl'
         fileOut=data_path+'data_out.pkl'

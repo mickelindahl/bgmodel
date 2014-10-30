@@ -20,7 +20,7 @@ import time
 
 
 n_sets=3
-n=10000
+n=1000
 sets=[my_slice(s, n, n_sets) for s in range(n_sets)]
 nd=Surface_dic()
 nd.add('i1', **{'n':n, 'n_sets':n_sets, 'sets':sets })
@@ -42,7 +42,7 @@ rules=[
         'all_set-all_set',
 
        ]     
-k={'fan_in':100.0}
+k={'fan_in':10.0}
 l1=[]
 l2=[]
 for rule in rules:

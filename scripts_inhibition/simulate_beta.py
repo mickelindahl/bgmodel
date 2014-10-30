@@ -19,11 +19,21 @@ THREADS=10
 
 class Setup(object):
 
-    def __init__(self, period, local_num_threads):
+    def __init__(self, period, local_num_threads, **kwargs):
         self.period=period
         self.local_num_threads=local_num_threads
 
-
+        self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
+                                                    'Net_1' ])
+        
+   
+  
+    def builder(self):
+        return {}
+    
+    def director(self):
+        return {'nets_to_run':self.nets_to_run}  
+    
     def activity_histogram(self):
         d = {'average':False,
              'period':self.period}

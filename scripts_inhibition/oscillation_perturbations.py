@@ -175,4 +175,3 @@ def get():
             **{'name':'ct-wh-'+'{}-{}-{}-{}'.format(GA_GA, GA_GI, GI_GI, GI_GA)}) 
     
     return l
- 

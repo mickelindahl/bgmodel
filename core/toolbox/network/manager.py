@@ -757,6 +757,8 @@ class Builder_Go_NoGo_with_nodop_base(Builder_network):
     
     def _variable(self):
         
+        
+
         l, self.dic = get_input_Go_NoGo(self.kwargs)    
         
         return l    
@@ -766,7 +768,32 @@ class Builder_Go_NoGo_with_nodop(Builder_Go_NoGo_with_nodop_base,
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass     
-      
+
+class Builder_Go_NoGo_with_nodop_FS_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop(), self._no_dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [['C1','CF'], 
+                                     ['C1', 'C2', 'CF']]        
+
+        l, self.dic = get_input_Go_NoGo(self.kwargs)    
+        
+        return l    
+
+class Builder_Go_NoGo_with_nodop_FS(Builder_Go_NoGo_with_nodop_FS_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass    
+     
 class Builder_Go_NoGo_with_lesion_FS_base(Builder_network):    
 
     def get_parameters(self, per):
@@ -797,6 +824,33 @@ class Builder_Go_NoGo_with_lesion_FS(Builder_Go_NoGo_with_lesion_FS_base,
                                      Mixin_general_network, 
                                      Mixin_reversal_potential_striatum):
     pass
+
+class Builder_Go_NoGo_only_D1D2_FS_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [
+                                     ['C1', 'C2', 'CF']]
+
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+            
+        return l    
+    
+class Builder_Go_NoGo_only_D1D2_FS(Builder_Go_NoGo_only_D1D2_FS_base, 
+                                     Mixin_dopamine, 
+                                     Mixin_general_network, 
+                                     Mixin_reversal_potential_striatum):
+    pass
+
 
 class Builder_Go_NoGo_with_lesion_FS_ST_base(Builder_network):    
 
@@ -915,7 +969,7 @@ class Builder_Go_NoGo_with_lesion_FS_act_base(Builder_network):
         
         for i, _ in enumerate(l):
             l[i]+= pl({'conn':{'FS_M1_gaba':{'rule':'set-not_set'},
-                             'FS_M2_gaba':{'rule':'set-not_set'}}},'=',**{'name':'FS_act'})
+                               'FS_M2_gaba':{'rule':'set-not_set'}}},'=',**{'name':'FS_act'})
         
         return l    
 

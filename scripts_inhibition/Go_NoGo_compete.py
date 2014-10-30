@@ -462,7 +462,7 @@ class Setup(object):
         self.other_scenario=k.get('other_scenario',2)
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
-        self.time_bin=k.get('time_bin',5)
+        self.time_bin=k.get('time_bin',25)
  
     def builder(self):
         d= {'repetition':self.rep,
@@ -482,7 +482,7 @@ class Setup(object):
     def firing_rate(self):
         d={'average':False, 
            'sets':[0,1],
-           't_stop':50000.,
+#            't_stop':50000.,
            'time_bin':self.time_bin,
            'local_num_threads':self.local_num_threads,
            'proportion_connected':self.proportion_connected}
@@ -555,7 +555,7 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
     file_name_figs = get_file_name_figs(script_name,  nets[key].par)
-    path_nest=get_path_nest(script_name,nets.keys(), nets[key].par)
+    path_nest=get_path_nest(script_name, nets.keys(), nets[key].par)
 
     for net in nets.values():
         net.set_path_nest(path_nest)
@@ -583,9 +583,9 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
 #                   'mean_rate_slices2': d_mrs
                   }
 
-
     add_perturbations(perturbation_list, nets)
     
+    # Adding nets no file name
     sd_list=get_storage_list(nets, file_name, info)
 
     from_disks, d = main_loop(from_disk, attr, models, 
