@@ -308,7 +308,6 @@ class Perturbation(object):
     def __init__(self, keys, val, op):
         if isinstance(keys, str):
             keys=keys.split('.')
-        self.active=True
         self.op=op 
         self.keys=keys
         self.val=val
@@ -317,9 +316,7 @@ class Perturbation(object):
         return ((self.keys==other.keys)
                  *(self.val==other.val)
                  *(self.op==other.op))
-         
-         
-         
+              
     def __hash__(self):
         return hash((tuple(self.keys), self.val, self.op))
      
@@ -329,19 +326,16 @@ class Perturbation(object):
     def _get_val(self):
         return self.val 
     
-    def _deactivate(self):
-        self.active=False
-    
     def set_val(self, val):
         self.val=val
 
     def apply(self, dic):
-        if self.active:
-            dic=misc.dict_apply_operation(dic, 
-                                          self.keys, 
-                                          self.val, 
-                                          self.op)
-            self._deactivate()        
+        dic=misc.dict_apply_operation(dic, 
+                                      self.keys, 
+                                      self.val, 
+                                      self.op)
+      
+            
 class Perturbation_list(object):
                                                                                              
     def __init__(self, *args, **kwargs):
@@ -467,6 +461,8 @@ class Par_base(object):
     
     def __init__(self, **kwargs):
         
+        self.update_triggered=False
+        
         self._dic={}
         self._dic_con = {}
         self._dic_dep = {}
@@ -477,27 +473,6 @@ class Par_base(object):
                       'dic_con': True,
                       'dic_dep':True,             
                       'dic_rep':True}
-        
-        #
-        
-#         self.set_dic_rep(kwargs.get('dic_rep', {})) 
-#         l=kwargs.get('perturbations', Perturbation_list())
-#         self.set_perturbation_list(l)
-
-#         self.module_path=kwargs.get('module_path',MODULE_PATH)
-#         self.module_sli_path=kwargs.get('module_sli_path',MODULE_SLI_PATH)
-        
-#         if not 'my_aeif_cond_exp' in nest.Models(): 
-# #             print self.module_path
-#             if self.module_sli_path:    
-#                 nest.sr('('+self.module_sli_path+') addpath')
-#             nest.Install( self.module_path)
-            
-                
-#         if not 'my_aeif_cond_exp' in nest.Models(): 
-#             nest.Install( self.module_path)
-        
-        
 
         self.dep={} #dic storing dependable calculations, dynamically growing
         self.other=kwargs.get('other', None)                
@@ -546,7 +521,6 @@ class Par_base(object):
     def dic(self):
         return self._dic   
 
-
     @dic.setter
     def dic(self, val):
         self._dic=val
@@ -555,7 +529,6 @@ class Par_base(object):
     def dic_con(self):       
         return self._dic_con
     
-
     @dic_con.setter
     def dic_con(self, val):
         self._dic_con=val
@@ -816,7 +789,11 @@ class Par_base(object):
         return self.dic
     
     def get_dic_con(self):
-        return self.dic_con    
+        return self.dic_con  
+    
+    def get_par_constant(self):
+        return self._get_par_constant() 
+  
 
     def get_do_reset(self):
         return self.dic_con['simu']['do_reset']
@@ -990,7 +967,8 @@ class Par_base(object):
         self.update_dic_con()
         self.update_dic_dep()
         self.update_dic()
-        
+#         self.update_triggered=True
+    
     
     def update_dic(self):
         d={}
@@ -1248,7 +1226,7 @@ class Par_base_mixin(object):
 
     def unittest_add_on(self, d):
 
-        do=self.other.get_dic_con()
+        do=self.other.get_par_constant()
 
         if not 'simu' in d.keys():
             d['simu']={}
@@ -1426,7 +1404,7 @@ class Unittest_extend_base(object):
                             
     def _get_par_constant(self):     
 
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         
         
         dic={}
@@ -1544,7 +1522,7 @@ class Unittest_extend(Par_base, Unittest_extend_base, Par_base_mixin):
 class Unittest_bcpnn_dopa_base(object):
     def _get_par_constant(self):     
 
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         dic={}
         dic['netw']={}
         dic['netw']['size']=52
@@ -1778,7 +1756,7 @@ class Unittest_bcpnn_dopa(Par_base, Unittest_bcpnn_dopa_base, Par_base_mixin):
 class Unittest_stdp_base(object):
     def _get_par_constant(self):     
         # Need the Unittest_bcpnn
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
 
         dic={}
         d={'A_plus':0.01,
@@ -2843,7 +2821,7 @@ class Inhibition_striatum_base(object):
     def _get_par_constant(self):
         
         
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         
         C1={'amplitudes':[1.],
             'duration':[200],
@@ -2908,7 +2886,7 @@ class Compete_base(object):
              'nest':{},
              'node':{}}
         
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         max_n_set_pre=80
         inps=['C1', 'C2', 'CF', 'CS']
         
@@ -2940,7 +2918,7 @@ class FSN_effect_base(object):
     def _get_par_constant(self):
         
         
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         max_n_set_pre=80
         inps=['CF']
         
@@ -2956,7 +2934,7 @@ class FSN_effect(Par_base, FSN_effect_base, Par_base_mixin):
 class Slow_wave_base(object):
 
     def _get_par_constant(self):
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         
         #self._dic_con['node']['M1']['n']
         
@@ -2983,7 +2961,7 @@ class Slow_wave(Par_base, Slow_wave_base, Par_base_mixin):
 class Slow_wave2_base(object):
 
     def _get_par_constant(self):
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         
               
         #self._dic_con['node']['M1']['n']
@@ -3019,7 +2997,7 @@ class Slow_wave2(Par_base, Slow_wave2_base, Par_base_mixin):
 
 class Beta_base(object):
     def _get_par_constant(self):
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         
         #self._dic_con['node']['M1']['n']
         
@@ -3055,7 +3033,7 @@ class Beta(Par_base, Beta_base, Par_base_mixin):
 class ThalamusPar_base(object):
     
     def _get_par_constant(self):
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         
         dic={}
         
@@ -3234,7 +3212,7 @@ class Thalamus(Par_base, ThalamusPar_base, Par_base_mixin):
 class Bcpnn_h0_base(object):
 
     def _get_par_constant(self):
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         
         dic={}
         
@@ -3489,7 +3467,7 @@ class Bcpnn_h1_base(object):
     
 
     def _get_par_constant(self):
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         
         dic={}
         dic['netw']={}
@@ -3610,7 +3588,7 @@ class Bcpnn_h1(Par_base, Bcpnn_h1_base, Par_base_mixin_bcpnn):
 class Bcpnn_learning_base(object):
     
     def _get_par_constant(self):
-        dic_other=self.other.get_dic_con()
+        dic_other=self.other.get_par_constant()
         
         dic={}
         
@@ -4233,20 +4211,23 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
         # ========================
         
         
-        k={'size':str(size),
+        k={
+           'beta_fan_in':str(0.0),
+           'fan_in':str(1.0),
+           'rule':'1-1',
+           'size':str(size),
            'source':inp,
            'source_n':str(n),
            'source_n_sets':str(1),
            'target':net,
            'target_n':str(n),
-           'target_n_sets':str(3),
-           'beta_fan_in':str(0.0),
-           'rule':'1-1'}
+           'target_n_sets':str(3),}
         
         d1={'delay': { 'params':1.0},
             'fan_in':1.0,
             'netw_size':size,
-            'save':{'active':True, 
+            'save':{'active':False,
+                    'overwrite':False, 
                     'path':HOME+('/results/unittest/conn/'
                                  +format_connectionn_save_path(**k))}, 
             'tata_dop':0.0,
@@ -4584,7 +4565,8 @@ class TestCall(unittest.TestCase):
 
     def test_addStr(self):
         self.assertEqual((self.h+self.h).do(),'44')
-        
+
+
 class TestCallSubClassesWithPar_base(unittest.TestCase):
     def add(self, *args):
         return self.b.add(*args)
@@ -4596,14 +4578,15 @@ class TestCallSubClassesWithPar_base(unittest.TestCase):
         return self.b._dep(*args)
 
     def _get_par_constant(self):
-        return {'conn':{'i1_n1':{'test':1}},
+        return {'conn':{'i1_n1':{'test':1,
+                                 'test2':2}},
                 'netw':{'test':1,
                         'test2':DepNest('n1','calc_test2')},
                 
                 'nest':{'n1':{'test':1,
-                              'test2':{'1':DepNetw('n1','calc_test2'),
+                              'test2':{'1':DepNetw('calc_test2'),
                                        '2':DepNode('n1','calc_test2')}},
-                        'n2':{'test2':{'1':DepNetw('n2','calc_test2'),
+                        'n2':{'test2':{'1':DepNetw('calc_test2'),
                                        '2':DepConn('i1_n1','calc_test2')}}},
                 'node':{'n1':{'test':1,
                               'test2':{'1':GetNetw('test'),
@@ -4625,7 +4608,7 @@ class TestCallSubClassesWithPar_base(unittest.TestCase):
         self.c.append(GetNest('n1','test')) 
         
         self.cd.append(DepConn('i1_n1','calc_test2'))
-        self.cd.append(DepNetw('n1','calc_test2'))
+        self.cd.append(DepNetw('calc_test2'))
         self.cd.append(DepNode('n1','calc_test2')) 
         self.cd.append(DepNest('n1','calc_test2'))
         
@@ -4654,7 +4637,6 @@ class TestCallSubClassesWithPar_base(unittest.TestCase):
     def tearDown(self):
         del Par_base._get_par_constant
         del Par_base.calc_test2
-
 
 
 class TestPerturbations(unittest.TestCase):
@@ -4695,7 +4677,7 @@ class TestMixinDummy(object):
         self.assertDictEqual(d1, d2)
         
         #print_dic_comparison(d1,d3, 'all')
-        print_dic_comparison(d1,d3, 'values')      
+        print_dic_comparison(d1, d3, 'values')      
         self.assertDictEqual(d1, d3)
 
 class TestMixinPar_base(object):
@@ -4710,11 +4692,13 @@ class TestMixinPar_base(object):
         second=self.par.dic_con['node'][self.test_node_model]['type']
         self.assertEqual(first, second)
       
-             
+            
     def test_call_with__get(self):
         c1=self.C(*['_get','node', self.test_node_model,'type'])
         c2=self.par.dic_con['node'][self.test_node_model]['type']
         self.assertEqual(c1.do(), c2)
+      
+      
              
     def test__get_with_call(self):        
         c1=self.C(*['_get', 'node', self.test_node_model, 'model'])
@@ -4732,7 +4716,7 @@ class TestMixinPar_base(object):
                 args=[]  
                 call=getattr(self.par, key)
                 call(*args)
-     
+
     def test_get_funtions(self):
         keys=dir(self.par)
         for key in keys:
@@ -4763,6 +4747,7 @@ class TestMixinPar_base(object):
             print s
                
         self.assertFalse(s)        
+
            
     def test_change_val(self):
         sim_stop=self.par['simu']['sim_stop']
@@ -4800,6 +4785,28 @@ class TestMixinPar_base(object):
             d=dic_post_dep['node'][self.test_node_model]
             self.assertFalse('n' in d.keys())
      
+
+
+    def test_apply_perturbations_only_once(self):   
+        
+
+        a=self.par['simu']['sim_time']
+#         print a
+        p=Perturbation_list({'simu':{'sim_time': 0.5}}, '*',
+                                       **{'name':'label1'})
+        
+        
+        self.par.update_perturbations(p)
+        b=self.par['simu']['sim_time'] 
+        self.par.set_path_nest('')
+#         print b
+        
+        c=self.par['simu']['sim_time']
+        
+#         print c
+        self.assertEqual(0.5*a, b)
+        self.assertEqual(0.5*a, c)
+        
              
     def test_pertubations(self):
         l=self.pert
@@ -4832,6 +4839,9 @@ class TestMixinPar_base(object):
             l2.append(misc.dict_recursive_get(self.par.dic, p.keys))
             
         self.assertListEqual(l1, l2)         
+
+
+
     
     def test_change_con_effect_dep(self):
         mul=4
@@ -4867,7 +4877,8 @@ class TestMixinPar_base(object):
                     if key not in df.keys():
                         d1[key]=val
         self.assertDictEqual(d1, d2)
-    
+
+
     
     def test_node_conns_keys_integrity(self):
         for key, val in self.par.dic_con['node'].items():
@@ -4911,12 +4922,10 @@ class TestMixinPar_base(object):
             params=self.par._get_nest_setup(model)
             if 'type_id' in params.keys():
                 self.CopyModel( params, model )
-    
-                    
+                        
     def test_str_method(self):
         s=str(self.par)
         self.assertTrue(isinstance(s, str))
-    
     
     def test_input_params_integrity(self):
         l1=self.par['netw']['input'].keys()
@@ -4937,7 +4946,7 @@ class TestMixinPar_base(object):
         self.assertRaises(LookupError, self.par.update_dic_rep, dic_rep)
             
            
-         
+   
    
 class TestSetup_mixin(object):
     def _setUp(self):
@@ -5152,13 +5161,62 @@ class TestBcpnnH1(TestBcpnnH1Par_base,  TestMixinPar_base, TestSetup_mixin):
 
 
 if __name__ == '__main__':
+
+    test_fun_par=[
+                    'test_apply_perturbations_only_once',
+                    'test_call_with__get',
+                    'test_change_val', 
+                    'test_change_con_effect_dep',
+                    'test_change_con_effect_dep_initiation',
+                    'test_conn_keys_integrity', 
+                    'test_dic_integrity',
+                    'test__get', 
+                    'test__get_list_add', 
+                    'test__get_with_call',
+                    'test__get_functions', 
+                    'test_get_funtions', 
+                    'test_input_par_added', 
+                    'test_input_params_integrity', 
+                    'test_model_copy', 
+                    'test_nest_params_exist',
+                    'test_node_conns_keys_integrity',
+                    'test_nodes_network_sum_size',
+                    'test_pertubations',
+                    'test_pertubations_append', 
+                    'test_str_method',
+                    'test_update_dic_rep',
+                     ]
     
-    test_classes_to_run=[
-                        TestModuleFuncions,
-#                         TestPerturbations,
-#                         TestCall,
-#                         TestCallSubClassesWithPar_base,
-#                         TestUnittest,
+    
+    d={
+        TestModuleFuncions:[
+                            'test_compute'
+                            ],
+          
+         TestPerturbations:[
+                            'test_sum'
+                            ],
+        TestCall:[
+                  'test_add',
+                  'test_addStr',
+                  'test_complicated_left',
+                  'test_complicated_right',
+                  'test_complicated_2',
+                  'test_complicated_3',
+                  'test_div',
+                  'test_mul',
+                  'test_sub',
+                   ],
+        TestCallSubClassesWithPar_base:[
+                                        'test_add',                      
+                                        'test_do_get',
+                                        'test_do_dep',
+                                        ],
+        TestUnittest:([
+                    'test_dic_dep',
+                      ]
+                    +test_fun_par
+                      ),
 #                         TestUnittestExtend,
 #                         TestUnittestBcpnn,   
 #                         TestUnittestBcpnnDopa,   
@@ -5170,26 +5228,70 @@ if __name__ == '__main__':
 #                         TestThalamus,
 #                         TestSlowwave,
 #                         TestSlowwave2,
-#                           TestBeta,  
-                        TestGo_NoGo_compete,
+                        TestBeta:test_fun_par,  
+                        TestGo_NoGo_compete:test_fun_par,
 #                         TestBcpnnH0,
 #                         TestBcpnnH1,
 
-                         ]
-    suites_list = []
-    for test_class in test_classes_to_run:
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        suites_list.append(suite)
+                         }
+    
+    
+    suite = unittest.TestSuite()
+    for test_class, val in  d.items():
+        for test in val:
+            suite.addTest(test_class(test))
 
-    big_suite = unittest.TestSuite(suites_list)
-    unittest.TextTestRunner(verbosity=1).run(big_suite)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(TestUnittest)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(TestInhibition)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(TestBcpnn_h1)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(TestSingle_unit)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
-    #unittest.main()
+    unittest.TextTestRunner(verbosity=1).run(suite)    
     
-    
-    
-        
+#     suites_list = []
+#     for test_class in test_classes_to_run:
+#         suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+#         suites_list.append(suite)
+# 
+#     big_suite = unittest.TestSuite(suites_list)
+#     unittest.TextTestRunner(verbosity=1).run(big_suite)
+#     #suite = unittest.TestLoader().loadTestsFromTestCase(TestUnittest)
+#     #suite = unittest.TestLoader().loadTestsFromTestCase(TestInhibition)
+#     #suite = unittest.TestLoader().loadTestsFromTestCase(TestBcpnn_h1)
+#     #suite = unittest.TestLoader().loadTestsFromTestCase(TestSingle_unit)
+#     #unittest.TextTestRunner(verbosity=2).run(suite)
+#     #unittest.main()
+#     
+# 
+# if __name__ == '__main__':
+# 
+#     d={
+#         TestUnittest:[
+#                     'test_1_build',
+#                     'test_2_connect',
+#                     'test_3_run',
+#                     'test_4_reset',
+#                     'test_5_simulation_loop', 
+#                     'test_6_simulation_loop_x3_update_par_rep',
+#                     'test_7_simulation_loop_x3_replace_pertubations',
+#                     'test_90_IV_curve',   
+#                     'test_90_IF_curve',
+#                     'test_91_FF_curve', 
+#                     'test_92_voltage_trace',
+#                     'test_93_optimization',
+#                       ],
+#         TestUnittestExtend:[
+#                            ],
+#        TestUnittestBcpnnDopa:[
+#                               ],
+#        TestUnittestStdp:[
+#                          ],
+#        TestUnittestBcpnn:[],
+#        TestSingle_unit:[],
+#        TestNetwork_dic:[],
+# 
+# 
+#        }
+#     test_classes_to_run=d
+#     suite = unittest.TestSuite()
+#     for test_class, val in  test_classes_to_run.items():
+#         for test in val:
+#             suite.addTest(test_class(test))
+# 
+#     unittest.TextTestRunner(verbosity=2).run(suite)
+#         

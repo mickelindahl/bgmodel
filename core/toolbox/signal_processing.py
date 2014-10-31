@@ -102,7 +102,7 @@ def csd(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
     freqs = fs/NFFT*arange(0,numFreqs)    
     
     if not numpy.any(x-y):
-        return numpy.zeros(freqs.shape), freqs 
+        Pxy=numpy.zeros(freqs.shape)
     
     else:
         windowVals = window(ones((NFFT,),x.dtype))
@@ -130,8 +130,10 @@ def csd(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
         if n>1: Pxy = mean(Pxy,1)
         Pxy = divide(Pxy, norm(windowVals)**2)
 #         print Pxy.shape, x.shape
-        
-        return Pxy, freqs
+    
+#     assert Pxy.shape==freqs.shape,'Shape differs'+str(Pxy.shape)+'_'+str(freqs.shape)
+    
+    return Pxy.ravel(), freqs
 
 def cohere_wrap_parallel(args):
     return cohere(*args)
@@ -447,10 +449,8 @@ def psd(x, NFFT=256, fs=2,  noverlap=0, normalize=True, **kwargs):
     window=kwargs.get('window',window_hanning )
     detrend=kwargs.get('detrend',detrend_none )
     
-    #No signal
-#     if tnot numpy.mean(x):
-#         return zeros((numFreqs,n), Float)
-            
+
+              
     if normalize and numpy.mean(x):
         x/=numpy.mean(x)
         
@@ -468,37 +468,51 @@ def psd(x, NFFT=256, fs=2,  noverlap=0, normalize=True, **kwargs):
     if x.dtype==Complex: numFreqs = NFFT
     else: numFreqs = NFFT//2+1
         
+#     freqs = fs/NFFT*arange(0,numFreqs)
+
+    #No signal
+#     if not numpy.any(x):
+#         Pxx=zeros(freqs.shape) 
+#     else:       
     windowVals = window(ones((NFFT,),x.dtype))
     step = NFFT-noverlap
     ind = range(0,len(x)-NFFT+1,step)
     n = len(ind)
     Pxx = zeros((numFreqs,n), Float)
-
+ 
     # do the ffts of the slices
     for i in range(n):
         thisX = x[ind[i]:ind[i]+NFFT]
         thisX = windowVals*detrend(thisX)
         fx = absolute(fft(thisX))**2
         Pxx[:,i] = fx[:numFreqs]
-
+ 
     # Scale the spectrum by the norm of the window to compensate for
     # windowing loss; see Bendat & Piersol Sec 11.5.2
-    
+     
     if n>1: Pxx = mean(Pxx,1)
 #     print len(Pxx)
     Pxx = divide(Pxx, norm(windowVals)**2)
     freqs = fs/NFFT*arange(0,numFreqs)
 #     print len(Pxx)
-
-
+ 
+ 
     if kwargs.get('inspect', False):
         pylab.subplot(111).plot(freqs[2:], Pxx[2:])    
         pylab.xlabel('freqs')
         pylab.ylabel('Pxx')
         #pylab.ylim((0,numpy.mean(Pxx)))
         pylab.show() 
+#         if Pxx.shape!=freqs.shape:
+#             pylab.plot(x)
+#             pylab.show()
+#         assert Pxx.shape==freqs.shape,('Shape differs'
+#                                        +str(Pxx.shape)+'_'
+#                                        +str(freqs.shape)
+#                                        +str(x)
+#                                        +str(sum(x)))
 
-    return Pxx, freqs
+    return Pxx.ravel(), freqs
 
 
 def window_hanning(x):

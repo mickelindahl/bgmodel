@@ -767,12 +767,12 @@ def simulate(builder=Builder,
             filt = [net.get_name()] + models + ['spike_signal']+ attr
             dd = load(sd, *filt)    
             dd = compute(dd, models, attr, **kwargs_dic)
-
+ 
             save(sd, dd)
             for keys, val in misc.dict_iter(dd):
                 if keys[-1]=='spike_signal':
                     val.wrap.allowed.append('get_phases_diff_with_cohere')
-            
+#             
             print 'create_relations'
             create_relations(models_coher, dd)
             dd = compute(dd, models_coher, attr_coher, **kwargs_dic)
@@ -875,37 +875,34 @@ def main(*args, **kwargs):
 
 def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory'):
     from toolbox.network.default_params import Perturbation_list as pl
+    from simulate import  get_path_rate_runs, pert_add_oscillations
+    import oscillation_perturbations4 as op
 
+    local_num_threads=12
     sim_time=10000.0
     size=500.0
-    local_num_threads=12
     sub_sampling=25
+
     
-    p=pl({'simu':{
-                  'sim_time':sim_time,
-                  'sim_stop':sim_time,
-                  'local_num_threads':local_num_threads
-                  },
-              'netw':{'size':size,
-                      'sub_sampling':{'M1':sub_sampling,
-                                      'M2':sub_sampling}}},
+    kwargs={
+            'amp_base':[1],
+            'freqs':[1.5],
+            'freq_oscillation':20.,
+            'local_num_threads':local_num_threads,
+            'path_rate_runs':get_path_rate_runs('simulate_inhibition_ZZZ4/'),
+            'perturbation_list':[op.get()[7]],
+            'sim_time':sim_time,
+            'size':size,
+            }
+    
+    p=pert_add_oscillations(**kwargs)
+        
+    p_add=pl({'netw':{'size':size,
+                  'sub_sampling':{'M1':sub_sampling,
+                                  'M2':sub_sampling}}},
               '=')
-    
-    amp=0.9
-    d={'type':'oscillation', 
-       'params':{
-                 'p_amplitude_mod':amp,
-                 'freq': 1.,
-                 'freq_min':0.5,
-                 'freq_max':1.5, 
-                 'period':'uniform'}
-       } 
-    dd={}
-    for key in ['C1', 'C2', 'CF', 'CS']: 
-        dd=misc.dict_update(dd, {'netw': {'input': {key:d} } })     
-                 
-    p+=pl(dd,'=',**{'name':'amp_'+str(amp)})
-    
+    p+=p_add
+
     setup=Setup(1000.0, THREADS)
     v=simulate(builder=Builder,
                 from_disk=from_disk,
@@ -921,6 +918,47 @@ def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory
   
 
 import unittest
+
+class TetsOscillationRun(unittest.TestCase):
+    def setUp(self):
+        pass
+    
+    def test_run(self):
+        v=run_simulation(from_disk=2,local_num_threads=12)
+        d, file_name_figs, from_disks, models, models_coher, setup=v        
+        pp(d)
+        dd={}
+        for key in sorted(d.keys()):
+            net=d[key]
+            for model in sorted(net.keys()):
+                if 'firing_rate' in net[model].keys():
+                    m=numpy.mean(net[model]['firing_rate'].y)
+#                     print key, model, numpy.mean(net[model]['firing_rate'].y)
+                    misc.dict_update(dd, {key:{model:m}})
+#         pp(dd)
+        data={'Net_0': {'FS': 17.348,
+                       'GA': 14.53,
+                       'GI': 36.478,
+                       'GP': 32.180,
+                       'M1': 0.254,
+                       'M2': 0.065,
+                       'SN': 28.835,
+                       'ST': 11.729},
+             'Net_1': {'FS': 14.282,
+                       'GA': 12.570,
+                       'GI': 29.638,
+                       'GP': 26.294,
+                       'M1': 0.047,
+                       'M2': 1.069,
+                       'SN': 32.307,
+                       'ST': 13.816}}
+        for key in dd.keys():
+            for model in dd[key].keys():
+                self.assertAlmostEqual(dd[key][model],
+                                       data[key][model],
+                                        1)
+            
+
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
         
@@ -934,6 +972,8 @@ class TestOcsillation(unittest.TestCase):
         self.d=d
         self.models=models
         self.models_coher=models_coher  
+        
+
         
 
     def test_isi(self):
@@ -1083,8 +1123,13 @@ class TestOscillationMPI(unittest.TestCase):
 
 if __name__ == '__main__':
     d={
+       TetsOscillationRun:[
+                              'test_run',
+                           ],
+       
         TestOcsillation:[
-                        'test_create_figs',
+                      
+#                         'test_create_figs',
 #                         'test_isi',
 #                         'test_plot_mallet2008',
 #                         'testPlotStats',
