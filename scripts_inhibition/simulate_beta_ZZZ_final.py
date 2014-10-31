@@ -29,17 +29,20 @@ FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 kwargs={
+        'amp_base':[1.2],
+        
         'Builder':Builder,
         
         'cores_milner':40*1,
-        'cores_superm':8,
+        'cores_superm':40,
         
-        'debug':True,
+        'debug':False,
         'do_runs':range(10), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
         
         'file_name':FILE_NAME,
-        'freqs':[1., 2.0],
+        'freqs':[1.5],
+
         'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
@@ -52,7 +55,7 @@ kwargs={
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,
-        'local_threads_superm':2,
+        'local_threads_superm':5,
         
         'module':module,
         
@@ -65,7 +68,7 @@ kwargs={
         'perturbation_list':op.get(),
         
         'sim_time':10000.0,
-        'size':20000.0 ,
+        'size':5000.0 ,
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)

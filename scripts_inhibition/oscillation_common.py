@@ -725,7 +725,7 @@ def simulate(builder=Builder,
                                  setup.builder(), 
                                  setup.director())
     add_perturbations(perturbation_list, nets)
-
+#     print nets['Net_0'].par['nest']['M1_M1_gaba']['weight']
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
     file_name_figs = get_file_name_figs(script_name,  nets[key].par)

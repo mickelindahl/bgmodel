@@ -25,17 +25,20 @@ import pprint
 pp=pprint.pprint
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=2
+FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 kwargs={
+        
+        'amp_base':[1.],
+        
         'Builder':Builder,
         
         'cores_milner':40*1,
         'cores_superm':20,
         
-        'debug':True,
-        'do_runs':[7],#range(10), #A run for each perturbation
+        'debug':False,
+        'do_runs':range(10), #A run for each perturbation
         'do_obj':False,
         
         'file_name':FILE_NAME,
@@ -47,7 +50,7 @@ kwargs={
         
         'jobb_name':'_'.join(FILE_NAME.split('_')[1:]),
         
-        'l_hours':  ['01','01','00'],
+        'l_hours':  ['02','01','00'],
         'l_minutes':['00','00','5'],
         'l_seconds':['00','00','00'],
 
@@ -64,7 +67,7 @@ kwargs={
                                      FILE_NAME),
         'perturbation_list':op.get(),
         
-        'sim_time':20000.0,
+        'sim_time':40000.0,
         'size':20000.0 ,
         }
 
@@ -87,6 +90,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(1, a_list, k_list )
+loop(5, a_list, k_list )
 
         

@@ -81,6 +81,8 @@ kwargs={
                      ],
         'res':10,
         'rep':40,
+        
+        'time_bin':100,
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)

@@ -308,7 +308,7 @@ class Perturbation(object):
     def __init__(self, keys, val, op):
         if isinstance(keys, str):
             keys=keys.split('.')
-        
+        self.active=True
         self.op=op 
         self.keys=keys
         self.val=val
@@ -329,9 +329,19 @@ class Perturbation(object):
     def _get_val(self):
         return self.val 
     
+    def _deactivate(self):
+        self.active=False
+    
     def set_val(self, val):
         self.val=val
-        
+
+    def apply(self, dic):
+        if self.active:
+            dic=misc.dict_apply_operation(dic, 
+                                          self.keys, 
+                                          self.val, 
+                                          self.op)
+            self._deactivate()        
 class Perturbation_list(object):
                                                                                              
     def __init__(self, *args, **kwargs):
@@ -406,7 +416,8 @@ class Perturbation_list(object):
                 continue
             
             try:
-                dic=misc.dict_apply_operation(dic, p.keys, p.val, p.op)
+                p.apply(dic)
+#                 dic=misc.dict_apply_operation(dic, p.keys, p.val, p.op)
             except Exception as e:
                 s=('\nTrying to apply perturbation {} \n'+
                    'with keys {} with current value\n{}')

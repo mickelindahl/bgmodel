@@ -390,8 +390,8 @@ def pert_add_go_nogo_ss(**kwargs):
 
 def pert_add_oscillations(**kwargs):
     
-    
-    freqs=kwargs.get('freqs') 
+    amp_base=kwargs.get('amp_base')     
+    freqs=kwargs.get('freqs')
     freq_oscillation=kwargs.get('freq_oscillation') 
     local_num_threads=kwargs.get('local_num_threads')
     path_rate_runs=kwargs.get('path_rate_runs')
@@ -417,7 +417,7 @@ def pert_add_oscillations(**kwargs):
     ll = []
     for j, _ in enumerate(freqs):
         for i, _l in enumerate(l):
-            amp = [numpy.round(damp[_l.name][j], 2), 1]
+            amp = [numpy.round(damp[_l.name][j], 2), amp_base[j]]
             d = {'type':'oscillation2', 
                 'params':{'p_amplitude_mod':amp[0], 
                           'p_amplitude0':amp[1], 

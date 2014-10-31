@@ -462,7 +462,7 @@ class Setup(object):
         self.other_scenario=k.get('other_scenario',2)
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
-        self.time_bin=k.get('time_bin',25)
+        self.time_bin=k.get('time_bin',50)
  
     def builder(self):
         d= {'repetition':self.rep,
