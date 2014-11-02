@@ -189,8 +189,8 @@ def get_kwargs_list_indv_nets(n_pert, kwargs):
                     continue
     
                 kwargs['hours']=kwargs['l_hours'][j]
-                kwargs['minutes']=kwargs['l_seconds'][j]
-                kwargs['seconds']=kwargs['l_minutes'][j]
+                kwargs['minutes']=kwargs['l_minutes'][j]
+                kwargs['seconds']=kwargs['l_seconds'][j]
                 kwargs['index']=index
                 kwargs_list.append(kwargs.copy())
     
@@ -215,7 +215,9 @@ def get_kwargs_list(n_pert, kwargs):
             kwargs_list.append(kwargs.copy())
     
     return kwargs_list
-        
+
+
+     
 def get_path_logs(from_milner_on_supermicro, file_name):
     _bool = my_socket.determine_host() == 'supermicro'
     if from_milner_on_supermicro and _bool:
@@ -387,6 +389,18 @@ def pert_add_go_nogo_ss(**kwargs):
             ll.append(_l)
 
     return ll
+
+def pert_add(p_list, **kwargs):
+    
+    op=kwargs.get('op_pert_add')
+    out = []
+    for l in op.get():
+        l_copy = deepcopy(l)
+        for ll in p_list:
+            ll_copy = deepcopy(ll)
+            ll_copy += l_copy
+            out.append(ll_copy)
+    return out
 
 def pert_add_oscillations(**kwargs):
     

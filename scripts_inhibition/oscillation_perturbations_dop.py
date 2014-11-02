@@ -94,7 +94,7 @@ def get_change_to(flag, E_rev='low'):
         d={'nest':{'SN':{'beta_I_GABAA_1':x,
                          }}}
         
-    #4 *
+    #14 *
     if flag=='MS_MS':
         if E_rev=='low':
             d={'nest':{'M1_low':{'beta_I_GABAA_2':x},

@@ -8,7 +8,8 @@ Created on Aug 12, 2013
 from toolbox import monkey_patch as mp
 mp.patch_for_milner()
 
-from simulate import (get_path_rate_runs,
+from simulate import (
+                      get_path_rate_runs,
                       get_path_logs, get_args_list_oscillation,
                       get_kwargs_list_indv_nets,
                       par_process_and_thread,
@@ -16,8 +17,8 @@ from simulate import (get_path_rate_runs,
                       pert_add_oscillations) 
 
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_slow_wave2 as Builder
-from toolbox.parallel_excecution import loop
+from toolbox.network.manager import Builder_slow_wave2_perturb as Builder
+from toolbox.parallel_excecution import get_loop_index, loop
 
 import simulate_slow_wave as module
 import oscillation_perturbations4 as op
@@ -27,7 +28,11 @@ pp=pprint.pprint
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
+NUM_NETS=16*2*6+1
 
+
+        
+    
 
 kwargs={
         
@@ -38,8 +43,8 @@ kwargs={
         'cores_milner':40*1,
         'cores_superm':40,
         
-        'debug':False,
-        'do_runs':range(10), #A run for each perturbation
+        'debug':True,
+        'do_runs':[0],#range(10), #A run for each perturbation
         'do_obj':False,
         
         'file_name':FILE_NAME,
@@ -60,14 +65,13 @@ kwargs={
         
         'module':module,
         
-        'nets':['Net_'+str(i) for i in range(2)], #The nets for each run
-  
+        'nets':['Net_'+str(i) for i in range(NUM_NETS)], #The nets for each run
         
         'path_code':default_params.HOME_CODE,
         'path_rate_runs':get_path_rate_runs('simulate_inhibition_ZZZ4/'),
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
-        'perturbation_list':op.get(),
+        'perturbation_list':[op.get()[7]],
         
         'sim_time':40000.0,
         'size':20000.0 ,
@@ -88,5 +92,9 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(10, a_list, k_list )
+loop(get_loop_index(20, l=[NUM_NETS, NUM_NETS, 1]), 
+     a_list, 
+     k_list )
+# loop(1, a_list, k_list )
+
         

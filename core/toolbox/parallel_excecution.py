@@ -85,6 +85,16 @@ def do_milner():
     pass
     
     
+def get_loop_index(n, l=[1,1,1]):
+    out=[]
+    for m in l:
+        a=[n for _ in range(m/n)]
+        if m-sum(a):
+            b=[m-sum(a)]
+        else:
+            b=[]
+        out+=a+b
+    return out    
   
 def generate_args(*args):
     args=['python']+[__file__]+list(args)
@@ -94,13 +104,23 @@ def generate_args(*args):
 def loop(*args, **kwargs):
     chunks, args_list,  kwargs_list=args 
     
-    args_list_chunked= chunk(args_list, chunks)  
-    kwargs_list_chunked= chunk(kwargs_list, chunks)
+    if not isinstance(chunks, list):
+        n=len(args_list)/5*2
+        m=len(args_list)/5
+        chunks=get_loop_index(chunks, [n,n,m])
+        
+        
+    
+#     args_list_chunked= chunk(args_list, chunks)  
+#     kwargs_list_chunked= chunk(kwargs_list, chunks)
     host=my_socket.determine_computer()
     
     jobs=[]
-    for al, kl in izip(args_list_chunked, kwargs_list_chunked):
-        
+    chunks_cumsum0=numpy.cumsum(chunks)-chunks[0]
+    for i,step in zip(chunks_cumsum0, chunks):
+#     for al, kl in izip(args_list_chunked, kwargs_list_chunked):
+        al=args_list[i:i+step]
+        kl=kwargs_list[i:i+step]
         for obj, kwargs in zip(al, kl):
                         
             path_code=kwargs.get('path_code')
@@ -112,15 +132,15 @@ def loop(*args, **kwargs):
             num_mpi_task=kwargs.get('num-mpi-task', 2)     
             index=kwargs['index']
             
-            path_out=path_results+"std/subp/out{}".format(index)
-            path_err=path_results+'std/subp/err{}'.format(index)
-            path_sbatch_out=path_results+"std/sbatch/out{}".format(index)
-            path_sbatch_err=path_results+'std/sbatch/err{}'.format(index)
-            path_tee_out=path_results+'std/tee/out{}'.format(index)
-            path_params=path_results+'params/run{}.pkl'.format(index)
+            path_out=path_results+"std/subp/out{0:0>4}".format(index)
+            path_err=path_results+'std/subp/err{0:0>4}'.format(index)
+            path_sbatch_out=path_results+"std/sbatch/out{0:0>4}".format(index)
+            path_sbatch_err=path_results+'std/sbatch/err{0:0>4}'.format(index)
+            path_tee_out=path_results+'std/tee/out{0:0>4}'.format(index)
+            path_params=path_results+'params/run{0:0>4}.pkl'.format(index)
             path_script=path_code+'/core/toolbox/parallel_excecution/simulation.py'
             path_bash0=path_code+'/core/toolbox/parallel_excecution/jobb0.sh'
-            path_bash=path_results+'/jobbs/jobb_{}.sh'.format(index)
+            path_bash=path_results+'/jobbs/jobb_{0:0>4}.sh'.format(index)
             
             data_to_disk.mkdir('/'.join(path_sbatch_out.split('/')[0:-1]))
             data_to_disk.mkdir('/'.join(path_tee_out.split('/')[0:-1]))
@@ -170,7 +190,7 @@ def loop(*args, **kwargs):
                 
                 obj=jobb_handler.Handler(path, 1)
                 print obj
-                time.sleep(5)
+                time.sleep(len(al))
                 obj.loop(loop_print=True)
                 
 

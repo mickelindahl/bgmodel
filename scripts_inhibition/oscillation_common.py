@@ -926,7 +926,7 @@ class TetsOscillationRun(unittest.TestCase):
     def test_run(self):
         v=run_simulation(from_disk=2,local_num_threads=12)
         d, file_name_figs, from_disks, models, models_coher, setup=v        
-        pp(d)
+#         pp(d)
         dd={}
         for key in sorted(d.keys()):
             net=d[key]

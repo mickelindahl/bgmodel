@@ -475,6 +475,29 @@ class Builder_slow_wave2(Builder_slow_wave2_base,
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass
+
+
+class Builder_slow_wave2_perturb_base(Builder_abstract):    
+    
+    def _variable(self):
+        return get_model_conn_perturbation()  
+      
+    def _get_striatal_reversal_potentials(self):
+        return [self._low()]    
+
+    def _get_dopamine_levels(self):
+        return [self._dop(), self._no_dop()]    
+
+    def get_parameters(self, per):
+        return Slow_wave2(**{'other':Inhibition(),
+                            'perturbations':per})
+     
+class Builder_slow_wave2_perturb(Builder_slow_wave2_perturb_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
+
  
 class Builder_beta_base(Builder_abstract):    
       
@@ -1269,6 +1292,50 @@ def get_storage_list(nets, path, info):
         sd_list.append(get_storage(path+'/'+net, info))
     return sd_list
 
+def get_model_conn_perturbation():
+    
+    def get_perturbation_dics(c, w_rel):
+        d = {}
+        for key in c.keys():
+            for conn in c[key]:
+                u = {key:{'nest':{conn:{'weight':w_rel}}}}
+                d = misc.dict_update(d, u)
+        return d
+                
+    c={'FS_FS':['FS_FS_gaba'],
+       'FS_MS':['FS_M1_gaba',
+                'FS_M2_gaba'],
+       'GA_FS':['GA_FS_gaba'],
+       'GA_GA':['GA_GA_gaba'],
+       'GA_GI':['GA_GI_gaba'],
+       'GA_M1':['GA_M1_gaba'],
+       'GA_M2':['GA_M2_gaba'],
+       'GI_GA':['GI_GA_gaba'],
+       'GI_GI':['GI_GI_gaba'],
+       'GI_SN':['GI_SN_gaba'],
+       'GI_ST':['GI_ST_gaba'],
+       'M1_SN':['M1_SN_gaba'],
+       'M2_GI':['M2_GI_gaba'],
+       'MS_MS':['M1_M1_gaba',
+                'M1_M2_gaba',
+                'M2_M1_gaba',
+                'M2_M2_gaba'],
+       'ST_GA':['ST_GA_ampa'],
+       'ST_GI':['ST_SN_ampa'],
+       }
+    mod=[0.75, 1.25,
+         0.5, 1.5, 
+         0.25, 1.75]
+    l=[]
+    
+    l+=[pl(**{'name':'no_pert'})]
+    for w_rel in mod:
+        d=get_perturbation_dics(c, w_rel)
+        for key, val in d.items():
+            l.append(pl(val,'*', **{'name':key+'_pert_'+str(w_rel)}))
+        
+    return l
+
 def IV_curve(data):
     return data.get_IV_curve()
 
@@ -1326,7 +1393,12 @@ class TestModuleFunctions(unittest.TestCase):
         self.d=dummy_data_dic()
         self.file_name=HOME+'/tmp/manager_unittest'
         self.main_path=HOME+'/tmp/manager_unittest/'
-       
+        
+        
+    def test_get_model_conn_perturbation(self):
+        l=get_model_conn_perturbation()
+        self.assertEqual(len(l), 16*6+1)
+
 #     def test_data_functions(self):
 #         
 #         for method in [
@@ -1515,12 +1587,12 @@ class TestBuilder_Go_NoGo_with_lesion_FS(TestBuilder_Go_NoGo_with_lesion_FS_base
 if __name__ == '__main__':
     
     test_classes_to_run=[
-#                         TestModuleFunctions,
+                        TestModuleFunctions,
 #                         TestBuilder_network,
 #                          TestBuilder_single,
 #                         TestBuilder_inhibition_striatum,
 #                         TestBuilder_MSN_cluster_compete,
-                        TestBuilder_Go_NoGo_with_lesion_FS
+#                         TestBuilder_Go_NoGo_with_lesion_FS
                         ]
     suites_list = []
     for test_class in test_classes_to_run:

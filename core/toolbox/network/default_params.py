@@ -385,7 +385,10 @@ class Perturbation_list(object):
     
     def _add_to_dic(self, key, val):
         if key in self.dic:
-            raise RuntimeError('Perturbation {} already exist')
+            if val.op=='*':
+                self.dic[key].val*=self.dic[key].val
+            else:
+                raise RuntimeError('Perturbation {} already exist'.format(self))
         
         self.dic[key]=val
       

@@ -25,7 +25,7 @@ import pprint
 pp=pprint.pprint
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=1
+FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 kwargs={
@@ -36,8 +36,8 @@ kwargs={
         'cores_milner':40*1,
         'cores_superm':40,
         
-        'debug':True,
-        'do_runs':[7],#range(10), #A run for each perturbation
+        'debug':False,
+        'do_runs':range(10), #A run for each perturbation
         'do_obj':False,
         
         'file_name':FILE_NAME,
@@ -47,13 +47,13 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'jobb_name':'_'.join(FILE_NAME.split('_')[1:]),
+        'job_name':'_'.join(FILE_NAME.split('_')[1:]),
         
-        'l_hours':  ['01','01','00'],
-        'l_minutes':['00','00','5'],
+        'l_hours':  ['00','00','00'],
+        'l_minutes':['15','10','5'],
         'l_seconds':['00','00','00'],
 
-        'local_threads_milner':10,
+        'local_threads_milner':20,
         'local_threads_superm':5,
         
         'module':module,
@@ -84,6 +84,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(1, a_list, k_list )
+loop(10, a_list, k_list )
 
         

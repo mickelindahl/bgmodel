@@ -25,6 +25,8 @@ from multiprocessing import Pool, Process,  Queue, Array
 from os.path import expanduser
 from toolbox import misc
 from toolbox import my_socket
+from numpy.oldnumeric.random_array import randint
+
 
 class comm(object):
     
@@ -215,18 +217,58 @@ def map_parallel(fun, *args, **kwargs):
         if comm.rank() == 0: 
             data=[out]+[comm.recv(source=i, tag=1) for i in range(1, comm.size())]
             data=reduce(lambda x,y:x+y, data )  
+            n=len(data)
         else:
             comm.send(out,dest=0, tag=1)
-            data=None    
-    
-#     if data:
-#         print 'len data', len(data)
-#         for d in data:
-#             print d.shape
-    
-    with Barrier():
-        data=comm.bcast(data, root=0)
+            data=None   
+            n=None 
 
+    '''
+    bcast can not broadcast data bigger than 2**31-1
+    There are two problems here and they both have to do with the fact that 
+    int is used for the length. The first problem is an integer cast inside 
+    pickle.dump and the other problem is that MPI_INT is used to transmit 
+    the length of the pickled stream. This limits the amount of data in 
+    your matrix to a certain size - namely the size that would result in 
+    a pickled object no bigger than 2 GiB (2^31-1 bytes). Any bigger object 
+    would result in an integer overflow and thus negative values in count.
+    '''
+
+    with Barrier():
+        n=comm.bcast(n, root=0)
+        
+    if data:
+        print 'In map parallel'
+        size=misc.get_size_in_bytes(data, display=True)
+        print n, 'length of data'
+        max_bytes=2**31-1 #bytes
+        m=int(size/max_bytes)
+    else:
+        m=None
+
+    with Barrier():
+        m=comm.bcast(m, root=0)
+        
+#     with Barrier():
+#         data=comm.bcast(data, root=0)
+   
+   
+    chunksize=int(float(n)/(m+1))
+    if comm.rank==0:
+        print 'chunksize',chunksize, 'm',m,'n',n
+            
+    out=[]
+    for i in range(m+1):
+        if comm.rank() == 0:
+            d_add=chunkit(chunksize, i, i==m, *[data])[0]
+        else:
+            d_add=[]
+        with Barrier():    
+            d_add=comm.bcast(d_add, root=0)
+        
+        out+=d_add
+    data=out
+            
     return data
 
 
@@ -247,12 +289,24 @@ def mockup_fun(*args):
         return a*b
     else:
         return a-b
+
+def mockup_fun_large_return_0(*args):
+    n=numpy.random.randint(1,100)
+    return range(n)
+
+def mockup_fun_large_return_1(*args):
+    return numpy.ones(10**4, dtype=float)*24.
+
+def mockup_fun_large_return_2(*args):
+    return range(10**4)
     
 import unittest
+
 class TestModule_functions(unittest.TestCase):
     
     def setUp(self):
         self.home=expanduser("~")
+
         
     def test_map_parallel(self):
         a=range(10**3)
@@ -301,6 +355,53 @@ class TestModule_functions(unittest.TestCase):
 #         self.assertListEqual(l1,l2)
         self.assertListEqual(l1[0:20],l2[0:20])
         self.assertListEqual(l1[-20:],l2[-20:])
+        
+    def test_map_parallel_large_return_mpi(self):
+        from data_to_disk import pickle_save, pickle_load, mkdir
+        from toolbox.data_to_disk import read_f_name
+
+#         a=range(10**7+5)
+        a=range(3*(10**4))
+#         a=[float(aa) for aa in a]
+        with misc.Stopwatch('Seriell'):
+            l1= map(mockup_fun_large_return_1, a, a)
+        
+        size0=misc.get_size_in_bytes(l1, display=True)
+
+        #max size of pickle object that can be broadcast in mpi4py
+        self.assertTrue(size0>2**31-1) 
+        
+        data_path= self.home+('/results/unittest/parallelization/'
+                              +'map_large_return_mpi/')
+        script_name=os.getcwd()+('/test_scripts_MPI/'
+                                 +'parallelization_map_parallel_mpi.py')
+        np=2
+        
+        mkdir(data_path)
+            
+        for fname in read_f_name(data_path):
+            os.remove(data_path+fname)
+  
+        fileName = data_path + 'data_in.pkl'
+        fileOut = data_path + 'data_out.pkl'
+        pickle_save([a, mockup_fun_large_return_1], fileName)
+
+        with misc.Stopwatch('Subp'):
+            p = subprocess.Popen(['mpirun',  '-np', str(np), 'python', 
+                                  script_name, fileName, fileOut, data_path], 
+        #                            stdout=subprocess.PIPE,
+        #                            stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+            
+            out, err = p.communicate()
+        
+        print len(a)
+        l2=pickle_load(fileOut) 
+        size1=misc.get_size_in_bytes(l2)
+#         self.assertListEqual(l1,l2)
+#         self.assertAlmostEqual(size0,size1, delta=10**6)
+        self.assertAlmostEqual(size0,size1, delta=10**5)
+
 class TestComm(unittest.TestCase):
 
     def test_is_mpi_used(self):
@@ -349,8 +450,9 @@ class TestComm(unittest.TestCase):
 if __name__ == '__main__':
     d={
        TestModule_functions:[
-                            'test_map_parallel',
-                            'test_map_parallel_mpi',
+#                             'test_map_parallel',
+#                             'test_map_parallel_mpi',
+                            'test_map_parallel_large_return_mpi',
                            ],
        TestComm:[
 #                  'test_is_mpi_used'

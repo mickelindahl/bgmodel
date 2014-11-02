@@ -196,7 +196,7 @@ class Storage_dic2(Base_dic):
         
         with misc.Stopwatch('Saving figures...'):
             for i, fig in enumerate(figs):
-                fig.savefig( path+name +extension+'_'+str(i)+'.'+format, 
+                fig.savefig( path+name +extension+'_{0:0>4}'.format(i)+'.'+format, 
                              format = format)              
     
     def set_file_name(self, val):

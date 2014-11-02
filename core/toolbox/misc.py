@@ -618,6 +618,44 @@ def dict_slice(d, keys):
     return dict(zip(keys,m)) 
 
 
+def get_size_in_bytes(data, **kwargs):
+    def get_size(d):
+        size=sys.getsizeof(d) 
+        for val in d:
+            size+=sys.getsizeof(val)     
+        return size 
+
+    
+    display=kwargs.get('display',False)
+    
+    size=sys.getsizeof(data)  
+    if (not isinstance(data[0], numpy.ndarray) and
+        not isinstance(data[0], list)):
+        size=get_size(data)
+    else: 
+        for i, d in enumerate(data):
+            if isinstance(d, numpy.ndarray):
+                size+=d.nbytes+sys.getsizeof(d) 
+                
+            elif not isinstance(d[0], list):
+                s_add=get_size(d)  
+                size+=s_add
+            else:
+                for dd in d:
+                    size+=get_size(dd)  
+                    
+
+#             print d.shape
+    if display:     
+        print 'Size of data'
+        if size<10**5:
+            print size, 'bytes'
+        elif size<10**8:
+            print round(float(size)/10**6,2),'MB'
+        else:
+            print round(float(size)/10**9,2),'GB'
+    return size
+
 def sigmoid(p,x):
         x0,y0,c,k=p
         y = c / (1 + np.exp(-k*(x-x0))) + y0
@@ -1216,10 +1254,24 @@ class TestModule_functions(unittest.TestCase):
         self.assertRaises(LookupError, dict_recursive_set, d1, ['a','c'], 1)
         
 
+    def test_get_size_in_bytes(self):
+        n=1000
+        m=1000
+        l=10
+        data0=range(n*m)
+        data1=[numpy.ones(n, dtype=float)*i for i in range(m) ]
+        data2=[range(n) for _ in range(m)]
+        data3=[[range(n) for _ in range(m)] for _ in range(l) ]
         
-        
-        
-        
+        s0=get_size_in_bytes(data0, display=False)
+        s1=get_size_in_bytes(data1, display=False)
+        s2=get_size_in_bytes(data2, display=False)
+        s3=get_size_in_bytes(data3, display=False)        
+
+        self.assertEqual(s0, 32000072)
+        self.assertEqual(s1, 8089032)
+        self.assertEqual(s2, 32081032)
+        self.assertEqual(s3, 320720200)        
         
 if __name__ == '__main__':
     
