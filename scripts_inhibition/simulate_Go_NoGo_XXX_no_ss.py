@@ -11,7 +11,7 @@ from simulate import (pert_add_go_nogo_ss, get_path_logs,
                       get_args_list_Go_NoGo_compete,
                       get_kwargs_list_indv_nets)
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_Go_NoGo_only_D1D2_FS_base as Builder
+from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS as Builder
 from toolbox.parallel_excecution import get_loop_index, loop
 
 import scripts_inhibition.Go_NoGo_compete as module
@@ -31,15 +31,17 @@ LOAD_MILNER_ON_SUPERMICRO=False
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*4,
-        'cores_superm':16,
+        'cores_milner':40*8,
+        'cores_superm':40,
         
         'debug':False,
-        'do_runs':[0, 1],
+        'do_runs':[0],
         'do_obj':False,
         'duration':[900.,100.0],
         
         'file_name':FILE_NAME,
+        'freqs':[0.5, 1.0, 1.5],
+        'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
@@ -49,33 +51,37 @@ kwargs={
         'l_hours':['04','02','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
-        'l_seconds':['00','00','00'],             
+        'l_seconds':['00','00','00'],            
+        'labels':['Only D1', 
+                  'D1,D2',
+                  'Only D1 no dop', 
+                  'D1,D2 no dop'], 
         'laptime':1000.0,
-        'local_threads_milner':20,
+        'local_threads_milner':40,
         'local_threads_superm':4,
                  
-        'max_size':5000,
+        'max_size':20000.,
         'module':module,
         
-        'nets':['Net_0'],
+        'nets':['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4'],
+        
+        'other_scenario':False,
         
         'path_code':default_params.HOME_CODE,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
         'perturbation_list':[op.get()[4+3]],
-        
+        'proportion_connected':[0.08]*4, #related to toal number fo runs
         'p_sizes':[
-                    1,
-                    0.523,   
-                    0.4278185787,
+                   1.
                   ],
         'p_subsamp':[
-                    1., 
-                    2.5,
-                     5.,
+                     1.
                      ],
-        'res':3,
-        'rep':2,
+        'res':10,
+        'rep':40,
+        
+        'time_bin':100,
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)
@@ -88,5 +94,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(get_loop_index(3, [3,3,1]), a_list, k_list )
+loop(get_loop_index(5, [5,5,1]), a_list, k_list )
         

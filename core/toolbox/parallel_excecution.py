@@ -116,11 +116,11 @@ def loop(*args, **kwargs):
     host=my_socket.determine_computer()
     
     jobs=[]
-    chunks_cumsum0=numpy.cumsum(chunks)-chunks[0]
-    for i,step in zip(chunks_cumsum0, chunks):
+    chunks_cumsum0=[0]+list(numpy.cumsum(chunks))
+    for i_start, i_stop in zip(chunks_cumsum0[:-1], chunks_cumsum0[1:]):
 #     for al, kl in izip(args_list_chunked, kwargs_list_chunked):
-        al=args_list[i:i+step]
-        kl=kwargs_list[i:i+step]
+        al=args_list[i_start: i_stop]
+        kl=kwargs_list[i_start: i_stop]
         for obj, kwargs in zip(al, kl):
                         
             path_code=kwargs.get('path_code')

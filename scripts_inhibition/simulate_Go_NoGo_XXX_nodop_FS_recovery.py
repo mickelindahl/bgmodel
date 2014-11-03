@@ -28,7 +28,7 @@ for p in [op.get()[5]]:
     print p
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
+FROM_DISK_0=1
 LOAD_MILNER_ON_SUPERMICRO=False
 
 kwargs={
@@ -51,7 +51,7 @@ kwargs={
         
         'job_name':'_'.join(FILE_NAME.split('_')[1:]),
 
-        'l_hours':['04','05','00'],
+        'l_hours':['04','02','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            

@@ -49,7 +49,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'_'.join(FILE_NAME.split('_')[1:]),
+        'job_name':'sw_final',
         
         'l_hours':  ['00','00','00'],
         'l_minutes':['15','10','5'],
