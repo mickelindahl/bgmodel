@@ -31,7 +31,7 @@ FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 #Total number of runs 18*2*2+18
-NUM_NETS=18*2
+NUM_NETS=97*2
 
 kwargs={
         
@@ -66,7 +66,7 @@ kwargs={
         
         'nets':['Net_'+str(i) for i in range(2)], #The nets for each run
         
-        'op_pert_add':op_conns,
+        'op_pert_add':op_conns.get(),
         
         'path_code':default_params.HOME_CODE,
         'path_rate_runs':get_path_rate_runs('simulate_inhibition_ZZZ4/'),
@@ -95,6 +95,6 @@ a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(NUM_NETS/4, a_list, k_list )
+loop(get_loop_index(30,[NUM_NETS, NUM_NETS, NUM_NETS/2] ), a_list, k_list )
 
         

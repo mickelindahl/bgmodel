@@ -115,13 +115,17 @@ def loop(*args, **kwargs):
 #     kwargs_list_chunked= chunk(kwargs_list, chunks)
     host=my_socket.determine_computer()
     
-    jobs=[]
+    
     chunks_cumsum0=[0]+list(numpy.cumsum(chunks))
     for i_start, i_stop in zip(chunks_cumsum0[:-1], chunks_cumsum0[1:]):
+        jobs=[]
 #     for al, kl in izip(args_list_chunked, kwargs_list_chunked):
         al=args_list[i_start: i_stop]
         kl=kwargs_list[i_start: i_stop]
         for obj, kwargs in zip(al, kl):
+              
+            if not kwargs.get('active'):
+                continue
                         
             path_code=kwargs.get('path_code')
             path_results=kwargs.get('path_results')
@@ -174,7 +178,9 @@ def loop(*args, **kwargs):
             
             jobs.append(p)
             
-
+        if not jobs:
+            continue
+        
         print jobs
         s='Waiting for {} processes to complete ...'.format(chunks)
         with misc.Stopwatch(s):

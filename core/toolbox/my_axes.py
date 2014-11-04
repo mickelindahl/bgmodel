@@ -265,17 +265,17 @@ class MyAxes(MyAxes_base, Mixin):
  
     
          
-def convert_super_to_sub_class(superClass):
+def convert_super_to_sub_class(superClass, into=MyAxes):
         ''' Convert a super class object into a sub class object'''
         subClass = superClass
         del superClass
-        subClass.__class__ = MyAxes
+        subClass.__class__ = into
         subClass._init_extra_attributes()
         
         return subClass        
     
-def convert(ax):
-    return convert_super_to_sub_class(ax)
+def convert(ax, **kwargs):
+    return convert_super_to_sub_class(ax,**kwargs)
 
 
 

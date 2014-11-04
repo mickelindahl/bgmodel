@@ -25,7 +25,7 @@ pp=pprint.pprint
 from copy import deepcopy
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
+FROM_DISK_0=2
 LOAD_MILNER_ON_SUPERMICRO=False
 
 kwargs={
@@ -53,9 +53,10 @@ kwargs={
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            
         'labels':['Only D1', 
-                  'D1,D2',
-                  'Only D1 no dop', 
-                  'D1,D2 no dop'], 
+                   'D1,D2',
+                   'MSN lesioned (D1, D2)',
+                   'FSN lesioned (D1, D2)',
+                   'GPe TA lesioned (D1,D2)'], 
         'laptime':1000.0,
         'local_threads_milner':40,
         'local_threads_superm':4,

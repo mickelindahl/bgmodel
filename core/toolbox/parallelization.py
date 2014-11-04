@@ -238,9 +238,11 @@ def map_parallel(fun, *args, **kwargs):
         n=comm.bcast(n, root=0)
         
     if data:
-        print 'In map parallel'
-        size=misc.get_size_in_bytes(data, display=True)
-        print n, 'length of data'
+        if  kwargs.get('display',True):
+            print 'In map parallel'
+        size=misc.get_size_in_bytes(data, display=kwargs.get('display',True))
+        if  kwargs.get('display',True):
+            print n, 'length of data'
         max_bytes=2**31-1 #bytes
         m=int(size/max_bytes)
     else:

@@ -634,10 +634,10 @@ def get_size_in_bytes(data, **kwargs):
         size=get_size(data)
     else: 
         for i, d in enumerate(data):
+            
             if isinstance(d, numpy.ndarray):
-                size+=d.nbytes+sys.getsizeof(d) 
-                
-            elif not isinstance(d[0], list):
+                size+=d.nbytes+sys.getsizeof(d)     
+            elif (not d) or (not isinstance(d[0], list)):
                 s_add=get_size(d)  
                 size+=s_add
             else:

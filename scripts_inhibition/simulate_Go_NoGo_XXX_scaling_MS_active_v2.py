@@ -31,40 +31,38 @@ LOAD_MILNER_ON_SUPERMICRO=False
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*8,
-        'cores_superm':40,
+        'cores_milner':40*4,
+        'cores_superm':16,
         
         'debug':False,
-        'do_runs':[0],
+        'do_runs':[0, 1, 2],
         'do_obj':False,
         'duration':[900.,100.0],
         
         'file_name':FILE_NAME,
-        'freqs':[0.5, 1.0, 1.5],
-        'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
         
         'job_name':'_'.join(FILE_NAME.split('_')[1:]),
 
-        'l_hours':['04','02','00'],
+        'l_hours':['01','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
-        'l_seconds':['00','00','00'],            
+        'l_seconds':['00','00','00'],             
         'labels':['Only D1', 
                    'D1,D2',
                    'MSN lesioned (D1, D2)',
                    'FSN lesioned (D1, D2)',
                    'GPe TA lesioned (D1,D2)'], 
         'laptime':1000.0,
-        'local_threads_milner':40,
+        'local_threads_milner':20,
         'local_threads_superm':4,
                  
-        'max_size':20000.,
+        'max_size':5000,
         'module':module,
         
-        'nets':['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4'],
+        'nets':['Net_0','Net_1','Net_2','Net_3','Net_4'],
         
         'other_scenario':True,
         
@@ -72,17 +70,19 @@ kwargs={
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
         'perturbation_list':[op.get()[4+3]],
-        'proportion_connected':[0.08]*4, #related to toal number fo runs
+        
         'p_sizes':[
-                   1.
+                    1,
+                    0.523,   
+                    0.4278185787,
                   ],
         'p_subsamp':[
-                     1.
+                     1., 
+                    2.5,
+                     5.,
                      ],
         'res':10,
-        'rep':40,
-        
-        'time_bin':100,
+        'rep':10,
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)
@@ -95,5 +95,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(get_loop_index(5, [5,5,1]), a_list, k_list )
+loop(get_loop_index(5, [15,15,3]), a_list, k_list )
         

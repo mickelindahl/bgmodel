@@ -46,7 +46,8 @@ k={'fan_in':10.0}
 l1=[]
 l2=[]
 for rule in rules:
-    k.update({'rule':rule,
+    k.update({'display':False,
+              'rule':rule,
               'source':source.get_name(),
               'target':target.get_name(),
               'save':{'active':True,

@@ -61,22 +61,22 @@ def get_args_list_oscillation(p_list, **kwargs):
     
     builder=kwargs.get('Builder')
     do_obj=kwargs.get('do_obj') 
-    do_runs=kwargs.get('do_runs')
+#     do_runs=kwargs.get('do_runs')
     file_name=kwargs.get('file_name')
-    from_disk_0=kwargs.get('from_disk_0')
+#     from_disk_0=kwargs.get('from_disk_0')
     freq_oscillation=kwargs.get('freq_oscillation')
     module=kwargs.get('module')
     local_num_threads=kwargs.get('local_num_threads')
 
     args_list=[]
-
-    for j in range(from_disk_0, 3):
+    for j in range(0, 3):
+#     for j in range(from_disk_0, 3):
         for i, p in enumerate(p_list):
             if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
             else: nets_list=[kwargs.get('nets')]
         
             for nets in nets_list:
-                if (i not in do_runs) and do_runs:continue
+#                 if (i not in do_runs) and do_runs:continue
                 
                 script_name = (file_name + '/script_' + str(i) 
                                + '_' + p.name)
@@ -103,10 +103,10 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
     
     builder=kwargs.get('Builder')
     do_obj=kwargs.get('do_obj') 
-    do_runs=kwargs.get('do_runs')
+#     do_runs=kwargs.get('do_runs')
     duration=kwargs.get('duration')
     file_name=kwargs.get('file_name')
-    from_disk_0=kwargs.get('from_disk_0')
+#     from_disk_0=kwargs.get('from_disk_0')
     labels=kwargs.get('labels',['Only D1', 
                                 'D1,D2',
                                 'MSN lesioned (D1, D2)',
@@ -126,15 +126,16 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
         props_conn=[props_conn]*len(p_list)
     
     args_list=[]
-    for j in range(from_disk_0, 3):
+    for j in range(0, 3):
+#     for j in range(from_disk_0, 3):
         for i, p in enumerate(p_list):
             
             if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
             else: nets_list=[kwargs.get('nets')]
         
             for nets in nets_list:
-                if (i not in do_runs) and do_runs:
-                    continue 
+#                 if (i not in do_runs) and do_runs:     
+#                     continue 
                    
                 script_name = (file_name + '/script'
                                + '_' + str(i) 
@@ -183,11 +184,12 @@ def get_kwargs_list_indv_nets(n_pert, kwargs):
                 index+=1
             
                 if (i not in do_runs) and do_runs:
-                    continue
-                
-                if j < from_disk_0:
-                    continue
-    
+                    kwargs['active']=False
+                elif j < from_disk_0:
+                    kwargs['active']=False
+                else:
+                    kwargs['active']=True
+              
                 kwargs['hours']=kwargs['l_hours'][j]
                 kwargs['minutes']=kwargs['l_minutes'][j]
                 kwargs['seconds']=kwargs['l_seconds'][j]
@@ -206,7 +208,11 @@ def get_kwargs_list(n_pert, kwargs):
         for i in range(n_pert):
             index+=1
             if (i not in do_runs) and do_runs:
-                continue
+                kwargs['active']=False
+            elif j < from_disk_0:
+                kwargs['active']=False
+            else:
+                kwargs['active']=True
             
             kwargs['hours']=kwargs['l_hours'][j]
             kwargs['minutes']=kwargs['l_seconds'][j]
@@ -393,8 +399,11 @@ def pert_add_go_nogo_ss(**kwargs):
 def pert_add(p_list, **kwargs):
     
     op=kwargs.get('op_pert_add')
+    if not isinstance(op, list):
+        op=op.get() 
+    
     out = []
-    for l in op.get():
+    for l in op:
         l_copy = deepcopy(l)
         for ll in p_list:
             ll_copy = deepcopy(ll)

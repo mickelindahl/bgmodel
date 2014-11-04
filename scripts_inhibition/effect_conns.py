@@ -25,18 +25,19 @@ def gather(path, nets, models, attrs):
     fs=os.listdir(path)
     d={}
     i=0
-    for name in fs:
-        if name[-4:]!='.pkl':
-            continue
-        file_name=path+name[:-4]
-        sd = Storage_dic.load(file_name)
-        args=nets+models+attrs
-        dd=sd.load_dic(*args)
-        print name[-12:-4]
-        if name[-12:-4]=='GP-ST-SN':
-            d = misc.dict_update(d, {'GP-ST-SN':dd})
-        else:
-            d = misc.dict_update(d, {name[:-4].split('-')[-1]:dd})
+    for name0 in fs:
+        dd={}
+        for net in nets:
+            name=name0+'/'+net+'.pkl'
+            if not os.path.isfile(path+name):
+                continue
+            file_name=path+name[:-4]
+            sd = Storage_dic.load(file_name)
+            args=nets+models+attrs
+            misc.dict_update(dd, sd.load_dic(*args))
+            print name
+        if dd:  
+            d = misc.dict_update(d, {name0.split('-')[-1]:dd})
         i+=1
     return d
 
@@ -50,28 +51,47 @@ def extract_data(d, nets, models, attrs):
         if keys[-1]=='phases_diff_with_cohere':
             v=numpy.mean(val.y_val, axis=0)
         if keys[-1]=='mean_coherence':
-            v=val.y[2:20]
+            v=sum(val.y[2:20])
+        if keys[-1]=='firing_rate':
+            v=numpy.mean(val.y)
             
         out=misc.dict_recursive_add(out,  keys, v)
     return out             
 def compute_performance(d, nets, models, attr):       
     results={}
     
+    
+    
+    
     for run in d.keys():
+        if run=='no_pert':
+            continue
         for model in models:
             for attr in attrs:
+                
+                keys_c= ['no_pert', 'Net_0', model, attr]
+                keys_l= ['no_pert', 'Net_1', model, attr]
+                try:
+                    v_control0=misc.dict_recursive_get(d,keys_c)
+                except:
+                    continue
+                v_lesion0=misc.dict_recursive_get(d,keys_l)
+                
                 keys1=[run, 'Net_0', model, attr]
                 keys2=[run, 'Net_1', model, attr]
-                keys3=[run, model, attr]
+                keys3=['control',run, model, attr]
+                keys4=['lesion',run, model, attr]
 
                 v1=misc.dict_recursive_get(d, keys1)
                 v2=misc.dict_recursive_get(d, keys2)
 
-                v=(v1-v2)/v1
-                v[numpy.isnan(v)]=0
-                v=numpy.mean((v)**2)
+                v_change_control=numpy.abs(v1/v_control0)*100
+                v_change_lesion=numpy.abs(v2/v_lesion0)*100
                 
-                results=misc.dict_recursive_add(results,  keys3, v)
+                results=misc.dict_recursive_add(results,  keys3, 
+                                                v_change_control)
+                results=misc.dict_recursive_add(results,  keys4, 
+                                                v_change_lesion)
                 
     return results
 
@@ -320,14 +340,21 @@ def plot_raw(d, d_keys, attr='mean_coherence'):
 #     pylab.show()    
     
 if __name__=='__main__':
-    models=['GP_GP', 'GA_GA', 'GI_GA', 'GI_GI']
+    models=['M1', 'M2', 'FS', 'GA', 'GI', 'GP', 'ST','SN',
+            'GP_GP', 'GA_GA', 'GI_GA', 'GI_GI']
     nets=['Net_0', 'Net_1']
-    attrs=['mean_coherence', 'phases_diff_with_cohere']
-    path='/home/mikael/results/papers/inhibition/network/simulate_slow_wave_ZZZ5/'
+    attrs=[
+           'firing_rate', 
+           'mean_coherence', 
+#            'phases_diff_with_cohere'
+           ]
+    path=('/home/mikael/results/papers/inhibition/network/'
+          +'supermicro/simulate_slow_wave_ZZZ_conn_effect_perturb/')
+ 
     home = expanduser("~")
     script_name=__file__.split('/')[-1][0:-3]
     file_name = get_file_name(script_name)
-    from_disk=1
+    from_disk=0
     
     sd = get_storage(file_name, '')
     d={}
@@ -336,17 +363,17 @@ if __name__=='__main__':
         d['raw']=gather(path, nets, models, attrs)
         d['data']=extract_data(d['raw'], nets, models, attrs)
         d['performance']=compute_performance(d['data'], nets, models, attrs)
-        d['bar_obj'], d['labels']=generate_plot_data(d['performance'],
-                                                     models, 
-                                                     attrs)
+#         d['bar_obj'], d['labels']=generate_plot_data(d['performance'],
+#                                                      models, 
+#                                                      attrs)
 
         save(sd, d)
     else:
-        filt=['bar_obj']+models+['labels']
-        d = sd.load_dic(*filt)
+#         filt=['performance']+models
+        d = sd.load_dic()
 #         d2=sd.load_dic()
 #         d = sd.load_dic()
-    pp(d['bar_obj'])
+    pp(d['performance'])
 #     plot_raw(d, d_keys, attr='mean_coherence')
 #     plot_raw(d, d_keys, attr='phases_diff_with_cohere')
     plot2(d, d['labels'])

@@ -10,6 +10,9 @@ import numpy
 from my_axes import MyAxes, MyAxes3D
 from toolbox import pylab
 
+import matplotlib.gridspec as gridspec
+from toolbox import my_axes
+
 import pprint
 pp=pprint.pprint
 
@@ -265,6 +268,62 @@ def get_figure( n_rows, n_cols, w, h=None, fontsize=12, order='col', projection=
         for x in xpoints:
             for y in reversed(ypoints):
                 ax_list.append( axes_class(fig, [ x,  y,  width, hight ] ) )                 
+    return fig, ax_list
+
+
+# def callback_gridspec(*args,**kwargs):
+
+
+
+def gs_builder(*args, **kwargs):
+    n_rows=kwargs.get('n_rows',1)
+    n_cols=kwargs.get('n_cols',1)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 1. / n_cols * 0.7), 
+              hspace=kwargs.get('hspace', 1. / n_cols * 0.7))
+
+    iterator = []
+    if order == 'col':
+        for y in range(n_cols):
+            for x in range(n_rows):
+                iterator.append([x, y])
+    
+    if order == 'row':
+        for x in range(n_rows):
+            for y in range(n_cols):
+                iterator.append([x, y])
+    
+    return iterator, gs, 
+
+def get_figure2(*args,**kwargs):
+
+
+    _gs_builder=kwargs.get('gs_builder', gs_builder)
+    fontsize=kwargs.pop('fontsize', 12)    
+    h=kwargs.pop('h', 500.)
+    projection=kwargs.get('projection', None)
+    w=kwargs.pop('w', 500.)
+    
+    set_mode(pylab, 'by_fontsize', w, h, fontsize, **kwargs)
+
+    fig = pylab.figure( facecolor = 'w' )
+    
+    if projection == '3d':
+        axes_class = MyAxes3D
+    else:
+        axes_class = MyAxes
+    
+    
+    iterator, gs = _gs_builder(*args,**kwargs)
+                   
+    ax_list=[]    
+    for x,y in iterator:
+        ax=my_axes.convert(pylab.subplot(gs[x,y]), 
+                           into=axes_class)
+        ax_list.append( ax )
+        
     return fig, ax_list
 
 

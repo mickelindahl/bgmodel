@@ -343,6 +343,7 @@ class Conn(object):
         #self.dic=par['conn'][name]
         self.delay=kwargs.get('delay', {'type':'constant', 
                                               'params':1.0})
+        self.display=kwargs.get('display', True)
         self.fan_in=kwargs.get('fan_in', 10)
         self.local_lockup=None
         self.name=name            
@@ -382,19 +383,19 @@ class Conn(object):
         
     @property
     def n(self):
-        if self.pre is None:
+        if self.pre==None:
             return 0
         else:
             return self.pre.shape[1]
     @property
     def n_pre(self):
-        if self.pre is None:
+        if self.pre==None:
             return 0
         else:
             return self.pre.shape[1]
     @property
     def n_post(self):
-        if not self.pre:
+        if self.pre==None:
             return 0
         else:
             return self.post.shape[1]
@@ -458,7 +459,8 @@ class Conn(object):
 
         # Necessary to ensure all mpi proc gets the same data
         pool_conn=map_parallel(pool_get_connectables, 
-                          *arg, **{'local_num_threads':self.local_num_threads})
+                          *arg, **{'local_num_threads':self.local_num_threads,
+                                   'display':self.display})
         
         # For each driver get number of pool neurons that have been chosen
         # and then expand d_idx accordingly to get 
@@ -1061,17 +1063,18 @@ class TestConn(unittest.TestCase):
     
     def test_set_con(self):
         rules=[ 
-#                 'all-all', 
-#                 '1-1', 
+                'all-all', 
+                '1-1', 
                 'set-set', 
-#                 'set-not_set', 
-#                 'all_set-all_set',
-#                 'divergent'
+                'set-not_set', 
+                'all_set-all_set',
+                'divergent'
                 ]     
         l=[]
         fan_in=15
         for rule in rules:
-            c=Conn('n1_n2', **{'fan_in':fan_in,
+            c=Conn('n1_n2', **{'display':False,
+                               'fan_in':fan_in,
                                'local_num_threads':2,
                                 'rule':rule})
             
@@ -1092,7 +1095,8 @@ class TestConn(unittest.TestCase):
                 self.assertAlmostEquals(fan_in, 
                                         float(c.n_pre)/self.target.get_n(), 
                                         delta=3)
-                c=Conn('n1_n2', **{'fan_in':fan_in, 'rule':rule})
+                c=Conn('n1_n2', **{'display':False,
+                                   'fan_in':fan_in, 'rule':rule})
                 c._set(self.target, self.source3)
                 self.assertAlmostEquals(fan_in, 
                                         float(c.n_pre)/self.target.get_n(), 
@@ -1124,7 +1128,8 @@ class TestConn(unittest.TestCase):
         l1=[]
         l2=[]
         for rule in rules:
-            k.update({'rule':rule,
+            k.update({'display':False,
+                      'rule':rule,
                       'source':self.source.get_name(),
                       'target':self.target.get_name(),
                       'save':{'active':True,
@@ -1185,17 +1190,20 @@ class TestConn(unittest.TestCase):
           
     def test_get_weight(self):
         m=1.
-        c1=Conn('n1_n2', **{'weight':{'params':m, 
-                                            'type':'constant'}})
-        c2=Conn('n1_n2', **{'weight':{'params':{'min':m-0.5,
-                                                         'max':m+0.5}, 
-                                              'type':'uniform'}})      
+        c1=Conn('n1_n2', **{'display':False,
+                            'weight':{'params':m, 
+                                      'type':'constant'}})
+        c2=Conn('n1_n2', **{'display':False,
+                            'weight':{'params':{'min':m-0.5,
+                                                'max':m+0.5}, 
+                                      'type':'uniform'}})      
          
         create_dummy_learned_weights(self.path_learned, self.n_sets )
          
-        c3=Conn('n1_n2', **{'weight':{'params':1, 
-                                             'type':'learned', 
-                                             'path':(self.path_learned)}})   
+        c3=Conn('n1_n2', **{'display':False,
+                            'weight':{'params':1, 
+                                      'type':'learned', 
+                                      'path':(self.path_learned)}})   
         c1._set(self.source, self.target) 
         c2._set(self.source, self.target) 
         c3._set(self.source, self.target) 
@@ -1209,9 +1217,11 @@ class TestConn(unittest.TestCase):
  
     def test_get_delays(self):
         m=1.
-        c1=Conn('n1_n2', **{'delay':{'params':m, 
+        c1=Conn('n1_n2', **{'display':False,
+                            'delay':{'params':m, 
                                             'type':'constant'}})
-        c2=Conn('n1_n2', **{'delay':{'params':{'min':m-0.5,
+        c2=Conn('n1_n2', **{'display':False,
+                            'delay':{'params':{'min':m-0.5,
                                                          'max':m+0.5}, 
                                               'type':'uniform'}})      
         c1._set(self.source, self.target) 
@@ -1329,18 +1339,18 @@ if __name__ == '__main__':
 #                 'test_get_weight',
 #                 'test_get_delays',
                  ],
-#         TestConn_dic:[
-#                       'test_add'
-#                       ],
-#         TestModuleFunctions:[
-#                             'test_1_create_surfaces',
-#                             'test_2_create_populations',
-#                             'test_3_create_connections',
-#                             'test_4_connect_conns',
-#                             'test_5_build',
-#                              'test_6_connect',
-#                              'test_7_connect_with_save',
-#                              ],
+        TestConn_dic:[
+                      'test_add'
+                      ],
+        TestModuleFunctions:[
+                            'test_1_create_surfaces',
+                            'test_2_create_populations',
+                            'test_3_create_connections',
+                            'test_4_connect_conns',
+                            'test_5_build',
+                             'test_6_connect',
+                             'test_7_connect_with_save',
+                             ],
        }
     test_classes_to_run=d
     suite = unittest.TestSuite()
