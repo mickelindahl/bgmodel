@@ -13,7 +13,7 @@ from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network.manager import get_storage, save, load
 from toolbox.my_signals import Data_bar
-from simulate import get_file_name
+from simulate import get_file_name,get_file_name_figs
 import pprint
 pp=pprint.pprint
 
@@ -40,7 +40,30 @@ def gather(path, nets, models, attrs):
         i+=1
     return d
 
+def gather2(path, nets, models, attrs): 
+    
 
+    fs=os.listdir(path)
+    d={}
+    i=0
+    for name0 in fs:
+        dd={}
+        for net in nets:
+            name=name0+'/'+net+'.pkl'
+            
+            
+            if not os.path.isfile(path+name):
+                print name
+                continue
+            file_name=path+name[:-4]
+            sd = Storage_dic.load(file_name)
+            args=nets+models+attrs
+            misc.dict_update(dd, sd.load_dic(*args))
+
+        if dd:  
+            d = misc.dict_update(d, {name0.split('-')[-1]:dd})
+        i+=1
+    return d
 
 def extract_data(d, nets, models, attrs):
     
@@ -56,6 +79,8 @@ def extract_data(d, nets, models, attrs):
     return out             
 def compute_performance(d, nets, models, attr):       
     results={}
+ 
+                
     
     for run in d.keys():
         for model in models:
@@ -72,12 +97,31 @@ def compute_performance(d, nets, models, attr):
                 v=numpy.mean((v)**2)
                 
                 results=misc.dict_recursive_add(results,  keys3, v)
+    d0={}
+    for run in results.keys():
+        for model in models:
+            for attr in attrs:
+                keys0=['Normal', model, attr] 
+                v1=misc.dict_recursive_get(results, keys0)
+                d0=misc.dict_recursive_add(d0, keys0, v1)
+
+       
+    for run in results.keys():
+        for model in models:
+            for attr in attrs:
+                keys0=['Normal', model, attr]  
+                keys3=[run, model, attr]               
+                
+                v0=misc.dict_recursive_get(d0, keys0)
+                v1=misc.dict_recursive_get(results, keys3)
+                results=misc.dict_recursive_add(results, keys3, v1/v0)
                 
     return results
 
 def generate_plot_data(d, models, attrs, exclude=['all',
                                                   'striatum',
-                                                  'GP-ST-SN']):
+                                                  'GP-ST-SN', 
+                                                  'Normal']):
     out={}
     
     labels=[]
@@ -97,7 +141,8 @@ def generate_plot_data(d, models, attrs, exclude=['all',
                 l[-1].append(misc.dict_recursive_get(d, [k, model, attr]))
             
         lsum=[[a]*len(l[0]) for a in numpy.sum(l, axis=1)]
-        obj=Data_bar(**{'y':numpy.array(l)/numpy.array(lsum)})
+        obj=Data_bar(**{'y':numpy.array(l)#/numpy.array(lsum)
+                        })
         out=misc.dict_recursive_add(out, [model], obj)
     
     return out, labels
@@ -160,7 +205,7 @@ def plot(d, labels):
     ps.shift('right', axs, 0.05, n_rows=len(axs), n_cols=1)
     
     labels=['GP vs GP', 'TI vs TI', 'TI vs TA', 'TA vs TA']
-    ylims=[[0, 0.2]]*2+[[0, 0.16]]*2
+    ylims=[[0, 3.5]]*2+[[0, 2.5]]*2
     for i, ax in enumerate(axs):      
         
         ax.my_set_no_ticks(yticks=3)
@@ -191,13 +236,13 @@ def gs_builder(*args, **kwargs):
     gs.update(wspace=kwargs.get('wspace', 0.05 ), 
               hspace=kwargs.get('hspace', 1. / n_cols ))
 
-    iterator = [[slice(1,7),slice(1,5)],
-                [slice(1,7),5]]
+    iterator = [[slice(1,7), slice(2,7)],
+                [slice(1,7), slice(7,9)]]
     
     return iterator, gs, 
 
 def plot2(d, labels):
-    fig, axs=ps.get_figure2(n_rows=8, n_cols=6, w=700, h=700, fontsize=24,
+    fig, axs=ps.get_figure2(n_rows=8, n_cols=9, w=700, h=700, fontsize=24,
                             frame_hight_y=0.5, frame_hight_x=0.7, 
                             title_fontsize=24,
                             gs_builder=gs_builder) 
@@ -246,24 +291,24 @@ def plot2(d, labels):
     z=numpy.transpose(numpy.array(l0+l2))
     
     _vmin=0
-    _vmax=0.16
+    _vmax=4
     stepx=1
     stepy=1
     startx=0
     starty=0
-    stopy=15
+    stopy=14
     stopx=8
-    maxy=15
+    maxy=14
     maxx=8
     
     posy=numpy.linspace(0.5,maxy-0.5, maxy)
     posx=numpy.linspace(0.5,maxx-0.5, maxx)
-    axs[1].barh(posy,numpy.mean(z,axis=1)[::-1], align='center', color='k')
-    
+    axs[1].barh(posy,numpy.mean(z,axis=1)[::-1], align='center', color='0.5')
+    axs[1].plot([1,1], [0,stopy], 'k', linewidth=3, linestyle='--')
     x1,y1=numpy.meshgrid(numpy.linspace(startx, stopx, maxx+1),
                    numpy.linspace(stopy, starty, maxy+1))
     
-    im = axs[0].pcolor(x1, y1, z, cmap='Greys', 
+    im = axs[0].pcolor(x1, y1, z, cmap='jet', 
                         vmin=_vmin, vmax=_vmax
                        )
     axs[0].set_yticks(posy)
@@ -271,15 +316,18 @@ def plot2(d, labels):
     axs[0].set_xticks(posx)
     axs[0].set_xticklabels(labels2*2, rotation=70, ha='right')
     axs[0].set_ylim([0,maxy])
-    axs[0].text(0.1, 1.02, "Coherence", transform=axs[0].transAxes)
-    axs[0].text(0.6, 1.02, "Phase shift", transform=axs[0].transAxes)
-    axs[0].text(1.3, 0.65, "Mean effect", transform=axs[0].transAxes,
-                rotation=270)
+    axs[0].text(0.05, 1.02, "Coherence", transform=axs[0].transAxes)
+    axs[0].text(0.55, 1.02, "Phase shift", transform=axs[0].transAxes)
+    axs[1].text(1.45, 0.65, "Mean effect", transform=axs[0].transAxes,
+                                rotation=270)
+    axs[0].text(-0.6, 0.9, "Connection without dop. effect", transform=axs[0].transAxes,
+                rotation=90)
         
     axs[1].my_remove_axis(xaxis=False, yaxis=True)
     axs[1].my_set_no_ticks(xticks=2)
-    axs[1].set_ylim([0,maxy])
-    axs[1].set_xticks([0.04, 0.12])
+    axs[1].set_xlim([0,maxy])
+    axs[1].set_xlim([0,2])
+#     axs[1].set_xticks([0.04, 0.12])
 
 
     box = axs[0].get_position()
@@ -289,14 +337,14 @@ def plot2(d, labels):
                         0.05])
     #     axColor = pylab.axes([0.05, 0.9, 1.0, 0.05])
     cbar=pylab.colorbar(im, cax = axColor, orientation="horizontal")
-    cbar.ax.set_title('Normalized MSE control vs lesion')#, rotation=270)
+    cbar.ax.set_title('MSE control vs lesion rel. base model')#, rotation=270)
     from matplotlib import ticker
     tick_locator = ticker.MaxNLocator(nbins=4)
     cbar.locator = tick_locator
     cbar.update_ticks()
 
     
-    
+    return fig
 #     pylab.show()
     
 def plot_raw(d, d_keys, attr='mean_coherence'):
@@ -324,6 +372,9 @@ if __name__=='__main__':
     nets=['Net_0', 'Net_1']
     attrs=['mean_coherence', 'phases_diff_with_cohere']
     path='/home/mikael/results/papers/inhibition/network/simulate_slow_wave_ZZZ5/'
+    path=('/home/mikael/results/papers/inhibition/network/'
+          +'supermicro/simulate_slow_wave_ZZZ_dop_effect_perturb/')
+    
     home = expanduser("~")
     script_name=__file__.split('/')[-1][0:-3]
     file_name = get_file_name(script_name)
@@ -333,7 +384,8 @@ if __name__=='__main__':
     d={}
     if not from_disk:
     
-        d['raw']=gather(path, nets, models, attrs)
+#         d['raw']=gather(path, nets, models, attrs)
+        d['raw']=gather2(path, nets, models, attrs)
         d['data']=extract_data(d['raw'], nets, models, attrs)
         d['performance']=compute_performance(d['data'], nets, models, attrs)
         d['bar_obj'], d['labels']=generate_plot_data(d['performance'],
@@ -346,15 +398,19 @@ if __name__=='__main__':
         d = sd.load_dic(*filt)
 #         d2=sd.load_dic()
 #         d = sd.load_dic()
+    file_name_figs=get_file_name_figs(script_name)
+    sd_figs = Storage_dic.load(file_name_figs)
     pp(d['bar_obj'])
 #     plot_raw(d, d_keys, attr='mean_coherence')
 #     plot_raw(d, d_keys, attr='phases_diff_with_cohere')
-    plot2(d, d['labels'])
+    figs=[]
+    figs.append(plot2(d, d['labels']))
 #     plot(d['bar_obj'], d['labels'])
     pylab.show()
 #     pp(d)
     
-    
+    sd_figs.save_figs(figs, format='png')
+    sd_figs.save_figs(figs, format='svg', in_folder='svg')
     
     
     

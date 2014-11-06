@@ -31,8 +31,8 @@ LOAD_MILNER_ON_SUPERMICRO=False
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*8,
-        'cores_superm':40,
+        'cores_milner':40*10,
+        'cores_superm':1,
         
         'debug':False,
         'do_runs':[0,1,2,3,4],
@@ -46,9 +46,9 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'_'.join(FILE_NAME.split('_')[1:]),
+        'job_name':'sw_no_ss_scaling',
 
-        'l_hours':['03','01','00'],
+        'l_hours':['10','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            
@@ -59,7 +59,7 @@ kwargs={
                    'GPe TA lesioned (D1,D2)'], 
         'laptime':1000.0,
         'local_threads_milner':40,
-        'local_threads_superm':4,
+        'local_threads_superm':1,
                  
         'max_size':20000.,
         'module':module,
@@ -93,7 +93,7 @@ kwargs={
                      1.,
                      ],
         'res':10,
-        'rep':10,
+        'rep':40,
         
         'time_bin':100,
         }

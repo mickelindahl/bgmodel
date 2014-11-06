@@ -193,7 +193,8 @@ def loop(*args, **kwargs):
                 from toolbox import jobb_handler
                 
                 path=default_params.HOME_DATA+'/active_jobbs.pkl'
-                
+                       
+                print 'Waiting {} seconds to start jobb handler'.format(len(al)) 
                 obj=jobb_handler.Handler(path, 1)
                 print obj
                 time.sleep(len(al))

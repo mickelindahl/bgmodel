@@ -53,7 +53,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'_'.join(FILE_NAME.split('_')[1:]),
+        'job_name':'sw_dop_pert',
         
         'l_hours':  ['00','00','00'],
         'l_minutes':['15','10','5'],
@@ -94,6 +94,7 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(NUM_NETS/4, a_list, k_list )
+loop(get_loop_index(NUM_NETS/2,[NUM_NETS, NUM_NETS, NUM_NETS/2] ), 
+     a_list, k_list )
 
         

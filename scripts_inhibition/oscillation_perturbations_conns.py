@@ -38,11 +38,16 @@ def get():
                 'M1_M2_gaba',
                 'M2_M1_gaba',
                 'M2_M2_gaba'],
+       'M1_M1':['M1_M1_gaba'],
+       'M1_M2':['M1_M2_gaba'],
+       'M2_M1':['M2_M1_gaba'],
+       'M2_M2':['M2_M2_gaba'],
        'ST_GA':['ST_GA_ampa'],
-       'ST_GI':['ST_SN_ampa'],
+       'ST_GI':['ST_GI_ampa'],
+       'ST_SN':['ST_SN_ampa'],
        }
     mod=[0.75, 1.25,
-         0.5, 1.5, 
+         0.5,  1.5, 
          0.25, 1.75]
     l=[]
     

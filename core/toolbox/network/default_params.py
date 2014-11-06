@@ -310,7 +310,7 @@ class Perturbation(object):
             keys=keys.split('.')
         self.op=op 
         self.keys=keys
-        self.val=val
+        self.val=[val]
  
     def __eq__(self, other):
         return ((self.keys==other.keys)
@@ -318,10 +318,17 @@ class Perturbation(object):
                  *(self.op==other.op))
               
     def __hash__(self):
-        return hash((tuple(self.keys), self.val, self.op))
+        return hash((tuple(self.keys), tuple(self.val), self.op))
      
     def __repr__(self):
-        return  '.'.join(self.keys)+self.op+str(self.val)  
+        s=''
+        for v in self.val:
+            s+=self.op+str(v)
+        
+        return  '.'.join(self.keys)+s
+    
+    def __str__(self):
+        return self.__repr__()
     
     def _get_val(self):
         return self.val 
@@ -330,10 +337,11 @@ class Perturbation(object):
         self.val=val
 
     def apply(self, dic):
-        dic=misc.dict_apply_operation(dic, 
-                                      self.keys, 
-                                      self.val, 
-                                      self.op)
+        for v in self.val:
+            dic=misc.dict_apply_operation(dic, 
+                                          self.keys, 
+                                          v, 
+                                          self.op)
       
             
 class Perturbation_list(object):
@@ -383,14 +391,16 @@ class Perturbation_list(object):
         new.append(other)
         return new
     
-    def _add_to_dic(self, key, val):
+    def _add_to_dic(self, key, p):
         if key in self.dic:
-            if val.op=='*':
-                self.dic[key].val*=self.dic[key].val
+            if p.op=='*':
+                warnings.warn('Got perturbation {} adding {}'.format(self.dic[key],p))
+                self.dic[key].val+=p.val
+            
             else:
                 raise RuntimeError('Perturbation {} already exist'.format(self))
-        
-        self.dic[key]=val
+        else:
+            self.dic[key]=p
       
     def append(self, other):
         assert type(other) is Perturbation_list,  "Not Perturbation_list object"
@@ -4665,9 +4675,9 @@ class TestPerturbations(unittest.TestCase):
         self.assertEqual(p, self.per)
         
         s=("label1-label2-label3\n"+
-        "{'conn': {'i1_n1': {'fan_in': '*0.5'}},\n"
-        " 'netw': {'size': '*0.5'},\n"
-        " 'simu': {'start_rec': '=100'}}")
+        "{'conn': {'i1_n1': {'fan_in': '*[0.5]'}},\n"
+        " 'netw': {'size': '*[0.5]'},\n"
+        " 'simu': {'start_rec': '=[100]'}}")
 
         self.assertEqual(s, p.info())
 
@@ -4798,6 +4808,29 @@ class TestMixinPar_base(object):
         p=Perturbation_list({'simu':{'sim_time': 0.5}}, '*',
                                        **{'name':'label1'})
         
+        p2=Perturbation_list({'simu':{'sim_time': 0.5}}, '*',
+                                       **{'name':'label1'})
+        p.append(p2)
+#         print p
+        self.par.update_perturbations(p)
+        b=self.par['simu']['sim_time'] 
+        self.par.set_path_nest('')
+#         print b
+        
+        c=self.par['simu']['sim_time']
+        
+#         print c
+        self.assertEqual(0.5**2*a, b)
+        self.assertEqual(0.5**2*a, c)
+ 
+    def test_perturbations_double_mult_same(self):   
+        
+
+        a=self.par['simu']['sim_time']
+#         print a
+        p=Perturbation_list({'simu':{'sim_time': 0.5}}, '*',
+                                       **{'name':'label1'})
+        
         
         self.par.update_perturbations(p)
         b=self.par['simu']['sim_time'] 
@@ -4819,7 +4852,7 @@ class TestMixinPar_base(object):
         for pl in l:
             self.par.set_perturbation_list(Perturbation_list())    
             for p in pl:
-                l1.append(misc.dict_recursive_get(self.par.dic, p.keys)*p.val)
+                l1.append(misc.dict_recursive_get(self.par.dic, p.keys)*p.val[0])
                 
             self.par.set_perturbation_list(pl)    
             for p in pl:
@@ -4835,7 +4868,7 @@ class TestMixinPar_base(object):
         l1=[]
         l2=[]
         for p in p1:
-            l1.append(misc.dict_recursive_get(self.par.dic, p.keys)*p.val)      
+            l1.append(misc.dict_recursive_get(self.par.dic, p.keys)*p.val[0])      
             
         self.par.set_perturbation_list(p1)
         for p in p1:
@@ -5195,7 +5228,7 @@ if __name__ == '__main__':
         TestModuleFuncions:[
                             'test_compute'
                             ],
-          
+           
          TestPerturbations:[
                             'test_sum'
                             ],

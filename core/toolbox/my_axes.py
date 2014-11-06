@@ -74,7 +74,7 @@ class Mixin(object):
             if loc in remove: spine.set_color( 'none' )          # don't draw spine
             #else: raise ValueError( 'unknown spine location: %s'%loc )
     
-    def my_remove_axis(self, xaxis=False, yaxis=False ):
+    def my_remove_axis(self, xaxis=False, yaxis=False , keep_ticks=False):
         '''
         Remove axis.
         
@@ -85,13 +85,16 @@ class Mixin(object):
         '''
         if xaxis:      
             self.set_xticklabels( '' )                    # turn of x ticks
-            self.xaxis.set_ticks_position( 'none' )       # turn of x tick labels
+            if not keep_ticks:
+                self.xaxis.set_ticks_position( 'none' )       # turn of x tick labels
             self.set_xlabel( '' )                         # turn of x label
         
         if yaxis:
             self.set_yticklabels( '' )                    # turn of y ticks
-            self.yaxis.set_ticks_position( 'none' )       # turn of y tick labels
-            self.set_ylabel( '' )                         # turn of y label
+            if not keep_ticks:
+          
+                self.yaxis.set_ticks_position( 'none' )       # turn of y tick labels
+                self.set_ylabel( '' )                         # turn of y label
         
     def my_set_no_ticks(self, xticks=None, yticks=None, zticks=None):
         '''

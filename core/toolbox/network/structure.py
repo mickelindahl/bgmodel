@@ -475,12 +475,12 @@ class Conn(object):
         
         pre_add=sparse.coo_matrix(reduce(fun_sum, pre))
         post_add=sparse.coo_matrix(reduce(fun_sum, post)) 
-        if not self.pre:
+        if self.pre==None:
             self.pre= pre_add 
         else:
             self.pre=sparse.hstack([self.pre, pre_add])
             
-        if not self.post:    
+        if self.post==None:    
             self.post=post_add
         else: 
             self.post=sparse.hstack([self.post, post_add])

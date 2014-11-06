@@ -35,7 +35,7 @@ kwargs={
         'cores_superm':16,
         
         'debug':False,
-        'do_runs':[0, 1, 2],
+        'do_runs':[1, 2],
         'do_obj':False,
         'duration':[900.,100.0],
         

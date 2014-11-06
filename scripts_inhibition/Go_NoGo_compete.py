@@ -246,22 +246,26 @@ def set_action_selection_marker(axs, i, d0, d1, x2, y2, thr, marker):
         m=(d0 > thr)*(d1 > thr)==False
         x = numpy.ma.array(x2, mask=m)
         y = numpy.ma.array(y2, mask=m) #             x0,y0,z0=get_optimal(z.shape[0])
+        color='k'
+        marker='-'
 
-    if marker=='d':
-        m=(d0 < thr)*(d1 < thr)==False
+    elif marker=='d':
+        m=(d0 <= thr)*(d1 <= thr)==False
         x = numpy.ma.array(x2, mask=m)
         y = numpy.ma.array(y2, mask=m) #             x0,y0,z0=get_optimal(z.shape[0])
+        color='k'
 
 #     print m
 #     print x
-    if marker=='s':
-        m=((d0 > thr)*(d1 < thr)+(d0 < thr)*(d1 > thr))==False
+    elif marker=='s':
+        m=((d0 > thr)*(d1 <= thr)+(d0 <= thr)*(d1 > thr))==False
         x = numpy.ma.array(x2, mask=m)
         y = numpy.ma.array(y2, mask=m) #             x0,y0,z0=get_optimal(z.shape[0])
+        color='k'
 
 
-    axs[i].scatter(x, y, color='k', edgecolor='k',
-                   s=100, marker=r'$'+marker+'$')
+    axs[i].scatter(x, y, color=color, edgecolor=color,linewidth=0.5,
+                   s=120, marker=r'$'+marker+'$')
 #     r"$Lisa$"
 
 def show_heat_map(d,attr,**k):
@@ -705,7 +709,7 @@ import unittest
 class TestMethods(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=0
+        from_disk=2
         
         import oscillation_perturbations4 as op
         

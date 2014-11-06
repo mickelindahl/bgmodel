@@ -31,7 +31,7 @@ FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 #Total number of runs 18*2*2+18
-NUM_NETS=97*2
+NUM_NETS=127*2
 
 kwargs={
         
@@ -42,8 +42,8 @@ kwargs={
         'cores_milner':40*1,
         'cores_superm':40,
         
-        'debug':False,
-        'do_runs':range(18), #A run for each perturbation
+        'debug':False,#173-86, 109-54, 45-22
+        'do_runs':range(NUM_NETS/2), #A run for each perturbation
         'do_obj':False,
         
         'file_name':FILE_NAME,
@@ -53,10 +53,10 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'_'.join(FILE_NAME.split('_')[1:]),
+        'job_name':'sw_conn_pert',
         
         'l_hours':  ['00','00','00'],
-        'l_minutes':['15','10','5'],
+        'l_minutes':['45','10','5'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,
@@ -89,12 +89,16 @@ p_list = pert_set_data_path_to_milner_on_supermicro(p_list,
                                                   LOAD_MILNER_ON_SUPERMICRO)
 p_list=pert_add(p_list, **kwargs)
 
-for i, p in enumerate(p_list): print i, p
+for i, p in enumerate(p_list): 
+    print i, p
+#     for l in p.list:
+#         if len(l.val)==2:
+#             print l
 
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(get_loop_index(30,[NUM_NETS, NUM_NETS, NUM_NETS/2] ), a_list, k_list )
+loop(get_loop_index(NUM_NETS/2,[NUM_NETS, NUM_NETS, NUM_NETS/2] ), a_list, k_list )
 
         
