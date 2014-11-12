@@ -23,6 +23,8 @@ def get():
     c={'FS_FS':['FS_FS_gaba'],
        'FS_MS':['FS_M1_gaba',
                 'FS_M2_gaba'],
+       'FS_M1':['FS_M1_gaba'],
+       'FS_M2':['FS_M2_gaba'],
        'GA_FS':['GA_FS_gaba'],
        'GA_GA':['GA_GA_gaba'],
        'GA_GI':['GA_GI_gaba'],
@@ -46,16 +48,17 @@ def get():
        'ST_GI':['ST_GI_ampa'],
        'ST_SN':['ST_SN_ampa'],
        }
-    mod=[0.75, 1.25,
-         0.5,  1.5, 
-         0.25, 1.75]
+    mod=[0.25, 0.5, 0.75, 
+         1.25, 1.5, 1.75]
     l=[]
     
     l+=[pl(**{'name':'no_pert'})]
-    for w_rel in mod:
-        d=get_perturbation_dics(c, w_rel)
-        for key, val in d.items():
-            l.append(pl(val,'*', **{'name':key+'_pert_'+str(w_rel)}))
+    
+    for key, val in c.items():
+        for w_rel in mod:
+            d=get_perturbation_dics({key:val}, w_rel)
+            
+            l.append(pl(d.values()[0],'*', **{'name':d.keys()[0]+'_pert_'+str(w_rel)}))
         
     return l 
  

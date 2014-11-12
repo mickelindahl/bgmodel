@@ -44,7 +44,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'sl_no_ss_scaling_v2',
+        'job_name':'sw_noss_scl_v2',
 
         'l_hours':['10','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],

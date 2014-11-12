@@ -150,7 +150,18 @@ class Main():
     def do(self):
         oscillation_common.main(**self.kwargs)
        
- 
+    def get_nets(self):
+        return self.kwargs['setup'].nets_to_run
+
+    def get_script_name(self):
+        return self.kwargs['script_name']
+
+    def get_name(self):
+        nets='_'.join(self.get_nets()) 
+        script_name=self.kwargs['script_name']
+        script_name=script_name.split('/')[1].split('_')[0:2]
+        script_name='_'.join(script_name)+'_'+nets
+        return script_name+'_'+str(self.kwargs['from_disk']) 
 # if __name__ == "__main__":
 #     # stuff only to run when not called via 'import' here
 #     main()

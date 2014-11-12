@@ -94,7 +94,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(get_loop_index(NUM_NETS/2,[NUM_NETS, NUM_NETS, NUM_NETS/2] ),
-      a_list, k_list )
+loop(5,[NUM_NETS, NUM_NETS, NUM_NETS/2], a_list, k_list )
 
         

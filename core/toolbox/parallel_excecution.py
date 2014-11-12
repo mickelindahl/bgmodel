@@ -23,14 +23,15 @@ import subprocess
 import time 
 import pprint
 pp=pprint.pprint
+import Queue
 
 from itertools import izip
 from toolbox import misc
 from toolbox import data_to_disk 
 from toolbox.network import default_params
+from toolbox import job_handler
 from toolbox.data_to_disk import make_bash_script
 from toolbox.parallelization import comm
-
 
 # if my_signal.determine_host() in ['milner', 'milner_login']:
 #     HOME='/cfs/milner/scratch/l/lindahlm'
@@ -101,106 +102,147 @@ def generate_args(*args):
     return ' '.join(args)
 
 
-def loop(*args, **kwargs):
-    chunks, args_list,  kwargs_list=args 
+def epoch(*args):
+    obj, kwargs=args
     
-    if not isinstance(chunks, list):
-        n=len(args_list)/5*2
-        m=len(args_list)/5
-        chunks=get_loop_index(chunks, [n,n,m])
-        
-        
-    
-#     args_list_chunked= chunk(args_list, chunks)  
-#     kwargs_list_chunked= chunk(kwargs_list, chunks)
+    if not kwargs.get('active'):
+        return False
+         
+
     host=my_socket.determine_computer()
+    job_id=''
+           
+    path_code=kwargs.get('path_code')
+    path_results=kwargs.get('path_results')
     
+    if not os.path.isdir(path_results):
+        data_to_disk.mkdir(path_results)
     
-    chunks_cumsum0=[0]+list(numpy.cumsum(chunks))
-    for i_start, i_stop in zip(chunks_cumsum0[:-1], chunks_cumsum0[1:]):
-        jobs=[]
-#     for al, kl in izip(args_list_chunked, kwargs_list_chunked):
-        al=args_list[i_start: i_stop]
-        kl=kwargs_list[i_start: i_stop]
-        for obj, kwargs in zip(al, kl):
-              
-            if not kwargs.get('active'):
-                continue
-                        
-            path_code=kwargs.get('path_code')
-            path_results=kwargs.get('path_results')
-            
-            if not os.path.isdir(path_results):
-                data_to_disk.mkdir(path_results)
-            
-            num_mpi_task=kwargs.get('num-mpi-task', 2)     
-            index=kwargs['index']
-            
-            path_out=path_results+"std/subp/out{0:0>4}".format(index)
-            path_err=path_results+'std/subp/err{0:0>4}'.format(index)
-            path_sbatch_out=path_results+"std/sbatch/out{0:0>4}".format(index)
-            path_sbatch_err=path_results+'std/sbatch/err{0:0>4}'.format(index)
-            path_tee_out=path_results+'std/tee/out{0:0>4}'.format(index)
-            path_params=path_results+'params/run{0:0>4}.pkl'.format(index)
-            path_script=path_code+'/core/toolbox/parallel_excecution/simulation.py'
-            path_bash0=path_code+'/core/toolbox/parallel_excecution/jobb0.sh'
-            path_bash=path_results+'/jobbs/jobb_{0:0>4}.sh'.format(index)
-            
-            data_to_disk.mkdir('/'.join(path_sbatch_out.split('/')[0:-1]))
-            data_to_disk.mkdir('/'.join(path_tee_out.split('/')[0:-1]))
+    num_mpi_task=kwargs.get('num-mpi-task', 2)     
+    index=kwargs['index']
+    
+    path_out=path_results+"std/subp/out{0:0>4}".format(index)
+    path_err=path_results+'std/subp/err{0:0>4}'.format(index)
+    path_sbatch_out=path_results+"std/sbatch/out{0:0>4}".format(index)
+    path_sbatch_err=path_results+'std/sbatch/err{0:0>4}'.format(index)
+    path_tee_out=path_results+'std/tee/out{0:0>4}'.format(index)
+    path_params=path_results+'params/run{0:0>4}.pkl'.format(index)
+    path_script=path_code+'/core/toolbox/parallel_excecution/simulation.py'
+    path_bash0=path_code+'/core/toolbox/parallel_excecution/jobb0.sh'
+    path_bash=path_results+'/jobbs/jobb_{0:0>4}.sh'.format(index)
+    
+    data_to_disk.mkdir('/'.join(path_sbatch_out.split('/')[0:-1]))
+    data_to_disk.mkdir('/'.join(path_tee_out.split('/')[0:-1]))
 
-            save_params(path_params, path_script, obj)
-            
-            if host=='milner':
+    save_params(path_params, path_script, obj)
 
-                o=generate_milner_bash_script(path_sbatch_err,
-                                              path_sbatch_out,
-                                              path_tee_out,
-                                              path_params,
-                                              path_script,
-                                              path_bash0,
-                                              path_bash,
-                                               **kwargs )
-                args_bash_call=o
-                p=do(path_out, path_err, args_bash_call, **kwargs)
+    
+    if host=='milner':
 
-                
-            if host=='supermicro':
-                if num_mpi_task==1:
-                    args_call=['python', path_script, path_params]
-                else:
-                    args_call=['mpirun', '-np', str(num_mpi_task), 'python', 
-                               path_script, path_params,
-                               '2>&1','|', 'tee', path_tee_out]
-                    
-                p=do(path_out, path_err, args_call,  **kwargs)
-                
-            
-            jobs.append(p)
-            
-        if not jobs:
-            continue
+        o=generate_milner_bash_script(path_sbatch_err,
+                                      path_sbatch_out,
+                                      path_tee_out,
+                                      path_params,
+                                      path_script,
+                                      path_bash0,
+                                      path_bash,
+                                       **kwargs )
+        args_bash_call=o
+        p=do(path_out, path_err, args_bash_call, **kwargs)
         
-        print jobs
-        s='Waiting for {} processes to complete ...'.format(chunks)
-        with misc.Stopwatch(s):
-            for p in jobs:    
-                p.wait()
-#                 p.terminate()
+        time.sleep(1)
+        text=data_to_disk.text_load(path_out)
+        
+        i=0
+        while not text and i<10:
+            time.sleep(1) # wait for file to be populated
+            text=data_to_disk.text_load(path_out)
+            i+=1
+            
+        job_id=int(text.split(' ')[-1])
+        
+    if host=='supermicro':
+        if num_mpi_task==1:
+            args_call=['python', path_script, path_params]
+        else:
+            args_call=['mpirun', '-np', str(num_mpi_task), 'python', 
+                       path_script, path_params,
+                       '2>&1','|', 'tee', path_tee_out]
+            
+        p=do(path_out, path_err, args_call,  **kwargs)
+        
+    script_name=obj.get_name()
+    return p, job_id, script_name
 
-            if host=='milner':
-                
-                from toolbox import jobb_handler
-                
-                path=default_params.HOME_DATA+'/active_jobbs.pkl'
-                       
-                print 'Waiting {} seconds to start jobb handler'.format(len(al)) 
-                obj=jobb_handler.Handler(path, 1)
-                print obj
-                time.sleep(len(al))
-                obj.loop(loop_print=True)
-                
+# def loop(*args, **kwargs):
+#     chunks, args_list,  kwargs_list=args 
+#     
+#     if not isinstance(chunks, list):
+#         n=len(args_list)/5*2
+#         m=len(args_list)/5
+#         chunks=get_loop_index(chunks, [n,n,m])
+#         
+#         
+#     
+# #     args_list_chunked= chunk(args_list, chunks)  
+# #     kwargs_list_chunked= chunk(kwargs_list, chunks)
+#     host=my_socket.determine_computer()
+#     
+#     
+#     chunks_cumsum0=[0]+list(numpy.cumsum(chunks))
+#     for i_start, i_stop in zip(chunks_cumsum0[:-1], chunks_cumsum0[1:]):
+#         jobs=[]
+#         job_info_milner=[]
+# 
+#         al=args_list[i_start: i_stop]
+#         kl=kwargs_list[i_start: i_stop]
+#         for obj, kwargs in zip(al, kl):
+#             epoch(obj, jobs, job_info_milner, **kwargs)
+# 
+#         if not jobs:
+#             continue
+#         
+#         print jobs
+#         s='Waiting for {} processes to complete ...'.format(chunks)
+#         with misc.Stopwatch(s):
+#             for p in jobs:    
+#                 p.wait()
+# #                 p.terminate()
+# 
+#             if host=='milner':
+#                 
+#                 job_ids=[]
+#                 for fileName in job_info_milner:
+#                     text=data_to_disk.text_load(fileName)
+#                     job_ids.append(int(text.split(' ')[-1]))
+#                 
+#                 from toolbox import job_handler
+#                 
+#                 path=default_params.HOME_DATA+'/active_jobbs.pkl'
+#                        
+#                 print 'Waiting {} seconds to start jobb handler'.format(len(al)) 
+#                 obj=job_handler.Handler(job_ids, 1)
+#                 print obj
+#                 time.sleep(len(al))
+#                 obj.loop(loop_print=True)
+    
+def loop(*args, **kwargs):
+    n, m_list, args_list,  kwargs_list=args 
+    
 
+    for m in m_list:
+        
+        q=Queue.Queue()
+        h=job_handler.Handler()
+        
+        for _ in range(m):    
+            k=kwargs_list.pop(0)
+            if k['active']:
+                q.put([args_list.pop(0), k])
+    
+        h.loop_with_queue(n, q,  epoch, loop_print=True)
+        
+        
 def save_params(path_params, path_script, obj):
     data_to_disk.pickle_save([obj, 
                               path_script.split('/')[-1]], 

@@ -662,7 +662,27 @@ def txt_save(text, fileName, file_extension='.txt', **kwargs ):
     else:
         _txt_save(text, fileName)
 
-def text_save(data, fileName):
+def text_save(text, fileName, **kwargs ):
+    '''
+    
+    Arguments:
+        data        - data to be pickled
+        fileName    - full path or just file name
+    '''
+        
+    mkdir('/'.join(fileName.split('/')[0:-1])) 
+
+    if comm.is_mpi_used() and not kwargs.get('all_mpi', False):
+        _text_save_mpi(text, fileName)
+    else:
+        _text_save(text, fileName)
+
+def _text_save_mpi(*args):
+    with Barrier():
+        if comm.rank()==0:
+            _text_save(*args)
+
+def _text_save(data, fileName):
     '''
     
     Arguments:
@@ -679,18 +699,45 @@ def text_save(data, fileName):
     f.write(data)
     f.close()
     
-def text_load(fileName):
+def _text_load(fileName):
     '''
     
     Arguments:
         data        - data to be pickled
         fileName    - full path or just file name
     '''
-    f=open(fileName, 'r')
+#     print fileName
+    f=open(fileName, 'rb')
     data=f.read()
     f.close()
     return data
 
+def _text_load_mpi(f):
+    with Barrier():
+        if comm.rank()==0:
+            data=_text_load(f)
+        else:
+            data=None
+    
+    with Barrier():        
+        data=comm.bcast(data, root=0)
+    
+    return data
+
+def text_load(fileName, **kwargs):
+    '''
+    
+    Arguments:
+        fileName    - full path or just file name
+    '''
+
+    if comm.is_mpi_used()and not kwargs.get('all_mpi', False):
+        data=_text_load_mpi(fileName)
+    else:  
+        data=_text_load(fileName)
+
+
+    return data
 
 def read_f_name(data_path, contain_string = None):
     '''

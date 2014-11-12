@@ -61,25 +61,22 @@ def get_args_list_oscillation(p_list, **kwargs):
     
     builder=kwargs.get('Builder')
     do_obj=kwargs.get('do_obj') 
-#     do_runs=kwargs.get('do_runs')
     file_name=kwargs.get('file_name')
-#     from_disk_0=kwargs.get('from_disk_0')
     freq_oscillation=kwargs.get('freq_oscillation')
     module=kwargs.get('module')
     local_num_threads=kwargs.get('local_num_threads')
 
     args_list=[]
     for j in range(0, 3):
-#     for j in range(from_disk_0, 3):
         for i, p in enumerate(p_list):
             if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
             else: nets_list=[kwargs.get('nets')]
         
             for nets in nets_list:
-#                 if (i not in do_runs) and do_runs:continue
-                
-                script_name = (file_name + '/script_' + str(i) 
-                               + '_' + p.name)
+
+                script_name='{}/script_{0:0>4}_{}'.format(file_name, i, p.name)
+#                 script_name = (file_name + '/script_' + str(i) 
+#                                + '_' + p.name)
                 
                 
                 d={'nets_to_run':nets,  }
@@ -120,6 +117,7 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
     props_conn=kwargs.get('proportion_connected', 1.)
     res=kwargs.get('res')
     rep=kwargs.get('rep')
+    time_bin=kwargs.get('time_bin')
     
     
     if type(props_conn) != list:
@@ -127,19 +125,17 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
     
     args_list=[]
     for j in range(0, 3):
-#     for j in range(from_disk_0, 3):
         for i, p in enumerate(p_list):
             
             if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
             else: nets_list=[kwargs.get('nets')]
         
             for nets in nets_list:
-#                 if (i not in do_runs) and do_runs:     
-#                     continue 
-                   
-                script_name = (file_name + '/script'
-                               + '_' + str(i) 
-                               + '_' + p.name)
+
+                script_name='{}/script_{0:0>4}_{}'.format(file_name, 
+                                                             i, 
+                                                             p.name)
+
                 d={'duration':duration,
                     'l_mean_rate_slices':l_mean_rate_slices,
                     'labels':labels,
@@ -149,7 +145,8 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
                     'other_scenario':other_scenario,
                     'proportion_connected':props_conn[i],
                     'resolution':res,
-                    'repetition':rep}
+                    'repetition':rep,
+                    'time_bin':time_bin}
                 setup = module.Setup(**d)
                
                 d={'builder':builder, 
@@ -440,11 +437,12 @@ def pert_add_oscillations(**kwargs):
     ll = []
     for j, _ in enumerate(freqs):
         for i, _l in enumerate(l):
+
             amp = [numpy.round(damp[_l.name][j], 2), amp_base[j]]
             d = {'type':'oscillation2', 
-                'params':{'p_amplitude_mod':amp[0], 
-                          'p_amplitude0':amp[1], 
-                          'freq':freq_oscillation}}
+                    'params':{'p_amplitude_mod':amp[0], 
+                              'p_amplitude0':amp[1], 
+                              'freq':freq_oscillation}}
             
             _l = deepcopy(_l)
             dd = {}

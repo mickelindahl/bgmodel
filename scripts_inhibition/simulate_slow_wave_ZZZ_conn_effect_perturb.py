@@ -13,7 +13,6 @@ from simulate import (get_path_rate_runs,
                       get_kwargs_list_indv_nets,
                       pert_add,
                       par_process_and_thread,
-                      pert_set_data_path_to_milner_on_supermicro, 
                       pert_add_oscillations) 
 
 from toolbox.network import default_params
@@ -31,7 +30,7 @@ FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 #Total number of runs 18*2*2+18
-NUM_NETS=127*2
+NUM_NETS=139*2
 
 kwargs={
         
@@ -85,8 +84,7 @@ kwargs.update(d_process_and_thread)
 pp(kwargs)
 
 p_list = pert_add_oscillations(**kwargs)
-p_list = pert_set_data_path_to_milner_on_supermicro(p_list,
-                                                  LOAD_MILNER_ON_SUPERMICRO)
+
 p_list=pert_add(p_list, **kwargs)
 
 for i, p in enumerate(p_list): 
@@ -99,6 +97,6 @@ a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(get_loop_index(NUM_NETS/2,[NUM_NETS, NUM_NETS, NUM_NETS/2] ), a_list, k_list )
+loop(50,[NUM_NETS, NUM_NETS, NUM_NETS/2], a_list, k_list )
 
         
