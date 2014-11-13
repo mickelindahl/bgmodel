@@ -34,6 +34,7 @@ def get_kwargs_builder(**k_in):
     laptime=k_in.get('laptime',1500.0)
     duration=k_in.get('duration',[1000.,500.])
     prop_conn=k_in.get('proportion_connected', 1)
+    
     d= {'duration':duration,
             'print_time':False,
             'proportion_connected':prop_conn,
@@ -47,6 +48,7 @@ def get_kwargs_builder(**k_in):
             'stop_rec':numpy.inf,
             'sub_sampling':sub,
             'local_num_threads':THREADS,} 
+    
     k_in.update(d)
     return  k_in
     
@@ -272,6 +274,10 @@ def show_heat_map(d,attr,**k):
     models=['SN']
     res=k.get('resolution')
     titles=k.get('titles')
+    vlim_variance=k.get('vlim_variance')
+    vlim_CV=k.get('vlim_CV')
+    vlim_rate=k.get('vlim_rate')
+    
     n=len(models)
     m=len(d.keys())
 #     attr='mean_rate_slices'
@@ -302,15 +308,19 @@ def show_heat_map(d,attr,**k):
             x, y, z, z_std, d0, d1=args
             if type_of_plot=='variance':
                 z=z_std
-                _vmin=0
-                _vmax=2
+                _vmin, _vmax=vlim_variance
+#                 _vmin=0
+#                 _vmax=2
             elif type_of_plot=='CV':
                 z=z_std/numpy.abs(z)
-                _vmin=0
-                _vmax=3
+                _vmin, _vmax=vlim_CV
+#                 _vmin=0
+#                 _vmax=3
             else:
-                _vmin=-40
-                _vmax=40
+                _vmin, _vmax=vlim_rate
+
+#                 _vmin=-40
+#                 _vmax=40
             
             
             stepx=(x[0,-1]-x[0,0])/res
@@ -462,8 +472,9 @@ class Setup(object):
                                        'mean_rate_slices_1'])
 
         self.nets_to_run=k.get('nets_to_run',[])
+        self.other_scenario=k.get('other_scenario',False)
         self.proportion_connected=k.get('proportion_connected',1)
-        self.other_scenario=k.get('other_scenario',2)
+        self.p_pulse=k.get('p_pulse')
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
         self.time_bin=k.get('time_bin',50)
@@ -477,7 +488,8 @@ class Setup(object):
             'laptime':self.laptime,                
             'duration':self.duration,
             'other_scenario':self.other_scenario,
-            'proportion_connected':self.proportion_connected}
+            'proportion_connected':self.proportion_connected,
+            'p_pulse':self.p_pulse}
         return d
 
     def director(self):
@@ -524,8 +536,23 @@ class Setup(object):
         
  
     def plot_3d(self):
+        if self.other_scenario:
+            vlim_variance=[0.,7]
+            vlim_CV=[0.,3]
+            vlim_rate=[-90.,90]
+        
+        else:
+            vlim_variance=[0.,7]
+            vlim_CV=[0.,3]
+            vlim_rate=[-40.,40]
+        
+        
         d={'resolution':self.res,
-           'titles':self.labels}
+           'titles':self.labels,
+           'vlim_variance':vlim_variance,
+           'vlim_CV':vlim_CV,
+           'vlim_rate':vlim_rate}
+        
         return d
 
         

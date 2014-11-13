@@ -542,7 +542,7 @@ class Network(Network_base):
             self.surfs, self.pops=structure.build(self.params_nest, 
                                                   self.params_surfs,
                                                   self.params_popu)     
-        
+            print 'hej'
 #         from toolbox.parallelization import mpi_thread_tracker as mtt
 #         mtt(__file__)   
         

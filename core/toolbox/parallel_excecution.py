@@ -235,7 +235,9 @@ def loop(*args, **kwargs):
         q=Queue.Queue()
         h=job_handler.Handler()
         
-        for _ in range(m):    
+        for _ in range(m): 
+            if not kwargs_list:
+                continue
             k=kwargs_list.pop(0)
             if k['active']:
                 q.put([args_list.pop(0), k])

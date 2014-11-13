@@ -12,21 +12,20 @@ pp=pprint.pprint
 
 def get():
     
-    def get_perturbation_dics(c, hz_mod, i):
+    def get_perturbation_dics(val, hz_mod, i):
         d = {}
-        for key in c.keys():
-            for neuron, hz_pA in c[key]:
-                hz=hz_mod[neuron][i]
-                u = {key:{'nest':{neuron:{'I_e':1./hz_pA*hz}}}}
-                d = misc.dict_update(d, u)
+#         for key in c.keys():
+        for neuron, hz_pA in val:
+            hz=hz_mod[neuron][i]
+            u = {key:{'node':{neuron:{'I_vivo':1./hz_pA*hz}}}}
+            d = misc.dict_update(d, u)
         return d
                 
-    c={'MS':[['M1_low',5./32], #5/32 Hz/pA 
-             ['M2_low',5./40]], #5/40 Hz/pA
-       'M1':[['M1_low',5./32]], #5/32 Hz/pA 
-       'M2':[['M2_low',5./40]], #5/40 Hz/pA
-       'FS':[['FS_low',10./60]], #10/60 Hz/pA
-       'GP':[['GA',0.47], #0.47 Hz/pA
+    c={
+       'M1':[['M1',0.16]], #5/32 Hz/pA 
+       'M2':[['M2',0.13]], #5/40 Hz/pA
+       'FS':[['FS',0.17]], #10/60 Hz/pA
+       'GP':[['GA',0.47],
              ['GI',0.47]], #0.47 Hz/pA
        'GA':[['GA',0.47]], #0.47 Hz/pA
        'GI':[['GI',0.47]], #0.47 Hz/pA
@@ -35,33 +34,42 @@ def get():
     
        
     #in hz
-    mod={'M1_low':[-3,-2,-1, #  
-                   1, 2, 3 ],
-         'M2_low':[-3,-2,-1, #  
-                    1, 2, 3 ],
-         'FS_low':[-15,-10,-5, #  
-                   5, 10, 15 ],
-         'GA':[-15,-10,-5, #  
-                5, 10, 15 ],
-         'GI':[-30,-20,-10, #  
-                10, 20, 30],
-         'ST':[-15,-10,-5, #  
-                5, 10, 15 ],
-         'SN':[-30,-20,-10, #  
-                10, 20, 30]}
+    mod={'M1':[-8, -6,-4,-2, #  
+                2, 4, 6, 8],
+         'M2':[-8, -6,-4,-2, #  
+                    2, 4, 6, 8],
+         'FS':[-20, -15,-10,-5, #  
+                5, 10, 15,-20 ],
+         'GA':[-20, -15,-10,-5, #  
+                5, 10, 15, 20 ],
+         'GI':[-60, -45,-30,-15, #  
+                15, 30, 45, 60],
+         'ST':[-30, -22.5,-15,-7.5, #  
+                7.5, 15, 22.5, 30 ],
+         'SN':[-40, -30,-20,-10, #  
+                10, 20, 30, 40]}
          
     l=[]
     
     l+=[pl(**{'name':'no_pert'})]
     
     for key, val in c.items():
-        for i in range(6):
-            d=get_perturbation_dics({key:val}, mod, i)
+        for i in range(8):
             
-            l.append(pl(d.values()[0],'+', **{'name':(d.keys()[0]
-                                                      +'_pert_mod'
-                                                      +str(i))}))
-        
+            d=get_perturbation_dics(val, mod, i)
+            l.append(pl(d.values()[0],'+', **{'name':(key
+                                          +'_pert_mod'
+                                          +str(int(i)))}))
+# neuron, hz_pA=val
+#         for neuron, mods in mod.items():
+#             for hz in mods:
+#                 d=get_perturbation_dics({key:val}, mod, i)
+#                 d={key:{'node':{neuron:{'I_vivo':1./hz_pA*hz}}}}
+#                 
+#                 l.append(pl(d.values()[0],'+', **{'name':(d.keys()[0]
+#                                                           +'_pert_mod'
+#                                                           +str(int(hz*hz_pA)))}))
+#         
     return l 
  
 if __name__=='__main__':

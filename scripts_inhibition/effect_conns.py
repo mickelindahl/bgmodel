@@ -2,6 +2,10 @@
 Created on Sep 10, 2014
 
 @author: mikael
+
+
+
+
 '''
 import numpy
 import pylab
@@ -14,7 +18,7 @@ from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network.manager import get_storage, save, load
 from toolbox.my_signals import Data_bar
-from simulate import get_file_name
+from simulate import get_file_name, get_file_name_figs
 import pprint
 pp=pprint.pprint
 
@@ -87,8 +91,10 @@ def compute_mse(v1,v2):
     
     return v_mse
 
-def compute_performance(d, nets, models, attr):       
+def compute_performance(d, nets, models, attrs, **kwargs):       
     results={}
+    
+    midpoint=kwargs.get('midpoint',1)
     
     for run in d.keys():
         if run=='no_pert':
@@ -110,14 +116,20 @@ def compute_performance(d, nets, models, attr):
                     print v_control0
                 v_mse0=compute_mse(v_control0, v_lesion0)
                 
-                s,t,_,x=run.split('_')
-                x=float(x)
-                conn=s+'_'+t
                 
+                l=run.split('_')
+                if len(l)==4:
+                    s,t,_,x=l
+                    x=float(x)
+                    name=s+'_'+t
+                else:
+                    name,_,mod=l
+                    x=int(mod[3:])
+                    
                 keys1=[run, 'Net_0', model, attr]
                 keys2=[run, 'Net_1', model, attr]
-                keys3=['control',conn, model, attr]
-                keys4=['lesion',conn, model, attr]
+                keys3=['control',name, model, attr]
+                keys4=['lesion',name, model, attr]
                
                 if attr=='firing_rate':
                     s='fr'
@@ -128,14 +140,14 @@ def compute_performance(d, nets, models, attr):
                 if attr=='phases_diff_with_cohere':
                     s='pdwc'
                     
-                keys5=['control',conn, model, 'mse_rel_control_'+s]
-                keys6=['lesion',conn, model, 'mse_rel_control_'+s]
+                keys5=['control',name, model, 'mse_rel_control_'+s]
+                keys6=['lesion',name, model, 'mse_rel_control_'+s]
                         
                 
                 v1=misc.dict_recursive_get(d, keys1)
                 v2=misc.dict_recursive_get(d, keys2)
                 
-                v_mse1=compute_mse(v_control0,v1)/v_mse0
+                v_mse1=compute_mse(v_control0,v1)
                 v_mse2=compute_mse(v_control0,v2)/v_mse0
         
                 for keys, val in zip([keys3,keys4,keys5,keys6],
@@ -153,8 +165,8 @@ def compute_performance(d, nets, models, attr):
                                     [v_control0, v_lesion0, 
                                      0, v_mse0/v_mse0]):         
                     l=misc.dict_recursive_get(results, keys)
-                    if not (1, val) in l: 
-                        l.append((1, val)) 
+                    if not (midpoint, val) in l: 
+                        l.append((midpoint, val)) 
                     
     for keys, val in misc.dict_iter(results):
         x, y=zip(*val)
@@ -176,7 +188,7 @@ def compute_performance(d, nets, models, attr):
         d=misc.dict_recursive_add(gradients, keys, g)         
     return results, gradients
 
-def nice_labels():
+def nice_labels(version=0):
     
     d={'CTX_M1':r'CTX$\to$$MSN_{D1}$',
        'CTX_M2':r'CTX$\to$$MSN_{D2}$',
@@ -217,14 +229,17 @@ def nice_labels():
        'ST_GI':r'STN$\to$$GPe_{TI}$',
        'ST_GA':r'STN$\to$$GPe_{TA}$',
        'ST_SN':r'STN$\to$SNr',}
+    if version==1:
+        d.update({'GP_GP':'GP vs GP',
+                  'GI_GI':'TI vs TI', 
+                  'GI_GA':'TI vs TA', 
+                  'GA_GA':'TA vs TA'})
+    
     return d
 
-def nice_labels2():
-    d={'GP_GP':'GP vs GP',
-       'GI_GI':'TI vs TI', 
-       'GI_GA':'TI vs TA', 
-       'GA_GA':'TA vs TA'}
-    return d
+# def nice_labels2():
+# 
+#     return d
         
 def gs_builder_conn(*args, **kwargs):
     import matplotlib.gridspec as gridspec
@@ -236,12 +251,12 @@ def gs_builder_conn(*args, **kwargs):
     gs.update(wspace=kwargs.get('wspace', 0.05 ), 
               hspace=kwargs.get('hspace', 0.05 ))
 
-    iterator = [[slice(1,2),slice(0,4)],
-                [slice(2,5),slice(0,4)],
-                [slice(5,7),slice(0,4)],
-                [slice(1,2),slice(4,8)],
-                [slice(2,5),slice(4,8)],
-                [slice(5,7),slice(4,8)]]
+    iterator = [[slice(1,2),slice(0,5)],
+                [slice(2,5),slice(0,5)],
+                [slice(5,7),slice(0,5)],
+                [slice(1,2),slice(5,10)],
+                [slice(2,5),slice(5,10)],
+                [slice(5,7),slice(5,10)]]
     
     return iterator, gs, 
 
@@ -273,8 +288,8 @@ def gs_builder_coher(*args, **kwargs):
     gs.update(wspace=kwargs.get('wspace', 0.05 ), 
               hspace=kwargs.get('hspace', 1. / n_cols ))
 
-    iterator = [[slice(1,8), slice(2,7)],
-                [slice(1,8), slice(7,9)]]
+    iterator = [[slice(1,11), slice(2,7)],
+                [slice(1,11), slice(7,9)]]
     
     return iterator, gs, 
 
@@ -340,7 +355,8 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
         print attr
         if flag=='raw':
 #             print d
-            d['labelsx']=[0.25,0.5,0.75,1,1.25,1.5,1.75]*len(labelsx_meta)
+            key=out['firing_rate'].keys()[0]
+            d['labelsx']=out['firing_rate'][key]['x']#[0.25,0.5,0.75,1,1.25,1.5,1.75]*len(labelsx_meta)
         if flag=='gradient':
             d['labelsx']=labelsx_meta
             
@@ -367,25 +383,11 @@ def separate_M1_M2(*args, **kwargs):
     return l
 
 def plot_coher(d, labelsy, flag='dop', labelsx=[]):
-    fig, axs=ps.get_figure2(n_rows=8, n_cols=9,  w=700, h=900, fontsize=24,
+    fig, axs=ps.get_figure2(n_rows=12, n_cols=9,  w=700, h=900, fontsize=24,
                             frame_hight_y=0.5, frame_hight_x=0.7, 
                             title_fontsize=24,
                             gs_builder=gs_builder_coher) 
-#     fig, axs=ps.get_figure(n_rows=4, n_cols=1, w=500.0*0.65*2, h=400.0*0.65*2, fontsize=16,
-#                            frame_hight_y=0.6, frame_hight_x=0.8, 
-#                            title_fontsize=20, text_usetex=False)        
-    
-# 
-#     for i in range(len(labelsy)):
-#         if labelsy[i] in nice_labels().keys():
-#             labelsy[i]=nice_labels()[labelsy[i]]
-#             
-#     
-#     for i in range(len(labelsx)):
-#         if labelsx[i] in nice_labels2().keys():
-#             labelsx[i]=nice_labels2()[labelsx[i]]
-#             
-     
+
     startx=0
     starty=0
     z_key='y'
@@ -395,12 +397,15 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[]):
             'd':d,
             'flip_axes':True,
             'fontsize_x':24,
+            'fontsize_y':20,
 #             'vertical_lines':True, 
             'horizontal_lines':True, 
             'images':images,
             'z_key':z_key,
             'startx':startx,
-            'starty':starty}
+            'starty':starty,
+            'nice_labels_x':nice_labels(version=1),
+            'nice_labels_y':nice_labels(version=0)}
 
     _plot_conn(**kwargs)
     
@@ -411,9 +416,9 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[]):
     
     box = axs[0].get_position()
     pos=[box.x0+0.1*box.width, 
-         box.y0+box.height+box.height*0.15, 
+         box.y0+box.height+box.height*0.12, 
          box.width*0.8, 
-         0.05]
+         0.025]
     
     
     for l in axs[1].patches:
@@ -427,82 +432,17 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[]):
     tick_locator = ticker.MaxNLocator(nbins=4)
     cbar.locator = tick_locator
     cbar.update_ticks()
-    axs[0].text(0.05, 1.02, "Coherence", transform=axs[0].transAxes)
-    axs[0].text(0.55, 1.02, "Phase shift", transform=axs[0].transAxes)
+    axs[0].text(0.05, 1.01, "Coherence", transform=axs[0].transAxes)
+    axs[0].text(0.55, 1.01, "Phase shift", transform=axs[0].transAxes)
     axs[1].text(1.45, 0.65, "Mean effect", transform=axs[0].transAxes,
                     rotation=270)
-    axs[0].text(-0.6, 0.9, "Perturbed connection", transform=axs[0].transAxes,
+    axs[0].text(-0.6, 0.75, "Perturbed connection", transform=axs[0].transAxes,
                 rotation=90)                        
     axs[1].my_remove_axis(xaxis=False, yaxis=True)
     axs[1].my_set_no_ticks(xticks=2)
-#     set_colormap(axs[0], images[0], 'MSE coherence change')
-    
-    
-#     stopx_meta=len(labelsx_meta)
-#     
-#     posy=numpy.linspace(.5,stopy-.5, stopy)
-#     ratio=stopx/stopx_meta
-#     posx=numpy.linspace(.5*ratio,stopx-.5*ratio, stopx_meta)
-#     x=numpy.linspace(0, stopx, stopx_meta+1)
-#     x1,y1=numpy.meshgrid(numpy.linspace(startx, stopx, stopx+1), 
-#                          numpy.linspace(starty, stopy, stopy+1)) 
-#     
-#     
-#     _vmin=0
-#     _vmax=4
-#     stepx=1
-#     stepy=1
-#     startx=0
-#     starty=0
-#     stopy=14
-#     stopx=8
-#     maxy=len(labels)
-#     maxx=8
-#     
-#     posy=numpy.linspace(0.5,maxy-0.5, maxy)
-#     posx=numpy.linspace(0.5,maxx-0.5, maxx)
-#     axs[1].barh(posy,numpy.mean(z,axis=1)[::-1], align='center', color='0.5')
-#     axs[1].plot([1,1], [0,stopy], 'k', linewidth=3, linestyle='--')
-#     x1,y1=numpy.meshgrid(numpy.linspace(startx, stopx, maxx+1),
-#                    numpy.linspace(stopy, starty, maxy+1))
-#     
-#     im = axs[0].pcolor(x1, y1, z, cmap='jet', 
-#                         vmin=_vmin, vmax=_vmax
-#                        )
-#     axs[0].set_yticks(posy)
-#     axs[0].set_yticklabels(labels[::-1])
-#     axs[0].set_xticks(posx)
-#     axs[0].set_xticklabels(labels2*2, rotation=70, ha='right')
-#     axs[0].set_ylim([0,maxy])
-#     axs[0].text(0.05, 1.02, "Coherence", transform=axs[0].transAxes)
-#     axs[0].text(0.55, 1.02, "Phase shift", transform=axs[0].transAxes)
-#     axs[1].text(1.45, 0.65, "Mean effect", transform=axs[0].transAxes,
-#                                 rotation=270)
-#     axs[0].text(-0.6, 0.9, "Connection without dop. effect", transform=axs[0].transAxes,
-#                 rotation=90)
-#         
-#     axs[1].my_remove_axis(xaxis=False, yaxis=True)
-#     axs[1].my_set_no_ticks(xticks=2)
-#     axs[1].set_xlim([0,maxy])
-#     axs[1].set_xlim([0,2])
-# #     axs[1].set_xticks([0.04, 0.12])
-# 
-# 
-#     box = axs[0].get_position()
-#     axColor=pylab.axes([box.x0+0.1*box.width, 
-#                         box.y0+box.height+box.height*0.15, 
-#                         box.width*0.8, 
-#                         0.05])
-#     #     axColor = pylab.axes([0.05, 0.9, 1.0, 0.05])
-#     cbar=pylab.colorbar(im, cax = axColor, orientation="horizontal")
-#     cbar.ax.set_title('MSE control vs lesion rel. base model')#, rotation=270)
-#     from matplotlib import ticker
-#     tick_locator = ticker.MaxNLocator(nbins=4)
-#     cbar.locator = tick_locator
-#     cbar.update_ticks()
-    
+
     return fig
-#     pylab.show()
+
     
     
 def _plot_bar(**kwargs):
@@ -578,13 +518,18 @@ def _plot_conn(**kwargs):
     vertical_lines=kwargs.get('vertical_lines')
     horizontal_lines=kwargs.get('horizontal_lines')
     fontsize_x=kwargs.get('fontsize_x',24)
+    fontsize_y=kwargs.get('fontsize_y',24)
+    nice_labels_x=kwargs.get('nice_labels_x')
+    nice_labels_y=kwargs.get('nice_labels_y')
+    cmap=kwargs.get('cmap', 'jet')
+    
     if flip_axes:
         stopx=len(d['labelsy'])
         stopy=len(d['labelsx']) 
         labelsx_meta=d['labelsy']
         labelsy_meta=d['labelsx_meta']
-        labelsx=d['labelsx']
-        labelsy=d['labelsy']
+#         labelsx=d['labelsx']
+#         labelsy=d['labelsy']
 #         nice_labels=nice_labels2()
 #         nice_labels2=nice_labels()
         
@@ -594,15 +539,20 @@ def _plot_conn(**kwargs):
         stopx=len(d['labelsx']) 
         labelsy_meta=d['labelsy']
         labelsx_meta=d['labelsx_meta']
-        labelsx=d['labelsy']
-        labelsy=d['labelsx']
-        
+#         labelsx=d['labelsy']
+#         labelsy=d['labelsx']
+
+  
 #         nice_labels2=nice_labels2()
 #         nice_labels=nice_labels()
 #         
-#     for i in range(len(labelsx_meta)):         
-#         if labelsx_meta[i] in nice_labels().keys():
-#             labelsx_meta[i]=nicex_labels()[labels_meta[i]]
+    for i in range(len(labelsx_meta)):         
+        if labelsx_meta[i] in nice_labels_y.keys():
+            labelsx_meta[i]=nice_labels_x[labelsx_meta[i]]
+            
+    for i in range(len(labelsy_meta)):         
+        if labelsy_meta[i] in nice_labels_y.keys():
+            labelsy_meta[i]=nice_labels_y[labelsy_meta[i]]
 #     
 #     labelsy=d['labelsy']
 #     for i in range(len(labelsy_meta)):         
@@ -627,7 +577,7 @@ def _plot_conn(**kwargs):
                          numpy.linspace(starty, stopy, stopy+1)) 
     
         
-    im = ax.pcolor(x1, y1, d[z_key][::-1,], cmap='jet')       
+    im = ax.pcolor(x1, y1, d[z_key][::-1,], cmap=cmap)       
 
     if vertical_lines:
         x=numpy.linspace(0, stopx, stopx_meta+1)
@@ -640,7 +590,8 @@ def _plot_conn(**kwargs):
     
     images.append(im)                
     ax.set_yticks(posy)
-    ax.set_yticklabels(labelsy_meta[::-1])
+    ax.set_yticklabels(labelsy_meta[::-1],
+                       fontsize=fontsize_y)
     ax.set_xticks(posx)
 
     ax.set_xticklabels([s.rjust(10) for s in labelsx_meta], rotation=70, 
@@ -666,7 +617,7 @@ def set_colormap(ax, im, label):
         cbar.update_ticks()
 
 def plot_conn(d0, d1, d2, d3, **kwargs):
-    fig, axs=ps.get_figure2(n_rows=8, n_cols=9, w=1000, h=600, fontsize=24,
+    fig, axs=ps.get_figure2(n_rows=8, n_cols=11, w=1000, h=600, fontsize=24,
                             frame_hight_y=0.5, frame_hight_x=0.7, 
                             title_fontsize=24,
                             gs_builder=gs_builder_conn) 
@@ -677,6 +628,7 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
     fr_label=kwargs.get('fr_label',"Firing rate (Hz)")
     title=kwargs.get('title', "Slow wave") 
     z_key=kwargs.get('z_key',"y")
+    cmap=kwargs.get('cmap')
 
     d00, d01, d20, d21=separate_M1_M2( d0, d2, **{'z_key':z_key})
     args=[ d00, d01, d1, d20, d21, d3]
@@ -689,9 +641,15 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
         kwargs={'ax':ax,
                 'd':d,
                 'images':images,
+                'fontsize_x':12,
                 'z_key':z_key,
                 'startx':startx,
-                'starty':starty}
+                'starty':starty,
+                'vertical_lines':True, 
+                'nice_labels_x':nice_labels(version=0),
+                'nice_labels_y':nice_labels(version=1),
+                'cmap':cmap
+                }
 
         _plot_conn(**kwargs)
         
@@ -701,13 +659,26 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
           ['', '', coher_label],
           [images[3],images[4],images[5]]]
 
+
+    
+    if flag=='raw':
+        axs[4].text(1.18, 1.15, fr_label, transform=axs[4].transAxes,
+                    rotation=270)
+    if flag=='gradient':
+        axs[4].text(1.2, 1.1, fr_label, transform=axs[4].transAxes,
+                    rotation=270) 
+        images[0].set_clim([-1,1])
+        images[1].set_clim([-25,25])
+        images[2].set_clim([-0.3,0.3])
+#     
+        images[3].set_clim([-1,1])
+        images[4].set_clim([-25,25])
+        images[5].set_clim([-0.3, 0.3])
+    
+    
     for ax, label, im in zip(*args):
         set_colormap(ax, im, label)
-    
-#     if flag=='raw':
-    axs[4].text(1.18, 1.15, fr_label, transform=axs[4].transAxes,
-                rotation=270)
-
+        
     axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)   
     axs[1].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)   
     axs[3].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True) 
@@ -729,7 +700,71 @@ def add(d0,d1):
     d0['y']=numpy.concatenate((d0['y'], d1['y']), axis=0)
     return d0
 
-if __name__=='__main__':
+def get_data(models, nets, attrs, path, from_disk, attr_add, exclude, sd, **kwargs):
+    d = {}
+    if not from_disk:
+        d['raw'] = gather(path, nets, models, attrs)
+        d['data'], attrs = extract_data(d['raw'], nets, models, attrs)
+        out = compute_performance(d['data'], nets, models, attrs, **kwargs)
+        d['change_raw'], d['gradients'] = out
+        v = generate_plot_data_raw(d['change_raw']['control'], 
+            models, attrs + attr_add, 
+            flag='raw', 
+            exclude=exclude)
+        d['d_raw_control'] = v
+        v = generate_plot_data_raw(d['change_raw']['lesion'], 
+            models, 
+            attrs + attr_add, 
+            flag='raw', 
+            exclude=exclude)
+        d['d_raw_lesion'] = v
+        v = generate_plot_data_raw(d['gradients']['control'], 
+            models, attrs + attr_add, 
+            flag='gradient', 
+            exclude=exclude)
+        d['d_gradients_control'] = v
+        v = generate_plot_data_raw(d['gradients']['lesion'], 
+            models, attrs + attr_add, 
+            flag='gradient', 
+            exclude=exclude)
+        d['d_gradients_lesion'] = v
+        save(sd, d)
+    else:
+        d = sd.load_dic()
+    return d
+
+def create_figs(d):
+    figs = []
+    fig = plot_conn(d['d_raw_control']['firing_rate'], d['d_raw_control']['mean_coherence_max'], 
+        d['d_raw_lesion']['firing_rate'], 
+        d['d_raw_lesion']['mean_coherence_max'])
+    figs.append(fig)
+    fig = plot_conn(d['d_raw_control']['mse_rel_control_fr'], 
+        d['d_raw_control']['mse_rel_control_mc'], 
+        d['d_raw_lesion']['mse_rel_control_fr'], 
+        d['d_raw_lesion']['mse_rel_control_mc'])
+    figs.append(fig)
+    kwargs = {'flag':'gradient', 
+        'coher_label':'Coherence/nS', 
+        'fr_label':"Firing rate/nS", 
+        'z_key':"z", 
+        'cmap':'coolwarm'}
+    fig = plot_conn(d['d_gradients_control']['firing_rate'], 
+        d['d_gradients_control']['mean_coherence_max'], 
+        d['d_gradients_lesion']['firing_rate'], 
+        d['d_gradients_lesion']['mean_coherence_max'], **kwargs)
+    figs.append(fig)
+#     from effect_dopamine import plot_coher
+    d0 = d['d_raw_lesion']['mse_rel_control_mc']
+    d1 = d['d_raw_lesion']['mse_rel_control_pdwc']
+    d = add(d0, d1)
+    fig=plot_coher(d, d['labelsx'])
+    figs.append(fig)
+    return figs
+
+
+    
+def main(**kwargs):
     models=['M1', 'M2', 'FS', 'GA', 'GI', 'GP', 'ST','SN',
             'GP_GP', 'GA_GA', 'GI_GA', 'GI_GI']
     nets=['Net_0', 'Net_1']
@@ -738,91 +773,69 @@ if __name__=='__main__':
            'mean_coherence', 
            'phases_diff_with_cohere'
            ]
+    
+    from_disk=kwargs.get('from_diks',0)
     path=('/home/mikael/results/papers/inhibition/network/'
           +'supermicro/simulate_slow_wave_ZZZ_conn_effect_perturb/')
- 
-    home = expanduser("~")
-    script_name=__file__.split('/')[-1][0:-3]
+    path=kwargs.get('data_path', path)
+    
+    script_name=kwargs.get('script_name', (__file__.split('/')[-1][0:-3]
+                                           +'/data'))
     file_name = get_file_name(script_name)
-    from_disk=1
     
     attr_add=['mse_rel_control_fr', 'mse_rel_control_mc',
               'mse_rel_control_pdwc', 'mse_rel_control_mcm']
     
+    exclude=['MS_MS', 'FS_MS', 'MS']
     sd = get_storage(file_name, '')
-    d={}
-    if not from_disk:
+    d = get_data(models, 
+                 nets, 
+                 attrs, 
+                 path, 
+                 from_disk, 
+                 attr_add, 
+                 exclude, 
+                 sd,
+                 **kwargs)
+
+    figs = create_figs(d)
+
+
+    file_name_figs=get_file_name_figs(script_name)
+    sd_figs = Storage_dic.load(file_name_figs)
+    sd_figs.save_figs(figs, format='png')
+    sd_figs.save_figs(figs, format='svg', in_folder='svg')
     
-        d['raw']=gather(path, nets, models, attrs)
-        d['data'], attrs=extract_data(d['raw'], nets, models, attrs)
-        out=compute_performance(d['data'], nets, models, attrs)
-        d['change_raw'], d['gradients']=out
-
-        v=generate_plot_data_raw(d['change_raw']['control'],
-                                  models, attrs+attr_add, flag='raw')
-        d['d_raw_control']=v
-        v=generate_plot_data_raw(d['change_raw']['lesion'],
-                                  models, attrs+attr_add, flag='raw')
-        d['d_raw_lesion']=v
-        v=generate_plot_data_raw(d['gradients']['control'],
-                                  models, attrs+attr_add, flag='gradient')
-        
-        d['d_gradients_control']=v 
-        v=generate_plot_data_raw(d['gradients']['lesion'],
-                                  models, attrs+attr_add, flag='gradient')
-        d['d_gradients_lesion']=v
-        
-        save(sd, d)
-    else:
-#         filt=['performance']+models
-        d = sd.load_dic()
-#         d2=sd.load_dic()
-#         d = sd.load_dic()
-#     pp(d['d0'])
-#     pp(d['d1'])
-#     plot_raw(d, d_keys, attr='mean_coherence')
-#     plot_raw(d, d_keys, attr='phases_diff_with_cohere')
-#     plot3(d['d0'], d['d1'], d['d2'], d['d3'])
-#     figs=[]
-#     fig=plot_conn(d['d_raw_control']['firing_rate'], 
-#                   d['d_raw_control']['mean_coherence_max'], 
-#                   d['d_raw_lesion']['firing_rate'], 
-#                   d['d_raw_lesion']['mean_coherence_max'])
-#     figs.append(fig)
-# 
-#     fig=plot_conn(d['d_raw_control']['mse_rel_control_fr'], 
-#                   d['d_raw_control']['mse_rel_control_mc'], 
-#                   d['d_raw_lesion']['mse_rel_control_fr'], 
-#                   d['d_raw_lesion']['mse_rel_control_mc'])
-# 
-#     figs.append(fig)
-#     kwargs={'flag':'gradient',
-#             'coher_label':'Coher./weight',
-#             'fr_label':"Hz/nS",
-#             'z_key':"z"}
-#     
-#     fig=plot_conn(d['d_gradients_control']['firing_rate'], 
-#               d['d_gradients_control']['mean_coherence_max'], 
-#               d['d_gradients_lesion']['firing_rate'], 
-#               d['d_gradients_lesion']['mean_coherence_max'],**kwargs)
-#     figs.append(fig)    
-
-#     from effect_dopamine import plot_coher
-    
-    d0=d['d_raw_lesion']['mse_rel_control_mc']
-    d1=d['d_raw_lesion']['mse_rel_control_pdwc']
-    
-    d=add(d0,d1)
-
-    plot_coher(d, d['labelsx'])
-
-#     plot_conn(d['d0'], d['d1'], d['d2'], d['d3'], **kwargs)
-#     plot(d['bar_obj'], d['labels'])
     pylab.show()
+    
+
 #     pp(d)
     
+class Main():    
+    def __init__(self, **kwargs):
+        self.kwargs=kwargs
+    
+    def __repr__(self):
+        return self.kwargs['script_name']
+
+    def do(self):
+        main(**self.kwargs)    
+    
+    def get_nets(self):
+        return self.kwargs['setup'].nets_to_run
+
+    def get_script_name(self):
+        return self.kwargs['script_name']
+
+    def get_name(self):
+        nets='_'.join(self.get_nets()) 
+        script_name=self.kwargs['script_name']
+        script_name=script_name.split('/')[1].split('_')[0:2]
+        script_name='_'.join(script_name)+'_'+nets
+        return script_name+'_'+str(self.kwargs['from_disk'])
+    
+if __name__=='__main__':
+    main()
     
     
     
-    
-    v

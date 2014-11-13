@@ -31,7 +31,7 @@ FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 #Total number of runs 18*2*2+18
-NUM_NETS=127*2
+NUM_NETS=139*2
 
 kwargs={
         
@@ -99,6 +99,6 @@ a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(20,[NUM_NETS, NUM_NETS, NUM_NETS/2], a_list, k_list )
+loop(40,[NUM_NETS, NUM_NETS, NUM_NETS/2], a_list, k_list )
 
         

@@ -313,9 +313,10 @@ class Perturbation(object):
         self.val=[val]
  
     def __eq__(self, other):
-        return ((self.keys==other.keys)
-                 *(self.val==other.val)
-                 *(self.op==other.op))
+        return self.__repr__()==other.__repr__()
+
+    def __lt__(self, other):
+        return self.__repr__()<other.__repr__()
               
     def __hash__(self):
         return hash((tuple(self.keys), tuple(self.val), self.op))
@@ -370,10 +371,10 @@ class Perturbation_list(object):
         return not set(self.list).isdisjoint(set(other.list))
         
     def __str__(self):
-        return  self.name+':'+str(self.list)
+        return  self.name+':'+str(sorted(self.list))
 
     def __repr__(self):
-        return  self.name+':'+str(self.list)
+        return  self.name+':'+str(sorted(self.list))
     
     def __getitem__(self, val):
         return self.list[val]
@@ -396,7 +397,7 @@ class Perturbation_list(object):
             if p.op=='*':
                 warnings.warn('Got perturbation {} adding {}'.format(self.dic[key],p))
                 self.dic[key].val+=p.val
-            
+
             else:
                 raise RuntimeError('Perturbation {} already exist'.format(self))
         else:
@@ -416,7 +417,7 @@ class Perturbation_list(object):
     
     def apply_pertubations(self, dic, display=False):
 
-        for p in self.list:
+        for p in sorted(self.list):
 #             print p.keys
             if not misc.dict_haskey(dic, p.keys):
                 warnings.warn('\nKey not in par: '+'.'.join(p.keys))
@@ -2405,12 +2406,12 @@ class InhibitionPar_base(object):
         dic['nest']['MS']['C_m']    =  15.2      # (Humphries, Lepora, et al. 2009) # C izh
         dic['nest']['MS']['d']      =  66.9      # (Humphries, Lepora, et al. 2009)
         dic['nest']['MS']['E_L']    = -81.85     # (Humphries, Lepora, et al. 2009) # v_r in izh
+        dic['nest']['MS']['I_e']    =  0.
         dic['nest']['MS']['k']      =   1.       # (E.M. Izhikevich 2007)
         dic['nest']['MS']['V_peak'] =  40.       # (E.M. Izhikevich 2007)
         dic['nest']['MS']['V_b']    = dic['nest']['MS']['E_L']    # (E.M. Izhikevich 2007)
         dic['nest']['MS']['V_th']   = -29.7      # (Humphries, Lepora, et al. 2009)
         dic['nest']['MS']['V_m']    =  80.
-    
         # CTX_MSN
         dic['nest']['MS']['AMPA_1_Tau_decay'] = 12.  # (Ellender 2011)
         dic['nest']['MS']['AMPA_1_E_rev']     =  0.  # (Humphries, Wood, et al. 2009)
@@ -2480,6 +2481,7 @@ class InhibitionPar_base(object):
         dic['nest']['FS']['C_m']    = 80.    # (Tateno et al. 2004)
         dic['nest']['FS']['d']      = 0.     # (E.M. Izhikevich 2007)
         dic['nest']['FS']['E_L']    = -70.   #*(1-0.8*0.1)   # (Tateno et al. 2004)
+        dic['nest']['FS']['I_e']    =  0. 
         dic['nest']['FS']['k']      = 1.     # (E.M. Izhikevich 2007)
         dic['nest']['FS']['p_1']    = 1.     # (E.M. Izhikevich 2007)
         dic['nest']['FS']['p_2']    = 3.     # (E.M. Izhikevich 2007)

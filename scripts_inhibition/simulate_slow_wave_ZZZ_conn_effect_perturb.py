@@ -17,7 +17,7 @@ from simulate import (get_path_rate_runs,
 
 from toolbox.network import default_params
 from toolbox.network.manager import Builder_slow_wave2 as Builder
-from toolbox.parallel_excecution import get_loop_index, loop
+from toolbox.parallel_excecution import loop
 
 import simulate_slow_wave as module
 import oscillation_perturbations4 as op
@@ -97,6 +97,6 @@ a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(50,[NUM_NETS, NUM_NETS, NUM_NETS/2], a_list, k_list )
+loop(30,[NUM_NETS, NUM_NETS, NUM_NETS/2], a_list, k_list )
 
         

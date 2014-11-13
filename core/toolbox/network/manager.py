@@ -542,6 +542,8 @@ def _get_input_go_nogo_p0_and_p1(res, dur):
 def get_input_Go_NoGo(kwargs):
     n_sets=kwargs.get('n_sets', 2)
     
+    
+    p_pulse=kwargs.get('p_pulse')
     res = kwargs.get('resolution', 2)
     rep = kwargs.get('repetition', 2)
     dur = kwargs.get('duration', [1000., 500.])
@@ -605,6 +607,9 @@ def get_input_Go_NoGo(kwargs):
             d = misc.dict_update(d, {'netw':{'input':{inp:params}}})
 
         for inp in inp_list :
+            if inp=='CS_pulse':
+                continue
+            
             if inp in act_input:
                 continue
             
@@ -638,7 +643,22 @@ def get_input_Go_NoGo(kwargs):
             d = misc.dict_update(d, {'netw':{'input':{inp:params}}})            
    
             
-        
+        if 'CS_pulse' in inp_list:
+            inp='CS'
+            pamp=p0[:]
+            pamp[1::2]=[p_pulse]*len(pamp[1::2])
+            d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
+            params = {'type':'burst3', 
+                      'params':{'n_set_pre':1, 
+                                'repetitions':rep}}
+            d_sets = {}
+            d_sets.update({str(0):{'active':True, 
+                                   'amplitudes':pamp, 
+                                   'durations':durations, 
+                                   'proportion_connected':1}})
+            
+            params['params'].update({'params_sets':d_sets})
+            d = misc.dict_update(d, {'netw':{'input':{inp:params}}})  
         
         l += [pl(d, '=', **{'name':'_'.join(inp_list)})]
         
@@ -875,6 +895,32 @@ class Builder_Go_NoGo_only_D1D2_FS(Builder_Go_NoGo_only_D1D2_FS_base,
     pass
 
 
+class Builder_Go_NoGo_only_D1D2_nodop_FS_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._no_dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [
+                                     ['C1', 'C2', 'CF']]
+
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+            
+        return l    
+    
+class Builder_Go_NoGo_only_D1D2_nodop_FS(Builder_Go_NoGo_only_D1D2_nodop_FS_base, 
+                                     Mixin_dopamine, 
+                                     Mixin_general_network, 
+                                     Mixin_reversal_potential_striatum):
+    pass
+
 class Builder_Go_NoGo_with_lesion_FS_ST_base(Builder_network):    
 
     def get_parameters(self, per):
@@ -902,6 +948,34 @@ class Builder_Go_NoGo_with_lesion_FS_ST_base(Builder_network):
 
 
 class Builder_Go_NoGo_with_lesion_FS_ST(Builder_Go_NoGo_with_lesion_FS_ST_base, 
+                                     Mixin_dopamine, 
+                                     Mixin_general_network, 
+                                     Mixin_reversal_potential_striatum):
+    pass
+
+class Builder_Go_NoGo_with_lesion_FS_ST_pulse_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Go_NoGo_compete(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [['C1', 'C2', 'CF', 'CS_pulse']]
+
+        ll=[]
+        for pulse in [5,7.5,10]: 
+            self.kwargs['p_pulse']=pulse
+            l, self.dic = get_input_Go_NoGo(self.kwargs)      
+            ll+=l
+        return ll    
+
+
+class Builder_Go_NoGo_with_lesion_FS_ST_pulse(Builder_Go_NoGo_with_lesion_FS_ST_pulse_base, 
                                      Mixin_dopamine, 
                                      Mixin_general_network, 
                                      Mixin_reversal_potential_striatum):
@@ -1584,6 +1658,16 @@ class TestBuilder_Go_NoGo_with_lesion_FS(TestBuilder_Go_NoGo_with_lesion_FS_base
                                       TestDirectorMixin):
     pass
 
+class TestBuilder_Go_NoGo_with_lesion_FS_ST_pulse_base(unittest.TestCase):
+    def setUp(self):
+        self.builder=Builder_Go_NoGo_with_lesion_FS_ST_pulse()
+
+
+class TestBuilder_Go_NoGo_with_lesion_FS_ST_pulse(TestBuilder_Go_NoGo_with_lesion_FS_ST_pulse_base, 
+                                      TestBuilderMixin, 
+                                      TestDirectorMixin):
+    pass
+
 if __name__ == '__main__':
     
     test_classes_to_run=[
@@ -1593,6 +1677,7 @@ if __name__ == '__main__':
 #                         TestBuilder_inhibition_striatum,
 #                         TestBuilder_MSN_cluster_compete,
 #                         TestBuilder_Go_NoGo_with_lesion_FS
+                        TestBuilder_Go_NoGo_with_lesion_FS_ST_pulse,
                         ]
     suites_list = []
     for test_class in test_classes_to_run:

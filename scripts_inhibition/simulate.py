@@ -74,7 +74,7 @@ def get_args_list_oscillation(p_list, **kwargs):
         
             for nets in nets_list:
 
-                script_name='{}/script_{0:0>4}_{}'.format(file_name, i, p.name)
+                script_name='{}/script_{:0>4}_{}'.format(file_name, i, p.name)
 #                 script_name = (file_name + '/script_' + str(i) 
 #                                + '_' + p.name)
                 
@@ -132,7 +132,7 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
         
             for nets in nets_list:
 
-                script_name='{}/script_{0:0>4}_{}'.format(file_name, 
+                script_name='{}/script_{:0>4}_{}'.format(file_name, 
                                                              i, 
                                                              p.name)
 
@@ -161,6 +161,9 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
                     obj.do()
                          
                 args_list.append(obj)
+            
+                    
+                
 
             
     return args_list
@@ -238,7 +241,7 @@ def get_path_nest(script_name, keys, par=None):
     if not par:
         par=default_params.Inhibition()
     path=par.get_path_data()
-    file_name = path +script_name+ '/nest/'+'_'.join(keys)+'/'
+    file_name = path +script_name+ '/'+'_'.join(keys)+'/nest/'
 #     file_name = home + '/results/papers/inhibition/network/' + script_name
     data_to_disk.mkdir(file_name)
 
