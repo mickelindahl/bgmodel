@@ -69,7 +69,7 @@ kwargs={
                                      FILE_NAME),
         'perturbation_list':[op.get()[4+3]],
         
-        'pulses':[5,7.5, 10],
+        'pulses':[5, 7.5, 10],
         'p_sizes':[
                     1,
 #                     0.523,   

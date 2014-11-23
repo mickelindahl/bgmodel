@@ -3,7 +3,7 @@ Created on 25 mar 2014
 
 @author: mikael
 '''
-
+import matplotlib.gridspec as gridspec
 import numpy
 import pylab
 import toolbox.plot_settings as ps
@@ -243,7 +243,8 @@ def show_3d(d,attr,**k):
 
 
 
-def set_action_selection_marker(axs, i, d0, d1, x2, y2, thr, marker):
+def set_action_selection_marker( i, d0, d1, x2, y2, thr, marker,**k):
+    axs=k.get('axs')
     if marker=='n':
         m=(d0 > thr)*(d1 > thr)==False
         x = numpy.ma.array(x2, mask=m)
@@ -256,6 +257,7 @@ def set_action_selection_marker(axs, i, d0, d1, x2, y2, thr, marker):
         x = numpy.ma.array(x2, mask=m)
         y = numpy.ma.array(y2, mask=m) #             x0,y0,z0=get_optimal(z.shape[0])
         color='k'
+        marker='+'
 
 #     print m
 #     print x
@@ -267,41 +269,74 @@ def set_action_selection_marker(axs, i, d0, d1, x2, y2, thr, marker):
 
 
     axs[i].scatter(x, y, color=color, edgecolor=color,linewidth=0.5,
-                   s=120, marker=r'$'+marker+'$')
+                   s=k.get('marker_size',120), 
+                   marker=r'$'+marker+'$')
 #     r"$Lisa$"
 
-def show_heat_map(d,attr,**k):
+
+def gs_builder(*args, **kwargs):
+
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',3)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.5 ), 
+              hspace=kwargs.get('hspace', 0.6 ))
+
+    iterator = [[0, slice(0,3)],
+                [0, slice(4,7)],
+                [1, slice(0,3)],
+                [1, slice(4,7)],
+                [2, slice(0,3)],
+                [2, slice(4,7)]]
+    
+    return iterator, gs, 
+
+
+def show_heat_map(d, attr, **k):
+    do_colorbar=k.get('do_colorbar',True)
     models=['SN']
+    print_statistics=k.get('print_statistics', True)
     res=k.get('resolution')
     titles=k.get('titles')
     vlim_variance=k.get('vlim_variance')
     vlim_CV=k.get('vlim_CV')
     vlim_rate=k.get('vlim_rate')
-    
-    n=len(models)
-    m=len(d.keys())
-#     attr='mean_rate_slices'
-    fig, axs=ps.get_figure(n_rows=3, n_cols=2, w=600.0*0.65*2, h=700.0*0.65*2, fontsize=24,
-                           frame_hight_y=0.5, frame_hight_x=0.6, title_fontsize=20)        
-    
+
+    axs=k.get('axs')
+    fig=k.get('fig')
+    if not axs or not fig:
+
+        fig, axs=ps.get_figure2(n_rows=3, 
+                                n_cols=8,  
+                                w=780,
+                                h=910,  
+                                fontsize=24,
+                                title_fontsize=24,
+                                gs_builder=gs_builder) 
+  
+        k['fig']=fig
+        k['axs']=axs
+  
     type_of_plot=k.get('type_of_plot', 'mean')
      
     i=0
     performance={}
+    m=len(d.keys())
     
     for model in models:
-        alpha=0.8
-        dcm={'Net_0':'jet',
-             'Net_1':'coolwarm',}
+
         for key in sorted(d.keys()):
             obj0=d[key]['set_0'][model][attr]
             obj1=d[key]['set_1'][model][attr]
             args=[obj0.x_set, obj1.x_set,
-                  # obj1.y-obj0.y, 
+                  
                   numpy.mean(obj1.y_raw_data-obj0.y_raw_data, axis=0),
                   numpy.std(obj1.y_raw_data-obj0.y_raw_data, axis=0),
                   numpy.mean(obj0.y_raw_data, axis=0),
                   numpy.mean(obj1.y_raw_data, axis=0)]
+            
             for j, arg in enumerate(args):
                 arg.shape
                 args[j]=numpy.reshape(arg, [res,res])
@@ -309,18 +344,12 @@ def show_heat_map(d,attr,**k):
             if type_of_plot=='variance':
                 z=z_std
                 _vmin, _vmax=vlim_variance
-#                 _vmin=0
-#                 _vmax=2
+
             elif type_of_plot=='CV':
                 z=z_std/numpy.abs(z)
                 _vmin, _vmax=vlim_CV
-#                 _vmin=0
-#                 _vmax=3
             else:
                 _vmin, _vmax=vlim_rate
-
-#                 _vmin=-40
-#                 _vmax=40
             
             
             stepx=(x[0,-1]-x[0,0])/res
@@ -338,75 +367,52 @@ def show_heat_map(d,attr,**k):
                                vmin=_vmin, vmax=_vmax)
         
            
-            set_action_selection_marker(axs, i,  d0, d1, 
-                                              x2, y2, thr, 
-                                             marker='d')
-            set_action_selection_marker(axs, i, d0, d1,x2, y2, thr, 
-                                             marker='s')
-   
-            set_action_selection_marker(axs, i, d0, d1, x2, y2, 
-                                             thr, marker='n')
+            for m in ['d', 's', 'n']:
+                set_action_selection_marker(i,  d0, d1, 
+                                                  x2, y2, thr, 
+                                                 marker=m, 
+                                                 **k)
              
             performance[key] = numpy.round(numpy.sum(numpy.abs(z)), 2)
             
             box = axs[i].get_position()
             
-            if key in ['Net_0', 'Net_2', 'Net_4']:
-                v=1.0
-            else:
-                v=0.9
-            axs[i].set_position([box.x0*v, box.y0, box.width*0.85, box.height])
-#             pylab.show()
+
             axs[i].set_xlabel('Action 1')
             axs[i].set_ylabel('Action 2')
             axs[i].set_xlim([x[0,0], x[0,-1]])
             axs[i].set_ylim([y[0,0], y[-1,0]])
             # create color bar
             
-#             pylab.colorbar(im, cax = axColor, orientation="vertical")
-
-  
-#             axs[i].set_zlim([-40, 40])
-            if key=='Net_1':
-#                 from mpl_toolkits.axes_grid1 import make_axes_locatable
-#                 divider = make_axes_locatable(pylab.gca())
-#                 cax = divider.append_axes("right", "5%", pad="3%")
-                axColor = pylab.axes([box.x0*v + box.width * 0.9, box.y0, 0.05, box.height])
+            if key=='Net_1' and do_colorbar:
+                label='Contrast (spike/s)'
+                box = axs[1].get_position()
+                axColor = pylab.axes([box.x0 + box.width * 1.06, 
+                                      box.y0+box.height*0.1, 
+                                      0.05, 
+                                      box.height*0.8])
                 cbar=pylab.colorbar(im, cax = axColor, orientation="vertical")
-                cbar.ax.set_ylabel('Contrast (spike/s)', rotation=270)
+                cbar.ax.set_ylabel(label, rotation=270)
                 from matplotlib import ticker
                 
-                tick_locator = ticker.MaxNLocator(nbins=5)
+                tick_locator = ticker.MaxNLocator(nbins=3)
                 cbar.locator = tick_locator
                 cbar.update_ticks()
-#                 pylab.colorbar(im)
             
-#             axs[i].set_zlabel('SNr firing rate (Hz)')
-#             axs[i].set_xlabel('CTX increase A1 (proportion)')
-#             axs[i].set_ylabel('CTX increase A2 (proportion)')
-            
-            
-            axs[i].set_title(titles[i])
-#             axs[i+1].plot_surface(x, y, z_std, cmap='coolwarm', rstride=1, cstride=1, 
-#                                 linewidth=0, 
-#                                 shade=True,
-#                                 alpha=alpha,
-#                                 antialiased=False)
-             
-             
-    #                 alpha-=0.3
+            axs[i].text(0.5, k.get('pos_ax_titles',1.05) , titles[i],
+                        horizontalalignment='center', 
+                        transform=axs[i].transAxes,
+                        fontsize=k.get('fontsize_ax_titles',24)) 
+#             axs[i].set_title(titles[i])
+
             i+=1
-    #                 pylab.show()
-    #                 print v
-#     pylab.tight_layout()       
-#     for ax in axs:
-#         ax.view_init(elev=15)
-    
-    ax=axs[5]
-    import pprint
-    ax.text( 0.1, 0.1, pprint.pformat(performance), 
-                   transform=ax.transAxes, 
-            fontsize=12)
+    if print_statistics:
+        ax=axs[-1]
+        import pprint
+        ax.text( 0.1, 0.1, pprint.pformat(performance), 
+                       transform=ax.transAxes, 
+                fontsize=12)
+        
     return fig, performance
 def get_optimal(size):
     x,y=numpy.meshgrid(numpy.linspace(1,3, size+1),numpy.linspace(1,3, size+1))
@@ -419,8 +425,7 @@ def get_optimal(size):
                 z[i,j]=-z[i,j]
     return x,y,z
 def plot_optimal(size):
-    fig, axs=ps.get_figure(n_rows=1, n_cols=1, w=400.0, h=250.0, fontsize=16)        
- 
+    fig, axs=ps.get_figure(n_rows=1, n_cols=1, w=400.0*0.8, h=250.0*0.8, fontsize=24)
     x,y,z=get_optimal(size)
        
     im=axs[0].pcolor(x, y, z, cmap='coolwarm',  vmin=-40, vmax=40)
@@ -430,7 +435,7 @@ def plot_optimal(size):
  
     axs[0].set_xlabel('Action 1')
     axs[0].set_ylabel('Action 2')
-    axs[0].my_set_no_ticks(xticks=5,yticks=5, )
+    axs[0].my_set_no_ticks(xticks=3,yticks=3, )
             
     return fig
     
@@ -455,6 +460,24 @@ def plot_optimal(size):
 #     i=0
 #     performance={}  
 
+def gs_builder2(*args, **kwargs):
+    import matplotlib.gridspec as gridspec
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',3)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0. ), 
+              hspace=kwargs.get('hspace', 0.2 ))
+
+    iterator = [[slice(1,4),slice(1,5)],
+                [slice(4,7),slice(1,5)],
+                [slice(7,10),slice(1,5)],
+#                 [slice(10,15),slice(10,16)],
+               ]
+    
+    return iterator, gs,
+
 class Setup(object):
 
     def __init__(self, **k):
@@ -477,7 +500,8 @@ class Setup(object):
         self.p_pulse=k.get('p_pulse')
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
-        self.time_bin=k.get('time_bin',50)
+        self.time_bin=k.get('time_bin',5)
+        self.fr_xlim=k.get('fr_xlim',[0,10000])
  
     def builder(self):
         d= {'repetition':self.rep,
@@ -512,24 +536,39 @@ class Setup(object):
         d={'win':10.,
            'by_sets':True,
            't_start':0.0,
-           't_stop':10000.0}
+           't_stop':10000.0,
+           'fig_and_axes':{'n_rows':17, 
+                        'n_cols':16, 
+                        'w':600, 
+                        'h':450, 
+                        'fontsize':24,
+                        'frame_hight_y':0.5,
+                        'frame_hight_x':0.7,
+                        'title_fontsize':24,
+                        'font_size':20,
+                        'text_fontsize':24,
+                        'linewidth':4.,
+                        'gs_builder':gs_builder},}
         return d
     
     def plot_fr2(self):
         d={'win':10.,
            'by_sets':True,
-           't_start':0.0,
-           't_stop':30000.0,
+           't_start':self.fr_xlim[0],
+           't_stop':self.fr_xlim[1],
            'labels':['Action 1', 'action 2'],
-           'fig_and_axes':{'n_rows':3, 
-                                        'n_cols':1, 
-                                        'w':800.0*0.55*2, 
-                                        'h':600.0*0.55*2, 
-                                        'fontsize':11*2,
-                                        'frame_hight_y':0.8,
-                                        'frame_hight_x':0.78,
-                                        'linewidth':3.
-                                        }
+           'fig_and_axes':{'n_rows':11, 
+                        'n_cols':5, 
+                        'w':400, 
+                        'h':450, 
+                        'fontsize':24,
+                        'frame_hight_y':0.5,
+                        'frame_hight_x':0.7,
+                        'title_fontsize':24,
+                        'font_size':20,
+                        'text_fontsize':24,
+                        'linewidth':2.,
+                        'gs_builder':gs_builder2},
            }
         return d    
     
@@ -620,7 +659,8 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
     sd_list=get_storage_list(nets, file_name, info)
 
     from_disks, d = main_loop(from_disk, attr, models, 
-                              sets, nets, kwargs_dic, sd_list)
+                              sets, nets, kwargs_dic, sd_list,
+                              **{'attrs_load':['mean_rate_slices']})
      
     return file_name, file_name_figs, from_disks, d, models
 
@@ -642,64 +682,92 @@ def create_figs(setup, file_name_figs, d, models):
     figs.append(plot_optimal(setup.res))
 #     for name in l_mean_rate_slices:
 #         figs.append(show_3d(d,name,  **d_plot_3d))
-# 
+#   
+    pp(d)
     for name in l_mean_rate_slices:
         d_plot_3d['type_of_plot']='mean'
         fig, perf=show_heat_map(d, name,  **d_plot_3d)
         figs.append(fig)
- 
+  
     for name in l_mean_rate_slices:
         d_plot_3d['type_of_plot']='variance'
-        
-        fig, perf=show_heat_map(d, name,  **d_plot_3d)
-        figs.append(fig)
-
-    for name in l_mean_rate_slices:
-        d_plot_3d['type_of_plot']='CV'
          
         fig, perf=show_heat_map(d, name,  **d_plot_3d)
         figs.append(fig)
-
+ 
+    for name in l_mean_rate_slices:
+        d_plot_3d['type_of_plot']='CV'
+          
+        fig, perf=show_heat_map(d, name,  **d_plot_3d)
+        figs.append(fig)
+ 
 # 
     for name in l_mean_rate_slices:   
         figs.append(show_bulk(d, models, name, **d_plot_bulk))
-#      
+      
 #     figs.append(show_neuron_numbers(d, models))
-#      
+      
 #     for i in range(len(d.keys())):
 #         figs.append(show_fr(d['Net_'+str(i)], models, **d_plot_fr))
-     
+      
     for i in range(len(d.keys())):
         
         if i!=1:
             continue
         
-        figs.append(show_fr(d['Net_'+str(i)], ['M1', 'M2', 'SN'], **d_plot_fr2))
-        axs=figs[-1].get_axes()
-        ps.shift('upp', axs, 0.1, n_rows=len(axs), n_cols=1)
-        ps.shift('left', axs, 0.25, n_rows=len(axs), n_cols=1)
+        fig, axs=ps.get_figure2(**d_plot_fr2.get('fig_and_axes'))
+        figs.append(fig)
+        show_fr(d['Net_'+str(i)], ['M1', 'M2', 'SN'], axs, **d_plot_fr2)
+#         axs=figs[-1].get_axes()
+#         ps.shift('upp', axs, 0.1, n_rows=len(axs), n_cols=1)
+#         ps.shift('left', axs, 0.25, n_rows=len(axs), n_cols=1)
+        
+        for i, s, c0, c1, rotation in [
+#                                        [2, 'Rel. inh. effect', -0.31, 0., 90],
+#                                    [2, 'decrease (Hz)', -0.39, 0., 90],
+                                   [1, 'Firing rate (Hz)', -0.35, 0.5, 90],
+                                   [0, r'$MSN_{D1}$', -0.2, 0.5, 90],
+                                   [1, r'$MSN_{D2}$', -0.2, 0.5, 90],
+                                   [2, r'SNr', -0.2, 0.5, 90],
+#                                    [2, r'$MSN_{D1}$', 1.1, 0.5, 270],
+#                                    [3, r'$MSN_{D2}$', 1.1, 0.5, 270],
+                                   ]:
+                                   
+            axs[i].text(c0, c1, s, 
+                        fontsize=24,
+                        transform=axs[i].transAxes,
+                        verticalalignment='center', 
+                        horizontalalignment='center', 
+                        rotation=rotation) 
+        
+        axs[0].legend(axs[0].lines[0:6], 
+                  ['Action 1', 'Action 2'], 
+                  bbox_to_anchor=(1., 1.7), ncol=2,
+                  handletextpad=0.1,
+                  frameon=False,
+                  columnspacing=0.3,
+                  labelspacing=0.2) 
+        
         for i, ax in enumerate(axs):      
             
-            ax.my_set_no_ticks(xticks=5, yticks=4)
-            ax.legend(bbox_to_anchor=[1.45,1.])
-        axs=figs[-1].get_axes()
-        for i, ax in enumerate(axs):
-            ax.my_set_no_ticks(xticks=5)
-#             ax.set_ylabel('Ra')
-            if i==1:
-                pass
-            else:
-                ax.set_ylabel('')
-            if i >1:
-                pass
-            else:
-#                 ax.set_ylabel('')
-                ax.my_remove_axis(xaxis=True)
+            ax.my_set_no_ticks(xticks=3, yticks=3)
             if i==2:
-                pass
-            else:
-                ax.set_xlabel('')
+                ax.set_yticks([0,40,80])
+#             ax.legend(bbox_to_anchor=[1.45,1.])
+#         axs=figs[-1].get_axes()
+#         for i, ax in enumerate(axs):
+#             ax.my_set_no_ticks(xticks=5)
+# #             ax.set_ylabel('Ra')
+
+            ax.set_ylabel('')
+            axs[0].my_remove_axis(xaxis=True, yaxis=False,
+                                  keep_ticks=True) 
+            axs[1].my_remove_axis(xaxis=True, yaxis=False,
+                                  keep_ticks=True)
             
+ 
+    for i, ax in enumerate(axs[1:3]):
+        ax.legend().set_visible(False)         
 
     sd_figs.save_figs(figs, format='png')
     sd_figs.save_figs(figs, format='svg', in_folder='svg')

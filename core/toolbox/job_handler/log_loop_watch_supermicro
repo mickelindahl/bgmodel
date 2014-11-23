@@ -1,0 +1,36 @@
+0 seconds
+Processes:[<subprocess.Popen object at 0x44f15d0>]
+Job names:[1]
+1 seconds
+Processes:[<subprocess.Popen object at 0x44f15d0>, <subprocess.Popen object at 0x44f1250>]
+Job names:[1, 2]
+2 seconds
+Processes:[<subprocess.Popen object at 0x44f15d0>, <subprocess.Popen object at 0x44f1250>]
+Job names:[1, 2]
+3 seconds
+Processes:[<subprocess.Popen object at 0x44f1250>]
+Job names:[2]
+4 seconds
+Processes:[<subprocess.Popen object at 0x44f1250>]
+Job names:[2]
+5 seconds
+Processes:[]
+Job names:[]
+0 seconds
+Processes:[<subprocess.Popen object at 0x409f650>]
+Job names:[1]
+1 seconds
+Processes:[<subprocess.Popen object at 0x409f650>, <subprocess.Popen object at 0x409f690>]
+Job names:[1, 2]
+2 seconds
+Processes:[<subprocess.Popen object at 0x409f650>, <subprocess.Popen object at 0x409f690>]
+Job names:[1, 2]
+3 seconds
+Processes:[<subprocess.Popen object at 0x409f690>]
+Job names:[2]
+4 seconds
+Processes:[<subprocess.Popen object at 0x409f690>]
+Job names:[2]
+5 seconds
+Processes:[]
+Job names:[]

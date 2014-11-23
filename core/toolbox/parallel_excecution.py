@@ -30,6 +30,7 @@ from toolbox import misc
 from toolbox import data_to_disk 
 from toolbox.network import default_params
 from toolbox import job_handler
+
 from toolbox.data_to_disk import make_bash_script
 from toolbox.parallelization import comm
 
@@ -229,11 +230,18 @@ def epoch(*args):
 def loop(*args, **kwargs):
     n, m_list, args_list,  kwargs_list=args 
     
+    path_results=kwargs_list[0].get('path_results')
+    log_file_name=path_results+'/std/job_handler_log'
+    data_to_disk.mkdir(path_results+'/std/')
 
+    h=job_handler.Handler(loop_time=5,  
+                          log_to_file=True,
+                          log_file_name=log_file_name)
+    
     for m in m_list:
         
         q=Queue.Queue()
-        h=job_handler.Handler()
+
         
         for _ in range(m): 
             if not kwargs_list:
@@ -241,8 +249,11 @@ def loop(*args, **kwargs):
             k=kwargs_list.pop(0)
             if k['active']:
                 q.put([args_list.pop(0), k])
+            else:
+                args_list.pop(0)
     
-        h.loop_with_queue(n, q,  epoch, loop_print=True)
+        h.loop_with_queue(n, q,  epoch, 
+                          loop_print=True)
         
         
 def save_params(path_params, path_script, obj):

@@ -824,8 +824,10 @@ class Builder_Go_NoGo_with_nodop_FS_base(Builder_network):
     
     def _variable(self):
         
-        self.kwargs['input_lists']= [['C1','CF'], 
-                                     ['C1', 'C2', 'CF']]        
+        self.kwargs['input_lists']= [
+#                                      ['C1','CF'], 
+                                     ['C1', 'C2', 'CF']
+                                     ]        
 
         l, self.dic = get_input_Go_NoGo(self.kwargs)    
         

@@ -11,6 +11,7 @@ from os.path import expanduser
 
 from toolbox import misc, pylab
 
+from matplotlib.font_manager import FontProperties
 
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
@@ -269,24 +270,65 @@ def create_relations(models_coher, dd):
 
 
 
+def plot_letter(ax, name, c0, c1):
+    ax.text(c0, c1, name, 
+                horizontalalignment='center', 
+                verticalalignment='center', 
+                color='w', 
+                transform=ax.transAxes,  
+#                 fontsize=24,
+                  
+#                     rotation=270
+                )
+    
+#     ax.text(c0, c1, name, 
+#                 horizontalalignment='center', 
+#                 verticalalignment='center', 
+#                 color='w', 
+#                 fontsize=22,
+#                 transform=ax.transAxes)
+# #                     rotation=270
 
 def set_text_on_bars(axs, i, names, coords):
     for name, coord in zip(names, coords):
-        axs[i].text(coord[0], coord[1], name, 
-                    horizontalalignment='center', 
-                    verticalalignment='center', color='w', transform=axs[i].transAxes)
-    
+        
+#         axs[i].scatter(coord[0], coord[1], color='w', edgecolor='k',
+#                        linewidth=0.5,
+#                    s=0.1, 
+# #                    transform=axs[i].transAxes,
+#                    marker=r'$'+name+'$')
+        plot_letter(axs[i], name, coord[0],coord[1])
+#         
+#         axs[i].text(coord[0], coord[1], name, 
+#                     horizontalalignment='center', 
+#                     verticalalignment='center', 
+#                     color='k', 
+#                  transform=axs[i].transAxes,  
+#                     fontsize=22,
+#                       
+# #                     rotation=270
+#                     )
+#         
+#         axs[i].text(coord[0], coord[1], name, 
+#                     horizontalalignment='center', 
+#                     verticalalignment='center', 
+#                     color='w', 
+#                     fontsize=20,
+#                    transform=axs[i].transAxes,
+# #                     rotation=270
+#                     )
+#     
 
 def plot_spk_stats(d, axs, i, **k):
-    
+    y_lim_scale=1.1
     color_red=misc.make_N_colors('jet', 2)[1]
     
     leave_out=k.get('leave_out',[])
     
     y_mean, y_mean_SEM = [], []
     y_CV, y_CV_SEM = [], []
-    names=['Sim', 'Mallet', 'Sim', 'Mallet']
-    coords=[[0.1, 0.1],[0.33, 0.1],[0.67, 0.1],[ 0.9,0.1]]
+    names=['S', 'M', 'S', 'M']
+    coords=[[0.1, 0.075],[0.33, 0.075],[0.67, 0.075],[ 0.9,0.075]]
     
     for key in sorted(d.keys()):
         v = d[key]
@@ -320,10 +362,13 @@ def plot_spk_stats(d, axs, i, **k):
     Data_bar(**{'y':[[y_mean[0], y_mean[1]],
                      [Y[0][0],  Y[0][1]]],
                 'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
-                         [0.,  0.]]}).bar2(axs[i], **{'edgecolor':'k'})
-    axs[i].set_ylabel('Mean rate (Hz)')
-    axs[i].set_xticklabels(['GP control', 'GP lesioned'])
-    axs[i].set_ylim([0,40])
+                         [0.,  0.]]}).bar2(axs[i], **{'edgecolor':'k',
+                                                      'top_lable_rotation':0,
+                                                      'top_label_round_off':0})
+    axs[i].set_ylabel('Rate (Hz)')
+    axs[i].set_xticklabels(['Control', 'Lesion'])
+    axs[i].set_title('GPe')
+    axs[i].set_ylim([0,40*y_lim_scale])
     
     set_text_on_bars(axs, i, names, coords)
     i += 1
@@ -334,12 +379,18 @@ def plot_spk_stats(d, axs, i, **k):
     Data_bar(**{'y':[[y_CV[0], y_CV[1]],
                      [Y[1][0], Y[1][1]]],
                 'y_std':[[y_CV_SEM[0], y_CV_SEM[1]],
-                         [0., 0.]]}).bar2(axs[i], **{'edgecolor':'k'})
+                         [0., 0.]]}).bar2(axs[i],
+                                           **{'edgecolor':'k',
+                                              
+                                                      'top_label_round_off':1,
+                                              'top_lable_rotation':0
+                                              })
     
 #     Data_bar(**{'y':y_CV}).bar(axs[i])
     axs[i].set_ylabel('CV')
-    axs[i].set_xticklabels(['GP control', 'GP lesioned'])
-    axs[i].set_ylim([0, 1.9])
+    axs[i].set_xticklabels(['Control', 'Lesion'])
+    axs[i].set_title('GPe')
+    axs[i].set_ylim([0, 1.9*y_lim_scale])
     set_text_on_bars(axs, i, names, coords)
     
     
@@ -363,9 +414,10 @@ def plot_spk_stats(d, axs, i, **k):
     # *****************   
     if 'control_fr' not in leave_out:
         Data_bar(**{'y':y_mean[0:2]}).bar(axs[i])
-        axs[i].set_ylabel('Firing rate (Hz)')
-        axs[i].set_xticklabels(['TI control', 'TA control'])
-        axs[i].set_ylim([0,40])
+        axs[i].set_ylabel('Rate (Hz)')
+        axs[i].set_title('Control')
+        axs[i].set_xticklabels(['TI', 'TA'])
+        axs[i].set_ylim([0,40*y_lim_scale])
         set_text_on_bars(axs, i, names[0::2], coords[0::2])
     
     
@@ -379,11 +431,14 @@ def plot_spk_stats(d, axs, i, **k):
                      [Y[2][0], Y[2][1]]],
                 'y_std':[[y_mean_SEM[2],y_mean_SEM[3]],
                          [0., 0.]]}).bar2(axs[i],  **{'colors':[color_red,color_red], 
+                                              'top_label_round_off':0,
+                                                      'top_lable_rotation':0,
                                                       'hatchs':['/', 'o'], 
                                                       'edgecolor':'k'})
-    axs[i].set_ylabel('Firing rate (Hz)')
-    axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
-    axs[i].set_ylim([0,40])
+    axs[i].set_ylabel('Rate (Hz)')
+    axs[i].set_title('Lesion')
+    axs[i].set_xticklabels(['TI', 'TA'])
+    axs[i].set_ylim([0,40*y_lim_scale])
     set_text_on_bars(axs, i, names, coords)   
     i += 1
 
@@ -394,8 +449,9 @@ def plot_spk_stats(d, axs, i, **k):
     if 'control_cv' not in leave_out:
         Data_bar(**{'y':y_CV[0:2]}).bar(axs[i], **{'colors'})
         axs[i].set_ylabel('CV')
-        axs[i].set_xticklabels(['TI control', 'TA control'])
-        axs[i].set_ylim([0,1.9])
+        axs[i].set_title('Control')
+        axs[i].set_xticklabels(['TI', 'TA'])
+        axs[i].set_ylim([0,1.9*y_lim_scale])
         set_text_on_bars(axs, i, names[0::2], coords[0::2])
         i += 1
 
@@ -403,11 +459,14 @@ def plot_spk_stats(d, axs, i, **k):
                      [Y[3][0], Y[3][1]]],
                 'y_std':[[y_CV_SEM[2], y_CV_SEM[3]],
                          [0., 0.]]}).bar2(axs[i],  **{'colors':[color_red,color_red], 
+                                              'top_lable_rotation':0,
+                                                      'top_label_round_off':1,
                                                       'hatchs':['/', 'o'], 
                                                       'edgecolor':'k'})
     axs[i].set_ylabel('CV')
-    axs[i].set_xticklabels(['TI lesioned', 'TA lesioned'])
-    axs[i].set_ylim([0,1.9])
+    axs[i].set_title('Lesion')
+    axs[i].set_xticklabels(['TI', 'TA'])
+    axs[i].set_ylim([0,1.9*y_lim_scale])
     set_text_on_bars(axs, i, names, coords)
        
     i += 1
@@ -530,19 +589,61 @@ def show_summed(d, **k):
     for ax in axs:
         ax.my_set_no_ticks(yticks=5)
     return fig
-        
+
+def gs_builder(*args, **kwargs):
+    import matplotlib.gridspec as gridspec
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',3)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.05 ), 
+              hspace=kwargs.get('hspace', 0.05 ))
+
+    iterator = [[slice(1,3),slice(0,3)],
+                [slice(3,5),slice(0,3)],
+                [slice(1,3),slice(3,6)],
+                [slice(3,5),slice(3,6)],
+                [slice(1,2),slice(8,11)],
+                [slice(2,3),slice(8,11)],
+                [slice(3,4),slice(8,11)],
+                [slice(4,5),slice(8,11)],
+                [slice(1,2),slice(13,16)],
+                [slice(2,3),slice(13,16)],
+                [slice(3,4),slice(13,16)],
+                [slice(4,5),slice(13,16)],
+                ]
+    
+    return iterator, gs, 
+  
 def show_summed2(d, **k):
 #     import toolbox.plot_settings as ps  
-    fig, axs=ps.get_figure(n_rows=3, 
-                           n_cols=4, 
-                           w=1000.0*0.58*2, 
-                           h=500.0*0.6*2, 
-                           fontsize=8*2,
-                           text_fontsize=7*2,
-                           font_size=7*2,
-                           frame_hight_y=0.55,
-                           frame_hight_x=0.6,
-                           linewidth=4.)   
+
+    kw={'n_rows':6, 
+        'n_cols':16, 
+        'w':1100, 
+        'h':400, 
+        'fontsize':24,
+        'frame_hight_y':0.5,
+        'frame_hight_x':0.7,
+        'title_fontsize':24,
+        'font_size':20,
+        'text_fontsize':24,
+        'linewidth':2.5,
+        'gs_builder':gs_builder}
+#     kwargs_fig=kwargs.get('kwargs_fig', kw)
+    
+    fig, axs=ps.get_figure2(**kw) 
+#     fig, axs=ps.get_figure(n_rows=3, 
+#                            n_cols=4, 
+#                            w=1000.0*0.58*2, 
+#                            h=500.0*0.6*2, 
+#                            fontsize=24,
+#                            text_fontsize=20,
+#                            font_size=20,
+#                            frame_hight_y=0.55,
+#                            frame_hight_x=0.6,
+#                            linewidth=4.)   
     
 
 
@@ -554,8 +655,137 @@ def show_summed2(d, **k):
     i = plot_phases_diff_with_cohere(d, axs, i, **k)
 #     pylab.show()    
 
-    for ax in axs:
-        ax.my_set_no_ticks(yticks=5)
+    for ax in axs[0:4]:
+        ax.my_set_no_ticks(yticks=3)
+    for ax in axs[4:]:
+        ax.my_set_no_ticks(yticks=2)
+    
+    axs[0].my_remove_axis(xaxis=True, yaxis=False)            
+    axs[1].my_remove_axis(xaxis=False, yaxis=False)            
+    axs[2].my_remove_axis(xaxis=True, yaxis=True)
+    axs[3].my_remove_axis(xaxis=False, yaxis=True)   
+    
+    for i in range(4,7):
+        axs[i].my_remove_axis(xaxis=True, yaxis=False)   
+        axs[i].set_xlabel('')
+
+    for i in range(8,11):
+        axs[i].my_remove_axis(xaxis=True, yaxis=False)   
+        axs[i].set_xlabel('')
+    for i in range(0,12):
+        axs[i].set_title('')#my_remove_axis(xaxis=False, yaxis=True)  
+    
+    for i in range(4,12):
+        axs[i].set_ylabel('')
+        
+#     for i in range(4,8):
+        axs[i].set_yticks([0.0, 0.5])
+        
+    for i in range(8,12):
+
+        v=0
+        for l in axs[i].lines:
+            v=max(max(l._y),v)
+ 
+        axs[i].set_ylim([0,v*1.1])
+        
+        axs[i].set_yticks([0.0, round(v*1.1/2,1)])
+    
+    axs[4].text(-0.45, 
+                -1.1, 
+                'Coherence', 
+                fontsize=24,
+                transform=axs[4].transAxes,
+                verticalalignment='center', 
+                rotation=90)  
+
+    axs[4].legend(axs[4].lines[0::2], ['Control', 'Lesion'],
+                   bbox_to_anchor=(2.2, 2.1), ncol=2,
+#                    borderpad=0.5,
+                   columnspacing=0.3,
+                   handletextpad=0.1,
+                    frameon=False)
+    
+
+    for i, s in zip([1,3],['GPe', 'Lesion']):
+        font0 = FontProperties()
+        font0.set_weight('bold')
+        axs[i].text(0.5, 
+                    -0.45, 
+                    s, 
+                    fontsize=24,
+                    fontproperties=font0,
+                    transform=axs[i].transAxes,
+                    horizontalalignment='center', 
+                    rotation=0) 
+
+    for i, s in enumerate(['GP-GP', 'TI-TI', 'TI-TA', 'TA-TA']):
+        axs[i+4].text(1.05, 
+                    0.5, 
+                    s, 
+                    fontsize=18,
+                    transform=axs[i+4].transAxes,
+                    verticalalignment='center', 
+                    horizontalalignment='center', 
+                    rotation=270) 
+        axs[i+8].text(1.05, 
+                    0.5, 
+                    s, 
+                    fontsize=18,
+                    transform=axs[i+8].transAxes,
+                    verticalalignment='center', 
+                    horizontalalignment='center', 
+                    rotation=270)   
+    axs[8].text(-0.45, 
+                -1.1,
+                'Normalized count', 
+                fontsize=24,
+                transform=axs[8].transAxes,
+                verticalalignment='center', 
+                rotation=90)  
+    axs[11].my_set_no_ticks(xticks=4)  
+    
+#     plot_letter(axs[0], 'S', 0.1, 1.1)
+    axs[0].text(0.1, 
+                1.38,
+                'S=Simulation', 
+                fontsize=24,
+                transform=axs[0].transAxes,
+                va='center', 
+#                 ha='center', 
+#                 ha='center',
+                rotation=0)  
+    axs[0].text(0.1, 
+                1.15,
+                'M=Mallet et al 2008', 
+                fontsize=24,
+                transform=axs[0].transAxes,
+                va='center', 
+#                 ha='center', 
+#                 ha='center',
+                rotation=0)  
+    
+    mode=k.get('statistics_mode', 'activation')
+    if mode=='slow_wave':
+        s='Slow wave'
+    else:
+        s='Activation (beta)'
+#     s='Activation (beta)'
+    font0 = FontProperties()
+    font0.set_weight('bold')
+    axs[8].text(1.25, 
+            -1.,
+            s, 
+            fontsize=28,
+            transform=axs[8].transAxes,
+            fontproperties=font0,
+            va='center', 
+#                 ha='center', 
+#                 ha='center',
+            rotation=270)  
+    
+        
+    
     return fig
 
 class Setup(object):
@@ -567,7 +797,8 @@ class Setup(object):
         self.local_num_threads=local_num_threads
         self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
                                                     'Net_1' ])
-        
+        self.start_fr=kwargs.get('start_fr',10000.0)
+        self.stop_fr=kwargs.get('stop_fr',20000.0)
    
   
     def builder(self):
@@ -643,8 +874,8 @@ class Setup(object):
     
     def plot_fr(self):
         d={'win':100.,
-           't_start':10000.0,
-           't_stop':20000.0,
+           't_start':self.start_fr,
+           't_stop':self.stop_fr,
            'labels':['Control', 'Lesion'],
            
             'fig_and_axes':{'n_rows':8, 
@@ -726,6 +957,7 @@ def simulate(builder=Builder,
                                  setup.director())
     add_perturbations(perturbation_list, nets)
 #     print nets['Net_0'].par['nest']['M1_M1_gaba']['weight']
+
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
     file_name_figs = get_file_name_figs(script_name,  nets[key].par)
@@ -845,16 +1077,16 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 
         
         figs.append(show_summed2(d, **d_plot_summed2))
-        axs=figs[-1].get_axes()
-#         ps.shift('right', axs, 0.25, n_rows=len(axs), n_cols=1)
-        axs[4].legend(axs[4].lines[0::2],['Control', 'Lesion'])
+#         axs=figs[-1].get_axes()
+# #         ps.shift('right', axs, 0.25, n_rows=len(axs), n_cols=1)
+#         axs[4].legend(axs[4].lines[0::2],['Control', 'Lesion'])
 #         axs[8].legend(axs[8].lines,['Control', 'Lesion'], loc='lower center')
         
-        for ax in axs[8:]:
-            ax.my_set_no_ticks(xticks=6)
-
-        for ax in axs[4:]:
-            ax.my_set_no_ticks(yticks=3)
+#         for ax in axs[8:]:
+#             ax.my_set_no_ticks(xticks=6)
+# 
+#         for ax in axs[4:]:
+#             ax.my_set_no_ticks(yticks=3)
         
         sd_figs.save_figs(figs, format='png')
         sd_figs.save_figs(figs, format='svg', in_folder='svg')
@@ -903,7 +1135,8 @@ def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory
               '=')
     p+=p_add
 
-    setup=Setup(1000.0, THREADS)
+    setup=Setup(1000.0, THREADS, **{'start_fr':0.0, 
+                                     'stop_fr':10000.0})
     v=simulate(builder=Builder,
                 from_disk=from_disk,
                 perturbation_list=p,
@@ -962,10 +1195,12 @@ class TetsOscillationRun(unittest.TestCase):
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
         
-        v=run_simulation(from_disk=0, 
+        v=run_simulation(from_disk=2, 
                          local_num_threads=12)
         d, file_name_figs, from_disks, models, models_coher, setup=v
-
+        
+        
+        
         self.setup=setup
         self.file_name_figs=file_name_figs
         self.from_disks=from_disks
@@ -1087,7 +1322,7 @@ class TestOscillationMPI(unittest.TestCase):
         script_name=(os.getcwd()+'/test_scripts_MPI/'
                      +'oscillation_common_run_simulation_mpi.py')
 
-        from_disk=1
+        from_disk=2
 
         fileName=data_path+'data_in.pkl'
         fileOut=data_path+'data_out.pkl'
@@ -1124,12 +1359,12 @@ class TestOscillationMPI(unittest.TestCase):
 if __name__ == '__main__':
     d={
        TetsOscillationRun:[
-                              'test_run',
+#                               'test_run',
                            ],
        
         TestOcsillation:[
                       
-#                         'test_create_figs',
+                        'test_create_figs',
 #                         'test_isi',
 #                         'test_plot_mallet2008',
 #                         'testPlotStats',

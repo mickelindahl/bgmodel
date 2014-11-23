@@ -14,7 +14,7 @@ from simulate import (get_path_logs,
                       get_kwargs_list_indv_nets)
 from toolbox.network import default_params
 from toolbox.network.manager import Builder_Go_NoGo_only_D1D2_nodop_FS as Builder
-from toolbox.parallel_excecution import get_loop_index, loop
+from toolbox.parallel_excecution import loop
 
 import scripts_inhibition.Go_NoGo_compete as module
 
@@ -23,6 +23,7 @@ import scripts_inhibition.Go_NoGo_compete as module
 import oscillation_perturbations4 as op
 import oscillation_perturbations_conns as op_conn
 import oscillation_perturbations_nuclei as op_nuc
+import oscillation_perturbations_dop as op_dop
 
 import pprint
 pp=pprint.pprint
@@ -34,6 +35,7 @@ pp=pprint.pprint
 # op_pert_add=[op_dop.get()[5]]
 l_op_conn=[36, 66, 97, 114, 121, 127, 138]    
 l_op_nuc=[33, 49, 57]
+l_op_dop=[5,6]
 
 opc=op_conn.get()
 op_pert_add=[opc[i] for i in l_op_conn]
@@ -41,21 +43,25 @@ op_pert_add=[opc[i] for i in l_op_conn]
 opn=op_nuc.get()
 op_pert_add+=[opn[i] for i in l_op_nuc]
 
+opn=op_dop.get()
+op_pert_add+=[opn[i] for i in l_op_dop]
+
+
 for i, o in enumerate(op_pert_add):
     print i, o
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
-NUM_NETS=10
+NUM_NETS=12
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*8,
+        'cores_milner':40*6,
         'cores_superm':12,
         
         'debug':False,
-        'do_runs':range(NUM_NETS),
+        'do_runs':range(10,NUM_NETS),
         'do_obj':False,
         'duration':[900.,100.0],
         
@@ -111,5 +117,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(NUM_NETS, [NUM_NETS,NUM_NETS,NUM_NETS], a_list, k_list )
+loop(1, [NUM_NETS,NUM_NETS,NUM_NETS], a_list, k_list )
         

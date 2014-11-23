@@ -456,7 +456,7 @@ class Storage_dic(Base_dic):
                     if key not in filt:
                         a=True
                     i+=1
-                    if i==3:
+                    if i==len(keys):
                         break
                 if a:
                     continue
@@ -632,6 +632,7 @@ def pickle_load(fileName, file_extension='.pkl', **kwargs):
 
     f.close()
     return data
+
 
 
 def _txt_save(text, fileName):

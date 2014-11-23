@@ -18,10 +18,12 @@ from toolbox.network import default_params
 
 class Handler(object):
     
-    def __init__(self, p_list=[], jobs=[], job_names=[],loop_time=1, display=False):
+    def __init__(self, p_list=[], jobs=[], job_names=[],loop_time=1, **kwargs):
         
+        self.log_to_file=kwargs.get('log_to_file')
+        self.log_file_name=kwargs.get('log_file_name',os.getcwd()+'/job_handler/log')
         self.loop_time=loop_time
-        self.display=display
+        self.display=kwargs.get('display')
         self.jobs=set(jobs)         #current_jobbs.difference(old_jobbs)
         d={}
         for  p, j, jn in zip(p_list, jobs, job_names):
@@ -31,8 +33,11 @@ class Handler(object):
         self.jobs_dic=d
         self.job_names=job_names
         self.processes=p_list
-        if display:
+        if self.display:
             self.printme()
+            
+        if self.log_to_file:
+            self.init_log()
         
     def append_job(self, p, job_id, job_name=''): 
         self.jobs.add(job_id)
@@ -40,7 +45,19 @@ class Handler(object):
                                          'job':job_id}})
         self.job_names.append(job_name)
         self.processes.append(p)
+
+    def append_to_log(self, s):
+        f=open(self.log_file_name,'a')
+        f.write(s)
+        f.close()
         
+    def init_log(self):
+        f=open(self.log_file_name,'w')
+        s='Logfile init at '+str(time.strftime("%H:%M:%S"))+'\n'
+        f.write(s)
+        f.close()
+        
+      
     def get_num_of_active_jobs(self):
         
         if my_socket.determine_computer()=='milner':
@@ -82,12 +99,14 @@ class Handler(object):
         go=1
         i=0
         while go:
-            if loop_print:
-                print i*self.loop_time, 'seconds'
+            
             current_jobs=read_current_jobs()
             go=current_jobs.intersection(self.jobs)
             print go
-            self.printme()
+            
+            if loop_print:
+                self.printme(i*self.loop_time)
+                
             self.sleep()        
             i+=1
     
@@ -103,28 +122,33 @@ class Handler(object):
                 args=epoch_fun(*q.get())
                 if args:
                     self.append_job(*args)
-            m_active=self.get_num_of_active_jobs()
             self.sleep()
+            m_active=self.get_num_of_active_jobs()
             self.clean_up()
           
             if loop_print:
-                print i*self.loop_time, 'seconds'
-                self.printme()
+                self.printme(i*self.loop_time)
             i+=1
     
     def sleep(self):        
         time.sleep(self.loop_time)
     
-    def printme(self):
+    def printme(self, t=0):
+        
+        s=str(t)+' seconds\n'   
         if my_socket.determine_computer()=='milner':
             current_jobs=read_current_jobs()
-            print 'All jobs:    ',list(current_jobs)
-            print 'Handler jobs:',list(self.jobs)
+            s+='All jobs:    '+str(list(current_jobs))+'\n'
+            s+='Handler jobs:'+str(list(self.jobs))+'\n'
         elif my_socket.determine_computer()=='supermicro':    
-            print 'Processes:', list(self.processes)
-        print 'Job names:',self.job_names
+            s+='Processes:'+str(list(self.processes))+'\n'
+        s+='Job names:'+str(self.job_names)+'\n'
+        
+        print s
+        
+        if self.log_to_file:
+            self.append_to_log(s)
     
-
 
 def read_current_jobs():
     if my_socket.determine_computer()=='supermicro':
@@ -245,10 +269,15 @@ class TestHandler(unittest.TestCase):
                           Mockup_process('3',None)],
                 'jobs': [28372, 28373, 28374],
                 'job_names':['1', '2', '3'],
-                'loop_time':1}
+                'loop_time':1,
+                'log_to_file':True,
+                'log_file_name':os.getcwd()+'/job_handler/log'}
+        
         self.obj=Handler(**kwargs)  
          
     def test_loop_milner(self):
+
+        self.obj.log_file_name+='_loop_milner'
 
         global my_socket
         my_socket=Mockup_my_socket_milner
@@ -264,6 +293,8 @@ class TestHandler(unittest.TestCase):
         time.sleep(2)
 
     def test_loop_watch_supermicro(self):
+        
+        self.obj.log_file_name+='_loop_watch_supermicro'
         
         global subprocess
         subprocess=Mockup_subprocess
@@ -282,6 +313,9 @@ class TestHandler(unittest.TestCase):
 
     def test_loop_watch_milner(self):
         
+        
+        self.obj.log_file_name+='_loop_watch_milner'
+
         global subprocess
         subprocess=Mockup_subprocess_milner_loop_w
         global my_socket
@@ -374,8 +408,8 @@ if __name__ == '__main__':
                            ],
       TestHandler:[
                    
-#                     'test_loop_milner',  
-                    'test_loop_watch_milner',
+                    'test_loop_milner',  
+#                     'test_loop_watch_milner',
 #                     'test_loop_watch_supermicro',    
 #                     'test_append_job_milner',
 #                     'test_get_num_of_active_jobs_milner',

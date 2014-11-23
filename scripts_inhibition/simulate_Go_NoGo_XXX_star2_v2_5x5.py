@@ -12,7 +12,7 @@ from simulate import (pert_add_go_nogo_ss, get_path_logs,
                       get_kwargs_list_indv_nets)
 from toolbox.network import default_params
 from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS as Builder
-from toolbox.parallel_excecution import get_loop_index,loop2
+from toolbox.parallel_excecution import get_loop_index,loop
 
 import scripts_inhibition.Go_NoGo_compete as module
 # from scripts inhibition import Go_NoGo_compete as module
@@ -23,12 +23,12 @@ pp=pprint.pprint
 from copy import deepcopy
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=1
+FROM_DISK_0=0
 
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*4,
+        'cores_milner':40*1,
         'cores_superm':20,
         
         'debug':False,
@@ -43,7 +43,7 @@ kwargs={
         
         'job_name':'_'.join(FILE_NAME.split('_')[1:]),
 
-        'l_hours':['04','01','00'],
+        'l_hours':['01','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],             
@@ -75,7 +75,7 @@ kwargs={
 #                      25
                      ],
         'res':5,
-        'rep':1,
+        'rep':40,
         'to_memory':False,
         'to_file':True,
         'time_bin':5,
@@ -93,5 +93,5 @@ a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 ch=get_loop_index(5, [5,5,1])
-loop2(2, [5,5,1], a_list, k_list )
+loop(2, [5,5,1], a_list, k_list )
         

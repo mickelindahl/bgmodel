@@ -8,12 +8,13 @@ import pylab
 import os
 import toolbox.plot_settings as ps
 
+from matplotlib.font_manager import FontProperties
 from os.path import expanduser
 from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
-from toolbox.network.manager import get_storage, save, load
+from toolbox.network.manager import get_storage, save
 from toolbox.my_signals import Data_bar
-from simulate import get_file_name,get_file_name_figs
+from simulate import get_file_name, save_figures
 import pprint
 pp=pprint.pprint
 
@@ -78,7 +79,7 @@ def extract_data(d, nets, models, attrs):
         out=misc.dict_recursive_add(out,  keys, v)
     return out             
 
-def compute_performance(d, nets, models, attr):       
+def compute_performance(d, nets, models, attrs):       
     results={}
  
                 
@@ -241,7 +242,7 @@ def gs_builder(*args, **kwargs):
     
     return iterator, gs, 
 
-def plot_coher(d, labelsy, labelsx=[]):
+def plot_coher(d, labelsy, labelsx=[], title_name='Slow wave'):
     fig, axs=ps.get_figure2(n_rows=8, n_cols=9, w=700, h=700, fontsize=24,
                             frame_hight_y=0.5, frame_hight_x=0.7, 
                             title_fontsize=24,
@@ -266,7 +267,7 @@ def plot_coher(d, labelsy, labelsx=[]):
 #                  'M1_SN':r'$MSN_{D1}$$\to$SNr ',
 #                  'ST_GP':r'STN$\to$GPe ',}
 
-    from effect_conns import nice_labels, nice_labels2
+    from effect_conns import nice_labels
     groupings=['Coherence','Phase relation']
 # 
 #     nice_labels2={'GA_GA':r'TA vs TA',
@@ -275,8 +276,8 @@ def plot_coher(d, labelsy, labelsx=[]):
 #                   'GP_GP':r'GP vs GP'}
 
     for i in range(len(labelsy)):
-        if labelsy[i] in nice_labels.keys():
-            labelsy[i]=nice_labels[labelsy[i]]
+        if labelsy[i] in nice_labels(version=0).keys():
+            labelsy[i]=nice_labels(version=0)[labelsy[i]]
             
     l0=[]
     l2=[]
@@ -291,8 +292,8 @@ def plot_coher(d, labelsy, labelsx=[]):
     z=numpy.transpose(numpy.array(l0+l2))
     
     for i in range(len(labelsx)):
-        if labelsx[i] in nice_labels2.keys():
-            labelsx[i]=nice_labels2[labelsx[i]]
+        if labelsx[i] in nice_labels(version=1).keys():
+            labelsx[i]=nice_labels(version=1)[labelsx[i]]
             
      
     _vmin=0
@@ -317,14 +318,28 @@ def plot_coher(d, labelsy, labelsx=[]):
                         vmin=_vmin, vmax=_vmax
                        )
     axs[0].set_yticks(posy)
-    axs[0].set_yticklabels(labels[::-1])
+    axs[0].set_yticklabels(labelsy[::-1])
     axs[0].set_xticks(posx)
-    axs[0].set_xticklabels(labels2*2, rotation=70, ha='right')
+    axs[0].set_xticklabels(labelsx*2, rotation=70, ha='right')
     axs[0].set_ylim([0,maxy])
-    axs[0].text(0.05, 1.02, "Coherence", transform=axs[0].transAxes)
-    axs[0].text(0.55, 1.02, "Phase shift", transform=axs[0].transAxes)
-    axs[1].text(1.45, 0.65, "Mean effect", transform=axs[0].transAxes,
-                                rotation=270)
+    axs[0].text(0.05, -0.31, "Coherence", transform=axs[0].transAxes)
+    axs[0].text(0.55, -0.31, "Phase shift", transform=axs[0].transAxes)
+    axs[1].text(0.5, -0.12, "Mean", 
+                transform=axs[1].transAxes,
+                ha='center',
+                rotation=0)
+    axs[1].text(0.5, -0.19, "effect", 
+                transform=axs[1].transAxes,
+                ha='center',
+                rotation=0)    
+    font0 = FontProperties()
+    font0.set_weight('bold')
+    axs[1].text(1.45, 0.5, title_name,
+                fontsize=28,
+                va='center',
+                 transform=axs[0].transAxes,
+                                rotation=270,
+                                fontproperties=font0)
     axs[0].text(-0.6, 0.9, "Connection without dop. effect", transform=axs[0].transAxes,
                 rotation=90)
         
@@ -337,9 +352,9 @@ def plot_coher(d, labelsy, labelsx=[]):
 
     box = axs[0].get_position()
     axColor=pylab.axes([box.x0+0.1*box.width, 
-                        box.y0+box.height+box.height*0.15, 
+                        box.y0+box.height+box.height*0.08, 
                         box.width*0.8, 
-                        0.05])
+                        0.02])
     #     axColor = pylab.axes([0.05, 0.9, 1.0, 0.05])
     cbar=pylab.colorbar(im, cax = axColor, orientation="horizontal")
     cbar.ax.set_title('MSE control vs lesion rel. base model')#, rotation=270)
@@ -372,19 +387,26 @@ def plot_raw(d, d_keys, attr='mean_coherence'):
  
 #     pylab.show()    
     
-if __name__=='__main__':
+# if __name__=='__main__':
+def main(**kwargs):
+    
+    exclude=kwargs.get('exclude',[])
     models=['GP_GP', 'GA_GA', 'GI_GA', 'GI_GI']
+    models=[m for m in models if not ( m in exclude)]
+    
     nets=['Net_0', 'Net_1']
     attrs=['mean_coherence', 'phases_diff_with_cohere']
-    path='/home/mikael/results/papers/inhibition/network/simulate_slow_wave_ZZZ5/'
+    
+    from_disk=kwargs.get('from_diks',0)
     path=('/home/mikael/results/papers/inhibition/network/'
           +'supermicro/simulate_slow_wave_ZZZ_dop_effect_perturb/')
-    
-    home = expanduser("~")
-    script_name=__file__.split('/')[-1][0:-3]
+    path=kwargs.get('data_path', path)
+        
+    script_name=kwargs.get('script_name', (__file__.split('/')[-1][0:-3]
+                                           +'/data'))
+
     file_name = get_file_name(script_name)
-    from_disk=1
-    
+ 
     sd = get_storage(file_name, '')
     d={}
     if not from_disk:
@@ -401,22 +423,35 @@ if __name__=='__main__':
     else:
         filt=['bar_obj']+models+['labels']
         d = sd.load_dic(*filt)
-#         d2=sd.load_dic()
-#         d = sd.load_dic()
-    file_name_figs=get_file_name_figs(script_name)
-    sd_figs = Storage_dic.load(file_name_figs)
-    pp(d['bar_obj'])
-#     plot_raw(d, d_keys, attr='mean_coherence')
-#     plot_raw(d, d_keys, attr='phases_diff_with_cohere')
+
     figs=[]
-    figs.append(plot_coher(d, d['labels']))
-#     plot(d['bar_obj'], d['labels'])
+    figs.append(plot_coher(d, d['labels'], title_name=kwargs.get('title')))
     pylab.show()
-#     pp(d)
     
-    sd_figs.save_figs(figs, format='png')
-    sd_figs.save_figs(figs, format='svg', in_folder='svg')
+    save_figures(figs, script_name)
     
+class Main():    
+    def __init__(self, **kwargs):
+        self.kwargs=kwargs
     
+    def __repr__(self):
+        return self.kwargs['script_name']
+
+    def do(self):
+        main(**self.kwargs)    
+    
+    def get_nets(self):
+        return self.kwargs['setup'].nets_to_run
+
+    def get_script_name(self):
+        return self.kwargs['script_name']
+
+    def get_name(self):
+        nets='_'.join(self.get_nets()) 
+        script_name=self.kwargs['script_name']
+        script_name=script_name.split('/')[1].split('_')[0:2]
+        script_name='_'.join(script_name)+'_'+nets
+        return script_name+'_'+str(self.kwargs['from_disk'])
+        
     
     

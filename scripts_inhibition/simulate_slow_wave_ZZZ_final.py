@@ -25,10 +25,10 @@ import pprint
 pp=pprint.pprint
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
+FROM_DISK_0=2
 LOAD_MILNER_ON_SUPERMICRO=False
 
-
+NUM_NETS=2*10
 kwargs={
         
         'amp_base':[1.],
@@ -39,7 +39,7 @@ kwargs={
         'cores_superm':40,
         
         'debug':False,
-        'do_runs':range(10), #A run for each perturbation
+        'do_runs':range(NUM_NETS/2), #A run for each perturbation
         'do_obj':False,
         
         'file_name':FILE_NAME,
@@ -52,7 +52,7 @@ kwargs={
         'job_name':'sw_final',
         
         'l_hours':  ['00','00','00'],
-        'l_minutes':['15','10','5'],
+        'l_minutes':['45','10','5'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,
@@ -88,5 +88,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(10, a_list, k_list )
+loop(NUM_NETS,[NUM_NETS,NUM_NETS,NUM_NETS/2], a_list, k_list )
         

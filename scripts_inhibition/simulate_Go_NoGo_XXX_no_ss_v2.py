@@ -72,7 +72,7 @@ kwargs={
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
         'perturbation_list':[op.get()[4+3]],
-        'proportion_connected':[0.08]*4, #related to toal number fo runs
+        'proportion_connected':[0.2]*1, #related to toal number fo runs
         'p_sizes':[
                    1.
                   ],

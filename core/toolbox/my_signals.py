@@ -154,14 +154,15 @@ class Data_activity_histogram_stat(Data_element_base,
 
 class Data_bar_base(object):
     
-    def autolabel(self, ax, rects):
+    def autolabel(self, ax, rects, top_lable_rotation, top_label_round_off):
         # attach some text labels
         for rect in rects:
+            s='{:.'+str(top_label_round_off)+'f}'
             height = rect.get_height()
             ax.text(rect.get_x()+rect.get_width()/2., 
                     1.05*height, 
-                    '{}'.format(round(height,2)),
-                ha='center', va='bottom')
+                    s.format(height),
+                ha='center', va='bottom', rotation=top_lable_rotation)
     
     def bar(self, ax , **k):
                  
@@ -206,13 +207,17 @@ class Data_bar_base(object):
         alpha=k.pop('alpha',True)
         hatchs=k.pop('hatchs',['']*m)
         top_label=k.pop('top_label',True)
+        top_lable_rotation=k.pop('top_lable_rotation',0)
+        top_label_round_off=k.pop('top_label_round_off',2)
         H=[]
         for i in range(n):
             if hasattr(self, 'y_std'):
                 self.y_std=numpy.array(self.y_std)
 #                 h=ax.bar(0+ind, self.y, width, yerr=self.y_std, **k )
                 H.append(ax.bar(ind+i*width,self.y[i,:], width, 
-                                yerr=self.y_std[i,:],  **k ))
+                                yerr=self.y_std[i,:], 
+                                ecolor='k',
+                                 **k ))
             
             else: 
 
@@ -221,7 +226,7 @@ class Data_bar_base(object):
         
         for j, h in enumerate(H):
             if top_label:
-                self.autolabel(ax, h)
+                self.autolabel(ax, h, top_lable_rotation, top_label_round_off)
             for i, b in enumerate(h):
                 if color_axis==0:
                     b.set_color(colors[i])

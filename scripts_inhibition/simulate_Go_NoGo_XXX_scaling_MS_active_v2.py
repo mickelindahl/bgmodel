@@ -78,13 +78,13 @@ kwargs={
                   ],
         'p_subsamp':[
                      1., 
-                    2.5,
+                     2.5,
                      5.,
                      ],
         'res':10,
         'rep':10,
         
-       'time_bin':50,
+       'time_bin':100,
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)

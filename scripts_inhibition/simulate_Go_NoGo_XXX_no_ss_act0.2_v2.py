@@ -22,18 +22,21 @@ import oscillation_perturbations4 as op
 import pprint
 pp=pprint.pprint
 
+from copy import deepcopy
+
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
+FROM_DISK_0=1
 LOAD_MILNER_ON_SUPERMICRO=False
+NUM_NETS=5
 
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*10,
+        'cores_milner':40*6,
         'cores_superm':40,
         
         'debug':False,
-        'do_runs':[4],
+        'do_runs':[0],
         'do_obj':False,
         'duration':[900.,100.0],
         
@@ -44,9 +47,9 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'sw_noss_scl_v2',
+        'job_name':'noss_0.2_v2',
 
-        'l_hours':['05','01','00'],
+        'l_hours':['10','02','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            
@@ -70,28 +73,15 @@ kwargs={
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
         'perturbation_list':[op.get()[4+3]],
-        'proportion_connected':([0.1]
-                                +[0.25]
-                                +[0.5]
-                                +[0.75]
-                                +[1.]
-                                ), #related to toal number fo runs
+        'proportion_connected':[0.2]*1, #related to toal number fo runs
         'p_sizes':[
-                   1.,
-                   1.,
-                   1.,
-                   1.,
-                   1.,
+                   1.
                   ],
         'p_subsamp':[
-                     1.,
-                     1.,
-                     1.,
-                     1.,
-                     1.,
+                     1.
                      ],
         'res':10,
-        'rep':40,
+        'rep':80,
         
         'time_bin':100,
         }
@@ -106,5 +96,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(2, [25,25,5], a_list, k_list )
+loop(5, [NUM_NETS, NUM_NETS, 1], a_list, k_list )
         

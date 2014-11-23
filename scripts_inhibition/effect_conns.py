@@ -7,45 +7,59 @@ Created on Sep 10, 2014
 
 
 '''
+import matplotlib.gridspec as gridspec
 import numpy
 import pylab
 import os
 import toolbox.plot_settings as ps
 
 from matplotlib.font_manager import FontProperties
-from os.path import expanduser
+
 from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
-from toolbox.network.manager import get_storage, save, load
-from toolbox.my_signals import Data_bar
-from simulate import get_file_name, get_file_name_figs
+from toolbox.network.manager import get_storage, save
+from simulate import get_file_name, save_figures
 import pprint
+
 pp=pprint.pprint
 
 # from toolbox.
 
 
-def gather(path, nets, models, attrs): 
+def create_name(file_name):
+    return file_name.split('-')[-1]
+
+def gather(path, nets, models, attrs, name_maker=create_name, **kwargs): 
+     
+    fs=kwargs.get('file_names')
+    dic_keys=kwargs.get('dic_keys')
     
-    fs=os.listdir(path)
+    if not fs:
+        fs=os.listdir(path)
+        fs=[path+s for s in fs]
+    
+    if not dic_keys:    
+        dic_keys=[name_maker(s) for s in fs]
+    
     d={}
     i=0
-    for name0 in fs:
+    for name0, key in zip(fs, dic_keys):
+                
         dd={}
+        
         for net in nets:
             name=name0+'/'+net+'.pkl'
-            
-            
-            if not os.path.isfile(path+name):
+               
+            if not os.path.isfile(name):
                 print name
                 continue
-            file_name=path+name[:-4]
+            file_name=name[:-4]
             sd = Storage_dic.load(file_name)
             args=nets+models+attrs
-            misc.dict_update(dd, sd.load_dic(*args))
+            dd=misc.dict_update(dd, sd.load_dic(*args))
 
         if dd:  
-            d = misc.dict_update(d, {name0.split('-')[-1]:dd})
+            d = misc.dict_update(d, {key:dd})
         i+=1
     return d
 
@@ -197,7 +211,7 @@ def nice_labels(version=0):
        'MS_MS': r'MSN$\to$MSN',
        'M1_M1':r'$MSN_{D1}$$\to$$MSN_{D1}$',
        'M1_M2':r'$MSN_{D1}$$\to$$MSN_{D2}$',   
-       'M2_M1':r'$MSN_{D2}$$\to$$MSN_{D2}$',
+       'M2_M1':r'$MSN_{D2}$$\to$$MSN_{D1}$',
        'M2_M2':r'$MSN_{D2}$$\to$$MSN_{D2}$',
        'M1_SN':r'$MSN_{D1}$$\to$SNr',
        'M2_GI':r'$MSN_{D2}$$\to$$GPe_{TI}$',
@@ -242,7 +256,7 @@ def nice_labels(version=0):
 #     return d
         
 def gs_builder_conn(*args, **kwargs):
-    import matplotlib.gridspec as gridspec
+
     n_rows=kwargs.get('n_rows',2)
     n_cols=kwargs.get('n_cols',3)
     order=kwargs.get('order', 'col')
@@ -260,26 +274,24 @@ def gs_builder_conn(*args, **kwargs):
     
     return iterator, gs, 
 
+def gs_builder_conn2(*args, **kwargs):
 
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',3)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.05 ), 
+              hspace=kwargs.get('hspace', 0.05 ))
 
-# def gs_builder_coher(*args, **kwargs):
-#     import matplotlib.gridspec as gridspec
-#     n_rows=kwargs.get('n_rows',2)
-#     n_cols=kwargs.get('n_cols',3)
-#     order=kwargs.get('order', 'col')
-#     
-#     gs = gridspec.GridSpec(n_rows, n_cols)
-#     gs.update(wspace=kwargs.get('wspace', 0.05 ), 
-#               hspace=kwargs.get('hspace', 1. / n_cols ))
-# 
-#     iterator = [[slice(0,6), slice(1,9)],
-# #                 [slice(1,7), slice(7,9)]
-#                 ]
-#     
+    iterator = [[slice(1,4),slice(1,6)],
+                [slice(4,8),slice(1,6)],
+                [slice(1,4),slice(6,11)],
+                [slice(4,8),slice(6,11)]]
+    
     return iterator, gs, 
 
 def gs_builder_coher(*args, **kwargs):
-    import matplotlib.gridspec as gridspec
     n_rows=kwargs.get('n_rows',2)
     n_cols=kwargs.get('n_cols',3)
     order=kwargs.get('order', 'col')
@@ -290,6 +302,20 @@ def gs_builder_coher(*args, **kwargs):
 
     iterator = [[slice(1,11), slice(2,7)],
                 [slice(1,11), slice(7,9)]]
+    
+    return iterator, gs, 
+
+def gs_builder_coher2(*args, **kwargs):
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',3)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.05 ), 
+              hspace=kwargs.get('hspace', 1. / n_cols ))
+
+    iterator = [[slice(1,4), slice(2,7)],
+                [slice(1,4), slice(7,9)]]
     
     return iterator, gs, 
 
@@ -306,11 +332,6 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
         if k in exclude:
             continue        
         labelsx_meta.append(k)
-    
-#     res={}
-#     for keys, val in misc.dict_iter(d):
-#         if attr==keys[2]:
-#             res=misc.dict_recursive_add(res, keys[0:2], val)
     
     out={}
     for k in labelsx_meta:
@@ -335,20 +356,22 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
         print val.shape
         out=misc.dict_recursive_set(out, keys, val)
 
-    
-    dd={'firing_rate':{'labelsy':['M1', 'M2', 'FS', 'GA', 'GI', 'GP','SN', 'ST'], 
+    l1=['M1', 'M2', 'FS', 'GA', 'GI', 'GP','SN', 'ST']
+    l1=[m for m in l1 if not (m in exclude)]
+    l2=['GA_GA', 'GI_GA', 'GI_GI', 'GP_GP']
+    dd={'firing_rate':{'labelsy':l1, 
                        'labelsx_meta':labelsx_meta},
-        'mse_rel_control_fr':{'labelsy':['M1', 'M2', 'FS', 'GA', 'GI', 'GP','SN', 'ST'], 
+        'mse_rel_control_fr':{'labelsy':l1, 
                               'labelsx_meta':labelsx_meta},
-        'mean_coherence':{'labelsy':['GA_GA', 'GI_GA', 'GI_GI', 'GP_GP'], 
+        'mean_coherence':{'labelsy':l2, 
                           'labelsx_meta':labelsx_meta},
-        'mean_coherence_max':{'labelsy':['GA_GA', 'GI_GA', 'GI_GI', 'GP_GP'], 
+        'mean_coherence_max':{'labelsy':l2, 
                           'labelsx_meta':labelsx_meta},
-        'mse_rel_control_mc':{'labelsy':['GA_GA', 'GI_GA', 'GI_GI', 'GP_GP'], 
+        'mse_rel_control_mc':{'labelsy':l2, 
                               'labelsx_meta':labelsx_meta},
-        'mse_rel_control_mcm':{'labelsy':['GA_GA', 'GI_GA', 'GI_GI', 'GP_GP'], 
+        'mse_rel_control_mcm':{'labelsy':l2, 
                               'labelsx_meta':labelsx_meta},
-        'mse_rel_control_pdwc':{'labelsy':['GA_GA', 'GI_GA', 'GI_GI', 'GP_GP'], 
+        'mse_rel_control_pdwc':{'labelsy':l2, 
                               'labelsx_meta':labelsx_meta}}
     
     for attr, d in dd.items():
@@ -382,11 +405,15 @@ def separate_M1_M2(*args, **kwargs):
         l.extend([d0,d1])
     return l
 
-def plot_coher(d, labelsy, flag='dop', labelsx=[]):
-    fig, axs=ps.get_figure2(n_rows=12, n_cols=9,  w=700, h=900, fontsize=24,
+def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
+    
+    fig, axs=ps.get_figure2(n_rows=k.get('cohere_nrows',12),
+                             n_cols=9,  
+                            w=k.get('w',700), 
+                            h=k.get('h',900), fontsize=24,
                             frame_hight_y=0.5, frame_hight_x=0.7, 
                             title_fontsize=24,
-                            gs_builder=gs_builder_coher) 
+                            gs_builder=k.get('cohere_gs',gs_builder_coher)) 
 
     startx=0
     starty=0
@@ -405,18 +432,22 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[]):
             'startx':startx,
             'starty':starty,
             'nice_labels_x':nice_labels(version=1),
-            'nice_labels_y':nice_labels(version=0)}
+            'nice_labels_y':nice_labels(version=0),
+            'color_line':'w'}
 
     _plot_conn(**kwargs)
     
+    images[0].set_clim(k.get('cohere_ylim',[0,4]))
+    
     kwargs['ax']=axs[1]
     _plot_bar(**kwargs)
+    axs[1].set_xlim(k.get('cohere_ylim',[0,4]))
     
-    
-    
+       
     box = axs[0].get_position()
     pos=[box.x0+0.1*box.width, 
-         box.y0+box.height+box.height*0.12, 
+         box.y0+box.height
+         +box.height*k.get('cohere_cmap_ypos',0.14), 
          box.width*0.8, 
          0.025]
     
@@ -436,7 +467,11 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[]):
     axs[0].text(0.55, 1.01, "Phase shift", transform=axs[0].transAxes)
     axs[1].text(1.45, 0.65, "Mean effect", transform=axs[0].transAxes,
                     rotation=270)
-    axs[0].text(-0.6, 0.75, "Perturbed connection", transform=axs[0].transAxes,
+    axs[0].text(k.get('cohere_ylabel_ypos', -0.6), 
+                0.5, 
+                k.get('cohere_ylabel',"Perturbed connection"), 
+                transform=axs[0].transAxes,
+                verticalalignment='center', 
                 rotation=90)                        
     axs[1].my_remove_axis(xaxis=False, yaxis=True)
     axs[1].my_set_no_ticks(xticks=2)
@@ -449,57 +484,23 @@ def _plot_bar(**kwargs):
     
     ax=kwargs.get('ax')
     d=kwargs.get('d')
-#     images=kwargs.get('images')
     z_key=kwargs.get('z_key')
-#     startx=kwargs.get('startx')
-#     starty=kwargs.get('starty')
     flip_axes=kwargs.get('flip_axes')
-#     vertical_lines=kwargs.get('vertical_lines')
-#     horizontal_lines=kwargs.get('horizontal_lines')
-#     fontsize_x=kwargs.get('fontsize_x',24)
+
     if flip_axes:
-        stopx=len(d['labelsy'])
         stopy=len(d['labelsx']) 
-        labelsx_meta=d['labelsy']
-        labelsy_meta=d['labelsx_meta']
-#         labelsx=d['labelsx']
-#         labelsy=d['labelsy']
-#         nice_labels=nice_labels2()
-#         nice_labels2=nice_labels()
+
+
         
         d[z_key]=numpy.transpose(d[z_key])
     else:
         stopy=len(d['labelsy'])
-        stopx=len(d['labelsx']) 
-        labelsy_meta=d['labelsy']
-        labelsx_meta=d['labelsx_meta']
-#         labelsx=d['labelsy']
-#         labelsy=d['labelsx']
-        
-#         nice_labels2=nice_labels2()
-#         nice_labels=nice_labels()
-#         
-#     for i in range(len(labelsx_meta)):         
-#         if labelsx_meta[i] in nice_labels().keys():
-#             labelsx_meta[i]=nicex_labels()[labels_meta[i]]
-#     
-#     labelsy=d['labelsy']
-#     for i in range(len(labelsy_meta)):         
-#         if labelsy_meta[i] in nice_labels2().keys():
-#             labelsy[i]=nice_labels2()[labelsy[i]]  
-#         elif labelsy[i] in nice_labels().keys():
-#             labelsy[i]=nice_labels()[labelsy[i]]
-#                  
 
-    stopx_meta=len(labelsx_meta)
-    stopy_meta=len(labelsy_meta)
+
 
     ratio=1
     posy=numpy.linspace(.5*ratio,stopy-.5*ratio, stopy)    
-    
-#     ratio=stopx/stopx_meta
-#     posx=numpy.linspace(.5*ratio,stopx-.5*ratio, stopx_meta)
-    
+
     ax.barh(posy,numpy.mean( d[z_key],axis=0)[::-1], align='center', color='0.5',
 #             linewidth=0.1
             )
@@ -522,6 +523,7 @@ def _plot_conn(**kwargs):
     nice_labels_x=kwargs.get('nice_labels_x')
     nice_labels_y=kwargs.get('nice_labels_y')
     cmap=kwargs.get('cmap', 'jet')
+    color_line=kwargs.get('color_line','k')
     
     if flip_axes:
         stopx=len(d['labelsy'])
@@ -582,11 +584,13 @@ def _plot_conn(**kwargs):
     if vertical_lines:
         x=numpy.linspace(0, stopx, stopx_meta+1)
         for xx in x:
-            ax.plot([xx,xx],[0,stopy], 'k', linewidth=1.)
+            ax.plot([xx,xx],[0,stopy], color_line, linewidth=1., 
+                    linestyle='-')
     if horizontal_lines:
         x=numpy.linspace(0, stopy, stopy_meta+1)
         for xx in x:
-            ax.plot([0,stopx],[xx,xx],'k', linewidth=1.)
+            ax.plot([0,stopx],[xx,xx],color_line, linewidth=1., 
+                    linestyle='-')
     
     images.append(im)                
     ax.set_yticks(posy)
@@ -602,95 +606,138 @@ def _plot_conn(**kwargs):
     ax.set_xlim([0,stopx])
     
 
-def set_colormap(ax, im, label):
-        box = ax.get_position()
-        axColor = pylab.axes([box.x0 + box.width * 1.03, 
-                              box.y0+box.height*0.1, 
-                              0.01, 
-                              box.height*0.8])
-        cbar=pylab.colorbar(im, cax = axColor, orientation="vertical")
-        cbar.ax.set_ylabel(label, rotation=270)
-        from matplotlib import ticker
-        
-        tick_locator = ticker.MaxNLocator(nbins=3)
-        cbar.locator = tick_locator
-        cbar.update_ticks()
+def set_colormap(ax, im, label, nbins=3):
+    box = ax.get_position()
+    axColor = pylab.axes([box.x0 + box.width * 1.03, 
+                          box.y0+box.height*0.1, 
+                          0.01, 
+                          box.height*0.8])
+    cbar=pylab.colorbar(im, cax = axColor, orientation="vertical")
+    cbar.ax.set_ylabel(label, rotation=270)
+    from matplotlib import ticker
+    
+    tick_locator = ticker.MaxNLocator(nbins=nbins)
+    cbar.locator = tick_locator
+    cbar.update_ticks()
+
+
 
 def plot_conn(d0, d1, d2, d3, **kwargs):
-    fig, axs=ps.get_figure2(n_rows=8, n_cols=11, w=1000, h=600, fontsize=24,
-                            frame_hight_y=0.5, frame_hight_x=0.7, 
-                            title_fontsize=24,
-                            gs_builder=gs_builder_conn) 
     
+    kw={'n_rows':8, 
+        'n_cols':11, 
+        'w':1000, 
+        'h':600, 
+        'fontsize':24,
+        'frame_hight_y':0.5,
+        'frame_hight_x':0.7,
+        'title_fontsize':24,
+        'gs_builder':gs_builder_conn}
+    kwargs_fig=kwargs.get('kwargs_fig', kw)
     
+    fig, axs=ps.get_figure2(**kwargs_fig) 
+    
+        
     flag=kwargs.get('flag', 'raw')
     coher_label=kwargs.get('coher_label', 'Coherence')
     fr_label=kwargs.get('fr_label',"Firing rate (Hz)")
     title=kwargs.get('title', "Slow wave") 
     z_key=kwargs.get('z_key',"y")
     cmap=kwargs.get('cmap')
+    color_line=kwargs.get('color_line', 'k')
+    fontsize_x=kwargs.get('fontsize_x', 12)
 
-    d00, d01, d20, d21=separate_M1_M2( d0, d2, **{'z_key':z_key})
-    args=[ d00, d01, d1, d20, d21, d3]
-
+    if kwargs.get('separate_M1_M2', True):
+        d00, d01, d20, d21=separate_M1_M2( d0, d2, **{'z_key':z_key})
+        args=[ d00, d01, d1, d20, d21, d3]
+    else:
+        args=[ d0, d1, d2, d3]
+        
+    
     startx=0
     starty=0
     images=[]
     for ax, d in zip(axs,args):
 
-        kwargs={'ax':ax,
+        k={'ax':ax,
                 'd':d,
                 'images':images,
-                'fontsize_x':12,
+                'fontsize_x':fontsize_x,
                 'z_key':z_key,
                 'startx':startx,
                 'starty':starty,
                 'vertical_lines':True, 
                 'nice_labels_x':nice_labels(version=0),
                 'nice_labels_y':nice_labels(version=1),
-                'cmap':cmap
+                'cmap':cmap,
+                'color_line':color_line,
+                
                 }
-
-        _plot_conn(**kwargs)
+        k.update(kwargs)
+        _plot_conn(**k)
         
 
-        
-    args=[[axs[3], axs[4],axs[5]], 
-          ['', '', coher_label],
-          [images[3],images[4],images[5]]]
+    if kwargs.get('separate_M1_M2', True):
+        args=[[axs[3], axs[4],axs[5]], 
+              ['', '', coher_label],
+              [images[3],images[4],images[5]],
+              [{'nbins':2},{'nbins':3},{'nbins':3}]]
 
-
-    
+    else:
+        args=[[axs[2], axs[3]], 
+              [fr_label, coher_label],
+              [images[2],images[3]],
+              [{'nbins':3},{'nbins':3}]]
+    clim_raw=kwargs.get('clim_raw', [[0,1.4], [0,90], [0,1]])
+    clim_gradient=kwargs.get('clim_gradient', [[-2,2], [-50,50], [-0.6,0.6]])
     if flag=='raw':
-        axs[4].text(1.18, 1.15, fr_label, transform=axs[4].transAxes,
-                    rotation=270)
+        if kwargs.get('separate_M1_M2', True):
+            axs[4].text(1.18, 1.15, fr_label, transform=axs[4].transAxes,
+                        rotation=270)
+        for i, clim in enumerate(clim_raw*2):
+            images[i].set_clim(clim)
+    
     if flag=='gradient':
-        axs[4].text(1.2, 1.1, fr_label, transform=axs[4].transAxes,
-                    rotation=270) 
-        images[0].set_clim([-1,1])
-        images[1].set_clim([-25,25])
-        images[2].set_clim([-0.3,0.3])
-#     
-        images[3].set_clim([-1,1])
-        images[4].set_clim([-25,25])
-        images[5].set_clim([-0.3, 0.3])
+        if kwargs.get('separate_M1_M2', True):
+            axs[4].text(1.2, 1.1, fr_label, transform=axs[4].transAxes,
+                        rotation=270) 
+        for i, clim in enumerate(clim_gradient*2):
+            images[i].set_clim(clim)
     
+    for ax, label, im, k in zip(*args):
+        set_colormap(ax, im, label,**k)
     
-    for ax, label, im in zip(*args):
-        set_colormap(ax, im, label)
-        
-    axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)   
-    axs[1].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)   
-    axs[3].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True) 
-    axs[4].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True) 
-    axs[5].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True) 
+    axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)       
     axs[0].text(0.35, 1.05, "Control", transform=axs[0].transAxes)     
-    axs[3].text(0.35, 1.05, "Lesion", transform=axs[3].transAxes)  
-           
+
+    if kwargs.get('separate_M1_M2', True):    
+        axs[1].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)   
+        axs[3].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True) 
+        axs[4].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True) 
+        axs[5].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True) 
+        axs[3].text(0.35, 1.05, "Lesion", transform=axs[3].transAxes)  
+        title_pos=1.6
+
+    else:
+        axs[2].text(0.35, 1.05, "Lesion", transform=axs[2].transAxes)  
+        axs[2].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True) 
+        axs[3].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True)
+        title_pos=1.4
+    
     font0 = FontProperties()
     font0.set_weight('bold')
-    axs[0].text(0.8, 1.4, title, transform=axs[0].transAxes, 
-                fontproperties=font0         )
+    if kwargs.get('title_flipped'):
+        axs[0].text(2.4, -0.2, title, transform=axs[0].transAxes, 
+                fontproperties=font0 , 
+                horizontalalignment=  'center',
+                
+                verticalalignment=  'center',
+                rotation=270     )        
+    else:
+        axs[0].text(1., title_pos, title, transform=axs[0].transAxes, 
+                fontproperties=font0 , 
+                horizontalalignment=  'center'     )        
+    
     return fig
 
 def add(d0,d1):
@@ -700,7 +747,9 @@ def add(d0,d1):
     d0['y']=numpy.concatenate((d0['y'], d1['y']), axis=0)
     return d0
 
-def get_data(models, nets, attrs, path, from_disk, attr_add, exclude, sd, **kwargs):
+def get_data(models, nets, attrs, path, from_disk, attr_add, sd, **kwargs):
+    exclude=kwargs.get('exclude',[])
+    
     d = {}
     if not from_disk:
         d['raw'] = gather(path, nets, models, attrs)
@@ -728,45 +777,67 @@ def get_data(models, nets, attrs, path, from_disk, attr_add, exclude, sd, **kwar
             flag='gradient', 
             exclude=exclude)
         d['d_gradients_lesion'] = v
+
+        del d['raw']
+        del d['data']
+        del d['change_raw']
+        del d['gradients']
+        
         save(sd, d)
     else:
         d = sd.load_dic()
     return d
 
-def create_figs(d):
+def create_figs(d, **kwargs):
     figs = []
-    fig = plot_conn(d['d_raw_control']['firing_rate'], d['d_raw_control']['mean_coherence_max'], 
-        d['d_raw_lesion']['firing_rate'], 
-        d['d_raw_lesion']['mean_coherence_max'])
+    
+    
+    kwargs.update({'color_line':'w'})
+    fig = plot_conn(d['d_raw_control']['firing_rate'], 
+                    d['d_raw_control']['mean_coherence_max'], 
+                    d['d_raw_lesion']['firing_rate'], 
+                    d['d_raw_lesion']['mean_coherence_max'],
+                    **kwargs)
     figs.append(fig)
+    
+    kwargs.update({'color_line':'w'})
     fig = plot_conn(d['d_raw_control']['mse_rel_control_fr'], 
         d['d_raw_control']['mse_rel_control_mc'], 
         d['d_raw_lesion']['mse_rel_control_fr'], 
-        d['d_raw_lesion']['mse_rel_control_mc'])
+        d['d_raw_lesion']['mse_rel_control_mc'],
+        **kwargs)
     figs.append(fig)
-    kwargs = {'flag':'gradient', 
-        'coher_label':'Coherence/nS', 
-        'fr_label':"Firing rate/nS", 
-        'z_key':"z", 
-        'cmap':'coolwarm'}
+
+    k = {'flag':'gradient', 
+               'coher_label':'Coherence/nS', 
+               'fr_label':"Firing rate/nS", 
+               'z_key':"z", 
+               'cmap':'coolwarm',
+               'color_line':'k'}
+    kwargs.update(k)
     fig = plot_conn(d['d_gradients_control']['firing_rate'], 
         d['d_gradients_control']['mean_coherence_max'], 
         d['d_gradients_lesion']['firing_rate'], 
         d['d_gradients_lesion']['mean_coherence_max'], **kwargs)
     figs.append(fig)
-#     from effect_dopamine import plot_coher
+# #     from effect_dopamine import plot_coher
     d0 = d['d_raw_lesion']['mse_rel_control_mc']
     d1 = d['d_raw_lesion']['mse_rel_control_pdwc']
     d = add(d0, d1)
-    fig=plot_coher(d, d['labelsx'])
+    fig=plot_coher(d, d['labelsx'], **kwargs)
     figs.append(fig)
     return figs
 
 
     
 def main(**kwargs):
+    
+    exclude=kwargs.get('exclude',[])
+    
     models=['M1', 'M2', 'FS', 'GA', 'GI', 'GP', 'ST','SN',
             'GP_GP', 'GA_GA', 'GI_GA', 'GI_GI']
+    models=[m for m in models if not ( m in exclude)]
+    
     nets=['Net_0', 'Net_1']
     attrs=[
            'firing_rate', 
@@ -786,7 +857,7 @@ def main(**kwargs):
     attr_add=['mse_rel_control_fr', 'mse_rel_control_mc',
               'mse_rel_control_pdwc', 'mse_rel_control_mcm']
     
-    exclude=['MS_MS', 'FS_MS', 'MS']
+    exclude+=['MS_MS', 'FS_MS', 'MS']
     sd = get_storage(file_name, '')
     d = get_data(models, 
                  nets, 
@@ -794,18 +865,13 @@ def main(**kwargs):
                  path, 
                  from_disk, 
                  attr_add, 
-                 exclude, 
                  sd,
                  **kwargs)
 
-    figs = create_figs(d)
+    figs = create_figs(d, **kwargs)
 
-
-    file_name_figs=get_file_name_figs(script_name)
-    sd_figs = Storage_dic.load(file_name_figs)
-    sd_figs.save_figs(figs, format='png')
-    sd_figs.save_figs(figs, format='svg', in_folder='svg')
-    
+    save_figures(figs, script_name)
+        
     pylab.show()
     
 
