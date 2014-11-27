@@ -48,7 +48,7 @@ paths.append('/home/mikael/results/papers/inhibition/network/'
 paths.append('/home/mikael/results/papers/inhibition/network/'
              +'milner/simulate_Go_NoGo_XXX_scaling_MS_active_v2/')
 
-s1='script_{}_MsGa-MS-weight0.25_ST-GI-0.75-GaMs-0.4-down-C2-EiEa-mod-fast-5.0-ss-1.0'
+s1='script_000{}_MsGa-MS-weight0.25_ST-GI-0.75-GaMs-0.4-down-C2-EiEa-mod-fast-5.0-ss-1.0'
 s2='script_000{}_MsGa-MS-weight0.25_ST-GI-0.75-GaMs-0.4-down-C2-EiEa-mod-fast-5.0-ss-{}'
 s3='script_{}_MsGa-MS-weight0.25_ST-GI-0.75-GaMs-0.4-down-C2-EiEa-mod-fast-5.0-ss-{}'
 nets1=['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4']
@@ -96,8 +96,8 @@ pp(dd)
 
 fig, axs=ps.get_figure2(n_rows=6, 
                         n_cols=6,
-                        w=800,
-                        h=600,  
+                        w=800*1.2,
+                        h=600*1.2,  
                         fontsize=24,
                         title_fontsize=24,
                         gs_builder=gs_builder) 
@@ -115,21 +115,38 @@ k={'axs':axs,
 
 show_heat_map(dd, 'mean_rate_slices', **k)
 
+for ax in axs:
+    ax.tick_params(direction='out',
+                   length=6, top=False, right=False)  
 
-im=axs[2*5].collections[0]
-box = axs[2*5].get_position()
-pos=[box.x0-0.75*box.width, 
-     box.y0+box.height+box.height*.5, 
-     box.width*2.5, 
+im=axs[0].collections[0]
+box = axs[0].get_position()
+pos=[box.x0+0.5*box.width, 
+     box.y0+box.height+box.height*0.45, 
+     box.width*2., 
      0.025]
 axColor=pylab.axes(pos)
 #     axColor = pylab.axes([0.05, 0.9, 1.0, 0.05])
 cbar=pylab.colorbar(im, cax = axColor, orientation="horizontal")
-cbar.ax.set_title('Contrast (spikes/s')#, rotation=270)
-from matplotlib import ticker
-tick_locator = ticker.MaxNLocator(nbins=4)
-cbar.locator = tick_locator
-cbar.update_ticks()
+cbar.ax.set_title('Contrast (Hz)',
+                  fontsize=24)#, rotation=270)
+cbar.set_ticks([-90,0,90])
+# cl = pylab.getp(cbar.ax, 'ymajorticklabels') 
+# pylab.setp(cl, fontsize=20) 
+cbar.ax.tick_params(labelsize=24) 
+# cbar.ax.set_yticks(fontsize=18)
+# cbar.set_ticklabels( fontsize=18)
+
+axs[0].legend(['Dual selection','Selection', 'No selection'], 
+#               ncol=1, 
+          scatterpoints=1,
+          frameon=False,
+          labelspacing=0.1,
+          handletextpad=0.1,
+          columnspacing=0.3,
+          bbox_to_anchor=(5.5, 2.5),
+          prop={'size':24},
+          markerscale=2.5)
 
 labels= ['{} %'.format(i) for i in [10,25,50,75,100]]
 for i, s in zip(range(4,25,5),labels):

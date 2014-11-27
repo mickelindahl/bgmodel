@@ -73,6 +73,7 @@ def get_args_list(*args, **kwargs):
             else: nets_list=[kwargs.get('nets')]
         
             for nets in nets_list:
+                
                 script_name='{}/script_{:0>4}_{}'.format(file_name, i, p.name)     
                 
                 a, k=get_setup_args_and_kwargs(i, **kwargs)
@@ -209,7 +210,7 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
                 'resolution':res,
                 'repetition':rep,
                 'time_bin':time_bin}
-        return [], {}
+        return [], kwargs
     
     args=[p_list, get_setup_args_and_kwargs]
     return get_args_list(*args, **kwargs)
@@ -294,6 +295,8 @@ def get_kwargs_list_indv_nets(n_pert, kwargs):
             if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
             else: nets_list=[kwargs.get('nets')]
         
+            do_nets=kwargs.get('do_nets')
+                    
             for nets in nets_list:
                 index+=1
             
@@ -301,6 +304,12 @@ def get_kwargs_list_indv_nets(n_pert, kwargs):
                     kwargs['active']=False
                 elif j < from_disk_0:
                     kwargs['active']=False
+                elif do_nets:
+                    kwargs['active']=True
+                    for net in nets:
+                        if net in do_nets:
+                            continue
+                        kwargs['active']=False
                 else:
                     kwargs['active']=True
               
@@ -485,6 +494,7 @@ def pert_add_go_nogo_ss(**kwargs):
     p_subsamp=kwargs.get('p_subsamp')
     max_size=kwargs.get('max_size')
     local_num_threads=kwargs.get('local_num_threads')
+    do_not_record=kwargs.get('do_not_record',[])
     to_memory=kwargs.get('to_memory',False)
     to_file=kwargs.get('to_file',True)
     
@@ -507,6 +517,13 @@ def pert_add_go_nogo_ss(**kwargs):
                             'sd_params':{'to_file':to_file, 
                                          'to_memory':to_memory}
                             }},'=')
+            
+            if do_not_record:
+                for model in do_not_record:
+                    _l+=pl({'node':{model:{'sd':{'active':False}}}}
+                           ,'=',
+#                            **{'name':'exclude-'+'_'.join(do_not_record)}
+                            )
             ll.append(_l)
 
     return ll

@@ -29,10 +29,12 @@ LOAD_MILNER_ON_SUPERMICRO=False
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*10,
+        'cores_milner':40*20,
         'cores_superm':40,
         
         'debug':False,
+        'do_not_record':['FS','GA','GI', 'ST'], 
+        'do_nets':['Net_2'],
         'do_runs':[4],
         'do_obj':False,
         'duration':[900.,100.0],
@@ -46,7 +48,7 @@ kwargs={
         
         'job_name':'sw_noss_scl_v2',
 
-        'l_hours':['05','01','00'],
+        'l_hours':['12','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            
@@ -90,9 +92,11 @@ kwargs={
                      1.,
                      1.,
                      ],
+        
+        
         'res':10,
         'rep':40,
-        
+                
         'time_bin':100,
         }
 
@@ -106,5 +110,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(2, [25,25,5], a_list, k_list )
+loop(1, [25,25,5], a_list, k_list )
         

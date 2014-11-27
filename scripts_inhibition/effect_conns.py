@@ -20,6 +20,7 @@ from toolbox.data_to_disk import Storage_dic
 from toolbox.network.manager import get_storage, save
 from simulate import get_file_name, save_figures
 import pprint
+from copy import deepcopy
 
 pp=pprint.pprint
 
@@ -262,15 +263,15 @@ def gs_builder_conn(*args, **kwargs):
     order=kwargs.get('order', 'col')
     
     gs = gridspec.GridSpec(n_rows, n_cols)
-    gs.update(wspace=kwargs.get('wspace', 0.05 ), 
+    gs.update(wspace=kwargs.get('wspace', 0.02 ), 
               hspace=kwargs.get('hspace', 0.05 ))
 
-    iterator = [[slice(1,2),slice(0,5)],
-                [slice(2,5),slice(0,5)],
-                [slice(5,7),slice(0,5)],
-                [slice(1,2),slice(5,10)],
-                [slice(2,5),slice(5,10)],
-                [slice(5,7),slice(5,10)]]
+    iterator = [[slice(0,1),slice(0,1)],
+                [slice(1,4),slice(0,1)],
+                [slice(4,6),slice(0,1)],
+                [slice(0,1),slice(1,2)],
+                [slice(1,4),slice(1,2)],
+                [slice(4,6),slice(1,2)]]
     
     return iterator, gs, 
 
@@ -300,8 +301,8 @@ def gs_builder_coher(*args, **kwargs):
     gs.update(wspace=kwargs.get('wspace', 0.05 ), 
               hspace=kwargs.get('hspace', 1. / n_cols ))
 
-    iterator = [[slice(1,11), slice(2,7)],
-                [slice(1,11), slice(7,9)]]
+    iterator = [[slice(1,10), slice(3,8)],
+                [slice(1,10), slice(8,10)]]
     
     return iterator, gs, 
 
@@ -314,8 +315,8 @@ def gs_builder_coher2(*args, **kwargs):
     gs.update(wspace=kwargs.get('wspace', 0.05 ), 
               hspace=kwargs.get('hspace', 1. / n_cols ))
 
-    iterator = [[slice(1,4), slice(2,7)],
-                [slice(1,4), slice(7,9)]]
+    iterator = [[slice(1,4), slice(3,8)],
+                [slice(1,4), slice(8,10)]]
     
     return iterator, gs, 
 
@@ -407,14 +408,20 @@ def separate_M1_M2(*args, **kwargs):
 
 def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
     
+    
+    fs=k.get('cohere_fig_fontsize',16)
+    tfs=k.get('cohere_fig_title_fontsize',16)
     fig, axs=ps.get_figure2(n_rows=k.get('cohere_nrows',12),
-                             n_cols=9,  
-                            w=k.get('w',700), 
-                            h=k.get('h',900), fontsize=24,
-                            frame_hight_y=0.5, frame_hight_x=0.7, 
-                            title_fontsize=24,
+                             n_cols=10,  
+                            w=k.get('w',500), 
+                            h=k.get('h',900), 
+                            fontsize=fs,
+                            frame_hight_y=0.5, 
+                            frame_hight_x=0.7, 
+                            title_fontsize=tfs,
                             gs_builder=k.get('cohere_gs',gs_builder_coher)) 
-
+    
+#     pylab.show()
     startx=0
     starty=0
     z_key='y'
@@ -423,8 +430,8 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
     kwargs={'ax':axs[0],
             'd':d,
             'flip_axes':True,
-            'fontsize_x':24,
-            'fontsize_y':20,
+            'fontsize_x':16,
+            'fontsize_y':16,
 #             'vertical_lines':True, 
             'horizontal_lines':True, 
             'images':images,
@@ -449,7 +456,7 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
          box.y0+box.height
          +box.height*k.get('cohere_cmap_ypos',0.14), 
          box.width*0.8, 
-         0.025]
+         0.01]
     
     
     for l in axs[1].patches:
@@ -463,16 +470,43 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
     tick_locator = ticker.MaxNLocator(nbins=4)
     cbar.locator = tick_locator
     cbar.update_ticks()
-    axs[0].text(0.05, 1.01, "Coherence", transform=axs[0].transAxes)
-    axs[0].text(0.55, 1.01, "Phase shift", transform=axs[0].transAxes)
-    axs[1].text(1.45, 0.65, "Mean effect", transform=axs[0].transAxes,
-                    rotation=270)
-    axs[0].text(k.get('cohere_ylabel_ypos', -0.6), 
+    
+       
+    
+    axs[0].text(0.05, 
+                k.get('cohere_xlabel0_posy', -0.18), 
+                "Coherence", transform=axs[0].transAxes)
+    axs[0].text(0.55, 
+                k.get('cohere_xlabel0_posy', -0.18), 
+                "Phase shift", transform=axs[0].transAxes)
+    axs[1].text(0.5,
+                 k.get('cohere_xlabel10_posy', -0.065),
+                 "Mean", 
+                transform=axs[1].transAxes,
+                ha='center',
+                rotation=0)
+    axs[1].text(0.5, k.get('cohere_xlabel11_posy', -0.1), "effect", 
+                transform=axs[1].transAxes,
+                ha='center',
+                rotation=0) 
+
+    font0 = FontProperties()
+    font0.set_weight('bold')
+    axs[1].text(0.5,k.get('cohere_title_posy',1.02), k.get('title', 'Slow wave'),
+#                 fontsize=28,
+                va='center',
+                ha='center',
+                 transform=axs[0].transAxes,
+                                rotation=0,
+                                fontproperties=font0)
+    
+    axs[0].text(k.get('cohere_ylabel_ypos', -0.7), 
                 0.5, 
                 k.get('cohere_ylabel',"Perturbed connection"), 
                 transform=axs[0].transAxes,
                 verticalalignment='center', 
-                rotation=90)                        
+                rotation=90)        
+                    
     axs[1].my_remove_axis(xaxis=False, yaxis=True)
     axs[1].my_set_no_ticks(xticks=2)
 
@@ -625,13 +659,13 @@ def set_colormap(ax, im, label, nbins=3):
 def plot_conn(d0, d1, d2, d3, **kwargs):
     
     kw={'n_rows':8, 
-        'n_cols':11, 
-        'w':1000, 
-        'h':600, 
-        'fontsize':24,
+        'n_cols':2, 
+        'w':1267, 
+        'h':400, 
+        'fontsize':16,
         'frame_hight_y':0.5,
         'frame_hight_x':0.7,
-        'title_fontsize':24,
+        'title_fontsize':16,
         'gs_builder':gs_builder_conn}
     kwargs_fig=kwargs.get('kwargs_fig', kw)
     
@@ -645,7 +679,7 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
     z_key=kwargs.get('z_key',"y")
     cmap=kwargs.get('cmap')
     color_line=kwargs.get('color_line', 'k')
-    fontsize_x=kwargs.get('fontsize_x', 12)
+    fontsize_x=kwargs.get('fontsize_x', 16)
 
     if kwargs.get('separate_M1_M2', True):
         d00, d01, d20, d21=separate_M1_M2( d0, d2, **{'z_key':z_key})
@@ -663,6 +697,7 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
                 'd':d,
                 'images':images,
                 'fontsize_x':fontsize_x,
+                'fontsize_y':16,
                 'z_key':z_key,
                 'startx':startx,
                 'starty':starty,
@@ -692,7 +727,8 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
     clim_gradient=kwargs.get('clim_gradient', [[-2,2], [-50,50], [-0.6,0.6]])
     if flag=='raw':
         if kwargs.get('separate_M1_M2', True):
-            axs[4].text(1.18, 1.15, fr_label, transform=axs[4].transAxes,
+            axs[4].text(1.12, 1.15, fr_label, 
+                        transform=axs[4].transAxes,
                         rotation=270)
         for i, clim in enumerate(clim_raw*2):
             images[i].set_clim(clim)
@@ -708,18 +744,24 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
         set_colormap(ax, im, label,**k)
     
     axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)       
-    axs[0].text(0.35, 1.05, "Control", transform=axs[0].transAxes)     
+    axs[0].text(0.35, 1.05, "Control", 
+                fontsize=k.get('top_lables_fontsize',20),
+                transform=axs[0].transAxes)     
 
     if kwargs.get('separate_M1_M2', True):    
         axs[1].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)   
         axs[3].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True) 
         axs[4].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True) 
         axs[5].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True) 
-        axs[3].text(0.35, 1.05, "Lesion", transform=axs[3].transAxes)  
+        axs[3].text(0.35, 1.05, "Lesion", 
+                    fontsize=k.get('top_lables_fontsize',20),
+                    transform=axs[3].transAxes)  
         title_pos=1.6
 
     else:
-        axs[2].text(0.35, 1.05, "Lesion", transform=axs[2].transAxes)  
+        axs[2].text(0.35, 1.05, "Lesion", 
+                    fontsize=k.get('top_lables_fontsize',20),
+                    transform=axs[2].transAxes)  
         axs[2].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True) 
         axs[3].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True)
         title_pos=1.4
@@ -727,17 +769,23 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
     font0 = FontProperties()
     font0.set_weight('bold')
     if kwargs.get('title_flipped'):
-        axs[0].text(2.4, -0.2, title, transform=axs[0].transAxes, 
+        axs[4].text(1.2, 0.35, title, transform=axs[4].transAxes, 
                 fontproperties=font0 , 
                 horizontalalignment=  'center',
-                
+                fontsize=k.get('conn_fig_title_fontsize',20),
                 verticalalignment=  'center',
-                rotation=270     )        
+                ha='center',
+                rotation=270,    )        
     else:
-        axs[0].text(1., title_pos, title, transform=axs[0].transAxes, 
+        axs[0].text(1., 
+                    title_pos, 
+                    title, 
+                    transform=axs[0].transAxes, 
+                    
+                fontsize=k.get('conn_fig_title_fontsize',20),
                 fontproperties=font0 , 
-                horizontalalignment=  'center'     )        
-    
+                horizontalalignment=  'center',    )        
+#     fig.tight_layout()
     return fig
 
 def add(d0,d1):
@@ -798,8 +846,12 @@ def create_figs(d, **kwargs):
                     d['d_raw_lesion']['firing_rate'], 
                     d['d_raw_lesion']['mean_coherence_max'],
                     **kwargs)
-    figs.append(fig)
+#     from copy import frozen
     
+#     pylab.draw()
+
+    figs.append(fig)
+     
     kwargs.update({'color_line':'w'})
     fig = plot_conn(d['d_raw_control']['mse_rel_control_fr'], 
         d['d_raw_control']['mse_rel_control_mc'], 
@@ -807,7 +859,7 @@ def create_figs(d, **kwargs):
         d['d_raw_lesion']['mse_rel_control_mc'],
         **kwargs)
     figs.append(fig)
-
+   
     k = {'flag':'gradient', 
                'coher_label':'Coherence/nS', 
                'fr_label':"Firing rate/nS", 
@@ -820,7 +872,7 @@ def create_figs(d, **kwargs):
         d['d_gradients_lesion']['firing_rate'], 
         d['d_gradients_lesion']['mean_coherence_max'], **kwargs)
     figs.append(fig)
-# #     from effect_dopamine import plot_coher
+#     from effect_dopamine import plot_coher
     d0 = d['d_raw_lesion']['mse_rel_control_mc']
     d1 = d['d_raw_lesion']['mse_rel_control_pdwc']
     d = add(d0, d1)
@@ -845,7 +897,7 @@ def main(**kwargs):
            'phases_diff_with_cohere'
            ]
     
-    from_disk=kwargs.get('from_diks',0)
+    from_disk=kwargs.get('from_diks',1)
     path=('/home/mikael/results/papers/inhibition/network/'
           +'supermicro/simulate_slow_wave_ZZZ_conn_effect_perturb/')
     path=kwargs.get('data_path', path)

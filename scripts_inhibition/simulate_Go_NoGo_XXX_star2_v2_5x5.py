@@ -28,10 +28,12 @@ FROM_DISK_0=0
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*1,
+        'cores_milner':40*4,
         'cores_superm':20,
         
         'debug':False,
+        'do_not_record':['FS','GA','GI', 'ST'],
+        'do_nets':['Net_0','Net_2'],
         'do_runs':[0],
         'do_obj':False,
         'duration':[900.,100.0],
@@ -43,7 +45,7 @@ kwargs={
         
         'job_name':'_'.join(FILE_NAME.split('_')[1:]),
 
-        'l_hours':['01','01','00'],
+        'l_hours':['02','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],             
@@ -74,11 +76,13 @@ kwargs={
 #                      12.5, 
 #                      25
                      ],
-        'res':5,
-        'rep':40,
+        'res':2,
+        'rep':1,
         'to_memory':False,
         'to_file':True,
         'time_bin':5,
+        
+
         
         }
 
@@ -94,4 +98,4 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 ch=get_loop_index(5, [5,5,1])
 loop(2, [5,5,1], a_list, k_list )
-        
+    

@@ -389,7 +389,7 @@ def show_heat_map(d, attr, **k):
                 box = axs[1].get_position()
                 axColor = pylab.axes([box.x0 + box.width * 1.06, 
                                       box.y0+box.height*0.1, 
-                                      0.05, 
+                                      0.02, 
                                       box.height*0.8])
                 cbar=pylab.colorbar(im, cax = axColor, orientation="vertical")
                 cbar.ax.set_ylabel(label, rotation=270)
@@ -560,7 +560,7 @@ class Setup(object):
            'fig_and_axes':{'n_rows':11, 
                         'n_cols':5, 
                         'w':400, 
-                        'h':450, 
+                        'h':350, 
                         'fontsize':24,
                         'frame_hight_y':0.5,
                         'frame_hight_x':0.7,
@@ -688,25 +688,25 @@ def create_figs(setup, file_name_figs, d, models):
         d_plot_3d['type_of_plot']='mean'
         fig, perf=show_heat_map(d, name,  **d_plot_3d)
         figs.append(fig)
-  
+   
     for name in l_mean_rate_slices:
         d_plot_3d['type_of_plot']='variance'
-         
-        fig, perf=show_heat_map(d, name,  **d_plot_3d)
-        figs.append(fig)
- 
-    for name in l_mean_rate_slices:
-        d_plot_3d['type_of_plot']='CV'
           
         fig, perf=show_heat_map(d, name,  **d_plot_3d)
         figs.append(fig)
- 
+  
+    for name in l_mean_rate_slices:
+        d_plot_3d['type_of_plot']='CV'
+           
+        fig, perf=show_heat_map(d, name,  **d_plot_3d)
+        figs.append(fig)
+  
 # 
     for name in l_mean_rate_slices:   
         figs.append(show_bulk(d, models, name, **d_plot_bulk))
-      
+       
 #     figs.append(show_neuron_numbers(d, models))
-      
+       
 #     for i in range(len(d.keys())):
 #         figs.append(show_fr(d['Net_'+str(i)], models, **d_plot_fr))
       
@@ -716,6 +716,9 @@ def create_figs(setup, file_name_figs, d, models):
             continue
         
         fig, axs=ps.get_figure2(**d_plot_fr2.get('fig_and_axes'))
+        for ax in axs:
+            ax.tick_params(length=6, top=False, right=False,
+                           direction='out')  
         figs.append(fig)
         show_fr(d['Net_'+str(i)], ['M1', 'M2', 'SN'], axs, **d_plot_fr2)
 #         axs=figs[-1].get_axes()
@@ -726,8 +729,8 @@ def create_figs(setup, file_name_figs, d, models):
 #                                        [2, 'Rel. inh. effect', -0.31, 0., 90],
 #                                    [2, 'decrease (Hz)', -0.39, 0., 90],
                                    [1, 'Firing rate (Hz)', -0.35, 0.5, 90],
-                                   [0, r'$MSN_{D1}$', -0.2, 0.5, 90],
-                                   [1, r'$MSN_{D2}$', -0.2, 0.5, 90],
+                                   [0, r'$MSN_{D1}$', -0.21, 0.5, 90],
+                                   [1, r'$MSN_{D2}$', -0.21, 0.5, 90],
                                    [2, r'SNr', -0.2, 0.5, 90],
 #                                    [2, r'$MSN_{D1}$', 1.1, 0.5, 270],
 #                                    [3, r'$MSN_{D2}$', 1.1, 0.5, 270],
@@ -742,7 +745,7 @@ def create_figs(setup, file_name_figs, d, models):
         
         axs[0].legend(axs[0].lines[0:6], 
                   ['Action 1', 'Action 2'], 
-                  bbox_to_anchor=(1., 1.7), ncol=2,
+                  bbox_to_anchor=(1.1, 1.8), ncol=2,
                   handletextpad=0.1,
                   frameon=False,
                   columnspacing=0.3,
@@ -817,7 +820,7 @@ import unittest
 class TestMethods(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=2
+        from_disk=0
         
         import oscillation_perturbations4 as op
         
@@ -844,6 +847,7 @@ class TestMethods(unittest.TestCase):
         
         self.setup=Setup(**{'duration':duration,
                             'laptime':laptime,
+                            'other_scenario':True,
                             'l_mean_rate_slices':l_mean_rate_slices,
                             'local_num_threads':local_num_threads,
                             'resolution':res,

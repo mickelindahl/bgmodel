@@ -102,33 +102,57 @@ k={'axs':axs,
     'type_of_plot':'mean',
     'vlim_rate':[-100, 100]}
 
-show_heat_map(dd, 'mean_rate_slices', **k)
 
+show_heat_map(dd, 'mean_rate_slices', **k)
+for ax in axs:
+    ax.tick_params(direction='out',
+                   length=6, top=False, right=False)  
 
 im=axs[0].collections[0]
 box = axs[0].get_position()
-pos=[box.x0+0.45*box.width, 
+pos=[box.x0+0.0*box.width, 
      box.y0+box.height+box.height*0.45, 
-     box.width*1.2, 
+     box.width*0.6, 
      0.025]
 axColor=pylab.axes(pos)
 #     axColor = pylab.axes([0.05, 0.9, 1.0, 0.05])
 cbar=pylab.colorbar(im, cax = axColor, orientation="horizontal")
-cbar.ax.set_title('Contrast (spikes/s')#, rotation=270)
-from matplotlib import ticker
-tick_locator = ticker.MaxNLocator(nbins=4)
-cbar.locator = tick_locator
-cbar.update_ticks()
+cbar.ax.set_title('Contrast (Hz)',
+                  fontsize=24)#, rotation=270)
+cbar.set_ticks([-90,0,90])
+# cl = pylab.getp(cbar.ax, 'ymajorticklabels') 
+# pylab.setp(cl, fontsize=20) 
+cbar.ax.tick_params(labelsize=24) 
+# cbar.ax.set_yticks(fontsize=18)
+# cbar.set_ticklabels( fontsize=18)
+
+axs[1].legend(['Dual selection','Selection', 'No selection'], 
+#               ncol=1, 
+          scatterpoints=1,
+          frameon=False,
+          labelspacing=0.1,
+          handletextpad=0.1,
+          columnspacing=0.3,
+          bbox_to_anchor=(1.15, 1.95),
+          prop={'size':24})
+
+# from matplotlib import ticker
+# tick_locator = ticker.MaxNLocator(nbins=4)
+# cbar.locator = tick_locator
+# cbar.update_ticks()
 
 
 for i, ax in enumerate(axs): 
     ax.set_xlabel('')
     ax.set_ylabel('')
 #     a=ax.get_xticklabels()
-    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.tick_params(axis='both', which='major', 
+#                    labelsize=20
+                   )
 #     ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
 #     ax.set_yticklabels(fontsize=20)
-
+    ax.set_xticks([1,2,3])
+    ax.set_yticks([1,2,3])
 
     axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
     axs[1].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
@@ -140,15 +164,19 @@ for i, ax in enumerate(axs):
     
     
     if i==4:
-        ax.text(1.05, -.3, 
+        ax.text(1.05, -.37, 
                   'Cortical input action 1',
                     horizontalalignment='center', 
-                    transform=axs[i].transAxes) 
-        ax.set_xticks([1,1.5, 2, 2.5])
-        ax.set_xticklabels(['1.0','1.5','2.0','2.5'])
+                    transform=axs[i].transAxes,
+#                     fontsize=20
+                    ) 
+#         ax.set_xticks([1,1.5, 2, 2.5])
+#         ax.set_xticklabels(['1.0','1.5','2.0','2.5'])
             
     if i==2:
-        ax.set_ylabel('Cortical input action 2')
+        ax.set_ylabel('Cortical input action 2',
+#                       fontsize=20
+                      )
        
 
 save_figures([fig], __file__.split('/')[-1][0:-3]+'/data')

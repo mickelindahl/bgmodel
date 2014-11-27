@@ -22,7 +22,7 @@ pp=pprint.pprint
 
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
+FROM_DISK_0=1
 LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2
 kwargs={
@@ -90,5 +90,5 @@ a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(1, [NUM_NETS, NUM_NETS, 1], a_list, k_list )
+loop(2, [NUM_NETS, NUM_NETS, 1], a_list, k_list )
         
