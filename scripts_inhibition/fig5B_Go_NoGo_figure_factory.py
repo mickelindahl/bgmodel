@@ -21,14 +21,19 @@ def gs_builder(*args, **kwargs):
     order=kwargs.get('order', 'col')
     
     gs = gridspec.GridSpec(n_rows, n_cols)
-    gs.update(wspace=kwargs.get('wspace', 0.1 ), 
-              hspace=kwargs.get('hspace', 0.1))
+    gs.update(wspace=kwargs.get('wspace', 0.2 ), 
+              hspace=kwargs.get('hspace', 0.2))
 # 
-    iterator = ([[i, 1] for i in range(1,6)]+
-                [[i, 2] for i in range(1,6)]+
-                [[i, 3] for i in range(1,6)]+
-                [[i, 4] for i in range(1,6)]+
-                [[i, 5] for i in range(1,6)])
+    iterator=[]
+    for j in range(1,10,2):
+        for i in range(1,10,2):
+            iterator.append([slice(i, i+2),slice(j, j+2)])
+    
+#     iterator = ([[i, 1] for i in range(1,6)]+
+#                 [[i, 2] for i in range(1,6)]+
+#                 [[i, 3] for i in range(1,6)]+
+#                 [[i, 4] for i in range(1,6)]+
+#                 [[i, 5] for i in range(1,6)])
 #     
 #     iterator = ([[1, i] for i in range(1,6)]+
 #                 [[2, i] for i in range(1,6)]+
@@ -53,16 +58,18 @@ s2='script_000{}_MsGa-MS-weight0.25_ST-GI-0.75-GaMs-0.4-down-C2-EiEa-mod-fast-5.
 s3='script_{}_MsGa-MS-weight0.25_ST-GI-0.75-GaMs-0.4-down-C2-EiEa-mod-fast-5.0-ss-{}'
 nets1=['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4']
 nets2=['Net_0']
-files={'10-noss':[paths[0]+s1.format(0), nets1],
-       '25-noss':[paths[0]+s1.format(1), nets1],
-       '50-noss':[paths[0]+s1.format(2), nets1],
-       '75-noss':[paths[0]+s1.format(3), nets1],
+files={
+        '10-noss':[paths[0]+s1.format(0), nets1],
+        '25-noss':[paths[0]+s1.format(1), nets1],
+        '50-noss':[paths[0]+s1.format(2), nets1],
+        '75-noss':[paths[0]+s1.format(3), nets1],
        '100-noss':[paths[0]+s1.format(4), nets1],
-       '20-ss':[paths[2]+s3.format(2,5.0), nets1],
-       '50-ss':[paths[2]+s3.format(1,2.5), nets1],
-       '100-ss':[paths[2]+s3.format(0,1.0), nets1], 
-       '20-ST-ss':[paths[1]+s2.format(1,5.0), nets2],
-       '100-ST-ss':[paths[1]+s2.format(0,1.0), nets2] }
+#        '20-ss':[paths[2]+s3.format(2,5.0), nets1],
+#        '50-ss':[paths[2]+s3.format(1,2.5), nets1],
+#        '100-ss':[paths[2]+s3.format(0,1.0), nets1], 
+#        '20-ST-ss':[paths[1]+s2.format(1,5.0), nets2],
+#        '100-ST-ss':[paths[1]+s2.format(0,1.0), nets2] 
+       }
 
 
 d={}
@@ -73,7 +80,7 @@ for key, val in files.items():
                               file_names=[val[0]])
     misc.dict_update(d, d_tmp)
 print d.keys()
-# pp(d)
+pp(d)
 
 from Go_NoGo_compete import show_heat_map
 
@@ -88,18 +95,19 @@ titles=[]
 i=0
 for name, nets in builder:
     for net in nets:
+        print name, net
         dd['Net_{:0>2}'.format(i)]=d[name][net]
         titles.append(name+'_'+net)
         i+=1 
 pp(dd)
 
-
-fig, axs=ps.get_figure2(n_rows=6, 
-                        n_cols=6,
-                        w=800*1.2,
-                        h=600*1.2,  
-                        fontsize=24,
-                        title_fontsize=24,
+val=int(72/2.54*17.6*(1-17./48))
+fig, axs=ps.get_figure2(n_rows=11, 
+                        n_cols=11,
+                        w=val,
+                        h=300,  
+                        fontsize=7,
+                        title_fontsize=7,
                         gs_builder=gs_builder) 
 
 k={'axs':axs,
@@ -111,13 +119,18 @@ k={'axs':axs,
    'titles':['']*5*5,
     'type_of_plot':'mean',
     'vlim_rate':[-100, 100], 
-    'marker_size':30}
+    'marker_size':8}
 
 show_heat_map(dd, 'mean_rate_slices', **k)
 
 for ax in axs:
-    ax.tick_params(direction='out',
-                   length=6, top=False, right=False)  
+        ax.tick_params(direction='out',
+                       length=2,
+                       width=0.5,
+                       pad=0.01,
+                        top=False, right=False
+                        )  
+
 
 im=axs[0].collections[0]
 box = axs[0].get_position()
@@ -129,11 +142,12 @@ axColor=pylab.axes(pos)
 #     axColor = pylab.axes([0.05, 0.9, 1.0, 0.05])
 cbar=pylab.colorbar(im, cax = axColor, orientation="horizontal")
 cbar.ax.set_title('Contrast (Hz)',
-                  fontsize=24)#, rotation=270)
+                  fontsize=7)#, rotation=270)
 cbar.set_ticks([-90,0,90])
 # cl = pylab.getp(cbar.ax, 'ymajorticklabels') 
 # pylab.setp(cl, fontsize=20) 
-cbar.ax.tick_params(labelsize=24) 
+cbar.ax.tick_params(labelsize=7,
+                    length=2, ) 
 # cbar.ax.set_yticks(fontsize=18)
 # cbar.set_ticklabels( fontsize=18)
 
@@ -144,11 +158,12 @@ axs[0].legend(['Dual selection','Selection', 'No selection'],
           labelspacing=0.1,
           handletextpad=0.1,
           columnspacing=0.3,
-          bbox_to_anchor=(5.5, 2.5),
-          prop={'size':24},
+          bbox_to_anchor=(5.5, 2.),
+          prop={'size':7},
           markerscale=2.5)
 
-labels= ['{} %'.format(i) for i in [10,25,50,75,100]]
+labels= ['{} %'.format(i) for i in [10,25,50,
+                                    75,100]]
 for i, s in zip(range(4,25,5),labels):
     axs[i].text( 0.5, -.3, s, 
                 transform=axs[i].transAxes,
@@ -175,7 +190,7 @@ for i, ax in enumerate(axs):
     ax.set_xlabel('')
     ax.set_ylabel('')
 #     a=ax.get_xticklabels()
-    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=7)
 #     ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
 #     ax.set_yticklabels(fontsize=20)
 
@@ -201,6 +216,6 @@ for i, ax in enumerate(axs):
 #     if i==2:
 #         ax.set_ylabel('Cortical input action 2')
        
-save_figures([fig], __file__.split('/')[-1][0:-3]+'/data')
+save_figures([fig], __file__.split('/')[-1][0:-3]+'/data', dpi=200)
 
 pylab.show()

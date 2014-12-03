@@ -81,10 +81,10 @@ print len(dd['Net_0']['set_1']['SN']['mean_rate_slices'].y)
 
 fig, axs=ps.get_figure2(n_rows=19, 
                         n_cols=16,
-                        w=500,
-                        h=700,  
-                        fontsize=24,
-                        title_fontsize=24,
+                        w=int(72/2.54*17.6*(17./48)),
+                        h=300,  
+                        fontsize=7,
+                        title_fontsize=7,
                         gs_builder=gs_builder) 
 
 k={'axs':axs,
@@ -105,8 +105,12 @@ k={'axs':axs,
 
 show_heat_map(dd, 'mean_rate_slices', **k)
 for ax in axs:
-    ax.tick_params(direction='out',
-                   length=6, top=False, right=False)  
+        ax.tick_params(direction='out',
+                       length=2,
+                       width=0.5,
+                       pad=0.01,
+                        top=False, right=False
+                        )  
 
 im=axs[0].collections[0]
 box = axs[0].get_position()
@@ -118,23 +122,27 @@ axColor=pylab.axes(pos)
 #     axColor = pylab.axes([0.05, 0.9, 1.0, 0.05])
 cbar=pylab.colorbar(im, cax = axColor, orientation="horizontal")
 cbar.ax.set_title('Contrast (Hz)',
-                  fontsize=24)#, rotation=270)
+                  fontsize=7)#, rotation=270)
 cbar.set_ticks([-90,0,90])
 # cl = pylab.getp(cbar.ax, 'ymajorticklabels') 
 # pylab.setp(cl, fontsize=20) 
-cbar.ax.tick_params(labelsize=24) 
+cbar.ax.tick_params(labelsize=7,
+                    length=2, ) 
 # cbar.ax.set_yticks(fontsize=18)
 # cbar.set_ticklabels( fontsize=18)
 
-axs[1].legend(['Dual selection','Selection', 'No selection'], 
+axs[1].legend(['Dual selection',
+               'Selection', 
+               'No selection'], 
 #               ncol=1, 
           scatterpoints=1,
           frameon=False,
           labelspacing=0.1,
           handletextpad=0.1,
           columnspacing=0.3,
-          bbox_to_anchor=(1.15, 1.95),
-          prop={'size':24})
+          bbox_to_anchor=(1.1, 1.75),
+          markerscale=1.5,
+          prop={'size':7})
 
 # from matplotlib import ticker
 # tick_locator = ticker.MaxNLocator(nbins=4)
@@ -151,18 +159,9 @@ for i, ax in enumerate(axs):
                    )
 #     ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
 #     ax.set_yticklabels(fontsize=20)
-    ax.set_xticks([1,2,3])
-    ax.set_yticks([1,2,3])
-
-    axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
-    axs[1].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
-    axs[2].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
-    axs[3].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
-    axs[4].my_remove_axis(xaxis=False, yaxis=False,keep_ticks=True)
-    axs[5].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True)
-    
-    
-    
+    ax.set_xticks([1, 1.5, 2, 2.5, 3])
+    ax.set_yticks([1, 1.5, 2, 2.5, 3])
+ 
     if i==4:
         ax.text(1.05, -.37, 
                   'Cortical input action 1',
@@ -170,7 +169,7 @@ for i, ax in enumerate(axs):
                     transform=axs[i].transAxes,
 #                     fontsize=20
                     ) 
-#         ax.set_xticks([1,1.5, 2, 2.5])
+        ax.set_xticks([1,1.5, 2, 2.5])
 #         ax.set_xticklabels(['1.0','1.5','2.0','2.5'])
             
     if i==2:
@@ -178,7 +177,13 @@ for i, ax in enumerate(axs):
 #                       fontsize=20
                       )
        
+axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
+axs[1].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
+axs[2].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
+axs[3].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
+axs[4].my_remove_axis(xaxis=False, yaxis=False,keep_ticks=True)
+axs[5].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True)
 
-save_figures([fig], __file__.split('/')[-1][0:-3]+'/data')
+save_figures([fig], __file__.split('/')[-1][0:-3]+'/data', dpi=200)
 
 pylab.show()

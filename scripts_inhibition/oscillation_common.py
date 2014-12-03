@@ -597,8 +597,8 @@ def gs_builder(*args, **kwargs):
     order=kwargs.get('order', 'col')
     
     gs = gridspec.GridSpec(n_rows, n_cols)
-    gs.update(wspace=kwargs.get('wspace', 0.05 ), 
-              hspace=kwargs.get('hspace', 0.05 ))
+    gs.update(wspace=kwargs.get('wspace', 0.1 ), 
+              hspace=kwargs.get('hspace', 0.1 ))
 
     iterator = [[slice(1,3),slice(0,3)],
                 [slice(3,5),slice(0,3)],
@@ -621,15 +621,15 @@ def show_summed2(d, **k):
 
     kw={'n_rows':6, 
         'n_cols':16, 
-        'w':1100, 
-        'h':400, 
-        'fontsize':24,
+        'w':72/2.54*11.6, 
+        'h':175, 
+        'fontsize':7,
         'frame_hight_y':0.5,
         'frame_hight_x':0.7,
-        'title_fontsize':24,
-        'font_size':20,
-        'text_fontsize':24,
-        'linewidth':2.5,
+        'title_fontsize':7,
+        'font_size':7,
+        'text_fontsize':7,
+        'linewidth':1.,
         'gs_builder':gs_builder}
 #     kwargs_fig=kwargs.get('kwargs_fig', kw)
     
@@ -646,7 +646,9 @@ def show_summed2(d, **k):
 #                            linewidth=4.)   
     
 
-
+    for ax in axs:
+        ax.tick_params(direction='in',
+                       length=2, top=False, right=False)  
     i=0
     i = plot_spk_stats(d, axs, i, **k)
 
@@ -666,11 +668,13 @@ def show_summed2(d, **k):
     axs[3].my_remove_axis(xaxis=False, yaxis=True)   
     
     for i in range(4,7):
-        axs[i].my_remove_axis(xaxis=True, yaxis=False)   
+        axs[i].my_remove_axis(xaxis=True, yaxis=False,
+                              keep_ticks=True)   
         axs[i].set_xlabel('')
 
     for i in range(8,11):
-        axs[i].my_remove_axis(xaxis=True, yaxis=False)   
+        axs[i].my_remove_axis(xaxis=True, yaxis=False,
+                              keep_ticks=True)   
         axs[i].set_xlabel('')
     for i in range(0,12):
         axs[i].set_title('')#my_remove_axis(xaxis=False, yaxis=True)  
@@ -690,11 +694,12 @@ def show_summed2(d, **k):
         axs[i].set_ylim([0,v*1.1])
         
         axs[i].set_yticks([0.0, round(v*1.1/2,1)])
-    
+        axs[i].my_set_no_ticks(xticks=4)  
+        
     axs[4].text(-0.45, 
                 -1.1, 
                 'Coherence', 
-                fontsize=24,
+#                 fontsize=24,
                 transform=axs[4].transAxes,
                 verticalalignment='center', 
                 rotation=90)  
@@ -711,27 +716,27 @@ def show_summed2(d, **k):
         font0 = FontProperties()
         font0.set_weight('bold')
         axs[i].text(0.5, 
-                    -0.45, 
+                    -0.35, 
                     s, 
-                    fontsize=24,
+#                     fontsize=24,
                     fontproperties=font0,
                     transform=axs[i].transAxes,
                     horizontalalignment='center', 
                     rotation=0) 
 
     for i, s in enumerate(['GP-GP', 'TI-TI', 'TI-TA', 'TA-TA']):
-        axs[i+4].text(1.05, 
+        axs[i+4].text(1.08, 
                     0.5, 
                     s, 
-                    fontsize=18,
+#                     fontsize=18,
                     transform=axs[i+4].transAxes,
                     verticalalignment='center', 
                     horizontalalignment='center', 
                     rotation=270) 
-        axs[i+8].text(1.05, 
+        axs[i+8].text(1.08, 
                     0.5, 
                     s, 
-                    fontsize=18,
+#                     fontsize=18,
                     transform=axs[i+8].transAxes,
                     verticalalignment='center', 
                     horizontalalignment='center', 
@@ -739,17 +744,18 @@ def show_summed2(d, **k):
     axs[8].text(-0.45, 
                 -1.1,
                 'Normalized count', 
-                fontsize=24,
+#                 fontsize=24,
                 transform=axs[8].transAxes,
                 verticalalignment='center', 
                 rotation=90)  
-    axs[11].my_set_no_ticks(xticks=4)  
+    
+    
     
 #     plot_letter(axs[0], 'S', 0.1, 1.1)
     axs[0].text(0.1, 
                 1.38,
                 'S=Simulation', 
-                fontsize=24,
+#                 fontsize=24,
                 transform=axs[0].transAxes,
                 va='center', 
 #                 ha='center', 
@@ -758,7 +764,7 @@ def show_summed2(d, **k):
     axs[0].text(0.1, 
                 1.15,
                 'M=Mallet et al 2008', 
-                fontsize=24,
+#                 fontsize=24,
                 transform=axs[0].transAxes,
                 va='center', 
 #                 ha='center', 
@@ -776,7 +782,7 @@ def show_summed2(d, **k):
     axs[8].text(1.25, 
             -1.,
             s, 
-            fontsize=28,
+#             fontsize=28,
             transform=axs[8].transAxes,
             fontproperties=font0,
             va='center', 
@@ -1053,8 +1059,10 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
     sd_figs = Storage_dic.load(file_name_figs)
     if numpy.all(numpy.array(from_disks) == 2):
         figs = []
-        figs.append(show_fr(d, models, **d_plot_fr))
-        axs=figs[-1].get_axes()
+        fig, axs=ps.get_figure(**d_plot_fr['fig_and_axes'])
+        figs.append(fig)
+        show_fr(d, models, axs, **d_plot_fr)
+#         axs=figs[-1].get_axes()
         ps.shift('upp', axs, 0.08, n_rows=len(axs), n_cols=1)
         ps.shift('left', axs, 0.25, n_rows=len(axs), n_cols=1)
         for i, ax in enumerate(axs):      
@@ -1293,7 +1301,18 @@ class TestOcsillation(unittest.TestCase):
         pylab.show()
      
     def test_show_fr(self):
-        show_fr(self.d, self.models, **{
+        d={'n_rows':8, 
+            'n_cols':1, 
+            'w':800.0*0.55*2, 
+            'h':600.0*0.55*2, 
+            'fontsize':11*2,
+            'frame_hight_y':0.8,
+            'frame_hight_x':0.78,
+            'linewidth':3.}
+        
+        fig, axs=ps.get_figure(**d) 
+        print len(axs)
+        show_fr(self.d, self.models, axs, **{
                                         'win':20.,
                                         't_start':4000.0,
                                         't_stop':5000.0})

@@ -61,7 +61,7 @@ def gs_builder(*args, **kwargs):
     
     gs = gridspec.GridSpec(n_rows, n_cols)
     gs.update(wspace=kwargs.get('wspace', 0. ), 
-              hspace=kwargs.get('hspace', 0.2 ))
+              hspace=kwargs.get('hspace', 0.5 ))
 
     iterator = [[slice(5,10),slice(1,7)],
                 [slice(10,15),slice(1,7)],
@@ -119,15 +119,15 @@ class Setup(object):
     def plot_mr_general(self):
         d={'fig_and_axes':{'n_rows':17, 
                         'n_cols':16, 
-                        'w':600, 
-                        'h':450, 
-                        'fontsize':24,
+                        'w':72*8.5/2.54, 
+                        'h':150, 
+                        'fontsize':7,
                         'frame_hight_y':0.5,
                         'frame_hight_x':0.7,
-                        'title_fontsize':24,
-                        'font_size':20,
-                        'text_fontsize':24,
-                        'linewidth':4.,
+                        'title_fontsize':7,
+                        'font_size':7,
+                        'text_fontsize':7,
+                        'linewidth':1.,
                         'gs_builder':gs_builder},
            }
         return d
@@ -214,6 +214,14 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
     pp(setup.plot_mr_general().get('fig_and_axes'))
     fig, axs=ps.get_figure2(**setup.plot_mr_general().get('fig_and_axes'))
     figs.append(fig)
+    for ax in axs:
+        ax.tick_params(direction='out',
+                       length=2,
+                       width=0.5,
+                       pad=0.01,
+                        top=False, right=False
+                        )
+    
     show_mr(d, ['M1', 'M2'], axs[2:4], **d_plot_mr2)
 
 
@@ -227,7 +235,7 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
                                    ]:
                                    
         axs[i].text(c0, c1, s, 
-                    fontsize=24,
+                    fontsize=7,
                     transform=axs[i].transAxes,
                     verticalalignment='center', 
                     horizontalalignment='center', 
@@ -248,7 +256,7 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
      
     axs[0].legend(axs[0].lines[0:6], 
                   d_plot_mr2['labels'][0:6], 
-                  bbox_to_anchor=(2.8, 2.3), ncol=2,
+                  bbox_to_anchor=(2.4, 2.4), ncol=2,
                   handletextpad=0.1,
                   frameon=False,
                   columnspacing=0.3,
@@ -261,13 +269,13 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
         if i==1:
             ax.set_ylim([0,20])
     axs[0].my_remove_axis(xaxis=True, yaxis=False,
-                          keep_ticks=True) 
+                          keep_ticks=False) 
     axs[2].my_remove_axis(xaxis=True, yaxis=False,
-                          keep_ticks=True)
+                          keep_ticks=False)
     for i, ax in enumerate(axs):
         ax.set_ylabel('')
         ax.my_set_no_ticks(yticks=3)
-        ax.set_xticks([1.1,1.3,1.5])
+#         ax.set_xticks([1.1,1.3,1.5])
         if i==0:
             ax.set_yticks([0,10,20])
         if i==1:
@@ -277,8 +285,8 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
     axs[2].lines.remove(axs[2].lines[0])
     axs[2].lines.remove(axs[2].lines[-1])
             
-    sd_figs.save_figs(figs, format='png')
-    sd_figs.save_figs(figs, format='svg')
+    sd_figs.save_figs(figs, format='png', dpi=100)
+    sd_figs.save_figs(figs, format='svg', in_folder='svg')
 
 class Main():    
     def __init__(self, **kwargs):

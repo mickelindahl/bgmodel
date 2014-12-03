@@ -23,18 +23,20 @@ pp=pprint.pprint
 from copy import deepcopy
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
-
+FROM_DISK_0=1
+NUM_NETS=5
+NUM_RUNS=1
+num_sim=NUM_NETS*NUM_RUNS
 kwargs={
         'Builder':Builder,
         
         'cores_milner':40*4,
-        'cores_superm':20,
+        'cores_superm':40,
         
         'debug':False,
         'do_not_record':['FS','GA','GI', 'ST'],
-        'do_nets':['Net_0','Net_2'],
-        'do_runs':[0],
+        'do_nets':['Net_1'],
+        'do_runs':range(NUM_RUNS),
         'do_obj':False,
         'duration':[900.,100.0],
         
@@ -56,7 +58,7 @@ kwargs={
         'max_size':4000,
         'module':module,
         
-        'nets':['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4'],
+        'nets':['Net_{}'.format(i) for i in range(NUM_NETS)],
         
         'other_scenario':True,
         
@@ -76,8 +78,8 @@ kwargs={
 #                      12.5, 
 #                      25
                      ],
-        'res':2,
-        'rep':1,
+        'res':5,
+        'rep':10,
         'to_memory':False,
         'to_file':True,
         'time_bin':5,
@@ -96,6 +98,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-ch=get_loop_index(5, [5,5,1])
-loop(2, [5,5,1], a_list, k_list )
+loop(1, [num_sim, num_sim, NUM_RUNS], 
+     a_list, k_list )
     

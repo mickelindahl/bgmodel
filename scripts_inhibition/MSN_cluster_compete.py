@@ -137,15 +137,15 @@ class Setup(object):
     def plot_fig_axs(self):
         d={'fig_and_axes':{'n_rows':17, 
                         'n_cols':10, 
-                        'w':620, 
-                        'h':450, 
-                        'fontsize':24,
+                        'w':72*8.5/2.54, 
+                        'h':150, 
+                        'fontsize':7,
                         'frame_hight_y':0.5,
                         'frame_hight_x':0.7,
-                        'title_fontsize':24,
-                        'font_size':20,
-                        'text_fontsize':24,
-                        'linewidth':4.,
+                        'title_fontsize':7,
+                        'font_size':7,
+                        'text_fontsize':7,
+                        'linewidth':1.,
                         'gs_builder':gs_builder},
            }
         return d        
@@ -167,14 +167,14 @@ class Setup(object):
 #                                         'w':350.0, 
 #                                         'h':500.0, 
 #                                         'fontsize':16}
-                      'fig_and_axes':{'n_rows':2, 
-                                        'n_cols':1, 
-                                        'w':350.0*0.65*2, 
-                                        'h':500.0*0.65*2, 
-                                        'fontsize':12*2,
-                                        'legend_fontsize':9*2,
-                                        'frame_hight_x':0.6,
-                                        'linewidth':4.}}
+              'fig_and_axes':{'n_rows':2, 
+                                'n_cols':1, 
+                        'w':72*8.5/2.54, 
+                        'h':150,  
+                                'fontsize':7,
+                                'legend_fontsize':7,
+                                'frame_hight_x':0.6,
+                                'linewidth':1.}}
         return d
 
     def plot_mr_diff(self):
@@ -278,6 +278,13 @@ def create_figs(setup, file_name_figs, d, models):
 
     fig, axs=ps.get_figure2(**setup.plot_fig_axs().get('fig_and_axes'))
     figs.append(fig)
+    for ax in axs:
+        ax.tick_params(direction='out',
+                       length=2,
+                       width=0.5,
+                       pad=0.01,
+                        top=False, right=False
+                        )
 #     for name in sorted(d.keys()):
 #         if name=='Difference':
 #             continue        
@@ -311,7 +318,7 @@ def create_figs(setup, file_name_figs, d, models):
 #                                    [3, r'$MSN_{D2}$', 1.1, 0.5, 270],
                                    ]:
         axs[i].text(c0, c1, s, 
-                    fontsize=24,
+                    fontsize=7,
                     transform=axs[i].transAxes,
                     verticalalignment='center', 
                     horizontalalignment='center', 
@@ -328,10 +335,10 @@ def create_figs(setup, file_name_figs, d, models):
                   columnspacing=0.3,
                   labelspacing=0.2) 
 
-    axs[0].my_remove_axis(xaxis=True, yaxis=False, 
-                          keep_ticks=True) 
+    axs[0].my_remove_axis(xaxis=True, yaxis=False,
+                          keep_ticks=False) 
     axs[2].my_remove_axis(xaxis=True, yaxis=False,
-                          keep_ticks=True)
+                          keep_ticks=False)
     
     for i, ax in enumerate(axs):
         ax.set_ylabel('')
@@ -347,7 +354,7 @@ def create_figs(setup, file_name_figs, d, models):
 #             ax.set_yticks([0, 1000.0])
             ax.set_ylim([0,20])
                         
-    sd_figs.save_figs(figs, format='png')
+    sd_figs.save_figs(figs, format='png', dpi=400)
     sd_figs.save_figs(figs, format='svg')
 
 

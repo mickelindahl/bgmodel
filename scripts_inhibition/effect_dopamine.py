@@ -237,16 +237,29 @@ def gs_builder(*args, **kwargs):
     gs.update(wspace=kwargs.get('wspace', 0.05 ), 
               hspace=kwargs.get('hspace', 1. / n_cols ))
 
-    iterator = [[slice(1,7), slice(2,7)],
-                [slice(1,7), slice(7,9)]]
+    iterator = [[slice(1,7), slice(3,10)],
+                [slice(1,7), slice(10,12)]]
     
     return iterator, gs, 
 
 def plot_coher(d, labelsy, labelsx=[], title_name='Slow wave'):
-    fig, axs=ps.get_figure2(n_rows=8, n_cols=9, w=700, h=700, fontsize=24,
+    fig, axs=ps.get_figure2(n_rows=9, n_cols=12, 
+                            #w=700, 
+                            w=23/56.*17.6*72/2.54,
+                            h=23/56.*17.6*72/2.54,
+#                             h=700, 
+                            fontsize=7,
                             frame_hight_y=0.5, frame_hight_x=0.7, 
-                            title_fontsize=24,
-                            gs_builder=gs_builder) 
+                            title_fontsize=7,
+                            gs_builder=gs_builder,
+                            linewidth=1.) 
+    for ax in axs:
+        ax.tick_params(direction='in',
+                       length=2, 
+                       width=0.5
+#                        top=False, right=False
+                        )  
+        
 #     fig, axs=ps.get_figure(n_rows=4, n_cols=1, w=500.0*0.65*2, h=400.0*0.65*2, fontsize=16,
 #                            frame_hight_y=0.6, frame_hight_x=0.8, 
 #                            title_fontsize=20, text_usetex=False)        
@@ -309,8 +322,12 @@ def plot_coher(d, labelsy, labelsx=[], title_name='Slow wave'):
     
     posy=numpy.linspace(0.5,maxy-0.5, maxy)
     posx=numpy.linspace(0.5,maxx-0.5, maxx)
-    axs[1].barh(posy,numpy.mean(z,axis=1)[::-1], align='center', color='0.5')
-    axs[1].plot([1,1], [0,stopy], 'k', linewidth=3, linestyle='--')
+    axs[1].barh(posy,numpy.mean(z,axis=1)[::-1], 
+                align='center', 
+                color='0.5',
+                edgecolor='0.5'
+                )
+    axs[1].plot([1,1], [0,stopy], 'k', linestyle='--')
     x1,y1=numpy.meshgrid(numpy.linspace(startx, stopx, maxx+1),
                    numpy.linspace(stopy, starty, maxy+1))
     
@@ -322,26 +339,31 @@ def plot_coher(d, labelsy, labelsx=[], title_name='Slow wave'):
     axs[0].set_xticks(posx)
     axs[0].set_xticklabels(labelsx*2, rotation=70, ha='right')
     axs[0].set_ylim([0,maxy])
-    axs[0].text(0.05, -0.31, "Coherence", transform=axs[0].transAxes)
-    axs[0].text(0.55, -0.31, "Phase shift", transform=axs[0].transAxes)
-    axs[1].text(0.5, -0.12, "Mean", 
+    axs[0].text(0.25, -0.39, "Coherence",
+                ha='center',
+                 transform=axs[0].transAxes)
+    axs[0].text(0.75, -0.39, "Phase shift", 
+                ha='center', transform=axs[0].transAxes)
+    axs[1].text(0.5, -0.15, "Mean", 
                 transform=axs[1].transAxes,
                 ha='center',
                 rotation=0)
-    axs[1].text(0.5, -0.19, "effect", 
+    axs[1].text(0.5, -0.22, "effect", 
                 transform=axs[1].transAxes,
                 ha='center',
                 rotation=0)    
     font0 = FontProperties()
     font0.set_weight('bold')
-    axs[1].text(1.45, 0.5, title_name,
-                fontsize=28,
+    axs[1].text(1.3, 0.5, title_name,
+#                 fontsize=28,
                 va='center',
                  transform=axs[0].transAxes,
                                 rotation=270,
                                 fontproperties=font0)
-    axs[0].text(-0.6, 0.9, "Connection without dop. effect", transform=axs[0].transAxes,
-                rotation=90)
+    axs[0].text(-0.58, 0.5, "Connection without dop. effect", transform=axs[0].transAxes,
+                rotation=90,
+                ha='center',
+                va='center')
         
     axs[1].my_remove_axis(xaxis=False, yaxis=True)
     axs[1].my_set_no_ticks(xticks=2)
@@ -351,13 +373,18 @@ def plot_coher(d, labelsy, labelsx=[], title_name='Slow wave'):
 
 
     box = axs[0].get_position()
-    axColor=pylab.axes([box.x0+0.1*box.width, 
-                        box.y0+box.height+box.height*0.08, 
+    axColor=pylab.axes([box.x0+0.0*box.width, 
+                        box.y0+box.height+box.height*0.15, 
                         box.width*0.8, 
                         0.02])
     #     axColor = pylab.axes([0.05, 0.9, 1.0, 0.05])
     cbar=pylab.colorbar(im, cax = axColor, orientation="horizontal")
-    cbar.ax.set_title('MSE control vs lesion rel. base model')#, rotation=270)
+    cbar.ax.set_title('Deviation from base model MSE')#, rotation=270)
+    cbar.ax.tick_params(direction='in',
+                       length=1, 
+                       width=0.5
+#                        top=False, right=False
+                        )  
     from matplotlib import ticker
     tick_locator = ticker.MaxNLocator(nbins=4)
     cbar.locator = tick_locator
@@ -426,10 +453,10 @@ def main(**kwargs):
 
     figs=[]
     figs.append(plot_coher(d, d['labels'], title_name=kwargs.get('title')))
-    pylab.show()
+
     
     save_figures(figs, script_name)
-    
+    pylab.show()
 class Main():    
     def __init__(self, **kwargs):
         self.kwargs=kwargs

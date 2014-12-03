@@ -117,12 +117,21 @@ pp(dd)
 
 fig, axs=ps.get_figure2(n_rows=22, 
                         n_cols=2,
-                        w=300,
-                        h=1200,  
-                        fontsize=16,
-                        title_fontsize=16,
+                        w=9/37.*72/2.54*17.6,
+                        h=9/37.*72/2.54*17.6*4,  
+                        fontsize=7,
+                        title_fontsize=7,
                         gs_builder=gs_builder) 
 
+for ax in axs:
+    ax.tick_params(direction='in',
+                   length=0,
+                   width=0.5,
+#                        pad=1,
+                    top=False, right=False,
+                    left=False, bottom=False,
+                    ) 
+    ax.tick_params(pad=2) 
 k={'axs':axs,
    'do_colorbar':False, 
    'fig':fig,
@@ -130,11 +139,11 @@ k={'axs':axs,
    'print_statistics':False,
    'resolution':10,
    'titles':['']*15,
-   'fontsize_ax_titles':16,
+   'fontsize_ax_titles':7,
    'pos_ax_titles':1.08,
     'type_of_plot':'mean',
     'vlim_rate':[-100, 100], 
-    'marker_size':30,
+    'marker_size':7,
     'threshold':14}
 
 show_heat_map(dd, 'mean_rate_slices', **k)
@@ -165,6 +174,8 @@ axColor=pylab.axes(pos)
 #     axColor = pylab.axes([0.05, 0.9, 1.0, 0.05])
 cbar=pylab.colorbar(im, cax = axColor, orientation="horizontal")
 cbar.ax.set_title('Contrast (Hz)')#, rotation=270)
+cbar.ax.tick_params( length=1, ) 
+
 from matplotlib import ticker
 # tick_locator = ticker.MaxNLocator(nbins=4)
 # cbar.locator = tick_locator
@@ -182,28 +193,7 @@ axs[0].legend(['Dual selection','Selection', 'No selection'],
 #           prop={'size':24}
           )
 
-# labels= ['{} %'.format(i) for i in [10,25,50,75,100]]
-# for i, s in zip(range(4,25,5),labels):
-#     axs[i].text( 0.5, -.3, s, 
-#                 transform=axs[i].transAxes,
-#                 horizontalalignment='center')
-# 
-# # axs[2].text( 0.5, -0.65, 'Action pool activation', 
-#                 transform=axs[14].transAxes,
-#                 horizontalalignment='center')
 
-# labels= ['Only D1',
-#              'D1 & D2',
-#              r'No MSN$\to$MSN',
-#              r'No FSN$\to$MSN',
-#              r'No $GPe_{TA}$$\to$MSN']
-# for i, s in enumerate(labels):
-#     axs[i].text(k.get('cohere_ylabel_ypos', -0.1), 
-#                 0.5, 
-#                 s, 
-#                 transform=axs[i].transAxes,
-#                 horizontalalignment='right', 
-#                 rotation=0)    
 
 for i, ax in enumerate(axs): 
     ax.set_xlabel('')
@@ -245,6 +235,8 @@ for i, ax in enumerate(axs):
 #     if i==2:
 #         ax.set_ylabel('Cortical input action 2')
 
-save_figures([fig], __file__.split('/')[-1][0:-3]+'/data')
+save_figures([fig], 
+             __file__.split('/')[-1][0:-3]+'/data',
+             dpi=200)
 
 pylab.show()

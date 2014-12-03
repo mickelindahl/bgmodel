@@ -304,7 +304,7 @@ def get_kwargs_list_indv_nets(n_pert, kwargs):
                     kwargs['active']=False
                 elif j < from_disk_0:
                     kwargs['active']=False
-                elif do_nets:
+                elif do_nets and j<2:
                     kwargs['active']=True
                     for net in nets:
                         if net in do_nets:
@@ -690,10 +690,10 @@ def show_plot(axs, name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k)
     
 #     return fig, axs
 
-def save_figures(figs, script_name):
+def save_figures(figs, script_name, dpi=None):
     file_name_figs=get_file_name_figs(script_name)
     sd_figs = Storage_dic.load(file_name_figs)
-    sd_figs.save_figs(figs, format='png')
+    sd_figs.save_figs(figs, format='png', dpi=dpi)
     sd_figs.save_figs(figs, format='svg', in_folder='svg')
 
 def show_coherence(d, models, **k):

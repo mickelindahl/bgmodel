@@ -3,6 +3,12 @@
 # Module: plot_settings.py
 # Author: Varun Hiremath <vh63@cornell.edu>
 # Created: Thu,  2 Apr 2009 05:06:31 -0400
+'''
+Not on saving as svn, ssems like font is blown up 
+when open in inkscape 0.48.3
+
+
+'''
 
 import math
 import numpy
@@ -202,10 +208,20 @@ def set_mode(pylab, mode='large', w = None, h = None, fontsize=10, **kwargs):
                                    # Here sf is serif-sans
           #'text.usetex': True,
           'figure.figsize': get_figsize( w, h),
+          
+#         'font.serif':'Times New Roman',
+#         'font.sans-serif':'Arial',
+#         'font.family' : 'sans-serif',
           'figure.dpi':  kwargs.get('dpi',72),       # dots per inches, increase and font size follows
           'savefig.dpi': kwargs.get('dpi',72),
+          
           'axes.frameon':False,
-          'path.simplify':False}    
+          'axes.linewidth':.5,
+          'path.simplify':False,
+#           'svg.fonttype':'none' #makes it possible to edit text, but subscripts can get fucked up
+        }  
+        
+#         matplotlib.rcParams['svg.fonttype'] = 'none'  
         pl.rcParams.update(params8)
         
     if mode == 'my_large':
@@ -231,7 +247,7 @@ def set_figsize(fig_width_pt):
     pylab.rcParams['figure.figsize'] = get_figsize(fig_width_pt)
 
 
-def get_figure( n_rows, n_cols, w, h=None, fontsize=12, order='col', projection=None, **kwargs):
+def get_figure( n_rows=1, n_cols=1, w=500., h=None, fontsize=12, order='col', projection=None, **kwargs):
 #     import os
 #     if not os.environ.get('DISPLAY'):
 #         pylab.ioff()

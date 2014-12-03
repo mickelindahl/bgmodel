@@ -366,7 +366,7 @@ class Storage_dic(Base_dic):
             fig.savefig( self.file_name +extension+'.'+format, 
                          format = format) 
     
-    def save_figs(self, figs, extension='', format='svg', in_folder=''):
+    def save_figs(self, figs, extension='', format='svg', in_folder='', dpi=None):
         
         path='/'.join(self.file_name .split('/')[0:-1])+'/'
         name=self.file_name .split('/')[-1]
@@ -379,8 +379,13 @@ class Storage_dic(Base_dic):
         
         with misc.Stopwatch('Saving figures...'):
             for i, fig in enumerate(figs):
-                fig.savefig( path+name +extension+'_'+str(i)+'.'+format, 
-                             format = format)              
+                if not dpi:
+                    fig.savefig( path+name +extension+'_'+str(i)+'.'+format, 
+                                 format = format)    
+                elif dpi:
+                    fig.savefig( path+name +extension+'_'+str(i)+'.'+format, 
+                                 format = format,
+                                 dpi=dpi)                            
     
     def set_file_name(self, val):
         self.file_name=val

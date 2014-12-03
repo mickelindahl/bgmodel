@@ -33,7 +33,7 @@ kwargs={
         'cores_superm':40,
         
         'debug':False,
-        'do_not_record':['FS','GA','GI', 'ST'], 
+        'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'], 
         'do_nets':['Net_2'],
         'do_runs':[4],
         'do_obj':False,
@@ -48,7 +48,7 @@ kwargs={
         
         'job_name':'sw_noss_scl_v2',
 
-        'l_hours':['12','01','00'],
+        'l_hours':['4','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            

@@ -267,11 +267,14 @@ def set_action_selection_marker( i, d0, d1, x2, y2, thr, marker,**k):
         y = numpy.ma.array(y2, mask=m) #             x0,y0,z0=get_optimal(z.shape[0])
         color='k'
 
-
-    axs[i].scatter(x, y, color=color, edgecolor=color,linewidth=0.5,
-                   s=k.get('marker_size',120), 
+#     for i,j in zip(x,y):
+    axs[i].scatter(x, y, color=color, 
+                    edgecolor=color,linewidth=0.1,
+                    s=k.get('marker_size',10), 
+#                    linewidths =0.05,
+#                    mew=10, ms=20,
                    marker=r'$'+marker+'$')
-#     r"$Lisa$"
+
 
 
 def gs_builder(*args, **kwargs):
@@ -310,10 +313,10 @@ def show_heat_map(d, attr, **k):
 
         fig, axs=ps.get_figure2(n_rows=3, 
                                 n_cols=8,  
-                                w=780,
-                                h=910,  
-                                fontsize=24,
-                                title_fontsize=24,
+                                w=780/(24./7.),
+                                h=910/(24./7.),  
+                                fontsize=7,
+                                title_fontsize=7,
                                 gs_builder=gs_builder) 
   
         k['fig']=fig
@@ -402,7 +405,7 @@ def show_heat_map(d, attr, **k):
             axs[i].text(0.5, k.get('pos_ax_titles',1.05) , titles[i],
                         horizontalalignment='center', 
                         transform=axs[i].transAxes,
-                        fontsize=k.get('fontsize_ax_titles',24)) 
+                        fontsize=k.get('fontsize_ax_titles',7)) 
 #             axs[i].set_title(titles[i])
 
             i+=1
@@ -411,7 +414,7 @@ def show_heat_map(d, attr, **k):
         import pprint
         ax.text( 0.1, 0.1, pprint.pformat(performance), 
                        transform=ax.transAxes, 
-                fontsize=12)
+                fontsize=7)
         
     return fig, performance
 def get_optimal(size):
@@ -468,11 +471,11 @@ def gs_builder2(*args, **kwargs):
     
     gs = gridspec.GridSpec(n_rows, n_cols)
     gs.update(wspace=kwargs.get('wspace', 0. ), 
-              hspace=kwargs.get('hspace', 0.2 ))
+              hspace=kwargs.get('hspace', 0.5 ))
 
-    iterator = [[slice(1,4),slice(1,5)],
-                [slice(4,7),slice(1,5)],
-                [slice(7,10),slice(1,5)],
+    iterator = [[slice(1,6),slice(1,4)],
+                [slice(6,11),slice(1,4)],
+                [slice(11,16),slice(1,4)],
 #                 [slice(10,15),slice(10,16)],
                ]
     
@@ -539,15 +542,15 @@ class Setup(object):
            't_stop':10000.0,
            'fig_and_axes':{'n_rows':17, 
                         'n_cols':16, 
-                        'w':600, 
-                        'h':450, 
+                        'w':72*11.6/2.54*(1./7), 
+                        'h':150, 
                         'fontsize':24,
                         'frame_hight_y':0.5,
                         'frame_hight_x':0.7,
-                        'title_fontsize':24,
-                        'font_size':20,
-                        'text_fontsize':24,
-                        'linewidth':4.,
+                        'title_fontsize':7,
+                        'font_size':7,
+                        'text_fontsize':7,
+                        'linewidth':1.,
                         'gs_builder':gs_builder},}
         return d
     
@@ -557,17 +560,15 @@ class Setup(object):
            't_start':self.fr_xlim[0],
            't_stop':self.fr_xlim[1],
            'labels':['Action 1', 'action 2'],
-           'fig_and_axes':{'n_rows':11, 
-                        'n_cols':5, 
-                        'w':400, 
-                        'h':350, 
-                        'fontsize':24,
-                        'frame_hight_y':0.5,
-                        'frame_hight_x':0.7,
-                        'title_fontsize':24,
+           'fig_and_axes':{'n_rows':18, 
+                        'n_cols':4, 
+                        'w':int(72*11.6/2.54*(1./3))*0.9, 
+                        'h':80, 
+                        'fontsize':7,
+                        'title_fontsize':7,
                         'font_size':20,
-                        'text_fontsize':24,
-                        'linewidth':2.,
+                        'text_fontsize':7,
+                        'linewidth':.5,
                         'gs_builder':gs_builder2},
            }
         return d    
@@ -716,9 +717,7 @@ def create_figs(setup, file_name_figs, d, models):
             continue
         
         fig, axs=ps.get_figure2(**d_plot_fr2.get('fig_and_axes'))
-        for ax in axs:
-            ax.tick_params(length=6, top=False, right=False,
-                           direction='out')  
+
         figs.append(fig)
         show_fr(d['Net_'+str(i)], ['M1', 'M2', 'SN'], axs, **d_plot_fr2)
 #         axs=figs[-1].get_axes()
@@ -728,16 +727,16 @@ def create_figs(setup, file_name_figs, d, models):
         for i, s, c0, c1, rotation in [
 #                                        [2, 'Rel. inh. effect', -0.31, 0., 90],
 #                                    [2, 'decrease (Hz)', -0.39, 0., 90],
-                                   [1, 'Firing rate (Hz)', -0.35, 0.5, 90],
-                                   [0, r'$MSN_{D1}$', -0.21, 0.5, 90],
-                                   [1, r'$MSN_{D2}$', -0.21, 0.5, 90],
-                                   [2, r'SNr', -0.2, 0.5, 90],
+                                   [1, 'Firing rate (Hz)', -0.45, 0.5, 90],
+                                   [0, r'$D1$', -0.25, 0.5, 90],
+                                   [1, r'$D2$', -0.25, 0.5, 90],
+                                   [2, r'SNr', -0.25, 0.5, 90],
 #                                    [2, r'$MSN_{D1}$', 1.1, 0.5, 270],
 #                                    [3, r'$MSN_{D2}$', 1.1, 0.5, 270],
                                    ]:
                                    
             axs[i].text(c0, c1, s, 
-                        fontsize=24,
+                        fontsize=7,
                         transform=axs[i].transAxes,
                         verticalalignment='center', 
                         horizontalalignment='center', 
@@ -745,17 +744,31 @@ def create_figs(setup, file_name_figs, d, models):
         
         axs[0].legend(axs[0].lines[0:6], 
                   ['Action 1', 'Action 2'], 
-                  bbox_to_anchor=(1.1, 1.8), ncol=2,
+                  bbox_to_anchor=(1.15, 1.85), 
+                  ncol=2,
                   handletextpad=0.1,
+                  
                   frameon=False,
                   columnspacing=0.3,
                   labelspacing=0.2) 
         
         for i, ax in enumerate(axs):      
             
-            ax.my_set_no_ticks(xticks=3, yticks=3)
+            ax.my_set_no_ticks(xticks=3, yticks=2)
             if i==2:
-                ax.set_yticks([0,40,80])
+                ax.set_yticks([0,60])
+                ax.set_xlabel('')
+                ax.text(0.5,-0.65,'Time (ms)',
+                        fontsize=7,
+                        transform =ax.transAxes,
+                        ha='center',va='center') 
+            if i==1:
+                ax.set_yticks([0,20])
+# 
+            if i==0:
+                ax.set_yticks([0,30])#           
+#   else:
+                
 #             ax.legend(bbox_to_anchor=[1.45,1.])
 #         axs=figs[-1].get_axes()
 #         for i, ax in enumerate(axs):
@@ -768,11 +781,25 @@ def create_figs(setup, file_name_figs, d, models):
             axs[1].my_remove_axis(xaxis=True, yaxis=False,
                                   keep_ticks=True)
             
- 
+        for ax in axs:
+            ax.tick_params(direction='out',
+                           length=1,
+                           width=0.5,
+#                            pad=0,
+                            top=False, right=False
+                            ) 
+        for ax in axs:
+            ax.tick_params(
+#                            direction='out',
+#                            length=1,
+#                            width=0.5,
+                           pad=1,
+#                             top=False, right=False
+                            ) 
     for i, ax in enumerate(axs[1:3]):
         ax.legend().set_visible(False)         
 
-    sd_figs.save_figs(figs, format='png')
+    sd_figs.save_figs(figs, format='png', dpi=400)
     sd_figs.save_figs(figs, format='svg', in_folder='svg')
     
 class Main():    
@@ -820,7 +847,7 @@ import unittest
 class TestMethods(unittest.TestCase):     
     def setUp(self):
         from toolbox.network.default_params import Perturbation_list as pl
-        from_disk=0
+        from_disk=2
         
         import oscillation_perturbations4 as op
         
