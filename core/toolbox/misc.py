@@ -373,6 +373,7 @@ def _convolve(binned_data, bin_extent=1, kernel_type='triangle', axis=0,
         params['fs']     - sampling frequency in hz
         '''
         kernel = signal.gaussian(bin_extent, params['std_ms']*params['fs']/1000.0)
+        
     if len(kernel)>binned_data.shape[-1]:
         print 'j'   ,len(kernel),binned_data.shape[-1]
     assert len(kernel)<binned_data.shape[-1], 'kernel to big for data set'

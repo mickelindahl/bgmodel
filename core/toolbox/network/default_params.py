@@ -2016,7 +2016,7 @@ class Single_unit_base(object):
             vc['netw_size']=GetNetw('size')
             vc['source']=new_name
 
-            # OBS weights need to be varied such that simulation of
+            # OBS weights_input_rates need to be varied such that simulation of
             # a single group get variations in firing rate since they recieve
             # same poisson input. 
             vc['weight'] = {'type':'constant',
@@ -2412,6 +2412,7 @@ class InhibitionPar_base(object):
         dic['nest']['MS']['V_b']    = dic['nest']['MS']['E_L']    # (E.M. Izhikevich 2007)
         dic['nest']['MS']['V_th']   = -29.7      # (Humphries, Lepora, et al. 2009)
         dic['nest']['MS']['V_m']    =  80.
+        
         # CTX_MSN
         dic['nest']['MS']['AMPA_1_Tau_decay'] = 12.  # (Ellender 2011)
         dic['nest']['MS']['AMPA_1_E_rev']     =  0.  # (Humphries, Wood, et al. 2009)
@@ -2424,6 +2425,7 @@ class InhibitionPar_base(object):
         # From MSN
         dic['nest']['MS']['GABAA_2_Tau_decay'] = 12.  
         dic['nest']['MS']['GABAA_2_E_rev']     = -74. # Koos 2004
+        dic['nest']['MS']['beta_I_GABAA_2'] = 0.56#-0.625 #Dopamine leads to weakening of MSN synspase
     
         # From FSN
         dic['nest']['MS']['GABAA_1_E_rev']     = -74. # Koos 2004
@@ -2434,7 +2436,6 @@ class InhibitionPar_base(object):
         dic['nest']['MS']['GABAA_3_E_rev']     = -74. # n.d. set as for MSN and FSN
     
         dic['nest']['MS']['tata_dop'] = DepNetw('calc_tata_dop')
-        dic['nest']['MS']['beta_I_GABAA_2'] = -0.625 #Dopamine leads to weakening of synspase
         
         
         dic['nest']['M1']=deepcopy(dic['nest']['MS'])
@@ -2444,7 +2445,7 @@ class InhibitionPar_base(object):
         dic['nest']['M1']['beta_d']        = 0.45
         dic['nest']['M1']['beta_E_L']      = -0.0282 #Minus size it is plus in Humphrie 2009
         dic['nest']['M1']['beta_V_b']      = dic['nest']['M1']['beta_E_L'] 
-        dic['nest']['M1']['beta_I_NMDA_1'] = -1.04 #Minus size it is plus in Humphrie 2009
+        dic['nest']['M1']['beta_I_NMDA_1'] = 1.04 #-1.04 #Minus size it is plus in Humphrie 2009
         
         dic['nest']['M1_low']  = deepcopy(dic['nest']['M1'])
         dic['nest']['M1_high'] = deepcopy(dic['nest']['M1'])
@@ -2457,7 +2458,7 @@ class InhibitionPar_base(object):
         dic['nest']['M2']['d']    =  91.       # (E.M. Izhikevich 2007)
         dic['nest']['M2']['E_L']  = -80.       # (E.M. Izhikevich 2007)
         dic['nest']['M2']['V_b']  =  dic['nest']['M2']['E_L']
-        dic['nest']['M2']['beta_I_AMPA_1'] = 0.26    
+        dic['nest']['M2']['beta_I_AMPA_1'] =-0.26 # 0.26    
     
     
         dic['nest']['M2_low']  = deepcopy(dic['nest']['M2'])
@@ -2470,7 +2471,6 @@ class InhibitionPar_base(object):
       
         # FSN
         # ===
-        
         dic['nest']['FS']={}
         dic['nest']['FS']['type_id'] = 'izhik_cond_exp'
     
@@ -2502,11 +2502,11 @@ class InhibitionPar_base(object):
         dic['nest']['FS']['GABAA_2_Tau_decay'] =  12.*5  
         dic['nest']['FS']['GABAA_2_E_rev']    = -74.  # n.d. set as for MSNs
           
-#         dic['nest']['FS']['beta_E_L'] = 0.078
+        dic['nest']['FS']['beta_E_L'] = 0.078
         dic['nest']['FS']['tata_dop'] = DepNetw('calc_tata_dop')
         
-        dic['nest']['FS']['beta_I_GABAA_1'] = 0.8 # From FSN
-        dic['nest']['FS']['beta_I_GABAA_2'] = 0.8 # From GPe A
+        dic['nest']['FS']['beta_I_GABAA_1'] = -0.83 #0.8 # From FSN
+        dic['nest']['FS']['beta_I_GABAA_2'] = -0.83 #0.8 # From GPe A
     
         
         dic['nest']['FS_low']  = deepcopy(dic['nest']['FS'])
@@ -2554,9 +2554,9 @@ class InhibitionPar_base(object):
         dic['nest']['ST']['GABAA_1_Tau_decay'] =   8.   # (Baufreton et al. 2009)
         dic['nest']['ST']['GABAA_1_E_rev']     = -84.0  # (Baufreton et al. 2009)
     
-        dic['nest']['ST']['beta_I_AMPA_1']  = 0.4 # From Cortex
-        dic['nest']['ST']['beta_I_NMDA_1']  = 0.4 # From Cortex
-        dic['nest']['ST']['beta_I_GABAA_1'] = 0.4 # From GPe I 
+        dic['nest']['ST']['beta_I_AMPA_1']  = -0.45 #0.4 # From Cortex
+        dic['nest']['ST']['beta_I_NMDA_1']  = -0.45 #0.4 # From Cortex
+        dic['nest']['ST']['beta_I_GABAA_1'] = -0.24 #0.4 # From GPe I 
         
         dic['nest']['ST']['tata_dop'] = DepNetw('calc_tata_dop')
     
@@ -2602,8 +2602,8 @@ class InhibitionPar_base(object):
     
         dic['nest']['GP']['beta_E_L'] = 0.181
         dic['nest']['GP']['beta_V_a'] = 0.181
-        dic['nest']['GP']['beta_I_AMPA_1']  = 0.4 # From GPe A
-        dic['nest']['GP']['beta_I_GABAA_2'] = 0.8 # From GPe A
+        dic['nest']['GP']['beta_I_AMPA_1']  =-0.45 # 0.4 # From STN
+        dic['nest']['GP']['beta_I_GABAA_2'] = -0.83 #0.8 # From GPe A
     
         dic['nest']['GP']['tata_dop'] = DepNetw('calc_tata_dop')
         
@@ -2647,7 +2647,7 @@ class InhibitionPar_base(object):
         # MSN D1-SNr
         dic['nest']['SN']['GABAA_1_E_rev']    =-80.     # (Connelly et al. 2010)
         dic['nest']['SN']['GABAA_1_Tau_decay']=GetNest('M1_SN_gaba', 'tau_psc')      # (Connelly et al. 2010)
-        dic['nest']['SN']['beta_I_GABAA_1'] = 0.8 # From MSN D1
+        dic['nest']['SN']['beta_I_GABAA_1'] = 0.56 #0.8 # From MSN D1
        
         # GPe-SNr
         dic['nest']['SN']['GABAA_2_E_rev']    =-72.     # (Connelly et al. 2010)
@@ -2807,8 +2807,12 @@ class InhibitionPar_base(object):
             #Get Defaults
             d=self._get_defaults_conn(k, k, **kwargs)
             
+            # Set beta for FS_M2
             if k=='FS_M2_gaba':
-                d['beta_fan_in']=0.8
+                d['beta_fan_in']=-0.9 #0.8
+            # Set beta for MS_MS
+            if k in ['M1_M1_gaba', 'M1_M2_gaba','M2_M1_gaba','M2_M2_gaba']:
+                d['beta_fan_in']=0.56
 
             e=None
             if k in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:#pre[0:2] in ['M1', 'M2'] and post[0:2] in ['M1', 'M2']:
@@ -3741,7 +3745,7 @@ def compute_conn_delay_params(delay, delay_type):
 
 def calc_fan_in(beta, dop, fan_in0):
     fan_in0=int(round(fan_in0))
-    return fan_in0*(1-dop*beta)
+    return round(fan_in0*(1+dop*beta))
 
 def compute_conn_mask_dist_restric(n_dentritic_volume, n_total):   
      

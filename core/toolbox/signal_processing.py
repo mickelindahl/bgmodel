@@ -72,6 +72,11 @@ def csd(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
     y are averaged over each segment to compute Pxy, with a scaling to
     correct for power loss due to windowing.  fs is the sampling
     frequency.
+    
+    Detrend (reomve) mean from traces avoids having high value at zero frequency.
+    For two poisson process the the zero frequency of the spectrum will
+    be the mean of the poisson process and the area under the spectrum
+    equals the variance. (learned from Arvind)
 
     NFFT must be a power of 2
 
@@ -80,9 +85,11 @@ def csd(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
         Procedures, John Wiley & Sons (1986)
 
     """
-    window=kwargs.get('window',window_hanning )
-    detrend=kwargs.get('detrend',detrend_none )
+#     from scipy.signal import welch
     
+    window=kwargs.get('window',window_hanning )
+    detrend=kwargs.get('detrend',detrend_mean )
+        
     if NFFT % 2:
         raise ValueError, 'NFFT must be a power of 2'
 
@@ -151,6 +158,12 @@ def cohere(x, y, kwargs):
     about the function arguments NFFT, detrend, windowm noverlap, as
     well as the methods used to compute Pxy, Pxx and Pyy.
 
+    Removing mean from traces avoids having high value at zero frequency.
+    For two poisson process the the zero frequency of the spectrum will
+    be the mean of the poisson process and the area under the spectrum
+    equals the variance. (learned from Arvind)
+
+
     """
 
     fs=kwargs.get('fs', 2)
@@ -158,7 +171,7 @@ def cohere(x, y, kwargs):
     noverlap=kwargs.get('noverlap', 0)
     
     window=kwargs.get('window',window_hanning )
-    detrend=kwargs.get('detrend',detrend_none )
+    detrend=kwargs.get('detrend',detrend_mean )
     
     Pxx, f = psd(x, NFFT=NFFT, fs=fs, detrend=detrend,
               window=window, noverlap=noverlap)
@@ -331,7 +344,9 @@ def phase(x, **kwargs):
        
     d={}
     d['raw']=x
-    d['con']= misc.convolve(d['raw'], no_mean=True, **kwargs)
+    
+    # Don not need to convolve
+    d['con']=x#misc.convolve(d['raw'], no_mean=True, **kwargs)
     
     call=butter_bandpass_lfilter
     d['bdp']=call(d['con'], lowcut, highcut, fs, order=order)
@@ -424,7 +439,7 @@ def phases_diff(signals1, signals2, **kwargs):
     return x
 
 
-def psd(x, NFFT=256, fs=2,  noverlap=0, normalize=True, **kwargs):
+def psd(x, NFFT=256, fs=2,  noverlap=0,  **kwargs):
     """
     The power spectral density by Welches average periodogram method.
     The vector x is divided into NFFT length segments.  Each segment
@@ -438,7 +453,12 @@ def psd(x, NFFT=256, fs=2,  noverlap=0, normalize=True, **kwargs):
     -- detrend and window are functions, unlike in matlab where they are
        vectors.
     -- if length x < NFFT, it will be zero padded to NFFT
-    -- normilize if true x/=numpy.mean(x)
+
+
+    Detrend (removing) mean from traces avoids having high value at zero frequency.
+    For two poisson process the the zero frequency of the spectrum will
+    be the mean of the poisson process and the area under the spectrum
+    equals the variance. (learned from Arvind)
     
 
     Refs:
@@ -446,13 +466,10 @@ def psd(x, NFFT=256, fs=2,  noverlap=0, normalize=True, **kwargs):
         Procedures, John Wiley & Sons (1986)
 
     """
-    window=kwargs.get('window',window_hanning )
-    detrend=kwargs.get('detrend',detrend_none )
-    
 
+    window=kwargs.get('window',window_hanning )
+    detrend=kwargs.get('detrend',detrend_mean )
               
-    if normalize and numpy.mean(x):
-        x/=numpy.mean(x)
         
     if NFFT % 2:
         raise ValueError, 'NFFT must be a power of 2'
@@ -482,9 +499,19 @@ def psd(x, NFFT=256, fs=2,  noverlap=0, normalize=True, **kwargs):
  
     # do the ffts of the slices
     for i in range(n):
+#         pylab.subplot(511).plot(windowVals)
+#         pylab.subplot(512).plot(x[ind[i]:ind[i]+NFFT])
+#         pylab.subplot(513).plot(detrend(x[ind[i]:ind[i]+NFFT]))
+
+        
         thisX = x[ind[i]:ind[i]+NFFT]
         thisX = windowVals*detrend(thisX)
         fx = absolute(fft(thisX))**2
+        
+#         pylab.subplot(514).plot(thisX)
+#         pylab.subplot(515).plot( fs/NFFT*arange(0,len(thisX)), fx)
+#         pylab.show()
+        
         Pxx[:,i] = fx[:numFreqs]
  
     # Scale the spectrum by the norm of the window to compensate for
@@ -557,10 +584,11 @@ def dummy_data_pop(n_pop, **kwargs):
     return numpy.array(a)
 
 
-def get_kwargs_cohere(m=1):
-    kwargs = {'fs':1000, 'inspect':False, 
-        'NFFT':256 * m, 
-        'noverlap':int(256 / 2 * m), 
+def get_kwargs_cohere(m=1, fs=1000.0, n2=128):
+    
+    kwargs = {'fs':fs, 'inspect':False, 
+        'NFFT':n2 * m, 
+        'noverlap':int(n2 / 2 * m), 
         'local_num_threads':8}
     return kwargs
 
@@ -591,7 +619,7 @@ class Test_signal_processing(unittest.TestCase):
                 'order':order,
                 'fs':fs,
                 'bin_extent':10.,
-                'inspect':False,
+                'inspect':True,
                 'kernel_type':'gaussian',
                 'params':{'std_ms':5.,
                           'fs': 1000.0}}
@@ -610,7 +638,8 @@ class Test_signal_processing(unittest.TestCase):
                 'numpyinspect':False,
                 'NFFT':256*m,
                 'noverlap':int(256/2*m),
-                'normalize':True}
+                'normalize':True,
+                'inspect':True}
         a=dummy_data_pop(100, **{'scale':1,'sim_time':40000.0})
   
         mean_a=numpy.mean(a, axis=0)
@@ -622,15 +651,19 @@ class Test_signal_processing(unittest.TestCase):
  
     def test_3_coherences(self):
         m=2
-        kwargs = get_kwargs_cohere(m)
+        fs=256
+        #N=128 #for 1 Hz sampling
+        N=128*8 #for 0.125 Hz sampling
+        kwargs = get_kwargs_cohere(m, fs, N)
         n_pop, sim_time=25, 20000.0 
         x=dummy_data_pop(n_pop, **{'scale':0.01,'sim_time':sim_time,
-                                   'local_num_threads':4})
+                                   'local_num_threads':4, 'fs':fs})
         y=dummy_data_pop(n_pop, **{'scale':0.01,'sim_time':sim_time,
-                                   'shift':0,'local_num_threads':4})
+                                   'shift':0,'local_num_threads':4, 'fs':fs})
    
-        f, c1=coherences(x,y,**kwargs)
-            #kwargs['inspect']=True
+#         f, c1=coherences(x,y,**kwargs)
+        
+        kwargs['inspect']=True
            
         c2=mean_coherence(x,y,**kwargs)
                
@@ -757,7 +790,7 @@ class Test_signal_processing(unittest.TestCase):
         p+=[phases_diff(x, y, idx_filter=idx[90:], **kwargs_phase_diff).ravel()]
         p+=[phases_diff(x, y, idx_filter=idx[v[idx]>p_conf95[0]], **kwargs_phase_diff).ravel()]
         p+=[phases_diff(x, y, **kwargs_phase_diff).ravel()]
-        if 0:
+        if 1:
             for x in p:
                 bins=numpy.linspace(-numpy.pi,numpy.pi, 100.0)
                 pylab.hist(x, bins,**{'histtype':'step', 'normed':True} )
@@ -784,10 +817,10 @@ if __name__ == '__main__':
         Test_signal_processing:[
 #                                 'test_1_phase', 
 #                                 'test_2_pds', 
-                                'test_3_coherences', 
+#                                 'test_3_coherences', 
 #                                 'test_4_phase_diff',
 #                                 'test_41_phase_diff_mpi',
-#                                 'test_4_coherence_and_phase_diff',
+                                'test_4_coherence_and_phase_diff',
                                  ],
        }
     test_classes_to_run=d

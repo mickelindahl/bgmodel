@@ -1296,10 +1296,8 @@ class MySpikeList(SpikeList):
     def Factory_firing_rate(self,*args, **kwargs):
         
          
-        time_bin=kwargs.get('time_bin', 1 )
-        if 'time_bin' in kwargs.keys():
-            del kwargs['time_bin']
-        
+        time_bin=kwargs.pop('time_bin', 1 )
+         
         t_start=kwargs.get('t_start', None)
         t_stop=kwargs.get('t_stop', None)
         
@@ -1358,7 +1356,7 @@ class MySpikeList(SpikeList):
         fs=kwargs.get('fs')
         low=kwargs.get('lowcut', 0.5)
         high=kwargs.get('highcut', 1.5)
-        time_bin=int(1000/fs)
+        time_bin=1000./fs
         other=kwargs.get('other', None)
         sample=kwargs.get('sample',10)
         
@@ -1429,7 +1427,7 @@ class MySpikeList(SpikeList):
         
         assert other!=None, 'need to provide other spike list'
         
-        time_bin=int(1000/fs)
+        time_bin=1000./fs
         
         ids1, ids2=shuffle(*[self.id_list, other.id_list],
                            **{'sample':sample})
@@ -2887,7 +2885,7 @@ class TestSpikeListMatrix(unittest.TestCase):
 
                ['get_firing_rate', [100],{'average':True}],
                ['get_isi',[],{}],
-               ['get_mean_coherence', [],{'fs':1000.0,
+               ['get_mean_coherence', [],{'fs':256.0,
                                           'NFFT':256,
                                           'noverlap':int(256/2),
                                           'other':other,
@@ -3039,18 +3037,18 @@ if __name__ == '__main__':
 #                      'test_1_get_phase',
 #                      'test_2_get_psd',
 #                      'test_3_mean_rate',
-                     'test_4_firing_rate',
+#                      'test_4_firing_rate',
 #                      'test_41_firing_rate_mpi',
 #                      'test_5_mean_rate_slices',
                      ],
-#         TestSpikeListMatrix:[
+        TestSpikeListMatrix:[
 #                      'test_1_create',
 #                      'test_10_item',
-#                      'test_2_calls_wrapped_class',
+                    'test_2_calls_wrapped_class',
 #                      'test_3_class_methods',
 #                      'test_4_merge_spike_matrix',
 #                      'test_5_concatenate',
-#                      ],
+                    ],
 #         TestVm_list_matrix:[
 #                      'test_1_create',
 #                      'test_2_calls_wrapped_class',

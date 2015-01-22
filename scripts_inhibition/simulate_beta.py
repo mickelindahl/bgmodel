@@ -25,7 +25,7 @@ class Setup(object):
 
         self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
                                                     'Net_1' ])
-        
+        self.fs=256.
    
   
     def builder(self):
@@ -41,15 +41,15 @@ class Setup(object):
         return d
 
     def pds(self):
-        d = {'NFFT':256, 'fs':1000., 
+        d = {'NFFT':256, 'fs':self.fs, 
              'noverlap':256/2, 
              'local_num_threads':self.local_num_threads}
         return d
     
       
     def coherence(self):
-        d = {'fs':1000.0, 'NFFT':256, 
-            'noverlap':int(256/2), 
+        d = {'fs':self.fs, 'NFFT':128, 
+            'noverlap':int(128/2), 
             'sample':30., 
              'local_num_threads':self.local_num_threads}
         return d
@@ -60,42 +60,48 @@ class Setup(object):
              'lowcut':15, 
              'highcut':25., 
              'order':3, 
-             'fs':250.0, 
-             'bin_extent':20., 
-             'kernel_type':'gaussian', 
-             'params':{'std_ms':10., 
-                       'fs':250.0}, 
+             'fs':self.fs, 
+
+             #Skip convolving when calculating phase shif
+#              'bin_extent':int(self.fs/50),#20 for fs=1000.0 
+#              'kernel_type':'gaussian', 
+#              'params':{'std_ms':10., 
+#                        'fs':self.fs}, 
+             
              'local_num_threads':self.local_num_threads}
         
         return d
 
     def phases_diff_with_cohere(self):
         d={
-                'fs':1000.0, 
-                'NFFT':256, 
-            'noverlap':int(256/2), 
+            'fs':self.fs, 
+            'NFFT':128, 
+            'noverlap':int(128/2), 
             'sample':30.,  
             
-             'lowcut':15, 
-             'highcut':25., 
-               'order':3, 
-
-             'bin_extent':20., 
-             'kernel_type':'gaussian', 
-             'params':{'std_ms':10., 
-                       'fs':1000.0}, 
+            'lowcut':15, 
+            'highcut':25., 
+            'order':3, 
+             
+             #Skip convolving when calculating phase shif
+#              'bin_extent':int(self.fs/50),#20., 
+#              'kernel_type':'gaussian', 
+#              'params':{'std_ms':10., 
+#                        'fs':self.fs}, 
       
-                'local_num_threads':self.local_num_threads}
+            'local_num_threads':self.local_num_threads}
         return d
 
     def firing_rate(self):
         d={'average':False, 
            'local_num_threads':self.local_num_threads,
-           'win':100.0}
+           'win':100.0,
+           'time_bin':1000.0/self.fs}
+        
         return d
 
     def plot_fr(self):
-        d={'win':10.,
+        d={'win':1.,
            't_start':5000.0,
            't_stop':6000.0,
            'labels':['Control', 'Lesion'],

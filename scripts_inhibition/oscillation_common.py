@@ -327,7 +327,7 @@ def plot_spk_stats(d, axs, i, **k):
     
     y_mean, y_mean_SEM = [], []
     y_CV, y_CV_SEM = [], []
-    names=['S', 'M', 'S', 'M']
+    names=['M', 'E', 'M', 'E']
     coords=[[0.1, 0.075],[0.33, 0.075],[0.67, 0.075],[ 0.9,0.075]]
     
     for key in sorted(d.keys()):
@@ -754,7 +754,7 @@ def show_summed2(d, **k):
 #     plot_letter(axs[0], 'S', 0.1, 1.1)
     axs[0].text(0.1, 
                 1.38,
-                'S=Simulation', 
+                'M=Model', 
 #                 fontsize=24,
                 transform=axs[0].transAxes,
                 va='center', 
@@ -763,7 +763,7 @@ def show_summed2(d, **k):
                 rotation=0)  
     axs[0].text(0.1, 
                 1.15,
-                'M=Mallet et al 2008', 
+                'E=Experiment, Mallet et al 2008', 
 #                 fontsize=24,
                 transform=axs[0].transAxes,
                 va='center', 
@@ -805,7 +805,7 @@ class Setup(object):
                                                     'Net_1' ])
         self.start_fr=kwargs.get('start_fr',10000.0)
         self.stop_fr=kwargs.get('stop_fr',20000.0)
-   
+        self.fs=kwargs.get('fs',1000.0)
   
     def builder(self):
         return {}
@@ -822,7 +822,7 @@ class Setup(object):
 
 
     def coherence(self):
-        d = {'fs':1000.0, 'NFFT':1024 * 4, 
+        d = {'fs':self.fs, 'NFFT':1024 * 4, 
             'noverlap':int(1024 * 2), 
             'sample':30.,  
             'local_num_threads':self.local_num_threads}
@@ -1096,7 +1096,7 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 #         for ax in axs[4:]:
 #             ax.my_set_no_ticks(yticks=3)
         
-        sd_figs.save_figs(figs, format='png')
+        sd_figs.save_figs(figs, format='png', dpi=200)
         sd_figs.save_figs(figs, format='svg', in_folder='svg')
 
 def main(*args, **kwargs):

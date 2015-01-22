@@ -23,7 +23,7 @@ pp=pprint.pprint
 from copy import deepcopy
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=1
+FROM_DISK_0=0
 NUM_NETS=5
 NUM_RUNS=1
 num_sim=NUM_NETS*NUM_RUNS
@@ -34,8 +34,8 @@ kwargs={
         'cores_superm':40,
         
         'debug':False,
-        'do_not_record':['FS','GA','GI', 'ST'],
-        'do_nets':['Net_1'],
+        'do_not_record':[],
+        'do_nets':[],
         'do_runs':range(NUM_RUNS),
         'do_obj':False,
         'duration':[900.,100.0],
@@ -79,7 +79,7 @@ kwargs={
 #                      25
                      ],
         'res':5,
-        'rep':10,
+        'rep':40,
         'to_memory':False,
         'to_file':True,
         'time_bin':5,
@@ -98,6 +98,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(1, [num_sim, num_sim, NUM_RUNS], 
+loop(5, [num_sim, num_sim, NUM_RUNS], 
      a_list, k_list )
     

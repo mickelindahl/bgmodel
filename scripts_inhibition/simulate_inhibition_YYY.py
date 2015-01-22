@@ -33,7 +33,7 @@ kwargs={
         'cores_milner':40*1,
         'cores_superm':20,
         
-        
+        'file_name':FILE_NAME,
         'from_disk':0,
         
         'debug':False,

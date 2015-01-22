@@ -106,11 +106,11 @@ int mynest::my_aeif_cond_exp_dynamics (double, const double y[], double f[], voi
 	// The following code is verbose for the sake of clarity. We assume that a
 	// good compiler will optimize the verbosity away.
 
-	const nest::double_t dop_AMPA_1    = 1 - node.P_.beta_I_AMPA_1*node.P_.tata_dop;
-	const nest::double_t dop_AMPA_2    = 1 - node.P_.beta_I_AMPA_2*node.P_.tata_dop;
-	const nest::double_t dop_NMDA_1    = 1 - node.P_.beta_I_NMDA_1*node.P_.tata_dop;
-	const nest::double_t dop_GABAA_1 = 1 - node.P_.beta_I_GABAA_1*node.P_.tata_dop;
-	const nest::double_t dop_GABAA_2 = 1 - node.P_.beta_I_GABAA_2*node.P_.tata_dop;
+	const nest::double_t dop_AMPA_1    = 1 + node.P_.beta_I_AMPA_1*node.P_.tata_dop;
+	const nest::double_t dop_AMPA_2    = 1 + node.P_.beta_I_AMPA_2*node.P_.tata_dop;
+	const nest::double_t dop_NMDA_1    = 1 + node.P_.beta_I_NMDA_1*node.P_.tata_dop;
+	const nest::double_t dop_GABAA_1 = 1 + node.P_.beta_I_GABAA_1*node.P_.tata_dop;
+	const nest::double_t dop_GABAA_2 = 1 + node.P_.beta_I_GABAA_2*node.P_.tata_dop;
 
 	const nest::double_t I_AMPA_1 = - y[S::G_AMPA_1] * ( V - node.P_.AMPA_1_E_rev )*dop_AMPA_1;
 	const nest::double_t I_AMPA_2 = - y[S::G_AMPA_2] * ( V - node.P_.AMPA_2_E_rev )*dop_AMPA_2;

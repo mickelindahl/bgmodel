@@ -476,7 +476,7 @@ class Storage_dic(Base_dic):
         pickle_save(self, self.file_name)
     
     def save_dic(self, d, **k):
-
+        print 'Saving '+self.file_name
         for keys, data in misc.dict_iter(d):
             
             if not misc.dict_haskey(self.dic, keys):

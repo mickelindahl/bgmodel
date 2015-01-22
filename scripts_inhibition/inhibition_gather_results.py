@@ -42,6 +42,25 @@ def gather(path):
         dd=sd.load_dic(*['Net_0', 'M1','mean_rate_slices'])
         d = misc.dict_update(d, {name[:-4]:dd['Net_0']})
     
+#     ax=pylab.subplot(211)
+    if d=={}:
+        i=0
+        for name in fs:
+            if name[0:6]!='script':
+                continue
+#             i+=1
+            ax=pylab.subplot(5,6,i)
+            file_name=path+name+'/'+'Net_0'
+            sd = Storage_dic.load(file_name)
+            dd=sd.load_dic(*['Net_0', 'M1','mean_rate_slices', 'firing_rate'])
+            print file_name
+            
+#             ax.plot(dd['Net_0']['M1']['firing_rate'].y)
+            ax.text(0.1,0.1,name, transform=ax.transAxes, fontsize=7)
+            d = misc.dict_update(d, {name:dd['Net_0']})
+            
+            
+#     pylab.show()
     return d
 
 

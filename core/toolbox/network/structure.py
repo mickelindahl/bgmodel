@@ -877,7 +877,7 @@ def connect_conns(params_nest, conns, popus, display_print=False):
 #         print c,'pre2', pre[0:10], len(pre) 
 #         print c,'pos2t', post[0:10], len(pre)  
 #         comm.barrier()
-#         weights=list(c.get_weights())
+#         weights_input_rates=list(c.get_weights())
 #         delays=list(c.get_delays())
 #         pre=list(sr_ids[c.get_pre()])
 #         post=list(tr_ids[c.get_post()])
@@ -889,10 +889,10 @@ def connect_conns(params_nest, conns, popus, display_print=False):
          
 #         delete_and_gc_collect(c)
         
-#         my_nest.Connect_DC(pre, post , weights, delays, model, only_local=True)
+#         my_nest.Connect_DC(pre, post , weights_input_rates, delays, model, only_local=True)
         my_nest.Connect_speed(pre, post , weights, delays, model=model)    
        
-#         delete_and_gc_collect(weights, delays, pre, post)
+#         delete_and_gc_collect(weights_input_rates, delays, pre, post)
 #         
         del weights
         del delays

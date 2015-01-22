@@ -332,7 +332,7 @@ def main(builder=Builder,
         create_figs(file_name_figs, from_disks, d, models, setup)
 
 
-#     if DISPLAY: pylab.show() 
+#   da  if DISPLAY: pylab.show() 
     
     
 

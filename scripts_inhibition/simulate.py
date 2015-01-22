@@ -553,6 +553,7 @@ def pert_add_oscillations(**kwargs):
     perturbation_list=kwargs.get('perturbation_list')
     sim_time=kwargs.get('sim_time')
     size=kwargs.get('size')
+    no_oscillations_control=kwargs.get('no_oscillations_control', False)
     
     l=perturbation_list
     for i in range(len(l)):
@@ -574,10 +575,18 @@ def pert_add_oscillations(**kwargs):
         for i, _l in enumerate(l):
 
             amp = [numpy.round(damp[_l.name][j], 2), amp_base[j]]
-            d = {'type':'oscillation2', 
-                    'params':{'p_amplitude_mod':amp[0], 
-                              'p_amplitude0':amp[1], 
-                              'freq':freq_oscillation}}
+            
+            if no_oscillations_control:
+                
+                d = {'type':'oscillation2', 
+                        'params':{'p_amplitude_mod':0.0, 
+                                  'p_amplitude0':amp[1], 
+                                  'freq':freq_oscillation}}
+            else:            
+                d = {'type':'oscillation2', 
+                        'params':{'p_amplitude_mod':amp[0], 
+                                  'p_amplitude0':amp[1], 
+                                  'freq':freq_oscillation}}
             
             _l = deepcopy(_l)
             dd = {}
@@ -606,6 +615,8 @@ def pert_add_inhibition(**kwargs):
                            'local_num_threads':local_num_threads},
                   'netw':{'size':size}},
                   '=')
+    
+    
         
     return l
 

@@ -16,7 +16,7 @@ from simulate import (get_path_logs,
                       pert_add_inhibition) 
 
 import inhibition_striatum as module
-import oscillation_perturbations4 as op
+import oscillation_perturbations7 as op
 import pprint
 pp=pprint.pprint
 
@@ -31,13 +31,13 @@ kwargs={
         'Builder':Builder,
         
         'cores_milner':40*1,
-        'cores_superm':20,
+        'cores_superm':4,
         
         'file_name':FILE_NAME,
         'from_disk':0,
         
         'debug':False,
-        'do_runs':[0],#range(NUM_RUNS), #A run for each perturbation
+        'do_runs':range(NUM_RUNS), #A run for each perturbation
         'do_obj':False,
         
         'i0':FROM_DISK_0,
@@ -57,13 +57,13 @@ kwargs={
         
         'nets':['Net_{}'.format(i) for i in range(NUM_NETS)],
         
-        'resolution':14,
+        'resolution':5,
         'repetitions':1,
         
         'path_code':default_params.HOME_CODE,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
-        'perturbation_list':[op.get()[7]],
+        'perturbation_list':op.get(),
         
         'size':3000,
         
@@ -87,6 +87,6 @@ for obj in a_list:
 
 # for i, a in enumerate(args_list):
 #     print i, a
-loop(2,[num_sim, num_sim, NUM_RUNS], a_list, k_list )
+loop(10,[num_sim, num_sim, NUM_RUNS], a_list, k_list )
 # loop(args_list, path, 1)
 

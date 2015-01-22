@@ -25,7 +25,7 @@ def perturbations():
 
 
     path=('/home/mikael/results/papers/inhibition'+
-       '/network/simulate_inhibition_ZZZ41/')
+       '/network/simulate_inhibition_ZZZ41_old/')
     l=op.get()
 
     for i in range(len(l)):

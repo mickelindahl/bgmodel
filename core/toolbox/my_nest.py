@@ -75,7 +75,7 @@ def _Connect_DC(pre, post, weights, delays, model, only_local=False):
 #             lock_up=dict(zip(post_ids,status))         
 #               
 #             dic={}
-#             for d, s, t, w in izip(delays, pre, post, weights):
+#             for d, s, t, w in izip(delays, pre, post, weights_input_rates):
 #                 if not lock_up[t]:
 #                     continue
 # #                 pp(lock_up)
@@ -131,7 +131,7 @@ def _Connect_DC(pre, post, weights, delays, model, only_local=False):
 #         with Stopwatch('Connecting DC', **{'only_rank_0_mpi':True}):   
 #             
 #             dic={}
-#             for d, s, t, w in izip(delays, pre, post, weights):
+#             for d, s, t, w in izip(delays, pre, post, weights_input_rates):
 #                 if s not in dic.keys():  
 #                     dic[s]={'target':[t],
 #                             'weight':[w],
@@ -167,7 +167,7 @@ def _Connect_DC(pre, post, weights, delays, model, only_local=False):
 #                          'weight': w}   for s, t, d, w, in izip(pre[s], 
 #                                                                 post[s], 
 #                                                                 delays[s], 
-#                                                                 weights[s]
+#                                                                 weights_input_rates[s]
 #                                                                  )]
 #                 DataConnect(params)
 #                 del params

@@ -19,14 +19,15 @@ THREADS=10
 
 class Setup(object):
 
-    def __init__(self, period, threads, **kwargs):
+    def __init__(self, period, local_num_threads, **kwargs):
         self.period=period
-        self.threads=threads
+        self.local_num_threads=local_num_threads
 
         self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
                                                     'Net_1' ])
         
-
+        self.fs=256 #Same as Mallet 2008
+        
     def builder(self):
         return {}
     
@@ -40,15 +41,15 @@ class Setup(object):
         return d
 
     def pds(self):
-        d = {'NFFT':1024 * 4, 'fs':1000., 
-             'noverlap':1024 * 2, 
-             'threads':THREADS}
+        d = {'NFFT':128*8, 'fs':self.fs, 
+             'noverlap':128*8/2, 
+             'local_num_threads':THREADS}
         return d
     
       
     def coherence(self):
-        d = {'fs':1000.0, 'NFFT':1024 * 4, 
-            'noverlap':int(1024 * 2), 
+        d = {'fs':self.fs, 'NFFT':128 * 8, 
+            'noverlap':int(128 * 8)/2, 
             'sample':30.}
         return d
     
@@ -58,54 +59,61 @@ class Setup(object):
              'lowcut':0.5, 
              'highcut':2., 
              'order':3, 
-             'fs':1000.0, 
-             'bin_extent':500., 
-             'kernel_type':'gaussian', 
-             'params':{'std_ms':250., 
-                       'fs':1000.0}}
-        
+             'fs':self.fs, 
+             
+              #Skip convolving when calculating phase shif
+             #5000 of fs=10000
+#              'bin_extent':self.fs/2, #size of gaussian window for convulution of firing rates 
+#              'kernel_type':'gaussian', 
+#              'params':{'std_ms':250., # standard deviaion of gaussian convulution
+#                        'fs':self.fs}
+            }
         return d    
 
     def phases_diff_with_cohere(self):
         d={
-               'fs':100.0, 
-               'NFFT':1024 * 4, 
-            'noverlap':int(1024 * 2), 
+            'fs':self.fs,#100.0, 
+            'NFFT':128*8 , 
+            'noverlap':128*8/2, 
             'sample':30.,
             
-             'lowcut':0.5, 
-             'highcut':2., 
-             'order':3, 
+            'lowcut':0.5, 
+            'highcut':2., 
+            'order':3, 
 
-             'bin_extent':500., 
-             'kernel_type':'gaussian', 
-             'params':{'std_ms':250., 
-                       'fs':100.0},
+             #Skip convolving when calculating phase shif
+
+#              'bin_extent':self.fs/2,#500., 
+#              'kernel_type':'gaussian', 
+#              'params':{'std_ms':250., 
+#                        'fs':self.fs,#100.0
+#                        },
       
-            'threads':self.threads}
+            'local_num_threads':self.local_num_threads}
         return d
     
     def firing_rate(self):
         d={'average':False, 
-           'threads':THREADS,
-           'win':100.0}
+           'local_num_threads':THREADS,
+#            'win':20.0,
+           'time_bin':1000./self.fs}
         return d
 
     
     def plot_fr(self):
-        d={'win':100.,
+        d={'win':20.,
            't_start':10000.0,
            't_stop':20000.0,
            'labels':['Control', 'Lesion'],
            
             'fig_and_axes':{'n_rows':8, 
-                                        'n_cols':1, 
-                                        'w':800.0*0.55*2, 
-                                        'h':600.0*0.55*2, 
-                                        'fontsize':11*2,
-                                        'frame_hight_y':0.8,
-                                        'frame_hight_x':0.78,
-                                        'linewidth':3.}}
+                            'n_cols':1, 
+                            'w':800.0*0.55*2, 
+                            'h':600.0*0.55*2, 
+                            'fontsize':11*2,
+                            'frame_hight_y':0.8,
+                            'frame_hight_x':0.78,
+                            'linewidth':3.}}
         return d
 
     def plot_coherence(self):
@@ -131,13 +139,13 @@ def main(builder=Builder,
          from_disk=1,
          perturbation_list=None,
          script_name=__file__.split('/')[-1][0:-3],
-         threads=10):
+         local_num_threads=10):
     
     oscillation_common.main(builder, 
                             from_disk, 
                             perturbation_list, 
                             script_name, 
-                            Setup(1000.0, threads))
+                            Setup(1000.0, local_num_threads))
  
 class Main():    
     def __init__(self, **kwargs):

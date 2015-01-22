@@ -1,5 +1,5 @@
 #!/bin/sh
-#Input: Take module-DATE, nest-version, nest-install-dir and nest-source-dir as input
+#Input: Take module-DATE, nest-version, nest-install-dir and nest-source-dir/models as input
 #Examples: 
 # compile-module-milner module-130701 nest-2.2.2 /pdc/vol/nest/2.2.2/ /afs/nada.kth.se/home/w/u1yxbcfw/opt/NEST/dist/nest-2.2.2/models
 #./compile-module.sh module-130701 nest-2.4.2 /home/mikael/opt/NEST/dist/install-nest-2.4.2/ /home/mikael/opt/NEST/dist/nest-2.4.2/models

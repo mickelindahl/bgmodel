@@ -113,11 +113,11 @@ inline int mynest::izhik_cond_exp_dynamics(double, const double y[], double f[],
 	// good compiler will optimize the verbosity away.
 
 
-	const nest::double_t dop_AMPA_1    = 1 - node.P_.beta_I_AMPA_1*node.P_.tata_dop;
-	const nest::double_t dop_NMDA_1    = 1 - node.P_.beta_I_NMDA_1*node.P_.tata_dop;
-	const nest::double_t dop_GABAA_1 = 1 - node.P_.beta_I_GABAA_1*node.P_.tata_dop;
-	const nest::double_t dop_GABAA_2 = 1 - node.P_.beta_I_GABAA_2*node.P_.tata_dop;
-	const nest::double_t dop_GABAA_3 = 1 - node.P_.beta_I_GABAA_3*node.P_.tata_dop;
+	const nest::double_t dop_AMPA_1    = 1 + node.P_.beta_I_AMPA_1*node.P_.tata_dop;
+	const nest::double_t dop_NMDA_1    = 1 + node.P_.beta_I_NMDA_1*node.P_.tata_dop;
+	const nest::double_t dop_GABAA_1 = 1 + node.P_.beta_I_GABAA_1*node.P_.tata_dop;
+	const nest::double_t dop_GABAA_2 = 1 + node.P_.beta_I_GABAA_2*node.P_.tata_dop;
+	const nest::double_t dop_GABAA_3 = 1 + node.P_.beta_I_GABAA_3*node.P_.tata_dop;
 
 	const nest::double_t I_AMPA_1 = - y[S::G_AMPA_1] * ( V - node.P_.AMPA_1_E_rev )*dop_AMPA_1;
 	const nest::double_t I_NMDA_1 = - y[S::G_NMDA_1] * ( V - node.P_.NMDA_1_E_rev )*dop_NMDA_1
