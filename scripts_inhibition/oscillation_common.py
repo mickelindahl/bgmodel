@@ -532,7 +532,7 @@ def plot_phases_diff_with_cohere(d, axs, i, xmax=5, **k):
             ch = v[model]['phases_diff_with_cohere']
             
             ch.hist(ax, **{'color':colors[i_key], 
-                           'rest':k.get('rest',True), 
+                           'all':k.get('all',True), 
                            'p_95':k.get('p_95',True)})
             ax.set_xlim([-numpy.pi, numpy.pi])
             ax.set_title(td[model[0:2]]+' vs '+td[model[-2:]])
@@ -824,7 +824,7 @@ class Setup(object):
     def coherence(self):
         d = {'fs':self.fs, 'NFFT':1024 * 4, 
             'noverlap':int(1024 * 2), 
-            'sample':30.,  
+            'sample':50.,  
             'local_num_threads':self.local_num_threads}
         return d
  
@@ -886,12 +886,12 @@ class Setup(object):
            
             'fig_and_axes':{'n_rows':8, 
                             'n_cols':1, 
-                            'w':800.0*0.55*2, 
-                            'h':600.0*0.55*2, 
-                            'fontsize':11*2,
+                            'w':800.0*0.55*2*0.3, 
+                            'h':600.0*0.55*2*0.3, 
+                            'fontsize':7,
                             'frame_hight_y':0.8,
                             'frame_hight_x':0.78,
-                            'linewidth':3.}}
+                            'linewidth':1.}}
         return d
 
     def plot_coherence(self):
@@ -905,7 +905,7 @@ class Setup(object):
 
     def plot_summed2(self):
         d={'xlim_cohere':[0, 10],
-           'rest':False,
+           'all':False,
            'p_95':True,
            'leave_out':['control_fr', 'control_cv'],
            'statistics_mode':'activation',
@@ -1076,6 +1076,15 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
             else:
                 ax.my_remove_axis(xaxis=True)
                 ax.set_xlabel('')
+        y_mean=[]
+        for net in ['Net_0', 'Net_1']:
+            st = d[net]['ST']['spike_statistic']
+            y_mean.append(st.rates['mean'])
+        axs[6].text(0.5,0.1,'C:{:.2f} Hz L:{:.2f} Hz'.format(*y_mean), 
+                    transform=axs[5].transAxes,
+                    verticalalignment='center', 
+                    horizontalalignment='center')
+        
 #         figs.append(show_hr(d, models))
 #         figs.append(show_psd(d, models=models))
 #         figs.append(show_coherence(d, models=models_coher, **d_plot_coherence))

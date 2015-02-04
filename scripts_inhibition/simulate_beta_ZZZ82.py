@@ -16,9 +16,10 @@ from simulate import (get_path_rate_runs,
                       pert_add_oscillations) 
 
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_beta as Builder
+from toolbox.network.manager import Builder_beta_EI_EA as Builder
 from toolbox.parallel_excecution import loop
 
+import numpy
 import sys
 import simulate_beta as module
 import oscillation_perturbations8 as op
@@ -26,36 +27,41 @@ import pprint
 pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ8/')
-                                  
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
-# ops=[op.get()[0]]
-ops=op.get()
-NUM_RUNS=len(ops)
 NUM_NETS=2
-num_sims=NUM_RUNS*NUM_NETS
+
+amp_base=numpy.arange(0.5, 1.5, 0.05)
+freqs=numpy.arange(0.25, 2., 0.125)
+n=len(amp_base)
+m=len(freqs)
+amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
+freqs=list(freqs)*n
+num_runs=len(freqs)
+num_sims=NUM_NETS*num_runs
+
 kwargs={
-        'amp_base':[1.2], #From ZZZ61
+        'amp_base':amp_base,
         
         'Builder':Builder,
         
         'cores_milner':40*1,
-        'cores_superm':20,
+        'cores_superm':2,
         
         'debug':False,
-        'do_runs':range(NUM_RUNS), #A run for each perturbation
+        'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
         
         'file_name':FILE_NAME,
-        'freqs':[1.5],  #amplitude frequencies
+        'freqs':freqs,
         'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
         
-        'job_name':'beta_ZZZ8',
+        'job_name':'beta_ZZZ81',
         
         'l_hours':  ['00','00','00'],
         'l_minutes':['15','10','5'],
@@ -66,14 +72,14 @@ kwargs={
         
         'module':module,
         
-        'nets':['Net_0','Net_1'], #Nets for each run
+        'nets':['Net_0','Net_1'], #The nets for each run
         'no_oscillations_control':True,
         
         'path_code':default_params.HOME_CODE,
         'path_rate_runs':path_rate_runs,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
-        'perturbation_list':ops,
+        'perturbation_list':[op.get()[2]],
         
         'sim_time':10000.0,
         'size':20000.0 ,
@@ -96,8 +102,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-print 'from disk', FROM_DISK_0
-
-loop(min(num_sims, 10),[num_sims,num_sims,NUM_RUNS], a_list, k_list )
+loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

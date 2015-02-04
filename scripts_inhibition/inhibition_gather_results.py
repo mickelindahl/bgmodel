@@ -28,6 +28,7 @@ def get_amlitudes(freqs, data):
                 out[key].append(val(freq)-1)
             else:
                 out[key].append(numpy.NAN)
+                print val.x[-1]
     return out
 
 def gather(path): 

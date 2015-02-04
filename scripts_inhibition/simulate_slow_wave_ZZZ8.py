@@ -19,13 +19,14 @@ from toolbox.network import default_params
 from toolbox.network.manager import Builder_slow_wave2 as Builder
 from toolbox.parallel_excecution import loop
 
+import sys
 import simulate_slow_wave as module
 import oscillation_perturbations8 as op
 import pprint
 pp=pprint.pprint
 path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ8/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2*len(op.get())
@@ -49,7 +50,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'sw_ZZZ6',
+        'job_name':'sw_ZZZ8',
         
         'l_hours':  ['00','00','00'],
         'l_minutes':['45','10','5'],
@@ -88,5 +89,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(20,[NUM_NETS,NUM_NETS,NUM_NETS/2], a_list, k_list )
+loop(10,[NUM_NETS,NUM_NETS,NUM_NETS/2], a_list, k_list )
         

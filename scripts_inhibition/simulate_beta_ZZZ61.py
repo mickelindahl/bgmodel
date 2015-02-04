@@ -19,6 +19,7 @@ from toolbox.network import default_params
 from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
 
+import numpy
 import simulate_beta as module
 import oscillation_perturbations6 as op
 import pprint
@@ -28,8 +29,9 @@ FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2*5
+amp_base=numpy.arange(0.8, 1.6, 0.1)
 kwargs={
-        'amp_base':[1.1, 1.2, 1.3, 1.4, 1.5],
+        'amp_base':amp_base,
         
         'Builder':Builder,
         
@@ -41,7 +43,7 @@ kwargs={
         'do_obj':False,
         
         'file_name':FILE_NAME,
-        'freqs':[1.5]*5,
+        'freqs':[1.5]*len(amp_base),
         'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         

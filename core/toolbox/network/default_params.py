@@ -335,6 +335,9 @@ class Perturbation(object):
         return self.val 
     
     def set_val(self, val):
+        
+        if type(val)!=list:
+            val=[val]
         self.val=val
 
     def apply(self, dic):
@@ -2434,7 +2437,7 @@ class InhibitionPar_base(object):
         # From GPE
         dic['nest']['MS']['GABAA_3_Tau_decay'] = 12*5.          
         dic['nest']['MS']['GABAA_3_E_rev']     = -74. # n.d. set as for MSN and FSN
-    
+        
         dic['nest']['MS']['tata_dop'] = DepNetw('calc_tata_dop')
         
         
@@ -3014,6 +3017,43 @@ class Slow_wave2_base(object):
 class Slow_wave2(Par_base, Slow_wave2_base, Par_base_mixin): 
     pass 
 
+class Slow_wave2_EI_EA_base(object):
+
+    def _get_par_constant(self):
+        dic_other=self.other.get_par_constant()
+        
+              
+        #self._dic_con['node']['M1']['n']
+        
+#         dic['nest']['CF']['type_id']='poisson_generator'
+        dic={'netw':{'input':{}},
+             'nest':{},
+             'node':{}}
+        
+        d={'type':'oscillation2', 
+             'params':{'p_amplitude_mod':0.1,
+                       'p_amplitude0':1.0,
+                       'freq': 1.,
+                       'freq_min':None,
+                       'freq_max':None,
+                       'period':'constant'}} 
+        
+        
+        for key in ['C1', 'C2', 'CF', 'CS', 'EA','EI']: 
+            dic['netw']['input'][key]=d  
+            new_name=key+'d' 
+            dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
+                                   'rates':[0.],
+                                   'timings':[1.]}   
+            dic['node'][key]={'model':new_name}
+        
+        dic = misc.dict_update(dic_other, dic)
+        return dic
+
+
+class Slow_wave2_EI_EA(Par_base, Slow_wave2_EI_EA_base, Par_base_mixin): 
+    pass 
+
 class Beta_base(object):
     def _get_par_constant(self):
         dic_other=self.other.get_par_constant()
@@ -3047,6 +3087,40 @@ class Beta_base(object):
 
 
 class Beta(Par_base, Beta_base, Par_base_mixin): 
+    pass 
+class Beta_EI_EA_base(object):
+    def _get_par_constant(self):
+        dic_other=self.other.get_par_constant()
+        
+        #self._dic_con['node']['M1']['n']
+        
+        
+        dic={'netw':{'input':{}},
+             'nest':{},
+             'node':{}}
+        
+        d={'type':'oscillation2', 
+             'params':{'p_amplitude_mod':0.1,
+                       'p_amplitude0':1.0,
+                       'freq': 20.,
+                       'freq_min':None,
+                       'freq_max':None,
+                       'period':'constant'}} 
+        
+        
+        for key in ['C1', 'C2', 'CF', 'CS', 'EA', 'EI']: 
+            dic['netw']['input'][key]=d  
+            new_name=key+'d' 
+            dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
+                                   'rates':[0.],
+                                   'timings':[1.]}   
+            dic['node'][key]={'model':new_name}
+        
+        dic = misc.dict_update(dic_other, dic)
+        return dic
+
+
+class Beta_EI_EA(Par_base, Beta_EI_EA_base, Par_base_mixin): 
     pass 
 
 class ThalamusPar_base(object):
@@ -4016,7 +4090,7 @@ def dummy_args(flag, **kwargs):
         
     if flag=='calc_fan_in':
         args.append([0.2, 0.8, 30])
-        out.append(30*(1-0.2*0.8))
+        out.append(round(30*(1+0.2*0.8)))
         
     if flag=='compute_conn_weight_params':
         args.append([2.0, 'constant'])
@@ -4523,6 +4597,7 @@ class TestModuleFuncions(unittest.TestCase):
             call=getattr(self.m,method)
             for a, o in zip(*dummy_args(method)):
 #                 pp(call(*a))
+                print a, method
                 self.assertEqual(call(*a),o)
 
 
@@ -5114,6 +5189,18 @@ class TestSlowWave2Par_base(unittest.TestCase):
 class TestSlowwave2(TestSlowWave2Par_base, TestMixinPar_base, TestSetup_mixin):
     pass
 
+class TestSlowWave2_EI_EA_Par_base(unittest.TestCase):
+    def setUp(self):
+        self.kwargs={'other':Inhibition(),
+                     'unittest':False}
+        self.the_class=Slow_wave2_EI_EA
+        self.pert=dummy_perturbations_lists('slow_wave', 'C1_M1_ampa')
+        self.test_node_model='M1'
+        self._setUp()
+
+class TestSlowwave2_EI_EA(TestSlowWave2_EI_EA_Par_base, TestMixinPar_base, TestSetup_mixin):
+    pass
+
 class TestBetaPar_base(unittest.TestCase):
     def setUp(self):
         self.kwargs={'other':Inhibition(),
@@ -5124,6 +5211,18 @@ class TestBetaPar_base(unittest.TestCase):
         self._setUp()
 
 class TestBeta(TestBetaPar_base, TestMixinPar_base, TestSetup_mixin):
+    pass
+
+class TestBeta_EI_EA_Par_base(unittest.TestCase):
+    def setUp(self):
+        self.kwargs={'other':Inhibition(),
+                     'unittest':False}
+        self.the_class=Beta_EI_EA
+        self.pert=dummy_perturbations_lists('beta', 'C1_M1_ampa')
+        self.test_node_model='M1'
+        self._setUp()
+
+class TestBeta_EI_EA(TestBeta_EI_EA_Par_base, TestMixinPar_base, TestSetup_mixin):
     pass
 
 class TestInhibitionStriatumPar_base(unittest.TestCase):
@@ -5270,7 +5369,9 @@ if __name__ == '__main__':
 #                         TestThalamus,
 #                         TestSlowwave,
 #                         TestSlowwave2,
-                        TestBeta:test_fun_par,  
+                        TestSlowwave2_EI_EA:test_fun_par,
+#                         TestBeta:test_fun_par,
+                        TestBeta_EI_EA:test_fun_par,  
                         TestGo_NoGo_compete:test_fun_par,
 #                         TestBcpnnH0,
 #                         TestBcpnnH1,

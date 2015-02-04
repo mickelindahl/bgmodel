@@ -25,10 +25,13 @@ kwargs={'data_path':('/home/mikael/results/papers/inhibition/network/'
 #         'title_posy':0.2,
         'do_plots':['index'],
         'top_lables_fontsize':7,
-        'clim_raw': [[0,5], [0,50], [0,0.4]],
+        'clim_raw': [[0,5], [0,50], [0,1]],
         'kwargs_fig':d,
         'oi_min':0.5,
-        'oi_max':1.5}
+        'oi_max':1.5,
+        'psd':{'NFFT':128*8*4, 
+                'fs':1000., 
+                'noverlap':128*8*4/2}}
 
 obj=effect_conns.Main(**kwargs)
 obj.do()

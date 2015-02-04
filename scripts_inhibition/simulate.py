@@ -29,7 +29,7 @@ def cmp_psd(d_pds, models, dd):
             dd[key1][model]['psd'] = psd
 
 
-def get_conn_matricies(net, models, attr):
+def get_conn_matriciesexternal(net, models, attr):
     d={}
     for model in models:
         soruce, target, _=model.split('_')
@@ -64,15 +64,23 @@ def get_args_list(*args, **kwargs):
     do_obj=kwargs.get('do_obj') 
     file_name=kwargs.get('file_name')    
     module=kwargs.get('module')
+    no_oscillations_control=kwargs.get('no_oscillations_control', False)
    
     p_list, get_setup_args_and_kwargs=args
     args_list=[]
     for j in range(0, 3):
-        for i, p in enumerate(p_list):
+        for i, pert in enumerate(p_list):
             if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
             else: nets_list=[kwargs.get('nets')]
         
             for nets in nets_list:
+                p=deepcopy(pert)
+                if no_oscillations_control and nets[0]=='Net_0' and len(nets)==1:
+                    for pp in p:
+                        if 'p_amplitude_mod' in pp.keys:
+                            pp.set_val(0.0) #set amplitude to zero
+                            print pp
+                
                 
                 script_name='{}/script_{:0>4}_{}'.format(file_name, i, p.name)     
                 
@@ -108,35 +116,7 @@ def get_args_list_oscillation(p_list, **kwargs):
     args=[p_list, get_setup_args_and_kwargs]
     return get_args_list(*args, **kwargs)
     
-#     args_list=[]
-#     for j in range(0, 3):
-#         for i, p in enumerate(p_list):
-#             if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
-#             else: nets_list=[kwargs.get('nets')]
-#         
-#             for nets in nets_list:
-# 
-#                 script_name='{}/script_{:0>4}_{}'.format(file_name, i, p.name)
-# #                 script_name = (file_name + '/script_' + str(i) 
-# #                                + '_' + p.name)
-#                 
-#                 
-#                 
-#                 setup = module.Setup(1000.0 / freq_oscillation, 
-#                                      local_num_threads,
-#                                      **d)
-#                 
-#                 obj = module.Main(**{'builder':builder, 
-#                                      'from_disk':j, 
-#                                      'perturbation_list':p, 
-#                                      'script_name':script_name, 
-#                                      'setup':setup})
-#                 
-#                 if do_obj:
-#                     obj.do()
-#                     
-#                 args_list.append(obj)
-#     return args_list
+
 
 def get_args_list_inhibition(p_list, **kwargs):
     
@@ -215,73 +195,7 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
     args=[p_list, get_setup_args_and_kwargs]
     return get_args_list(*args, **kwargs)
 
-# def get_args_list_Go_NoGo_compete(p_list, **kwargs):
-#     
-#     builder=kwargs.get('Builder')
-#     do_obj=kwargs.get('do_obj') 
-# #     do_runs=kwargs.get('do_runs')
-#     duration=kwargs.get('duration')
-#     file_name=kwargs.get('file_name')
-#     from_disk_0=kwargs.get('from_disk_0')
-#     labels=kwargs.get('labels',['Only D1', 
-#                                 'D1,D2',
-#                                 'MSN lesioned (D1, D2)',
-#                                 'FSN lesioned (D1, D2)',
-#                                 'GPe TA lesioned (D1,D2)'])
-#     laptime=kwargs.get('laptime')
-#     l_mean_rate_slices=kwargs.get('l_mean_rate_slices')
-#     local_num_threads=kwargs.get('local_num_threads')
-#     module=kwargs.get('module')
-#     other_scenario=kwargs.get('other_scenario', False)
-#     props_conn=kwargs.get('proportion_connected', 1.)
-#     res=kwargs.get('res')
-#     rep=kwargs.get('rep')
-#     time_bin=kwargs.get('time_bin')
-#     
-#     
-#     if type(props_conn) != list:
-#         props_conn=[props_conn]*len(p_list)
-#     
-#     args_list=[]
-#     for j in range(0, 3):
-#         for i, p in enumerate(p_list):
-#             
-#             if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
-#             else: nets_list=[kwargs.get('nets')]
-#         
-#             for nets in nets_list:
-# 
-#                 script_name='{}/script_{:0>4}_{}'.format(file_name, 
-#                                                              i, 
-#                                                              p.name)
-# 
-#                 d={'duration':duration,
-#                     'l_mean_rate_slices':l_mean_rate_slices,
-#                     'labels':labels,
-#                     'laptime':laptime,
-#                     'local_num_threads':local_num_threads,
-#                     'nets_to_run':nets,
-#                     'other_scenario':other_scenario,
-#                     'proportion_connected':props_conn[i],
-#                     'resolution':res,
-#                     'repetition':rep,
-#                     'time_bin':time_bin}
-#                 setup = module.Setup(**d)
-#                
-#                 d={'builder':builder, 
-#                    'from_disk':j, 
-#                    'perturbation_list':p, 
-#                    'script_name':script_name, 
-#                    'setup':setup}
-#                 
-#                 obj = module.Main(**d)
-#                 
-#                 if do_obj:
-#                     obj.do()
-#                          
-#                 args_list.append(obj)
-#                         
-#     return args_list
+
     
 def get_kwargs_list_indv_nets(n_pert, kwargs):
     do_runs=kwargs.get('do_runs')
@@ -547,14 +461,14 @@ def pert_add_oscillations(**kwargs):
     
     amp_base=kwargs.get('amp_base')     
     freqs=kwargs.get('freqs')
-    freq_oscillation=kwargs.get('freq_oscillation') 
+    freq_oscillation=kwargs.get('freq_oscillation')
+    external_input_mod=kwargs.get('external_input_mod',[]) 
     local_num_threads=kwargs.get('local_num_threads')
     path_rate_runs=kwargs.get('path_rate_runs')
     perturbation_list=kwargs.get('perturbation_list')
     sim_time=kwargs.get('sim_time')
     size=kwargs.get('size')
-    no_oscillations_control=kwargs.get('no_oscillations_control', False)
-    
+
     l=perturbation_list
     for i in range(len(l)):
         l[i] += pl({'simu':{'do_reset':True,
@@ -568,7 +482,7 @@ def pert_add_oscillations(**kwargs):
     damp = process(path_rate_runs, freqs)
     for key in sorted(damp.keys()):
         val = damp[key]
-        print numpy.round(val, 2), key
+        print  key, numpy.round(val, 2)
     
     ll = []
     for j, _ in enumerate(freqs):
@@ -576,22 +490,26 @@ def pert_add_oscillations(**kwargs):
 
             amp = [numpy.round(damp[_l.name][j], 2), amp_base[j]]
             
-            if no_oscillations_control:
-                
-                d = {'type':'oscillation2', 
-                        'params':{'p_amplitude_mod':0.0, 
-                                  'p_amplitude0':amp[1], 
-                                  'freq':freq_oscillation}}
-            else:            
-                d = {'type':'oscillation2', 
-                        'params':{'p_amplitude_mod':amp[0], 
-                                  'p_amplitude0':amp[1], 
-                                  'freq':freq_oscillation}}
+
+            d = {'type':'oscillation2', 
+                    'params':{'p_amplitude_mod':amp[0], 
+                              'p_amplitude0':amp[1], 
+                              'freq':freq_oscillation}}
             
             _l = deepcopy(_l)
             dd = {}
             for key in ['C1', 'C2', 'CF', 'CS']:
                 dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
+
+            if external_input_mod:
+                d = {'type':'oscillation2', 
+                    'params':{'p_amplitude_mod':0, 
+                              'p_amplitude0':amp[1], 
+                              'freq':freq_oscillation}}
+                
+                for key in external_input_mod:
+                    dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
+                    
             
             _l += pl(dd, '=', **{'name':'amp_{0}-{1}'.format(*amp)})
             ll.append(_l)

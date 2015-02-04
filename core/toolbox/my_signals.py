@@ -328,10 +328,12 @@ class Data_phases_diff_with_cohere_base(object):
 #         k['normed']=1
         k['linestyle']=k.pop('linestyle_rest','-')
 
-        rest=k.pop('rest', True)
+        all=k.pop('all', True)
         p_95=k.pop('p_95', True)
+        
         h=[]
-        if rest:
+        
+        if all:
             a=numpy.mean(self.y_bins, axis=0)[0:-1]
             step=numpy.diff(a)[0]
             a=numpy.array([[aa, aa+step] for aa in a]).ravel()

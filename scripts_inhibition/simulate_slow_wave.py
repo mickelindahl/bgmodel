@@ -50,7 +50,7 @@ class Setup(object):
     def coherence(self):
         d = {'fs':self.fs, 'NFFT':128 * 8, 
             'noverlap':int(128 * 8)/2, 
-            'sample':30.}
+            'sample':100.}
         return d
     
 
@@ -106,14 +106,14 @@ class Setup(object):
            't_stop':20000.0,
            'labels':['Control', 'Lesion'],
            
-            'fig_and_axes':{'n_rows':8, 
+           'fig_and_axes':{'n_rows':8, 
                             'n_cols':1, 
-                            'w':800.0*0.55*2, 
-                            'h':600.0*0.55*2, 
-                            'fontsize':11*2,
+                            'w':800.0*0.55*2*0.3, 
+                            'h':600.0*0.55*2*0.3, 
+                            'fontsize':7,
                             'frame_hight_y':0.8,
                             'frame_hight_x':0.78,
-                            'linewidth':3.}}
+                            'linewidth':1.}}
         return d
 
     def plot_coherence(self):
@@ -128,8 +128,8 @@ class Setup(object):
     def plot_summed2(self):
         d={
            'xlim_cohere':[0, 5],
-           'rest':False,
-           'p_95':True,
+           'all':True,
+           'p_95':False,
            'leave_out':['control_fr', 'control_cv'],
            'statistics_mode':'slow_wave',
            'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],

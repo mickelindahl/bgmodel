@@ -75,56 +75,65 @@ def extract_data(d, nets, models, attrs, **kwargs):
                   [v]]
             
         if keys[-1]=='mean_coherence': 
-            bol=(val.x>kwargs.get('oi_min', 15))*(val.x<kwargs.get('oi_max', 25))
-            integral1=sum(val.y[bol])
-#             integral2=sum(val.y[val.x<100])
-            integral2=sum(val.y)
-            oscillation_index=integral1/integral2
-            
+                
             v_max=max(val.y[2:20])
             v=numpy.mean(val.y[2:20])
-            args=[[keys, keys[0:-1]+['mean_coherence_max'],keys[0:-1]+['oscillation_index_cohere']],
-                  [v, v_max, oscillation_index]]        
+            args=[[keys, keys[0:-1]+['mean_coherence_max']],
+                  [v, v_max]]        
             
         if keys[-1]=='firing_rate':
             std=numpy.std(val.y)
             v=numpy.mean(val.y)
             synchrony_index=(std**2)/v
-            args=[[keys, keys[0:-1]+['synchrony_index']],
-                  [v, synchrony_index]]
+
             
-            x=val.x[10000:30000]
-            y=val.y[10000:30000]
-            
-            kwargs={'NFFT':128*8*4, 'fs':1000., 
-                    'noverlap':128*8*4/2}
-            
+            x=val.x[kwargs.get('oi_start', 1000):]
+            y=val.y[kwargs.get('oi_start', 1000):]
+  
+            kwargs=kwargs.pop('psd',{'NFFT':128*8*4, 
+                                    'fs':1000., 
+                                    'noverlap':128*8*4/2}) 
+
+              
             d={'x':x, 'y':y}
             import toolbox.signal_processing as sp
             from toolbox.my_signals import Data_psd
-            
-            
+              
+              
 #             y=y[:256*(len(y)/256)]
 #             y=numpy.mean(y.reshape((len(y)/4),4), axis=1).ravel()
-
-            
+  
+              
             ypsd,xpsd=sp.psd(deepcopy(y), **kwargs)
             d={'x':xpsd,'y':ypsd}
-            psd2=Data_psd(**d)
+            psd=Data_psd(**d)
+            
+            
+            bol=(psd.x>kwargs.get('oi_min', 15))*(psd.x<kwargs.get('oi_max', 25))
+            integral1=sum(psd.y[bol])
+#             integral2=sum(val.y[val.x<100])
+            integral2=sum(psd.y)
+            oscillation_index=integral1/integral2
 
-            ypsd,xpsd=sp.psd(deepcopy(y-numpy.mean(y)), **kwargs)
-#             ypsd,xpsd=sp.psd(deepcopy(y), **kwargs)
-            d={'x':xpsd,'y':ypsd}
-            psd3=Data_psd(**d)
-            
-            psd=val.get_psd(**kwargs)
-            pylab.subplot(211).plot(val.x, val.y)
-            pylab.subplot(211).plot(x, y)
-            pylab.subplot(212).plot(psd.x, psd.y)
-            
-            pylab.subplot(212).plot(psd2.x, psd2.y)
-            pylab.subplot(212).plot(psd3.x, psd3.y)
-            pylab.show()
+            args=[[keys, keys[0:-1]+['synchrony_index'],
+                   keys[0:-1]+['oscillation_index']],
+                  [v, synchrony_index,
+                   oscillation_index]]
+   
+#  
+#             ypsd,xpsd=sp.psd(deepcopy(y-numpy.mean(y)), **kwargs)
+# #             ypsd,xpsd=sp.psd(deepcopy(y), **kwargs)
+#             d={'x':xpsd,'y':ypsd}
+#             psd3=Data_psd(**d)
+#              
+#             psd=val.get_psd(**kwargs)
+#             pylab.subplot(211).plot(val.x, val.y)
+#             pylab.subplot(211).plot(x, y)
+#             pylab.subplot(212).plot(psd.x, psd.y)
+#              
+#             pylab.subplot(212).plot(psd2.x, psd2.y)
+#             pylab.subplot(212).plot(psd3.x, psd3.y)
+#             pylab.show()
             
         if keys[-1]=='psd':
             bol=(val.x>kwargs.get('oi_min', 15))*(val.x<kwargs.get('oi_max', 25))
@@ -132,12 +141,12 @@ def extract_data(d, nets, models, attrs, **kwargs):
 #             integral2=sum(val.y[val.x<100])
             integral2=sum(val.y)
             oscillation_index=integral1/integral2
-            
+             
             v_max=max(val.y[2:20])
             v=numpy.mean(val.y[2:20])
-            args=[[keys,keys[0:-1]+['oscillation_index_psd']],
-                  [v, oscillation_index]]   
-   
+            args=[[keys],
+                  [v]]   
+    
         
         for k, v in zip(*args):
             out=misc.dict_recursive_add(out,  k, v)
@@ -171,8 +180,10 @@ def compute_performance(d, nets, models, attrs, **kwargs):
         for model in models:
             for attr in attrs:
                 
-                keys_c= ['no_pert', 'Net_0', model, attr]
-                keys_l= ['no_pert', 'Net_1', model, attr]
+                keys_c= [kwargs.get('key_no_pert','no_pert'), 
+                         'Net_0', model, attr]
+                keys_l= [kwargs.get('key_no_pert','no_pert'), 
+                         'Net_1', model, attr]
                 
                 if not misc.dict_haskey(d, keys_c ):
                     continue
@@ -191,9 +202,16 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                     s,t,_,x=l
                     x=float(x)
                     name=s+'_'+t
-                else:
+                elif len(l)==3:
                     name,_,mod=l
                     x=int(mod[3:])
+                elif len(l)==2:
+                    s,t=l
+                    name=s+'_'+t
+                    x=1
+                elif len(l)==1:
+                    name=l[0]
+                    x=1
                     
                 keys1=[run, 'Net_0', model, attr]
                 keys2=[run, 'Net_1', model, attr]
@@ -236,12 +254,13 @@ def compute_performance(d, nets, models, attrs, **kwargs):
 
                 
                 #Add midpoint
-                for keys, val in zip([keys3,keys4,keys5,keys6],
-                                    [v_control0, v_lesion0, 
-                                     0, v_mse0/v_mse0]):         
-                    l=misc.dict_recursive_get(results, keys)
-                    if not (midpoint, val) in l: 
-                        l.append((midpoint, val)) 
+                if kwargs.get('add_midpoint',True):
+                    for keys, val in zip([keys3,keys4,keys5,keys6],
+                                        [v_control0, v_lesion0, 
+                                         0, v_mse0/v_mse0]):         
+                        l=misc.dict_recursive_get(results, keys)
+                        if not (midpoint, val) in l: 
+                            l.append((midpoint, val)) 
                     
     for keys, val in misc.dict_iter(results):
         x, y=zip(*val)
@@ -259,7 +278,10 @@ def compute_performance(d, nets, models, attrs, **kwargs):
         a1,a2=9,45
         y=val[1]
         h=0.25
-        g=(-y[0]+a1*y[1]-a2*y[2]+a2*y[4]-a1*y[5]+y[6])/(60*h)
+        if len(y)>6:
+            g=(-y[0]+a1*y[1]-a2*y[2]+a2*y[4]-a1*y[5]+y[6])/(60*h)
+        else:
+            g=1
         d=misc.dict_recursive_add(gradients, keys, g)         
     return results, gradients
 
@@ -435,14 +457,20 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
         print val.shape
         out=misc.dict_recursive_set(out, keys, val)
 
-    l1=['M1', 'M2', 'FS', 'GA', 'GI', 'GP','SN', 'ST']
+    l1=[m for m in ['M1', 'M2', 'FS', 'GA', 'GI', 'GP','SN', 'ST'] if m in models]
     l1=[m for m in l1 if not (m in exclude)]
     l2=['GA_GA', 'GI_GA', 'GI_GI', 'GP_GP']
     dd={'firing_rate':{'labelsy':l1, 
                        'labelsx_meta':labelsx_meta},
         'synchrony_index':{'labelsy':l1, 
                               'labelsx_meta':labelsx_meta},
+        'oscillation_index':{'labelsy':l1, 
+                              'labelsx_meta':labelsx_meta},
         'mse_rel_control_fr':{'labelsy':l1, 
+                              'labelsx_meta':labelsx_meta},
+        'mse_rel_control_si':{'labelsy':l1, 
+                              'labelsx_meta':labelsx_meta},
+        'mse_rel_control_oi':{'labelsy':l1, 
                               'labelsx_meta':labelsx_meta},
         'mse_rel_control_psd':{'labelsy':l1, 
                               'labelsx_meta':labelsx_meta},
@@ -450,16 +478,12 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
                           'labelsx_meta':labelsx_meta},
         'mean_coherence_max':{'labelsy':l2, 
                           'labelsx_meta':labelsx_meta},
-        'oscillation_index':{'labelsy':l2, 
-                              'labelsx_meta':labelsx_meta},
         'mse_rel_control_mc':{'labelsy':l2, 
                               'labelsx_meta':labelsx_meta},
         'mse_rel_control_mcm':{'labelsy':l2, 
                               'labelsx_meta':labelsx_meta},
         'mse_rel_control_pdwc':{'labelsy':l2, 
-                              'labelsx_meta':labelsx_meta},
-        'mse_rel_control_oi':{'labelsy':l2, 
-                              'labelsx_meta':labelsx_meta},}
+                              'labelsx_meta':labelsx_meta}}
     
     for attr, d in dd.items():
         print attr
@@ -541,11 +565,11 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
 
     _plot_conn(**kwargs)
     
-    images[0].set_clim(k.get('cohere_ylim',[0,4]))
+    images[0].set_clim(k.get('cohere_ylim_image',[0,4]))
     
     kwargs['ax']=axs[1]
     _plot_bar(**kwargs)
-    axs[1].set_xlim(k.get('cohere_ylim',[0,4]))
+    axs[1].set_xlim(k.get('cohere_ylim_bar',[0,4]))
     
        
     box = axs[0].get_position()
@@ -573,10 +597,13 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
     
     axs[0].text(0.05, 
                 k.get('cohere_xlabel0_posy', -0.18), 
-                "Coherence", transform=axs[0].transAxes)
+                k.get('labelx0', "Coherence"), 
+                transform=axs[0].transAxes)
     axs[0].text(0.55, 
-                k.get('cohere_xlabel0_posy', -0.18), 
-                "Phase shift", transform=axs[0].transAxes)
+                k.get('cohere_xlabel0_posy', -0.18),
+                 
+                k.get('labelx1', "Phase shift"),
+                 transform=axs[0].transAxes)
     axs[1].text(0.5,
                  k.get('cohere_xlabel10_posy', -0.065),
                  "Mean", 
@@ -1005,6 +1032,7 @@ def create_figs(d, **kwargs):
             d['d_raw_lesion']['mse_rel_control_mc'],
             **kwargs)
         figs.append(fig)
+        
     if 'gradient' in do_plots:
      
         k = {'flag':'gradient', 
@@ -1013,6 +1041,7 @@ def create_figs(d, **kwargs):
                    'z_key':"z", 
                    'cmap':'coolwarm',
                    'color_line':'k'}
+    
         kwargs.update(k)
         fig = plot_conn(d['d_gradients_control']['firing_rate'], 
             d['d_gradients_control']['mean_coherence_max'], 
@@ -1023,10 +1052,19 @@ def create_figs(d, **kwargs):
     if 'cohere' in do_plots:
         d0 = d['d_raw_lesion']['mse_rel_control_mc']
         d1 = d['d_raw_lesion']['mse_rel_control_pdwc']
-        d = add(d0, d1)
-        fig=plot_coher(d, d['labelsx'], **kwargs)
+        d2 = add(d0, d1)
+        fig=plot_coher(d2, d2['labelsx'], **kwargs)
         figs.append(fig)
+
+    if 'mse_index' in do_plots:
+        d0 = d['d_raw_lesion']['mse_rel_control_si']
+        d1 = d['d_raw_lesion']['mse_rel_control_oi']
+        d2 = add(d0, d1)
+        kwargs['labelx0']='Synchronizy'
+        kwargs['labelx1']='Oscillation'
         
+        fig=plot_coher(d2, d2['labelsx'], **kwargs)
+        figs.append(fig)        
         
     return figs
 
@@ -1038,8 +1076,10 @@ def main(**kwargs):
     
     exclude=kwargs.get('exclude',[])
     
-    models=['M1', 'M2', 'FS', 'GA', 'GI', 'GP', 'ST','SN',
-            'GP_GP', 'GA_GA', 'GI_GA', 'GI_GI']
+    models=kwargs.get('models0', 
+                      ['M1', 'M2', 'FS', 'GA', 'GI', 'GP', 'ST','SN',
+                       'GP_GP', 'GA_GA', 'GI_GA', 'GI_GI'])
+
     models=[m for m in models if not ( m in exclude)]
     
     nets=['Net_0', 'Net_1']
@@ -1064,7 +1104,7 @@ def main(**kwargs):
               'mse_rel_control_oi', 'mse_rel_control_si',
               'mse_rel_control_psd']
     
-    exclude+=['MS_MS', 'FS_MS', 'MS']
+#     exclude+=['MS_MS', 'FS_MS', 'MS']
     sd = get_storage(file_name, '')
     d = get_data(models, 
                  nets, 

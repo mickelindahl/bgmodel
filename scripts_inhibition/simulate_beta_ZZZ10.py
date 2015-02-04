@@ -21,11 +21,11 @@ from toolbox.parallel_excecution import loop
 
 import sys
 import simulate_beta as module
-import oscillation_perturbations8 as op
+import oscillation_perturbations10 as op
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ8/')
+path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ10/')
                                   
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
@@ -42,7 +42,7 @@ kwargs={
         'Builder':Builder,
         
         'cores_milner':40*1,
-        'cores_superm':20,
+        'cores_superm':10,
         
         'debug':False,
         'do_runs':range(NUM_RUNS), #A run for each perturbation
@@ -55,7 +55,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'beta_ZZZ8',
+        'job_name':'beta_ZZZ9',
         
         'l_hours':  ['00','00','00'],
         'l_minutes':['15','10','5'],
@@ -96,8 +96,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-print 'from disk', FROM_DISK_0
-
-loop(min(num_sims, 10),[num_sims,num_sims,NUM_RUNS], a_list, k_list )
+loop(10,[num_sims,num_sims,NUM_RUNS], a_list, k_list )
 
         

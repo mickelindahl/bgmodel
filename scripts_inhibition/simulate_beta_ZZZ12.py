@@ -16,49 +16,52 @@ from simulate import (get_path_rate_runs,
                       pert_add_oscillations) 
 
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_beta as Builder
+from toolbox.network.manager import Builder_beta_EI_EA as Builder
 from toolbox.parallel_excecution import loop
 
 import sys
 import simulate_beta as module
-import oscillation_perturbations8 as op
+import oscillation_perturbations12 as op
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ8/')
+path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ12/')
                                   
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
+FROM_DISK_0=2
 LOAD_MILNER_ON_SUPERMICRO=False
+
+NUM_NETS=2
 
 # ops=[op.get()[0]]
 ops=op.get()
 NUM_RUNS=len(ops)
-NUM_NETS=2
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 num_sims=NUM_RUNS*NUM_NETS
+
 kwargs={
-        'amp_base':[1.2], #From ZZZ61
+        'amp_base':[1.15], #From ZZZ61
         
         'Builder':Builder,
         
         'cores_milner':40*1,
-        'cores_superm':20,
+        'cores_superm':10,
         
         'debug':False,
         'do_runs':range(NUM_RUNS), #A run for each perturbation
         'do_obj':False,
         
         'file_name':FILE_NAME,
-        'freqs':[1.5],  #amplitude frequencies
+        'freqs':[0.75],  #amplitude frequencies
         'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
         
-        'job_name':'beta_ZZZ8',
+        'job_name':'beta_ZZZ12',
         
-        'l_hours':  ['00','00','00'],
-        'l_minutes':['15','10','5'],
+        'l_hours':  ['00','01','00'],
+        'l_minutes':['15','00','5'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':20,
@@ -96,8 +99,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-print 'from disk', FROM_DISK_0
-
-loop(min(num_sims, 10),[num_sims,num_sims,NUM_RUNS], a_list, k_list )
+loop(10,[num_sims,num_sims,NUM_RUNS], a_list, k_list )
 
         

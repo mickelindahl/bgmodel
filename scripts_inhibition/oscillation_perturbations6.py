@@ -37,8 +37,8 @@ def get():
                '=',
                 **{'name':''}) 
         
-        l[-1]+=pl({'nest':{'GA_M1_gaba':{'weight':2.*0.4*y}, 
-                           'GA_M2_gaba':{'weight':2.*0.4*y},
+        l[-1]+=pl({'nest':{'GA_M1_gaba':{'weight':2.*y}, 
+                           'GA_M2_gaba':{'weight':2.*y},
                            'GA_FS_gaba':{'weight':2.},
                            'M1_low':{'GABAA_3_Tau_decay':12.},  
                            'M2_low':{'GABAA_3_Tau_decay':12.},

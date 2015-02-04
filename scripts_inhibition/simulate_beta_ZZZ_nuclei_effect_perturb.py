@@ -19,6 +19,7 @@ from toolbox.network import default_params
 from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
 
+import sys
 import simulate_beta as module
 import oscillation_perturbations4 as op
 import oscillation_perturbations_nuclei as op_neuclei
@@ -26,18 +27,18 @@ import pprint
 pp=pprint.pprint
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=2
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 #Total number of runs 18*2*2+18
-NUM_NETS=73*2
 NUM_NETS=2
-NUM_RUNS=73 #A run for each perturbation
+NUM_RUNS=len(op_neuclei.get()) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
+path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ4/')
 
 kwargs={
         
-        'amp_base':[1.2],
+        'amp_base':[1.15],
         
         'Builder':Builder,
         
@@ -55,10 +56,10 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'sw_conn_pert',
+        'job_name':'be_nucl_pert2',
         
         'l_hours':  ['00','00','00'],
-        'l_minutes':['25','10','5'],
+        'l_minutes':['45','10','5'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,
@@ -71,12 +72,12 @@ kwargs={
         'op_pert_add':op_neuclei.get(),
         
         'path_code':default_params.HOME_CODE,
-        'path_rate_runs':get_path_rate_runs('simulate_inhibition_ZZZ4/'),
+        'path_rate_runs':path_rate_runs,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
         'perturbation_list':[op.get()[7]],
         
-        'sim_time':10000.0,
+        'sim_time':40000.0,
         'size':20000.0 ,
         }
 

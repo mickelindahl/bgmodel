@@ -12,7 +12,8 @@ from copy import deepcopy
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network.data_processing import (dummy_data_du, Data_unit_spk,
                                              Data_unit_base, Data_units_relation)
-from toolbox.network.default_params import Perturbation_list as pl
+from toolbox.network.default_params import Perturbation_list as pl,\
+    Slow_wave2_EI_EA, Beta_EI_EA
 from toolbox.network.default_params import (Beta,
                                             Go_NoGo_compete,
                                             Inhibition, 
@@ -476,6 +477,20 @@ class Builder_slow_wave2(Builder_slow_wave2_base,
                       Mixin_reversal_potential_striatum):
     pass
 
+class Builder_slow_wave2_EI_EA_base(Builder_abstract):    
+      
+    def _get_striatal_reversal_potentials(self):
+        return [self._low()]    
+
+    def get_parameters(self, per):
+        return Slow_wave2_EI_EA(**{'other':Inhibition(),
+                                   'perturbations':per})
+     
+class Builder_slow_wave2_EI_EA(Builder_slow_wave2_EI_EA_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
 
 class Builder_slow_wave2_perturb_base(Builder_abstract):    
     
@@ -514,7 +529,20 @@ class Builder_beta(Builder_beta_base,
                       Mixin_reversal_potential_striatum):
     pass
  
- 
+class Builder_beta_EI_EA_base(Builder_abstract):    
+      
+    def _get_striatal_reversal_potentials(self):
+        return [self._low()]    
+
+    def get_parameters(self, per):
+        return Beta_EI_EA(**{'other':Inhibition(),
+                       'perturbations':per})
+     
+class Builder_beta_EI_EA(Builder_beta_EI_EA_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass 
 def get_intervals(rep, durations, d, sequence):
     accum = 0
     intervals = []

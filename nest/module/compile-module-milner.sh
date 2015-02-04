@@ -1,5 +1,7 @@
 #!/bin/sh
-#Input: Take module-DATE, nest-version, nest-install-dir and nest-source-models-dir as input
+#Input: Take module-DATE, nest-version, nest-install-dir and nest-source-models-dir/models as input
+
+#OBS might need to use nest with put music in nest-2.2.2-wo-music!!
 #Examples: 
 # compile-module-milner module-130701 nest-2.2.2 /pdc/vol/nest/2.2.2/ /afs/nada.kth.se/home/w/u1yxbcfw/opt/NEST/dist/nest-2.2.2/models
 #./compile-module.sh module-130701 nest-2.4.2 /home/mikael/opt/NEST/dist/install-nest-2.4.2/ /home/mikael/opt/NEST/dist/nest-2.4.2/models
