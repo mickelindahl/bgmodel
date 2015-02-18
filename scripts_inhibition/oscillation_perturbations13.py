@@ -35,6 +35,7 @@ def get():
     misc.dict_update(d,{'nest':{'ST':{'beta_I_AMPA_1': f_beta_rm(x)}}})
     misc.dict_update(d,{'nest':{'ST':{'beta_I_NMDA_1': f_beta_rm(x)}}})
     d['node']['EA']['rate']*=0.7
+    
     l[-1]+=pl(d, '=', **{'name':'mod_ST_beta_'+str(x)})    
             
     

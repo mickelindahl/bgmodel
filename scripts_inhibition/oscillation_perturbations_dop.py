@@ -122,7 +122,7 @@ def get():
     
     
     d={}
-    for name in ['M1', 'CTX_M1', 'CTX_M2', 'FS_FS', 
+    for name in ['M1', 'CTX_M1', 'CTX_M2', 'MS_MS',  'FS_FS', 
                  'GP_FS', 'FS_M2', 'CTX_ST', 'GP_ST', 'GP',
                  'ST_GP', 'GP_GP', 'SN', 'M1_SN']:
         d=misc.dict_update(d, get_change_to(name))
@@ -131,8 +131,8 @@ def get():
     l+=[pl(d,'*', **{'name':'no_ch_dop-all'})]
 
     for s in ['M1', 'CTX_M1', 'CTX_M2', 'MS_MS', 'FS_FS', 
-                     'GP_FS', 'FS_M2', 'CTX_ST', 'GP_ST', 'GP',
-                     'ST_GP', 'GP_GP', 'SN', 'M1_SN']:
+              'GP_FS', 'FS_M2', 'CTX_ST', 'GP_ST', 'GP',
+              'ST_GP', 'GP_GP', 'SN', 'M1_SN']:
         d={}
         for name in [s]:
             d=misc.dict_update(d, get_change_to(name))

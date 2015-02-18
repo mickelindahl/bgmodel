@@ -26,7 +26,7 @@ from toolbox.parallel_excecution import loop
 import sys
 import simulate_beta as module
 import oscillation_perturbations13 as op
-import oscillation_perturbations_dop as op_dop
+import oscillation_perturbations_dop2 as op_dop
 import pprint
 pp=pprint.pprint
 
@@ -48,6 +48,9 @@ kwargs={
         'do_runs':range(18), #A run for each perturbation
         'do_obj':False,
         
+        
+        'external_input_mod':['EI','EA'],
+        
         'file_name':FILE_NAME,
         'freqs':[0.8],
         'freq_oscillation':20.,
@@ -58,7 +61,7 @@ kwargs={
         'job_name':'be_dop_pert2',
         
         'l_hours':  ['00','00','00'],
-        'l_minutes':['45','10','5'],
+        'l_minutes':['45','45','5'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':20,

@@ -33,8 +33,8 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[1.15] #[umpy.arange(0.7, 1.3, 0.05)
-freqs=numpy.arange(0.3, 1.0, 0.1)
+amp_base=numpy.arange(0.9, 1.25, 0.05)
+freqs=numpy.arange(0.3, 1.5, 0.1)
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
@@ -64,10 +64,10 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'beta_ZZZ83',
+        'job_name':'beta_ZZZ13',
         
         'l_hours':  ['00','01','00'],
-        'l_minutes':['15','00','5'],
+        'l_minutes':['45','00','5'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':20,
@@ -76,7 +76,7 @@ kwargs={
         'module':module,
         
         'nets':['Net_0','Net_1'], #The nets for each run
-        'no_oscillations_control':True,
+#         'no_oscillations_control':True,
         
         'path_code':default_params.HOME_CODE,
         'path_rate_runs':path_rate_runs,
@@ -84,7 +84,7 @@ kwargs={
                                      FILE_NAME),
         'perturbation_list':op.get(),
         
-        'sim_time':10000.0,
+        'sim_time':40000.0,
         'size':20000.0 ,
         }
 
@@ -105,6 +105,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(40,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

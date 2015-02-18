@@ -500,7 +500,7 @@ class Setup(object):
         self.nets_to_run=k.get('nets_to_run',[])
         self.other_scenario=k.get('other_scenario',False)
         self.proportion_connected=k.get('proportion_connected',1)
-        self.p_pulse=k.get('p_pulse')
+        self.p_pulses=k.get('p_pulses')
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
         self.time_bin=k.get('time_bin',5)

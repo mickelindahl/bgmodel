@@ -48,7 +48,8 @@ class Setup(object):
     
       
     def coherence(self):
-        d = {'fs':self.fs, 'NFFT':128, 
+        d = {'fs':self.fs, 
+             'NFFT':128, 
             'noverlap':int(128/2), 
             'sample':100., 
              'local_num_threads':self.local_num_threads}
@@ -95,7 +96,7 @@ class Setup(object):
     def firing_rate(self):
         d={'average':False, 
            'local_num_threads':self.local_num_threads,
-           'win':100.0,
+#            'win':100.0,
            'time_bin':1000.0/self.fs}
         
         return d
@@ -135,7 +136,17 @@ class Setup(object):
            'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
            }
         return d
-    
+
+    def plot_summed_STN(self):
+        d={'xlim_cohere':[0, 50],
+           'all':True,
+           'p_95':False,
+           'leave_out':['control_fr', 'control_cv'],
+           'statistics_mode':'activation',
+           'models_pdwc': ['ST_ST', 'GP_ST', 'GI_ST', 'GA_ST'],
+           }
+        return d
+
 class Main():    
     def __init__(self, **kwargs):
         self.kwargs=kwargs

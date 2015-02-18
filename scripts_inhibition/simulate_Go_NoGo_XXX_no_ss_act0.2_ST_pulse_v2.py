@@ -28,6 +28,8 @@ FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=1
 LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=1
+NUM_RUNS=1
+num_sims=NUM_NETS*NUM_RUNS
 
 kwargs={
         'Builder':Builder,
@@ -69,7 +71,7 @@ kwargs={
         'perturbation_list':[op.get()[4+3]],
         'proportion_connected':[0.2]*1, #related to toal number fo runs
         
-        'pulses':[5],
+        'p_pulses':[5], #STN static pulse size
         'p_sizes':[
                     1,
                 ],
@@ -94,4 +96,4 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 # loop(get_loop_index(5, [15,15,3]), a_list, k_list )
         
-loop(1, [NUM_NETS, NUM_NETS, 1], a_list, k_list )
+loop(1, [num_sims, num_sims, NUM_RUNS], a_list, k_list )

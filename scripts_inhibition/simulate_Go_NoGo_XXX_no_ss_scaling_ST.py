@@ -12,7 +12,7 @@ from simulate import (pert_add_go_nogo_ss, get_path_logs,
                       get_kwargs_list_indv_nets)
 from toolbox.network import default_params
 from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS_ST as Builder
-from toolbox.parallel_excecution import get_loop_index, loop
+from toolbox.parallel_excecution import loop
 
 import scripts_inhibition.Go_NoGo_compete as module
 
@@ -36,7 +36,7 @@ kwargs={
         
         'debug':False,
         'do_runs':[0,1,2,3,4],
-        'do_obj':False,
+        'do_obj':True,
         'duration':[900.,100.0],
         
         'file_name':FILE_NAME,

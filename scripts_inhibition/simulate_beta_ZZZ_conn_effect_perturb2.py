@@ -43,11 +43,15 @@ kwargs={
         
         'cores_milner':40*1,
         'cores_superm':40,
-        
+
+
+     
         'debug':False,#173-86, 109-54, 45-22
         'do_runs':range(NUM_NETS/2), #A run for each perturbation
         'do_obj':False,
-        
+
+        'external_input_mod':['EI','EA'],
+                
         'file_name':FILE_NAME,
         'freqs':[0.8],
         'freq_oscillation':20.,
@@ -58,7 +62,7 @@ kwargs={
         'job_name':'be_conn_pert2',
         
         'l_hours':  ['00','00','00'],
-        'l_minutes':['45','10','5'],
+        'l_minutes':['45','45','5'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,

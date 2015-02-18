@@ -135,6 +135,17 @@ class Setup(object):
            'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
            }
         return d
+    
+    def plot_summed_STN(self):
+        d={'xlim_cohere':[0, 10],
+           'all':True,
+           'p_95':False,
+           'leave_out':['control_fr', 'control_cv'],
+           'statistics_mode':'slow_wave',
+           'models_pdwc': ['ST_ST', 'GP_ST', 'GI_ST', 'GA_ST'],
+           }
+        return d
+    
 def main(builder=Builder,
          from_disk=1,
          perturbation_list=None,

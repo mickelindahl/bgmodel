@@ -3,9 +3,6 @@ Created on Sep 10, 2014
 
 @author: mikael
 
-
-
-
 '''
 import matplotlib.gridspec as gridspec
 import numpy
@@ -14,7 +11,7 @@ import os
 import toolbox.plot_settings as ps
 
 from matplotlib.font_manager import FontProperties
-
+from toolbox.my_signals import Data_bar
 from toolbox import misc
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network.manager import get_storage, save
@@ -30,10 +27,14 @@ pp=pprint.pprint
 def create_name(file_name):
     return file_name.split('-')[-1]
 
-def gather(path, nets, models, attrs, name_maker=create_name, **kwargs): 
+
+
+
+def gather(path, nets, models, attrs, **kwargs): 
      
     fs=kwargs.get('file_names')
     dic_keys=kwargs.get('dic_keys')
+    name_maker=kwargs.get('name_maker', create_name)
     
     if not fs:
         fs=os.listdir(path)
@@ -54,11 +55,12 @@ def gather(path, nets, models, attrs, name_maker=create_name, **kwargs):
             if not os.path.isfile(name):
                 print name
                 continue
+#             slice(0,-4)
             file_name=name[:-4]
             sd = Storage_dic.load(file_name)
             args=nets+models+attrs
             dd=misc.dict_update(dd, sd.load_dic(*args))
-
+#         print key, dd.keys()
         if dd:  
             d = misc.dict_update(d, {key:dd})
         i+=1
@@ -85,14 +87,14 @@ def extract_data(d, nets, models, attrs, **kwargs):
             std=numpy.std(val.y)
             v=numpy.mean(val.y)
             synchrony_index=(std**2)/v
-
+#             print keys, round(synchrony_index,1)#, round(v,1), round(std,1)
             
-            x=val.x[kwargs.get('oi_start', 1000):]
-            y=val.y[kwargs.get('oi_start', 1000):]
+            x=val.x[kwargs.get('oi_start', 256*20):256*30]
+            y=val.y[kwargs.get('oi_start', 256*20):256*30]
   
-            kwargs=kwargs.pop('psd',{'NFFT':128*8*4, 
-                                    'fs':1000., 
-                                    'noverlap':128*8*4/2}) 
+            k=kwargs.get('psd',{'NFFT':128*8*4, 
+                               'fs':kwargs.get('oi_fs',1000.), 
+                               'noverlap':128*8*4/2}) 
 
               
             d={'x':x, 'y':y}
@@ -104,22 +106,38 @@ def extract_data(d, nets, models, attrs, **kwargs):
 #             y=numpy.mean(y.reshape((len(y)/4),4), axis=1).ravel()
   
               
-            ypsd,xpsd=sp.psd(deepcopy(y), **kwargs)
+            ypsd,xpsd=sp.psd(deepcopy(y), **k)
             d={'x':xpsd,'y':ypsd}
             psd=Data_psd(**d)
+
+
+#             pylab.subplot(211).plot(val.x, val.y)
+#             pylab.subplot(211).plot(x, y)
+#             pylab.subplot(212).plot(psd.x, psd.y)
+#             pylab.title(str(keys))
+#             pylab.show()
+#             pylab.subplot(212).plot(psd2.x, psd2.y)
+#             pylab.subplot(212).plot(psd3.x, psd3.y)
             
             
             bol=(psd.x>kwargs.get('oi_min', 15))*(psd.x<kwargs.get('oi_max', 25))
             integral1=sum(psd.y[bol])
+            
 #             integral2=sum(val.y[val.x<100])
-            integral2=sum(psd.y)
+            
+            bol=(psd.x>0)*(psd.x<kwargs.get('oi_upper', 1000))
+            integral2=sum(psd.y[bol])
             oscillation_index=integral1/integral2
 
             args=[[keys, keys[0:-1]+['synchrony_index'],
                    keys[0:-1]+['oscillation_index']],
                   [v, synchrony_index,
                    oscillation_index]]
-   
+
+#             if keys[-2]=='M2_GI':
+#                 pylab.plot(psd.x, psd.y)
+#                 print keys
+#                 pylab.show()
 #  
 #             ypsd,xpsd=sp.psd(deepcopy(y-numpy.mean(y)), **kwargs)
 # #             ypsd,xpsd=sp.psd(deepcopy(y), **kwargs)
@@ -169,6 +187,19 @@ def compute_mse(v1,v2):
     
     return v_mse
 
+
+
+def add_or_append(results, l, x,  keys, values):
+    for keys, val in zip(keys, values):
+        if not misc.dict_haskey(results, keys):
+            results = misc.dict_recursive_add(results, keys, 
+                [(x, val)])
+        else:
+            l = misc.dict_recursive_get(results, keys)
+            l.append((x, val))
+    
+    return keys, val, l, results
+
 def compute_performance(d, nets, models, attrs, **kwargs):       
     results={}
     
@@ -179,44 +210,68 @@ def compute_performance(d, nets, models, attrs, **kwargs):
             continue
         for model in models:
             for attr in attrs:
+               
+                run_key_list=run.split('_')
                 
-                keys_c= [kwargs.get('key_no_pert','no_pert'), 
-                         'Net_0', model, attr]
-                keys_l= [kwargs.get('key_no_pert','no_pert'), 
-                         'Net_1', model, attr]
-                
-                if not misc.dict_haskey(d, keys_c ):
-                    continue
-                
-                v_control0=misc.dict_recursive_get(d,keys_c)
-                v_lesion0=misc.dict_recursive_get(d,keys_l)
-                if type(v_lesion0)==str:
-                    print v_lesion0
-                if type(v_control0)==str:
-                    print v_control0
-                v_mse0=compute_mse(v_control0, v_lesion0)
-                
-                
-                l=run.split('_')
-                if len(l)==4:
-                    s,t,_,x=l
+                if kwargs.get('compute_performance_name_and_x'):
+                    x, name=kwargs.get('compute_performance_name_and_x')(run_key_list)
+                elif len(run_key_list)==4:
+                    s,t,_,x=run_key_list
                     x=float(x)
                     name=s+'_'+t
-                elif len(l)==3:
-                    name,_,mod=l
+                elif len(run_key_list)==3:
+                    name,_,mod=run_key_list
                     x=int(mod[3:])
-                elif len(l)==2:
-                    s,t=l
+                elif len(run_key_list)==2:
+                    s,t=run_key_list
                     name=s+'_'+t
                     x=1
-                elif len(l)==1:
-                    name=l[0]
+                elif len(run_key_list)==1:
+                    name=run_key_list[0]
                     x=1
-                    
+                print name 
                 keys1=[run, 'Net_0', model, attr]
                 keys2=[run, 'Net_1', model, attr]
                 keys3=['control',name, model, attr]
                 keys4=['lesion',name, model, attr]
+                
+                if not misc.dict_haskey(d, keys1 ):
+                    continue
+
+                v1=misc.dict_recursive_get(d, keys1)
+                v2=misc.dict_recursive_get(d, keys2)               
+
+          
+
+                keys=[keys3, keys4]
+                values= [v1, v2]
+                add_or_append(results,  run_key_list,x, keys, values)
+                
+                
+                ref_keys=kwargs.get('compute_performance_ref_key', 'no_pert')
+                keys_c= [kwargs.get('key_no_pert',ref_keys), 
+                         'Net_0', model, attr]
+                keys_l= [kwargs.get('key_no_pert',ref_keys), 
+                         'Net_1', model, attr]
+                
+                if not misc.dict_haskey(d, keys_c ):
+                    continue
+                      
+                v_control0=misc.dict_recursive_get(d,keys_c)
+                v_lesion0=misc.dict_recursive_get(d,keys_l)
+               
+#                 if type(v_lesion0)==str:
+#                     print v_lesion0
+#                 if type(v_control0)==str:
+#                     print v_control0
+
+                v_mse0=compute_mse(v_control0, v_lesion0)
+#                 if model=='ST' and keys_c[-1]=='synchrony_index':
+#                     print keys_c, v_mse0                
+                
+
+                    
+
                
                 if attr=='firing_rate':
                     s='fr'
@@ -237,20 +292,16 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 keys6=['lesion', name, model, 'mse_rel_control_'+s]
                         
                 
-                v1=misc.dict_recursive_get(d, keys1)
-                v2=misc.dict_recursive_get(d, keys2)
+
                 
                 v_mse1=compute_mse(v_control0,v1)
                 v_mse2=compute_mse(v_control0,v2)/v_mse0
         
-                for keys, val in zip([keys3,keys4, keys5,keys6],
-                                     [v1, v2, v_mse1, v_mse2]): 
-                    if not misc.dict_haskey(results, keys):
-                        results=misc.dict_recursive_add(results,  keys, 
-                                                    [(x, val)])                
-                    else:
-                        l=misc.dict_recursive_get(results, keys)
-                        l.append((x, val))
+
+                
+                keys=[ keys5, keys6]
+                values=[v_mse1, v_mse2]
+                add_or_append(results,  run_key_list,x, keys, values)
 
                 
                 #Add midpoint
@@ -259,6 +310,7 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                                         [v_control0, v_lesion0, 
                                          0, v_mse0/v_mse0]):         
                         l=misc.dict_recursive_get(results, keys)
+#                         print keys, l
                         if not (midpoint, val) in l: 
                             l.append((midpoint, val)) 
                     
@@ -368,10 +420,46 @@ def gs_builder_index(*args, **kwargs):
     gs.update(wspace=kwargs.get('wspace', 0.02 ), 
               hspace=kwargs.get('hspace', 0.1 ))
 
-    iterator = [[slice(0,1),slice(0,1)],
-                [slice(0,1),slice(1,2)]]
+    iterator = [
+                [slice(0,3),slice(0,1)],
+                [slice(3,6),slice(0,1)],
+                [slice(0,3),slice(1,2)],
+                [slice(3,6),slice(1,2)]]
     
     return iterator, gs, 
+
+def gs_builder_index2(*args, **kwargs):
+
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',3)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.02 ), 
+              hspace=kwargs.get('hspace', 0.1 ))
+
+    iterator = [
+                [slice(0,1),slice(0,2)],
+                [slice(2,3),slice(0,2)],
+                [slice(1,2),slice(0,2)],
+                [slice(3,4),slice(0,2)]]
+    
+    return iterator, gs, 
+
+# def gs_builder_index(*args, **kwargs):
+# 
+#     n_rows=kwargs.get('n_rows',2)
+#     n_cols=kwargs.get('n_cols',3)
+#     order=kwargs.get('order', 'col')
+#     
+#     gs = gridspec.GridSpec(n_rows, n_cols)
+#     gs.update(wspace=kwargs.get('wspace', 0.02 ), 
+#               hspace=kwargs.get('hspace', 0.1 ))
+# 
+#     iterator = [[slice(0,1),slice(0,1)],
+#                 [slice(0,1),slice(1,2)]]
+#     
+#     return iterator, gs, 
 
 # gs_builder_index
 
@@ -406,6 +494,22 @@ def gs_builder_coher(*args, **kwargs):
     
     return iterator, gs, 
 
+def gs_builder_oi_si(*args, **kwargs):
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',3)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.05 ), 
+              hspace=kwargs.get('hspace', 1. / n_cols ))
+
+    iterator = [[slice(0,1), slice(0,1) ],
+                [slice(0,1), slice(1,4) ],
+                [slice(1,2), slice(0,1) ],
+                [slice(1,2), slice(1,4) ]]
+    
+    return iterator, gs, 
+
 def gs_builder_coher2(*args, **kwargs):
     n_rows=kwargs.get('n_rows',2)
     n_cols=kwargs.get('n_cols',3)
@@ -420,7 +524,7 @@ def gs_builder_coher2(*args, **kwargs):
     
     return iterator, gs, 
 
-def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firing_rate'):
+def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firing_rate', **kwargs):
 
     labelsx_meta=[]
     
@@ -429,7 +533,7 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
     if flag=='gradient':
         data_keys=['z']
     
-    for k in sorted(d.keys()):
+    for k in kwargs.get('key_sort', sorted)(d.keys()):
         if k in exclude:
             continue        
         labelsx_meta.append(k)
@@ -504,6 +608,9 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
             
     return dd
 
+
+
+
 def separate_M1_M2(*args, **kwargs):
     l=[]
     for d in args:
@@ -517,6 +624,62 @@ def separate_M1_M2(*args, **kwargs):
                 d1[k]=d1[k][kwargs.get(k+'_sep_at',2):]
         l.extend([d0,d1])
     return l
+
+
+def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
+    fs=k.get('cohere_fig_fontsize',16)
+    tfs=k.get('cohere_fig_title_fontsize',16)
+    fig, axs=ps.get_figure2(n_rows=2,
+                             n_cols=5,  
+                             w=800,
+                             h=400,
+#                             w=k.get('w',500), 
+#                             h=k.get('h',900), 
+                            linewidth=1,
+                            fontsize=fs,
+                            title_fontsize=tfs,
+                            gs_builder=k.get('cohere_gs', gs_builder_oi_si)) 
+    
+    ax=axs[0]
+    bol=[l=='Normal' for l in d1['labelsx_meta']]
+    y=[numpy.mean(d0['y'][0,:]),
+       d1['y'][0, numpy.array(bol)]]
+    
+#     Data_bar(**{'y':[[y_mean[0], y_mean[1]],
+#                      [Y[0][0],  Y[0][1]]],
+#                 'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
+#                          [0.,  0.]]}).bar2(axs[i], **{'edgecolor':'k',
+#                                                       'top_lable_rotation':0,
+#                                                       'top_label_round_off':0})
+                         
+    posy=[0.5,1.5]    
+
+    ax.bar(posy,y, align='center', color='0.5',
+    #                    linewidth=0.1
+            )
+#     ax.plot([1,1], [0,stopy], 'k', linewidth=1, linestyle='--')    
+#     ax.set_ylim([0,stopy])      
+    
+    ax=axs[1]
+    for i in range(3):
+        posx=range(len(d0['y'][i,:]))
+        ax.plot(posx, d0['y'][i,:],'k')
+        ax.plot(posx, d1['y'][i,:])
+    ax.set_xticks(posx)
+    ax.set_xticklabels(d0['labelsx_meta'],
+                       fontsize=k.get('fontsize_y',7),
+                       rotation=70)
+    
+    ax=axs[3]
+    for i in range(3):
+        posx=range(len(d2['y'][i,:]))
+        ax.plot(posx, d2['y'][i,:],'k')
+        ax.plot(posx, d3['y'][i,:])
+    ax.set_xticks(posx)
+    ax.set_xticklabels(d2['labelsx_meta'],
+                       fontsize=k.get('fontsize_y',7),
+                       rotation=70)
+    pylab.show()
 
 def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
     
@@ -561,7 +724,8 @@ def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
             'starty':starty,
             'nice_labels_x':nice_labels(version=1),
             'nice_labels_y':nice_labels(version=0),
-            'color_line':'w'}
+            'color_line':'w',
+            'cmap':k.get('cmap','jet')}
 
     _plot_conn(**kwargs)
     
@@ -910,7 +1074,16 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
                         fontsize=kwargs.get('top_lables_fontsize',20),
                         transform=axs[3].transAxes)  
         title_pos=1.6
-
+    elif kwargs.get('ax_4x1', False):
+        if kwargs.get('top_labels_show',True):     
+            axs[2].text(0.35, 1.05, "Lesion", 
+                        fontsize=kwargs.get('top_lables_fontsize',20),
+                        transform=axs[2].transAxes)  
+        axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True) 
+        axs[1].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True) 
+        axs[2].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True) 
+        axs[3].my_remove_axis(xaxis=False, yaxis=False,keep_ticks=True)
+        title_pos=1.4
     else:    
         if kwargs.get('top_labels_show',True):     
             axs[2].text(0.35, 1.05, "Lesion", 
@@ -959,30 +1132,37 @@ def get_data(models, nets, attrs, path, from_disk, attr_add, sd, **kwargs):
     
     d = {}
     if not from_disk:
-        d['raw'] = gather(path, nets, models, attrs)
+        d['raw'] = gather(path, nets, models, attrs, **kwargs)
         d['data'], attrs = extract_data(d['raw'], nets, models, attrs, **kwargs)
+#         if kwargs.get('compute_performance', True):
         out = compute_performance(d['data'], nets, models, attrs, **kwargs)
+        
+        
         d['change_raw'], d['gradients'] = out
         v = generate_plot_data_raw(d['change_raw']['control'], 
             models, attrs + attr_add, 
             flag='raw', 
-            exclude=exclude)
+            exclude=exclude,
+            **kwargs)
         d['d_raw_control'] = v
         v = generate_plot_data_raw(d['change_raw']['lesion'], 
             models, 
             attrs + attr_add, 
             flag='raw', 
-            exclude=exclude)
+            exclude=exclude,
+            **kwargs)
         d['d_raw_lesion'] = v
         v = generate_plot_data_raw(d['gradients']['control'], 
             models, attrs + attr_add, 
             flag='gradient', 
-            exclude=exclude)
+            exclude=exclude,
+            **kwargs)
         d['d_gradients_control'] = v
         v = generate_plot_data_raw(d['gradients']['lesion'], 
             models, attrs + attr_add, 
             flag='gradient', 
-            exclude=exclude)
+            exclude=exclude,
+            **kwargs)
         d['d_gradients_lesion'] = v
 
         del d['raw']
@@ -1065,6 +1245,18 @@ def create_figs(d, **kwargs):
         
         fig=plot_coher(d2, d2['labelsx'], **kwargs)
         figs.append(fig)        
+        
+    if 'synchrony__index' in do_plots:
+        d0 = d['d_raw_control']['synchrony_index']
+        d1 = d['d_raw_lesion']['synchrony_index']
+        d2 = d['d_raw_control']['oscillation_index']
+        d3 = d['d_raw_lesion']['oscillation_index']
+#         d2 = add(d0, d1)
+#         kwargs['labelx0']='Synchronizy'
+#         kwargs['labelx1']='Oscillation'
+        
+        fig=plot_oi_si(d0,d1,d2,d3, **kwargs)
+        figs.append(fig)          
         
     return figs
 

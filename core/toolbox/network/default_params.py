@@ -777,7 +777,7 @@ class Par_base(object):
             v=v.do(self) 
 
         return v  
-     
+
     def get(self, *args):
         return self._get(*args) 
      
@@ -3107,7 +3107,7 @@ class Beta_EI_EA_base(object):
                        'freq_max':None,
                        'period':'constant'}} 
         
-        
+    
         for key in ['C1', 'C2', 'CF', 'CS', 'EA', 'EI']: 
             dic['netw']['input'][key]=d  
             new_name=key+'d' 
@@ -3122,6 +3122,42 @@ class Beta_EI_EA_base(object):
 
 class Beta_EI_EA(Par_base, Beta_EI_EA_base, Par_base_mixin): 
     pass 
+
+class Beta_striatum_base(object):
+    def _get_par_constant(self):
+        dic_other=self.other.get_par_constant()
+        
+        #self._dic_con['node']['M1']['n']
+        
+        
+        dic={'netw':{'input':{}},
+             'nest':{},
+             'node':{}}
+        
+        d={'type':'oscillation2', 
+             'params':{'p_amplitude_mod':0.1,
+                       'p_amplitude0':1.0,
+                       'freq': 20.,
+                       'freq_min':None,
+                       'freq_max':None,
+                       'period':'constant'}} 
+        
+        
+        for key in ['C1', 'C2', 'CF']: 
+            dic['netw']['input'][key]=d  
+            new_name=key+'d' 
+            dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
+                                   'rates':[0.],
+                                   'timings':[1.]}   
+            dic['node'][key]={'model':new_name}
+        
+        dic = misc.dict_update(dic_other, dic)
+        return dic
+
+
+class Beta_striatum(Par_base, Beta_striatum_base, Par_base_mixin): 
+    pass 
+
 
 class ThalamusPar_base(object):
     

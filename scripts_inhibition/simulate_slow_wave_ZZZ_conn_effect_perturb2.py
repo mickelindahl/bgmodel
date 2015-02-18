@@ -52,12 +52,14 @@ kwargs={
         'freq_oscillation':1.,
         'from_disk_0':FROM_DISK_0,
         
+        'external_input_mod':['EI','EA'],
+        
         'i0':FROM_DISK_0,
         
         'job_name':'sw_conn_pert2',
         
         'l_hours':  ['00','00','00'],
-        'l_minutes':['45','10','5'],
+        'l_minutes':['45','45','5'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,

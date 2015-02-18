@@ -12,7 +12,7 @@ from simulate import (pert_add_go_nogo_ss, get_path_logs,
                       get_kwargs_list_indv_nets)
 from toolbox.network import default_params
 from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS_ST_pulse as Builder
-from toolbox.parallel_excecution import get_loop_index, loop
+from toolbox.parallel_excecution import loop
 
 import scripts_inhibition.Go_NoGo_compete as module
 
@@ -27,7 +27,9 @@ from copy import deepcopy
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=0
 LOAD_MILNER_ON_SUPERMICRO=False
-NUM_NETS=2*3
+NUM_NETS=3 #
+NUM_RUNS=2
+num_sims=NUM_NETS*NUM_RUNS
 kwargs={
         'Builder':Builder,
         
@@ -60,7 +62,7 @@ kwargs={
         'max_size':5000,
         'module':module,
         
-        'nets':['Net_0','Net_1','Net_2'],
+        'nets':['Net_{}'.format(i) for i in range(NUM_NETS)],
         
         'other_scenario':True,
         
@@ -68,8 +70,7 @@ kwargs={
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
         'perturbation_list':[op.get()[4+3]],
-        
-        'pulses':[5, 7.5, 10],
+        'p_pulses':[5., 7.5, 10.], #A network for each, pulse amplitude STN
         'p_sizes':[
                     1,
 #                     0.523,   
@@ -98,4 +99,4 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 # loop(get_loop_index(5, [15,15,3]), a_list, k_list )
         
-loop(6, [NUM_NETS,NUM_NETS,2], a_list, k_list )
+loop(6, [num_sims,num_sims,NUM_RUNS], a_list, k_list )

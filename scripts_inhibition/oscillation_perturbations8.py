@@ -91,6 +91,29 @@ def get_solution():
     
     return solution, s_mul, s_equal
 
+def get_solution_slow_GP_striatum():
+    
+    solution, s_mul, s_equal=get_solution()
+    # Decreasing from 0.8 leads to ...
+    # Increasing from 0.8 leads to ... 
+    d={'nest':{'GA_M1_gaba':{'weight':0.8/5}, 
+               'GA_M2_gaba':{'weight':0.8/5}}}
+    misc.dict_update(solution,d)            
+     
+    # Decreasing from 2 leads to ...
+    # Increasing from 2 leads to ... 
+    d={'nest':{'GA_FS_gaba':{'weight':2./5}}}
+    misc.dict_update(solution,d)           
+    
+    # Just assumed to be 12 ms    
+    d={'nest':{'M1_low':{'GABAA_3_Tau_decay':12.*5},  
+               'M2_low':{'GABAA_3_Tau_decay':12.*5},
+               'FS_low':{'GABAA_2_Tau_decay':12.*5},     
+               }}
+    misc.dict_update(solution,d)           
+    
+    return solution, s_mul, s_equal
+
 def update(solution, d, keys):
     v=misc.dict_recursive_get(solution, keys)
     misc.dict_recursive_add(d, keys, v) 

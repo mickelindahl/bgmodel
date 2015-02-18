@@ -13,7 +13,7 @@ from toolbox.data_to_disk import Storage_dic
 from toolbox.network.data_processing import (dummy_data_du, Data_unit_spk,
                                              Data_unit_base, Data_units_relation)
 from toolbox.network.default_params import Perturbation_list as pl,\
-    Slow_wave2_EI_EA, Beta_EI_EA
+    Slow_wave2_EI_EA, Beta_EI_EA, Beta_striatum
 from toolbox.network.default_params import (Beta,
                                             Go_NoGo_compete,
                                             Inhibition, 
@@ -543,6 +543,21 @@ class Builder_beta_EI_EA(Builder_beta_EI_EA_base,
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass 
+
+class Builder_beta_striatum_base(Builder_abstract):    
+      
+    def _get_striatal_reversal_potentials(self):
+        return [self._low()]    
+
+    def get_parameters(self, per):
+        return Beta_striatum(**{'other':Inhibition(),
+                                'perturbations':per})
+     
+class Builder_beta_striatum(Builder_beta_striatum_base, 
+                              Mixin_dopamine, 
+                              Mixin_general_network, 
+                              Mixin_reversal_potential_striatum):
+    pass
 def get_intervals(rep, durations, d, sequence):
     accum = 0
     intervals = []
@@ -998,7 +1013,7 @@ class Builder_Go_NoGo_with_lesion_FS_ST_pulse_base(Builder_network):
         self.kwargs['input_lists']= [['C1', 'C2', 'CF', 'CS_pulse']]
 
         ll=[]
-        for pulse in [5,7.5,10]: 
+        for pulse in self.kwargs['p_pulses']: 
             self.kwargs['p_pulse']=pulse
             l, self.dic = get_input_Go_NoGo(self.kwargs)      
             ll+=l
@@ -1385,7 +1400,7 @@ def get_storage(file_name, info, nets=None):
     sd = Storage_dic.load(file_name, nets)
 
     
-    sd.add_info(info)
+#     sd.add_info(info)
     
     sd.garbage_collect()
     return sd

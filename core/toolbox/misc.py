@@ -568,8 +568,9 @@ def _dict_apply_operation(d, keys, val, op='='):
             return d*val
         if op=='+':  
             return d+val
-    
+    print keys
     if keys[0] in d.keys():
+        
         d[keys[0]]=dict_apply_operation(d[keys[0]], keys[1:], val, op )
     else:
         raise Exception('Entry '+keys[keys[0]]+' do not exist in  the dictionary')

@@ -30,12 +30,12 @@ pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ13/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 2
 LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[1]#numpy.arange(0.7, 1.3, 0.05)
+amp_base=numpy.arange(0.7, 1.1, 0.05)
 freqs=numpy.arange(0.3, 1.0, 0.1)
 n=len(amp_base)
 m=len(freqs)
@@ -66,10 +66,10 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'sw_ZZZ83',
+        'job_name':'sw_ZZZ13',
         
         'l_hours':  ['00','01','00'],
-        'l_minutes':['45','00','5'],
+        'l_minutes':['45','00','05'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,
@@ -86,7 +86,7 @@ kwargs={
         'perturbation_list':op.get(),
         
         'sim_time':40000.0,
-        'size':20000.0 ,
+        'size':20000.0,
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)
@@ -107,5 +107,5 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 print 'from disk', FROM_DISK_0
 
 
-loop(10,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(1,[num_sims,num_sims,num_sims/2], a_list, k_list )
         

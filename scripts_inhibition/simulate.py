@@ -173,6 +173,7 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
         props_conn=kwargs.get('proportion_connected', 1.)
         res=kwargs.get('res')
         rep=kwargs.get('rep')
+        p_pulses=kwargs.get('p_pulses')
         time_bin=kwargs.get('time_bin')
 
         if type(props_conn)==list:
@@ -187,6 +188,7 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
                 'local_num_threads':local_num_threads,
                 'other_scenario':other_scenario,
                 'proportion_connected':pc,
+                'p_pulses':p_pulses,
                 'resolution':res,
                 'repetition':rep,
                 'time_bin':time_bin}
@@ -399,24 +401,35 @@ def par_process_and_thread(**kwargs):
     return d
 
 
+# def iterator_go_nogo_ss(p_subsamp, p_sizes, STN_pulses):
+#     for ss, p_size in zip(p_subsamp, p_sizes): 
+#         for i, _l in enumerate(l):
+#             _l=deepcopy(_l)
+#             yield ss, p_size, i, _l
+#     
+#     for j, _ in enumerate(freqs):
+#         for STN_amp in STN_amp_mod:
+#             for i, _l in enumerate(l):
+#                 yield j, i, STN_amp, _l
+
 def pert_add_go_nogo_ss(**kwargs):
 
     l=kwargs.get('perturbation_list')
 
 
+    do_not_record=kwargs.get('do_not_record',[])
+    local_num_threads=kwargs.get('local_num_threads')
+    max_size=kwargs.get('max_size')
     p_sizes=kwargs.get('p_sizes')
     p_subsamp=kwargs.get('p_subsamp')
-    max_size=kwargs.get('max_size')
-    local_num_threads=kwargs.get('local_num_threads')
-    do_not_record=kwargs.get('do_not_record',[])
     to_memory=kwargs.get('to_memory',False)
     to_file=kwargs.get('to_file',True)
+    
     
     ll=[]
 
     p_sizes=[p/max(p_sizes) for p in p_sizes]
     for ss, p_size in zip(p_subsamp, p_sizes): 
-        
         for i, _l in enumerate(l):
             _l=deepcopy(_l)
             per=pl({'netw':{'size':int(p_size*max_size), 
@@ -457,18 +470,26 @@ def pert_add(p_list, **kwargs):
             out.append(ll_copy)
     return out
 
+def iterator_oscillations(freqs, STN_amp_mod, l):
+    for j, _ in enumerate(freqs):
+        for STN_amp in STN_amp_mod:
+            for i, _l in enumerate(l):
+                yield j, i, STN_amp, _l
+
 def pert_add_oscillations(**kwargs):
     
     amp_base=kwargs.get('amp_base')     
     freqs=kwargs.get('freqs')
     freq_oscillation=kwargs.get('freq_oscillation')
     external_input_mod=kwargs.get('external_input_mod',[]) 
+    input_mod=kwargs.get('input_mod',['C1', 'C2', 'CF', 'CS'])
     local_num_threads=kwargs.get('local_num_threads')
     path_rate_runs=kwargs.get('path_rate_runs')
     perturbation_list=kwargs.get('perturbation_list')
     sim_time=kwargs.get('sim_time')
     size=kwargs.get('size')
-
+    STN_amp_mod=kwargs.get('STN_amp_mod', [1])
+    
     l=perturbation_list
     for i in range(len(l)):
         l[i] += pl({'simu':{'do_reset':True,
@@ -485,33 +506,54 @@ def pert_add_oscillations(**kwargs):
         print  key, numpy.round(val, 2)
     
     ll = []
-    for j, _ in enumerate(freqs):
-        for i, _l in enumerate(l):
+    
+    for j, i, STN_amp, _l in iterator_oscillations(freqs, STN_amp_mod, l):
+#     for j, _ in enumerate(freqs):
+#         for STN_amp in STN_amp_mod:
+#             for i, _l in enumerate(l):
 
             amp = [numpy.round(damp[_l.name][j], 2), amp_base[j]]
             
 
-            d = {'type':'oscillation2', 
-                    'params':{'p_amplitude_mod':amp[0], 
-                              'p_amplitude0':amp[1], 
-                              'freq':freq_oscillation}}
+
             
             _l = deepcopy(_l)
             dd = {}
-            for key in ['C1', 'C2', 'CF', 'CS']:
-                dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
-
-            if external_input_mod:
-                d = {'type':'oscillation2', 
-                    'params':{'p_amplitude_mod':0, 
-                              'p_amplitude0':amp[1], 
-                              'freq':freq_oscillation}}
+            for key in input_mod:
                 
-                for key in external_input_mod:
-                    dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
+                if key in ['C1', 'C2', 'CF']:
+                    factor =1
+                elif key in ['CS']:
+                    factor=STN_amp
+                
+                d = {'type':'oscillation2', 
+                     'params':{'p_amplitude_mod':amp[0]*factor, 
+                               'p_amplitude0':amp[1], 
+                               'freq':freq_oscillation}}
                     
+                dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
             
-            _l += pl(dd, '=', **{'name':'amp_{0}-{1}'.format(*amp)})
+            
+            if STN_amp!=1:
+                _l += pl(dd, '=', **{'name':'amp_{0}_{1}_stn_{2}'.format(amp[0], amp[1],
+                                                                         STN_amp)})
+            else:
+                _l += pl(dd, '=', **{'name':'amp_{0}-{1}'.format(*amp)})
+           
+            if external_input_mod:
+#                 d = {'type':'oscillation2', 
+#                             'params':{'p_amplitude_mod':0, 
+#                                       'p_amplitude0':amp[1], 
+#                                       'freq':freq_oscillation}}
+                dd={}
+                for key in external_input_mod:
+#                     dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
+                    dd = misc.dict_update(dd, {'node':{key:{'rate':amp[1]}}})
+                                               
+#                 pl(dd, '*', **{'name':''})
+                pl(dd, '=', **{'name':''})
+            
+
             ll.append(_l)
     
     return ll

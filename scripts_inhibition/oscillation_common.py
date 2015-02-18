@@ -319,6 +319,78 @@ def set_text_on_bars(axs, i, names, coords):
 #                     )
 #     
 
+def plot_spk_stats_STN(d, axs, i, **k):
+    y_lim_scale=1.1
+    color_red=misc.make_N_colors('jet', 2)[1]
+    
+    leave_out=k.get('leave_out',[])
+    
+    y_mean, y_mean_SEM = [], []
+    y_CV, y_CV_SEM = [], []
+    names=['M', 'E', 'M', 'E']
+    coords=[[0.1, 0.075],[0.33, 0.075],[0.67, 0.075],[ 0.9,0.075]]
+
+    for key in sorted(d.keys()):
+        v = d[key]
+        for model in ['ST']:
+            st = v[model]['spike_statistic']
+            y_mean.append(st.rates['mean'])
+            y_mean_SEM.append(st.rates['SEM'])
+            y_CV.append(st.cv_isi['mean'])
+            y_CV_SEM.append(st.cv_isi['SEM'])
+    
+    print y_mean
+    print y_mean_SEM      
+    
+    dm=mallet2008()
+    
+    mode=k.get('statistics_mode', 'activation')
+    if mode=='slow_wave':
+        Y=[get_STN_slow_wave_rate(dm),
+           get_STN_slow_wave_CV(dm)]
+    if mode=='activation':
+        Y=[get_STN_activation_rate(dm),
+           get_STN_activation_CV(dm)]
+
+    # *******
+    # GPe FR
+    # *******      
+    Data_bar(**{'y':[[y_mean[0], y_mean[1]],
+                     [Y[0][0],  Y[0][1]]],
+                'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
+                         [0.,  0.]]}).bar2(axs[i], **{'edgecolor':'k',
+                                                      'top_lable_rotation':0,
+                                                      'top_label_round_off':0})
+          
+    axs[i].set_ylabel('Rate (Hz)')
+    axs[i].set_xticklabels(['Control', 'Lesion'])
+    axs[i].set_title('STN')
+    axs[i].set_ylim([0,40*y_lim_scale])
+    
+    set_text_on_bars(axs, i, names, coords)
+    i += 1
+
+    # *******
+    # GPe CV
+    # *******    
+    Data_bar(**{'y':[[y_CV[0], y_CV[1]],
+                     [Y[1][0], Y[1][1]]],
+                'y_std':[[y_CV_SEM[0], y_CV_SEM[1]],
+                         [0., 0.]]}).bar2(axs[i],
+                                           **{'edgecolor':'k',
+                                              
+                                                      'top_label_round_off':1,
+                                              'top_lable_rotation':0
+                                              })
+    
+#     Data_bar(**{'y':y_CV}).bar(axs[i])
+    axs[i].set_ylabel('CV')
+    axs[i].set_xticklabels(['Control', 'Lesion'])
+    axs[i].set_title('STN')
+    axs[i].set_ylim([0, 1.9*y_lim_scale])
+    set_text_on_bars(axs, i, names, coords)
+    i += 1
+    return i
 def plot_spk_stats(d, axs, i, **k):
     y_lim_scale=1.1
     color_red=misc.make_N_colors('jet', 2)[1]
@@ -365,6 +437,7 @@ def plot_spk_stats(d, axs, i, **k):
                          [0.,  0.]]}).bar2(axs[i], **{'edgecolor':'k',
                                                       'top_lable_rotation':0,
                                                       'top_label_round_off':0})
+          
     axs[i].set_ylabel('Rate (Hz)')
     axs[i].set_xticklabels(['Control', 'Lesion'])
     axs[i].set_title('GPe')
@@ -520,10 +593,28 @@ def plot_coherence(d, axs, i, **k):
     
     return i
 
+def plot_coherence_STN(d, axs, i, **k):
+    td=translation_dic()
+#     models=k.get()
+    ax = axs[i]
+    colors=misc.make_N_colors('jet', len( d.keys()))
+    for i_key, key in enumerate(sorted(d.keys())):
+        v = d[key]
+        for j, model in enumerate(['ST_ST', 'GA_ST', 'GI_ST', 'GA_ST']):
+            ax = axs[i+j]
+            ch = v[model]['mean_coherence']
+            ch.plot(ax, **{'color':colors[i_key]})
+            ax.set_xlim(k.get('xlim_cohere',[0,2]))
+            ax.set_title(td[model[0:2]]+' vs '+td[model[-2:]])
+            
+    i+=4
+    
+    return i
+
 def plot_phases_diff_with_cohere(d, axs, i, xmax=5, **k):
     td=translation_dic()
     models=k.get('models_pdwc', ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA', 
-                  'ST_ST', 'GP_ST', 'GA_ST', 'GI_ST',])
+                                 'ST_ST', 'GP_ST', 'GA_ST', 'GI_ST',])
     colors=misc.make_N_colors('jet', len( d.keys()))
     for i_key, key in enumerate(sorted(d.keys())):
         v = d[key]
@@ -590,6 +681,125 @@ def show_summed(d, **k):
         ax.my_set_no_ticks(yticks=5)
     return fig
 
+def show_summed_STN(d, **k):
+    kw={'n_rows':6, 
+        'n_cols':16, 
+        'w':72/2.54*11.6, 
+        'h':175, 
+        'fontsize':7,
+        'frame_hight_y':0.5,
+        'frame_hight_x':0.7,
+        'title_fontsize':7,
+        'font_size':7,
+        'text_fontsize':7,
+        'linewidth':1.,
+        'gs_builder':gs_builder}
+#     kwargs_fig=kwargs.get('kwargs_fig', kw)
+    
+    fig, axs=ps.get_figure2(**kw) 
+       
+    i=0
+    i = plot_spk_stats_STN(d, axs, i, **k)
+    i+=2
+
+
+    i = plot_coherence_STN(d, axs, i, **k)
+    i = plot_phases_diff_with_cohere(d, axs, i, **k)
+ 
+    for ax in axs[0:4]:
+        ax.my_set_no_ticks(yticks=3)
+    for ax in axs[4:]:
+        ax.my_set_no_ticks(yticks=2)
+    
+    axs[0].my_remove_axis(xaxis=True, yaxis=False)            
+    axs[1].my_remove_axis(xaxis=False, yaxis=False)            
+    axs[2].my_remove_axis(xaxis=True, yaxis=True)
+    axs[3].my_remove_axis(xaxis=False, yaxis=True)    
+
+    for i in range(4,7):
+        axs[i].my_remove_axis(xaxis=True, yaxis=False,
+                              keep_ticks=True)   
+        axs[i].set_xlabel('')
+
+    for i in range(8,11):
+        axs[i].my_remove_axis(xaxis=True, yaxis=False,
+                              keep_ticks=True)   
+        axs[i].set_xlabel('')
+    for i in range(0,12):
+        axs[i].set_title('')#my_remove_axis(xaxis=False, yaxis=True)  
+    
+    for i in range(4,12):
+        axs[i].set_ylabel('')
+        
+#     for i in range(4,8):
+        axs[i].set_yticks([0.0, 0.5])
+        
+    for i in range(8,12):
+
+        v=0
+        for l in axs[i].lines:
+            v=max(max(l._y),v)
+ 
+        axs[i].set_ylim([0,v*1.1])
+        
+        axs[i].set_yticks([0.0, round(v*1.1/2,1)])
+        axs[i].my_set_no_ticks(xticks=4)  
+        
+    axs[4].text(-0.45, 
+                -1.1, 
+                'Coherence', 
+#                 fontsize=24,
+                transform=axs[4].transAxes,
+                verticalalignment='center', 
+                rotation=90)  
+
+    axs[4].legend(axs[4].lines[0::2], ['Control', 'Lesion'],
+                   bbox_to_anchor=(2.2, 2.1), ncol=2,
+#                    borderpad=0.5,
+                   columnspacing=0.3,
+                   handletextpad=0.1,
+                    frameon=False)
+    
+
+    for i, s in zip([1],['STN']):
+        font0 = FontProperties()
+        font0.set_weight('bold')
+        axs[i].text(0.5, 
+                    -0.35, 
+                    s, 
+#                     fontsize=24,
+                    fontproperties=font0,
+                    transform=axs[i].transAxes,
+                    horizontalalignment='center', 
+                    rotation=0) 
+
+
+    for i, s in enumerate(['ST-ST', 'ST-GP', 'ST-TI', 'ST-TA']):
+        axs[i+4].text(1.08, 
+                    0.5, 
+                    s, 
+#                     fontsize=18,
+                    transform=axs[i+4].transAxes,
+                    verticalalignment='center', 
+                    horizontalalignment='center', 
+                    rotation=270) 
+        axs[i+8].text(1.08, 
+                    0.5, 
+                    s, 
+#                     fontsize=18,
+                    transform=axs[i+8].transAxes,
+                    verticalalignment='center', 
+                    horizontalalignment='center', 
+                    rotation=270)   
+    axs[8].text(-0.45, 
+                -1.1,
+                'Normalized count', 
+#                 fontsize=24,
+                transform=axs[8].transAxes,
+                verticalalignment='center', 
+                rotation=90)  
+  
+    return fig
 def gs_builder(*args, **kwargs):
     import matplotlib.gridspec as gridspec
     n_rows=kwargs.get('n_rows',2)
@@ -908,8 +1118,18 @@ class Setup(object):
            'all':False,
            'p_95':True,
            'leave_out':['control_fr', 'control_cv'],
-           'statistics_mode':'activation',
+           'statistics_mode':'slow_wave',
            'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
+           }
+        return d
+    
+    def plot_summed_STN(self):
+        d={'xlim_cohere':[0, 10],
+           'all':False,
+           'p_95':True,
+           'leave_out':['control_fr', 'control_cv'],
+           'statistics_mode':'slow_wave',
+           'models_pdwc': ['ST_ST', 'GP_ST', 'GI_ST', 'GA_ST'],
            }
         return d
     
@@ -962,6 +1182,8 @@ def simulate(builder=Builder,
                                  setup.builder(), 
                                  setup.director())
     add_perturbations(perturbation_list, nets)
+    for p in sorted(perturbation_list.list):
+        print p
 #     print nets['Net_0'].par['nest']['M1_M1_gaba']['weight']
 
     key=nets.keys()[0]
@@ -1054,7 +1276,7 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
     d_plot_coherence=setup.plot_coherence()
     d_plot_summed=setup.plot_summed()
     d_plot_summed2=setup.plot_summed2()
-
+    d_plot_summed_STN=setup.plot_summed_STN()
 
     sd_figs = Storage_dic.load(file_name_figs)
     if numpy.all(numpy.array(from_disks) == 2):
@@ -1094,6 +1316,7 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 
         
         figs.append(show_summed2(d, **d_plot_summed2))
+        figs.append(show_summed_STN(d, **d_plot_summed_STN))
 #         axs=figs[-1].get_axes()
 # #         ps.shift('right', axs, 0.25, n_rows=len(axs), n_cols=1)
 #         axs[4].legend(axs[4].lines[0::2],['Control', 'Lesion'])
@@ -1106,7 +1329,7 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 #             ax.my_set_no_ticks(yticks=3)
         
         sd_figs.save_figs(figs, format='png', dpi=200)
-        sd_figs.save_figs(figs, format='svg', in_folder='svg')
+        sd_figs.save_figs(figs[1:], format='svg', in_folder='svg')
 
 def main(*args, **kwargs):
     
@@ -1300,6 +1523,15 @@ class TestOcsillation(unittest.TestCase):
         show_summed2(self.d, **d)
         pylab.show()
 
+    def testShowSummed_STN(self):
+        d={'xlim_cohere':[0, 10],
+           'leave_out':['control_fr', 'control_cv'],
+           'statistics_mode':'slow_wave',
+           'models_pdwc': ['ST_ST', 'GP_ST', 
+                           'GI_ST', 'GA_ST']}
+        show_summed_STN(self.d, **d)
+        pylab.show()
+
     def test_create_figs(self):
         create_figs(self.file_name_figs, 
                     self.from_disks, 
@@ -1401,6 +1633,7 @@ if __name__ == '__main__':
 #                         'testPlotPhasesDffWithCohere',
 #                         'testShowSummed',
 #                         'testShowSummed2',
+#                         'testShowSummed_STN',  
 #                         'test_show_fr',
 #                         'test_show_coherence',
 #                         'test_show_phase_diff',
