@@ -14,7 +14,7 @@ d=kw={'n_rows':8,
       'gs_builder':gs_builder_index2}
 
 kwargs={'data_path':('/home/mikael/results/papers/inhibition/network/'
-                    +'milner/simulate_beta_ZZZ_nuclei_effect_perturb3/'),
+                    +'milner/simulate_beta_ZZZ_nuclei_effect_perturb2/'),
         'from_diks':0,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),
         'title':'Activation (beta)',

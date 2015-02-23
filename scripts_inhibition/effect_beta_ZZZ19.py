@@ -34,7 +34,7 @@ d=kw={'n_rows':8,
       'gs_builder':gs_builder_index2}
 
 kwargs={'data_path':('/home/mikael/results/papers/inhibition/network/'
-                    +'milner/simulate_beta_ZZZ18/'),
+                    +'milner/simulate_beta_ZZZ19/'),
         'from_diks':0,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),
         'title':'Activation (beta)',
@@ -43,10 +43,10 @@ kwargs={'data_path':('/home/mikael/results/papers/inhibition/network/'
         'conn_fig_title_fontsize':7*scale,
         'clim_raw': [[0,50], [0,1]],
         'compute_performance_name_and_x': create_name_and_x,
-        'compute_performance_ref_key':'mod_GA_FS_0.25',
+        'compute_performance_ref_key':'mod_GA_striatum_11.0',
         'coher_label':'Oscillation', 
-        'fr_label':"Firing rate",
-        'do_plots':['fr_and_oi'],
+        'fr_label':"Synchrony",
+        'do_plots':['index'],
         'fontsize_x':7*scale,
         'fontsize_y':7*scale,
 #         'key_sort':key_sort,

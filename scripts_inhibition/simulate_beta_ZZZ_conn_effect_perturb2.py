@@ -44,8 +44,6 @@ kwargs={
         'cores_milner':40*1,
         'cores_superm':40,
 
-
-     
         'debug':False,#173-86, 109-54, 45-22
         'do_runs':range(NUM_NETS/2), #A run for each perturbation
         'do_obj':False,
@@ -71,6 +69,7 @@ kwargs={
         'module':module,
         
         'nets':['Net_'+str(i) for i in range(2)], #The nets for each run
+        'no_oscillations_control':True,
         
         'op_pert_add':op_conns.get(),
         

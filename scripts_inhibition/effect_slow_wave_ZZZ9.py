@@ -18,6 +18,7 @@ def create_name(file_name):
         
         l=file_name.split('-')[-3].split('_')
         return l[-4]+'_'+l[-3]+'_'+l[-2]+'_'+l[-1]
+#         return file_name.split('/')[-1]
     else:
         return file_name
 
@@ -34,18 +35,18 @@ d=kw={'n_rows':8,
       'gs_builder':gs_builder_index2}
 
 kwargs={'data_path':('/home/mikael/results/papers/inhibition/network/'
-                    +'milner/simulate_beta_ZZZ18/'),
+                    +'milner/simulate_slow_wave_ZZZ9/'),
         'from_diks':0,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),
         'title':'Activation (beta)',
         'ax_4x1':True,
         'add_midpoint':False,
         'conn_fig_title_fontsize':7*scale,
-        'clim_raw': [[0,50], [0,1]],
+        'clim_raw': [[5,35], [0,1]],
         'compute_performance_name_and_x': create_name_and_x,
-        'compute_performance_ref_key':'mod_GA_FS_0.25',
+        'compute_performance_ref_key':'MSg_0.75_MSc_0.75',
         'coher_label':'Oscillation', 
-        'fr_label':"Firing rate",
+        'fr_label':"Firing rate (Hz)",
         'do_plots':['fr_and_oi'],
         'fontsize_x':7*scale,
         'fontsize_y':7*scale,

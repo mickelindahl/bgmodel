@@ -16,30 +16,30 @@ from simulate import (get_path_rate_runs,
                       pert_add_oscillations) 
 
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_beta_EI_EA as Builder
+from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
 
 import numpy
 import sys
 import simulate_beta as module
-import oscillation_perturbations13 as op
+import oscillation_perturbations19 as op
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ13/')
+path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ19/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=numpy.arange(0.9, 1.25, 0.05)
-freqs=numpy.arange(0.3, 1.5, 0.1)
+amp_base=[1.15] #[umpy.arange(0.7, 1.3, 0.05)
+freqs=[0.8]#numpy.arange(0.3, 1.0, 0.1)
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
 freqs=list(freqs)*n
-num_runs=len(freqs)
+num_runs=len(op.get())
 num_sims=NUM_NETS*num_runs
 
 kwargs={
@@ -64,7 +64,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'beta_ZZZ13',
+        'job_name':'beta_ZZZ19',
         
         'l_hours':  ['00','01','00'],
         'l_minutes':['45','00','5'],
@@ -86,6 +86,8 @@ kwargs={
         
         'sim_time':40000.0,
         'size':20000.0 ,
+        
+        'STN_amp_mod':[1.0],
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)
@@ -105,6 +107,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(40,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

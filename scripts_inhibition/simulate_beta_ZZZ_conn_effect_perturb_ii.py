@@ -71,6 +71,7 @@ kwargs={
         'module':module,
         
         'nets':['Net_'+str(i) for i in range(2)], #The nets for each run
+        'no_oscillations_control':True,
         
         'op_pert_add':op_conns.get(),
         

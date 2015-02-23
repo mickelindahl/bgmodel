@@ -20,6 +20,7 @@ from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
 
 import simulate_beta as module
+import sys
 import oscillation_perturbations9 as op
 import pprint
 pp=pprint.pprint
@@ -27,7 +28,7 @@ pp=pprint.pprint
 path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ9/')
                                   
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=2
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 # ops=[op.get()[0]]
@@ -48,7 +49,7 @@ kwargs={
         'do_obj':False,
         
         'file_name':FILE_NAME,
-        'freqs':[1.5],  #amplitude frequencies
+        'freqs':[0.8],  #amplitude frequencies
         'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
@@ -56,8 +57,8 @@ kwargs={
         
         'job_name':'beta_ZZZ9',
         
-        'l_hours':  ['00','00','00'],
-        'l_minutes':['15','10','5'],
+        'l_hours':  ['4','01','00'],
+        'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':20,
@@ -74,7 +75,7 @@ kwargs={
                                      FILE_NAME),
         'perturbation_list':ops,
         
-        'sim_time':10000.0,
+        'sim_time':40000.0,
         'size':20000.0 ,
         }
 
@@ -95,6 +96,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(min(4, 20),[num_sims,num_sims,NUM_RUNS], a_list, k_list )
+loop(num_sims,[num_sims,num_sims,NUM_RUNS], a_list, k_list )
 
         

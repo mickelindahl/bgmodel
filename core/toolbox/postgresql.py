@@ -37,14 +37,27 @@ class Database(object):
         self.cur.close()
         self.conn.close()
         
-    def execute(self, s):
-        self.cur.execute(s)
+
         
     def commit(self):
+        '''Commite changes to table'''
         self.conn.commit()
+
+    def create_table_from_dic(self, d, table_name):
+        s=create_table_string(table_name, dummy_data_small())
+        self.execute(s)
+        self.commit()
+
+    def execute(self, s):
+        '''Execute SQL command'''
+        
+        self.cur.execute(s)
         
     def fetchall(self):
+        '''To fetch results from query'''
         return self.cur.fetchall()
+
+
     
     def get_column_names(self, table):
         s=query_table_names(table)
@@ -164,8 +177,11 @@ def insert_table_string(name, d, columns, if_not_exist_append=False):
     s0= "INSERT INTO {} (".format(name)
     s1=  ', '.join([k.lower() for k in keys])
     s2=') VALUES ('
+    
+    # Strings need to have '' around them
     values=["'"+str(e)+"'"  if type(e)==str  else e for e in values  ]
   
+    #arrays can be  inserted as ARRAY[1,1,2] or {1,1,2}
     s3= ', '.join([str(e) if type(e)!=list  else   'ARRAY'+str(e) for e in values  ])
     s3=s3[1:]+')'
     s=s0+s1+s2+s3
@@ -529,7 +545,13 @@ class ModuleFunctions(unittest.TestCase):
         with Database() as db:
             db.execute(l0[-1])
             db.commit()
+
+    def test_create_table_large(self):
         
+        with Database() as db:                    
+            s=create_table_string('unittest_small', dummy_data_small())
+            db.execute(s)
+            db.commit()
         
 if __name__ == '__main__':
     d={

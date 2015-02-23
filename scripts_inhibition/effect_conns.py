@@ -88,9 +88,9 @@ def extract_data(d, nets, models, attrs, **kwargs):
             v=numpy.mean(val.y)
             synchrony_index=(std**2)/v
 #             print keys, round(synchrony_index,1)#, round(v,1), round(std,1)
-            
-            x=val.x[kwargs.get('oi_start', 256*20):256*30]
-            y=val.y[kwargs.get('oi_start', 256*20):256*30]
+            fs=kwargs.get('oi_fs',1000.)
+            x=val.x[kwargs.get('oi_start', fs):]
+            y=val.y[kwargs.get('oi_start', fs):]
   
             k=kwargs.get('psd',{'NFFT':128*8*4, 
                                'fs':kwargs.get('oi_fs',1000.), 
@@ -110,12 +110,11 @@ def extract_data(d, nets, models, attrs, **kwargs):
             d={'x':xpsd,'y':ypsd}
             psd=Data_psd(**d)
 
-
-#             pylab.subplot(211).plot(val.x, val.y)
 #             pylab.subplot(211).plot(x, y)
 #             pylab.subplot(212).plot(psd.x, psd.y)
 #             pylab.title(str(keys))
 #             pylab.show()
+
 #             pylab.subplot(212).plot(psd2.x, psd2.y)
 #             pylab.subplot(212).plot(psd3.x, psd3.y)
             
@@ -1199,6 +1198,16 @@ def create_figs(d, **kwargs):
         fig = plot_conn(d['d_raw_control']['synchrony_index'], 
                         d['d_raw_control']['oscillation_index'], 
                         d['d_raw_lesion']['synchrony_index'], 
+                        d['d_raw_lesion']['oscillation_index'],
+                        **kwargs)
+        figs.append(fig)
+
+    if 'fr_and_oi' in do_plots:
+        
+        kwargs.update({'color_line':'w'})
+        fig = plot_conn(d['d_raw_control']['firing_rate'], 
+                        d['d_raw_control']['oscillation_index'], 
+                        d['d_raw_lesion']['firing_rate'], 
                         d['d_raw_lesion']['oscillation_index'],
                         **kwargs)
         figs.append(fig)

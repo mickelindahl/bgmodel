@@ -70,9 +70,10 @@ kwargs={
         'module':module,
         
         'nets':['Net_0','Net_1'], #The nets for each run
-        
+        'no_oscillations_control':True,
+                
         'op_pert_add':op_dop.get(),
-        
+
         'path_code':default_params.HOME_CODE,
         'path_rate_runs':path_rate_runs,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
