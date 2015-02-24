@@ -390,7 +390,7 @@ def par_process_and_thread(**kwargs):
            'num-threads-per-mpi-process':local_threads,
            } 
         
-    elif host == 'supermicro':
+    elif host in [ 'supermicro', 'mikaellaptop']:
         local_threads=local_threads_superm
         d={
            'num-mpi-task':cores_superm/local_threads,
