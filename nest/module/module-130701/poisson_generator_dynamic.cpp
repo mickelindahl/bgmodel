@@ -75,12 +75,12 @@ void mynest::poisson_generator_dynamic::Parameters_::set(const DictionaryDatum& 
 	const bool updated_rates = d->known("rates");
 	if (updated_timings)
 	{
-		std::vector<double_t> timings = getValue<std::vector<double> >(d->lookup("timings"));
+		std::vector<nest::double_t> timings = getValue<std::vector<double> >(d->lookup("timings"));
 		timings_.swap(timings);
 	}
 	if (updated_rates)
 	{
-		std::vector<double_t> rates = getValue<std::vector<double> >(d->lookup("rates"));
+		std::vector<nest::double_t> rates = getValue<std::vector<double> >(d->lookup("rates"));
 		rates_.swap(rates);
 	}
 }
