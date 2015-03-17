@@ -164,7 +164,7 @@ def epoch(*args):
             
         job_id=int(text.split(' ')[-1])
         
-    if host=='supermicro':
+    if host in ['supermicro', 'mikaellaptop']:
         if num_mpi_task==1:
             args_call=['python', path_script, path_params]
         else:

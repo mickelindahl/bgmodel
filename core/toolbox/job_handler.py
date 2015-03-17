@@ -64,7 +64,8 @@ class Handler(object):
             current_jobbs=read_current_jobs()   
             go=current_jobbs.intersection(self.jobs)
             n=len(go)
-        elif my_socket.determine_computer()=='supermicro':
+        elif my_socket.determine_computer() in ['supermicro',
+                                                'mikaellaptop']:
             n=0
             for p in self.processes:
                 if p.poll()==None:

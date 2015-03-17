@@ -6,19 +6,17 @@ Created on Aug 12, 2013
 
 
 from toolbox.network.default_params import Perturbation_list as pl
-import numpy
 import pprint
-from core.toolbox import misc
 pp=pprint.pprint
 
-from oscillation_perturbations8 import get_solution_slow_GP_striatum_2, update
+from oscillation_perturbations8 import get_solution_2, update
 
 
 def get():
     
     
     l=[]
-    solution, s_mul, s_equal=get_solution_slow_GP_striatum_2()
+    solution, s_mul, s_equal=get_solution_2()
     
     d={}
     for keys in s_mul: update(solution, d, keys)  

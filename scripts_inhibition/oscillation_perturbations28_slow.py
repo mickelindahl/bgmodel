@@ -84,8 +84,8 @@ def get():
         
             l[-1]+=pl(d, '=', **{'name':'GASTRdelay_'+str(y)})  
 
-    for y in numpy.arange(1, 6., 1):
-        for z in numpy.arange(1, 6., 1):
+    for y in numpy.arange(1, 11., 2):
+        for z in numpy.arange(1, 11., 2):
             y=2.5
             x=2.5
             d={}
