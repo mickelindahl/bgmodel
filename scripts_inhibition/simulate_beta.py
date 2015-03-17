@@ -147,6 +147,18 @@ class Setup(object):
            }
         return d
 
+    def plot_signals(self):
+        d={ 
+           'lowcut': 0.5,
+           'highcut':1.5,
+           'order':3,
+           'fs':256.0, 
+           'freq':20,
+           't_start':5500.0,
+           't_stop':6000.0,
+           }
+        return d
+
 class Main():    
     def __init__(self, **kwargs):
         self.kwargs=kwargs

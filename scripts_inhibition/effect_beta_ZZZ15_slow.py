@@ -26,7 +26,7 @@ def create_name_and_x(l):
     return 1, l[0]+'_'+l[1]
 
 scale=2
-d=kw={'n_rows':8, 
+d=kw={'n_rows':5, 
       'n_cols':2, 
       'w':int(72/2.54*18)*scale, 
       'h':int(72/2.54*18)/3*scale, 
@@ -36,18 +36,19 @@ d=kw={'n_rows':8,
 
 kwargs={'data_path':('/home/mikael/results/papers/inhibition/network/'
                     +'milner/simulate_beta_ZZZ15_slow/'),
-        'from_diks':0,
+        'from_diks':1,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),
         'title':'Activation (beta)',
  
+        'ax_4x1':True,
         'add_midpoint':False,
         'conn_fig_title_fontsize':7*scale,
         'clim_raw': [[0,50], [0,1]],
         'compute_performance_name_and_x': create_name_and_x,
         'compute_performance_ref_key':'702_0.28',
         'coher_label':'Oscillation', 
-        'fr_label':"Synchrony",
-        'do_plots':['index'],
+        'fr_label':"Firing rate",
+        'do_plots':['fr_and_oi'],
         'fontsize_x':7*scale,
         'fontsize_y':7*scale,
         'key_sort':key_sort,

@@ -18,14 +18,19 @@ from toolbox.network import manager
 from toolbox.network.data_processing import Data_units_relation
 from toolbox.network.manager import (add_perturbations, compute, 
                                      run, save, load, get_storage_list)
-from toolbox.network.manager import Builder_slow_wave as Builder
+from toolbox.network.manager import Builder_beta as Builder
 from toolbox.my_signals import Data_bar
 from simulate import (cmp_psd, show_fr, show_hr, show_psd,
                       show_coherence, show_phase_diff,
                       get_file_name, get_file_name_figs,
                       get_path_nest)
+from toolbox.postgresql import run_data_base_dump
+
 import toolbox.plot_settings as ps
+
 import pprint
+
+
 pp=pprint.pprint
     
 DISPLAY=os.environ.get('DISPLAY')
@@ -320,7 +325,7 @@ def set_text_on_bars(axs, i, names, coords):
 #     
 
 def plot_spk_stats_STN(d, axs, i, **k):
-    y_lim_scale=1.1
+    y_lim_scale=1.5
     color_red=misc.make_N_colors('jet', 2)[1]
     
     leave_out=k.get('leave_out',[])
@@ -825,6 +830,79 @@ def gs_builder(*args, **kwargs):
                 ]
     
     return iterator, gs, 
+
+def gs_builder_singals(*args, **kwargs):
+    import matplotlib.gridspec as gridspec
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',1)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.1 ), 
+              hspace=kwargs.get('hspace', 0.1 ))
+
+    iterator = [[slice(0,1),slice(0,1)],
+                [slice(1,2),slice(0,1)],
+                ]
+    
+    return iterator, gs,     
+
+
+def show_signals(d, **k):
+    kw={'n_rows':2, 
+        'n_cols':1, 
+        'w':72/2.54*11.6, 
+        'h':225, 
+        'fontsize':7,
+        'frame_hight_y':0.5,
+        'frame_hight_x':0.7,
+        'title_fontsize':7,
+        'font_size':7,
+        'text_fontsize':7,
+        'linewidth':1.,
+        'gs_builder':gs_builder_singals}
+#     kwargs_fig=kwargs.get('kwargs_fig', kw)
+    
+    fig, axs=ps.get_figure2(**kw) 
+    
+    import toolbox.signal_processing as sp 
+    
+#     phase(x, **kwargs):
+# 
+#     lowcut=kwargs.get('lowcut', 10)
+#     highcut=kwargs.get('highcut', 20)
+#     order=kwargs.get('order',3)
+#     fs=kwargs.get('fs', 1000.0) 
+#     models=['M1', 'M2', 'GP', 'GA', 'GI', 'ST']
+#     models=['M2','FS', 'GP', 'GA', 'GI', 'ST']
+    models=['GP', 'GA', 'GI', 'ST']
+    freq=k.get('freq')
+    if freq==20:
+        m=25
+    if freq==1:
+        m=500
+        
+    
+    
+    for i, net in enumerate(['Net_0', 'Net_1']):
+        for model in  models:
+            fr=d[net][model]['firing_rate']
+            bl=(fr.x>k['t_start'])*(fr.x<k['t_stop'])
+            fr.y/=numpy.mean(fr.y)
+            fr.x=fr.x[bl]
+            fr.y=fr.y[bl]
+            fr.plot(axs[i], **{'win':m/(1000/256.)*2})
+        
+        axs[i].plot(fr.x, numpy.sin(fr.x*numpy.pi*(1./m))*0.1+1, color='k')
+#             dd=sp._phase(fr.y, **k)
+#             print dd.keys()
+#             axs[i].plot(fr.x,dd['phase'])
+    
+    for ax in axs:
+        ax.legend(models+['CTX'])
+        
+    return fig
+    
   
 def show_summed2(d, **k):
 #     import toolbox.plot_settings as ps  
@@ -1005,48 +1083,40 @@ def show_summed2(d, **k):
     return fig
 
 class Setup(object):
-    
-    def __init__(self, 
-                 period, 
-                 local_num_threads, **kwargs):
+
+    def __init__(self, period, local_num_threads, **kwargs):
         self.period=period
         self.local_num_threads=local_num_threads
+
         self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
                                                     'Net_1' ])
-        self.start_fr=kwargs.get('start_fr',10000.0)
-        self.stop_fr=kwargs.get('stop_fr',20000.0)
-        self.fs=kwargs.get('fs',1000.0)
-  
+        
+        self.fs=256 #Same as Mallet 2008
+        
     def builder(self):
         return {}
     
     def director(self):
         return {'nets_to_run':self.nets_to_run}  
- 
+
     def activity_histogram(self):
         d = {'average':False,
              'period':self.period}
         
         return d
 
-
-
-    def coherence(self):
-        d = {'fs':self.fs, 'NFFT':1024 * 4, 
-            'noverlap':int(1024 * 2), 
-            'sample':50.,  
-            'local_num_threads':self.local_num_threads}
-        return d
- 
     def pds(self):
-        d = {'NFFT':1024 * 4, 
-             'fs':1000., 
-             'noverlap':1024 * 2, 
-             'local_num_threads':self.local_num_threads}
+        d = {'NFFT':128*8, 'fs':self.fs, 
+             'noverlap':128*8/2, 
+             'local_num_threads':THREADS}
         return d
     
-   
-
+      
+    def coherence(self):
+        d = {'fs':self.fs, 'NFFT':128 * 8, 
+            'noverlap':int(128 * 8)/2, 
+            'sample':100.}
+        return d
     
 
     def phase_diff(self):
@@ -1054,47 +1124,54 @@ class Setup(object):
              'lowcut':0.5, 
              'highcut':2., 
              'order':3, 
-             'fs':1000.0, 
-             'bin_extent':250., 
-             'kernel_type':'gaussian', 
-             'params':{'std_ms':125., 
-                       'fs':1000.0}, 
-             'local_num_threads':self.local_num_threads}
-        
-        return d
-    
-    def phases_diff_with_cohere(self):
-        kwargs={
-                'NFFT':1024 * 4, 
-                'fs':100., 
-                'noverlap':1024 * 2, 
-                'sample':10.,   
-                
-               'lowcut':0.5, 
-               'highcut':2., 
-               'order':3, 
+             'fs':self.fs, 
+             
+              #Skip convolving when calculating phase shif
+             #5000 of fs=10000
+#              'bin_extent':self.fs/2, #size of gaussian window for convulution of firing rates 
+#              'kernel_type':'gaussian', 
+#              'params':{'std_ms':250., # standard deviaion of gaussian convulution
+#                        'fs':self.fs}
+            }
+        return d    
 
-             'bin_extent':250., 
-             'kernel_type':'gaussian', 
-             'params':{'std_ms':125., 
-                       'fs':100.0}, 
+    def phases_diff_with_cohere(self):
+        d={
+            'fs':self.fs,#100.0, 
+            'NFFT':128*8 , 
+            'noverlap':128*8/2, 
+            'sample':30.,
+            
+            'lowcut':0.5, 
+            'highcut':2., 
+            'order':3, 
+
+             #Skip convolving when calculating phase shif
+
+#              'bin_extent':self.fs/2,#500., 
+#              'kernel_type':'gaussian', 
+#              'params':{'std_ms':250., 
+#                        'fs':self.fs,#100.0
+#                        },
       
-                'local_num_threads':self.local_num_threads}
-        return kwargs
+            'local_num_threads':self.local_num_threads}
+        return d
     
     def firing_rate(self):
         d={'average':False, 
-           'local_num_threads':self.local_num_threads, 
-           'win':100.0,}
+           'local_num_threads':THREADS,
+#            'win':20.0,
+           'time_bin':1000./self.fs}
         return d
+
     
     def plot_fr(self):
-        d={'win':100.,
-           't_start':self.start_fr,
-           't_stop':self.stop_fr,
+        d={'win':20.,
+           't_start':0.0,
+           't_stop':10000.0,
            'labels':['Control', 'Lesion'],
            
-            'fig_and_axes':{'n_rows':8, 
+           'fig_and_axes':{'n_rows':8, 
                             'n_cols':1, 
                             'w':800.0*0.55*2*0.3, 
                             'h':600.0*0.55*2*0.3, 
@@ -1105,18 +1182,19 @@ class Setup(object):
         return d
 
     def plot_coherence(self):
-        d={'xlim':[0, 10]}
+        d={'xlim':[0, 5]}
         return d
     
     def plot_summed(self):
-        d={'xlim_cohere':[0, 10],
-           'statistics_mode':'activation'}
+        d={'xlim_cohere':[0, 5],
+           'statistics_mode':'slow_wave'}
         return d
-
+    
     def plot_summed2(self):
-        d={'xlim_cohere':[0, 10],
-           'all':False,
-           'p_95':True,
+        d={
+           'xlim_cohere':[0, 5],
+           'all':True,
+           'p_95':False,
            'leave_out':['control_fr', 'control_cv'],
            'statistics_mode':'slow_wave',
            'models_pdwc': ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA'],
@@ -1125,13 +1203,25 @@ class Setup(object):
     
     def plot_summed_STN(self):
         d={'xlim_cohere':[0, 10],
-           'all':False,
-           'p_95':True,
+           'all':True,
+           'p_95':False,
            'leave_out':['control_fr', 'control_cv'],
            'statistics_mode':'slow_wave',
            'models_pdwc': ['ST_ST', 'GP_ST', 'GI_ST', 'GA_ST'],
            }
         return d
+    def plot_signals(self):
+        d={ 
+           'lowcut': 0.5,
+           'highcut':1.5,
+           'order':3,
+           'fs':256.0, 
+           'freq':20,
+           't_start':5500.0,
+           't_stop':6000.0,
+           }
+        return d
+
     
 def simulate(builder=Builder,
              from_disk=0,
@@ -1185,6 +1275,7 @@ def simulate(builder=Builder,
     for p in sorted(perturbation_list.list):
         print p
 #     print nets['Net_0'].par['nest']['M1_M1_gaba']['weight']
+# pp(nets['Net_0'].par['node']['EI']['spike_setup'])
 
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
@@ -1215,12 +1306,26 @@ def simulate(builder=Builder,
             net, fd, sd=vals
         else:
             net, fd=vals
-               
+        
         if fd == 0:
-            dd = run(net)
+            
+            
+#             from toolbox.postgresql import run_data_base_wrapper
+#             dd=run_data_base_wrapper(run, net, script_name, 
+#                                      nets.keys()[0], 'oscillation')
+            
+            kw={'local_num_threads':setup.local_num_threads}
+            dd=run_data_base_dump(run, net, script_name, 
+                                nets.keys()[0], 'oscillation',
+                                file_name,
+                                **kw)
+            
+#             dd = run(net)
             add_GPe(dd)
 #             dd = compute(dd, models, attr, **kwargs_dic)
             save(sd, dd)
+            
+            
         
         elif fd == 1:
   
@@ -1255,6 +1360,7 @@ def simulate(builder=Builder,
     return file_name_figs, from_disks, d, models, models_coher
 
 
+
 def cmp_activity_hist(models, d, **kwargs):
     for key1 in d.keys():
         for model in models:
@@ -1277,6 +1383,7 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
     d_plot_summed=setup.plot_summed()
     d_plot_summed2=setup.plot_summed2()
     d_plot_summed_STN=setup.plot_summed_STN()
+    d_plot_signals=setup.plot_signals()
 
     sd_figs = Storage_dic.load(file_name_figs)
     if numpy.all(numpy.array(from_disks) == 2):
@@ -1314,7 +1421,7 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
         
 #         figs.append(show_summed(d, **d_plot_summed))
 
-        
+#         pylab.show()
         figs.append(show_summed2(d, **d_plot_summed2))
         figs.append(show_summed_STN(d, **d_plot_summed_STN))
 #         axs=figs[-1].get_axes()
@@ -1327,6 +1434,8 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 # 
 #         for ax in axs[4:]:
 #             ax.my_set_no_ticks(yticks=3)
+        
+        figs.append(show_signals(d, **d_plot_signals))
         
         sd_figs.save_figs(figs, format='png', dpi=200)
         sd_figs.save_figs(figs[1:], format='svg', in_folder='svg')

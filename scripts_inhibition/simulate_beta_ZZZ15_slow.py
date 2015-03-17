@@ -33,8 +33,8 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[1.15] #[umpy.arange(0.7, 1.3, 0.05)
-freqs=[0.8]#numpy.arange(0.3, 1.0, 0.1)
+amp_base=[1.15]  #[umpy.arange(0.7, 1.3, 0.05)
+freqs=[0.8]      #numpy.arange(0.3, 1.0, 0.1)
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 

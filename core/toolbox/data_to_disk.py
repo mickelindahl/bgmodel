@@ -517,7 +517,7 @@ def get_full_file_name(fileName, file_extension='' ):
 #     if 4<len(fileName) and fileName[-4:]!=file_extension:
 #         fileName=fileName+file_extension
 
-    if 4<len(fileName) and fileName[-4:]!=file_extension:
+    if 4<len(fileName) and fileName[-len(file_extension):]!=file_extension:
         fileName=fileName+file_extension
     fileName=os.path.expanduser(fileName)
     

@@ -64,7 +64,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'beta_ZZZ13',
+        'job_name':'b_ZZZ13_slow',
         
         'l_hours':  ['00','01','00'],
         'l_minutes':['45','00','5'],

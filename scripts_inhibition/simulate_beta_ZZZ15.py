@@ -87,7 +87,7 @@ kwargs={
         'sim_time':40000.0,
         'size':20000.0 ,
         
-        'STN_amp_mod':1.0,
+        'STN_amp_mod':[1.0],
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)

@@ -1117,11 +1117,14 @@ class Par_base_mixin(object):
         
         k={'size':GetNetw('size', dtype=str),
             'source':source,
+#             'source_edge_wrap':GetNode(source,'edge_wrap',dtype=str),
             'source_n':GetNode(source,'n', dtype=str),
             'source_n_sets':GetNode(source,'n_sets', dtype=str),
             'target':target,
+#             'target_edge_wrap':GetNode(target,'edge_wrap',dtype=str),
             'target_n':GetNode(target,'n', dtype=str),
             'target_n_sets':GetNode(target,'n_sets', dtype=str),
+      
             'beta_fan_in':GetConn(name,'beta_fan_in', dtype=str),
             'rule':GetConn(name,'rule', dtype=str),
             'fan_in':GetConn(name,'fan_in', dtype=str)}
@@ -2165,13 +2168,19 @@ class InhibitionPar_base(object):
         dic['nest']['FS_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_1']
         
         
-        # GPe A-FSN
+        # GPE-FSN
         dic['nest']['GA_FS_gaba']={}
         dic['nest']['GA_FS_gaba']['weight']   = 1./5     # n.d. inbetween MSN and FSN GABAergic synapses
         dic['nest']['GA_FS_gaba']['delay']    = 7.  # n.d. same as MSN to GPE Park 1982
         dic['nest']['GA_FS_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GA_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_2']
-        
+
+        dic['nest']['GI_FS_gaba']={}
+        dic['nest']['GI_FS_gaba']['weight']   = 1./5     # n.d. inbetween MSN and FSN GABAergic synapses
+        dic['nest']['GI_FS_gaba']['delay']    = 7.  # n.d. same as MSN to GPE Park 1982
+        dic['nest']['GI_FS_gaba']['type_id'] = 'static_synapse'
+        dic['nest']['GI_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_2']
+          
         
         # CTX-MSN D1
         dic['nest']['C1_M1_ampa']={}
@@ -2240,7 +2249,17 @@ class InhibitionPar_base(object):
         
         dic['nest']['GA_M2_gaba'] = deepcopy(dic['nest']['GA_M1_gaba'])
         dic['nest']['GA_M2_gaba']['weight']   = 1.*2/5  ## Glajch 2013
-       
+ 
+ 
+        dic['nest']['GI_M1_gaba']={}
+        dic['nest']['GI_M1_gaba']['weight']   = 1./5  # Glajch 2013
+        dic['nest']['GI_M1_gaba']['delay']    = 1.7 
+        dic['nest']['GI_M1_gaba']['type_id'] = 'static_synapse'
+        dic['nest']['GI_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']   
+        
+        dic['nest']['GI_M2_gaba'] = deepcopy(dic['nest']['GA_M1_gaba'])
+        dic['nest']['GI_M2_gaba']['weight']   = 1.*2/5  ## Glajch 2013
+      
             
         # CTX-STN
         dic['nest']['CS_ST_ampa']={}
@@ -2295,6 +2314,18 @@ class InhibitionPar_base(object):
         dic['nest']['M2_GI_gaba']['type_id'] = 'tsodyks_synapse' 
         dic['nest']['M2_GI_gaba']['receptor_type'] = self.rec['aeif']['GABAA_1']         
      
+
+        # MSN D2-GPe A 
+        dic['nest']['M2_GA_gaba']={}
+        dic['nest']['M2_GA_gaba']['weight']  = 2./0.24   # constrained by (Sims et al. 2008)
+        dic['nest']['M2_GA_gaba']['delay']   = 7.       # Park 1982
+        dic['nest']['M2_GA_gaba']['U']       = 0.24                                                   # GABAA plastic                   
+        dic['nest']['M2_GA_gaba']['tau_fac'] = 13.0
+        dic['nest']['M2_GA_gaba']['tau_rec'] = 77.0
+        dic['nest']['M2_GA_gaba']['tau_psc'] = 6.    # (Shen et al. 2008)
+        dic['nest']['M2_GA_gaba']['type_id'] = 'tsodyks_synapse' 
+        dic['nest']['M2_GA_gaba']['receptor_type'] = self.rec['aeif']['GABAA_1']         
+
         
         # STN-GPe
         dic['nest']['ST_GA_ampa']={}
@@ -2765,9 +2796,10 @@ class InhibitionPar_base(object):
         
         M1_SN=500*1/GetNetw('sub_sampling', 'M1')
         M2_GI=500*1/GetNetw('sub_sampling', 'M2')
-        
+        M2_GA=M2_GI*0.1
         d={'M1_SN_gaba':{'fan_in0': M1_SN, 'rule':'set-set' },
            'M2_GI_gaba':{'fan_in0': M2_GI, 'rule':'set-set' },
+           'M2_GA_gaba':{'fan_in0': M2_GA, 'rule':'all-all'},
                    
            'M1_M1_gaba':{'fan_in0': M1_M1, 'rule':'all-all' },
            'M1_M2_gaba':{'fan_in0': M1_M2, 'rule':'all-all' },                     
@@ -2787,6 +2819,10 @@ class InhibitionPar_base(object):
            'GA_M2_gaba':{'fan_in0': 10, 'rule':'all-all' },
            'GA_GA_gaba':{'fan_in0': GA_XX,'rule':'all-all' }, 
            'GA_GI_gaba':{'fan_in0': GA_XX,'rule':'all-all' },
+
+           'GI_FS_gaba':{'fan_in0': 10, 'rule':'all-all' },
+           'GI_M1_gaba':{'fan_in0': 10, 'rule':'all-all' },
+           'GI_M2_gaba':{'fan_in0': 10, 'rule':'all-all' },
            'GI_GI_gaba':{'fan_in0': GI_XX,'rule':'all-all' },
            'GI_GA_gaba':{'fan_in0': GI_XX,'rule':'all-all' },
             
@@ -2827,7 +2863,10 @@ class InhibitionPar_base(object):
             if e!=None:
                 d['mask']=[-e, e]   
         
-        
+            #Default they are leasioned
+            if k in ['M2_GA_gaba', 'GI_FS_gaba', 
+                     'GI_M1_gaba', 'GI_M2_gaba']:
+                d['lesion']=True
             conns[k]=misc.dict_update(d,conns[k])
             
         dic['conn']=misc.dict_update(dic['conn'], conns)            
@@ -2964,7 +3003,7 @@ class Slow_wave_base(object):
         dic={'netw':{'input':{}}}
         
         d={'type':'oscillation', 
-           'params':{'p_amplitude_mod':0.8,
+           'paramsc':{'p_amplitude_mod':0.8,
                      'freq': 1.,
                      'freq_min':None,
                      'freq_max':None,
@@ -2994,12 +3033,15 @@ class Slow_wave2_base(object):
              'node':{}}
         
         d={'type':'oscillation2', 
-             'params':{'p_amplitude_mod':0.1,
+             'params':{
+                       'p_amplitude_upp':0.1,
+                       'p_amplitude_down':-0.1,
                        'p_amplitude0':1.0,
                        'freq': 1.,
                        'freq_min':None,
                        'freq_max':None,
-                       'period':'constant'}} 
+                       'period':'constant',
+                       }} 
         
         
         for key in ['C1', 'C2', 'CF', 'CS']: 
@@ -3031,7 +3073,8 @@ class Slow_wave2_EI_EA_base(object):
              'node':{}}
         
         d={'type':'oscillation2', 
-             'params':{'p_amplitude_mod':0.1,
+             'params':{'p_amplitude_upp':0.1,
+                       'p_amplitude_down':-0.1,
                        'p_amplitude0':1.0,
                        'freq': 1.,
                        'freq_min':None,
@@ -3066,7 +3109,8 @@ class Beta_base(object):
              'node':{}}
         
         d={'type':'oscillation2', 
-             'params':{'p_amplitude_mod':0.1,
+             'params':{'p_amplitude_upp':0.1,
+                       'p_amplitude_down':-0.1,
                        'p_amplitude0':1.0,
                        'freq': 20.,
                        'freq_min':None,
@@ -3100,7 +3144,8 @@ class Beta_EI_EA_base(object):
              'node':{}}
         
         d={'type':'oscillation2', 
-             'params':{'p_amplitude_mod':0.1,
+             'params':{'p_amplitude_upp':0.1,
+                       'p_amplitude_down':-0.1,
                        'p_amplitude0':1.0,
                        'freq': 20.,
                        'freq_min':None,
@@ -3135,7 +3180,8 @@ class Beta_striatum_base(object):
              'node':{}}
         
         d={'type':'oscillation2', 
-             'params':{'p_amplitude_mod':0.1,
+             'params':{'p_amplitude_upp':0.1,
+                       'p_amplitude_down':-0.1,
                        'p_amplitude0':1.0,
                        'freq': 20.,
                        'freq_min':None,
@@ -4060,8 +4106,9 @@ def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
 
 
     if typ=='oscillation2':
-        ru=rate*(params['p_amplitude0']+params['p_amplitude_mod'])
-        rd=rate*max(0, (params['p_amplitude0']-params['p_amplitude_mod']))
+
+        ru=rate*float(params['p_amplitude0']+params['p_amplitude_upp'])
+        rd=rate*max(0., float(params['p_amplitude0']+params['p_amplitude_down']))
         
         rates, times = get_oscillation_time_rates(params, 
                                                   stop, 
@@ -4188,7 +4235,8 @@ def dummy_args(flag, **kwargs):
 
 
         #OSCILLATION2
-        params={'p_amplitude_mod':0.1,
+        params={'p_amplitude_upp':0.1,
+                'p_amplitude_down':-0.1,
                 'p_amplitude0':1.0,
                 'freq': 1.,
                 'period':'constant'}
@@ -4346,9 +4394,11 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
            'rule':'1-1',
            'size':str(size),
            'source':inp,
+#            'source_edge_wrap':str(True),
            'source_n':str(n),
            'source_n_sets':str(1),
            'target':net,
+#            'target_edge_wrap':str(True),
            'target_n':str(n),
            'target_n_sets':str(3),}
         
@@ -4557,19 +4607,29 @@ def format_connectionn_save_path(**kwargs):
     
     size=kwargs.get('size','X') 
     source=kwargs.get('source','X') 
+#     source_edge_wrap=kwargs.get('source_edge_wrap', 'X')
+           
     source_n=kwargs.get('source_n','X') 
     source_n_sets=kwargs.get('source_n_sets','X')  
     target=kwargs.get('target','X') 
+#     target_edge_wrap=kwargs.get('target_edge_wrap','X')
     target_n=kwargs.get('target_n','X') 
-    target_n_sets=kwargs.get('target_n_sets','X') 
+    target_n_sets=kwargs.get('target_n_sets','X')
+
+      
     beta_fan_in=kwargs.get('beta_fan_in','X') 
     rule=kwargs.get('rule','X') 
     fan_in=kwargs.get('fan_in','X')
 
+     
     s=(size+'_'+source+'-n'+source_n+'s'+source_n_sets+'_'
-       +target+'-n'+target_n+'s'+target_n_sets+'_bfi-'
-       +beta_fan_in+'_r-'+rule+'_fi'+fan_in)
+           +target+'-n'+target_n+'s'+target_n_sets+'_bfi-'
+           +beta_fan_in+'_r-'+rule+'_fi'+fan_in
+#            +'_ew-src'+source_edge_wrap
+#            +'_ew-trg'+target_edge_wrap
+           )
     
+
     return s
 
 def iter_conn_connected_to(d, target):
@@ -5406,9 +5466,9 @@ if __name__ == '__main__':
 #                         TestSlowwave,
 #                         TestSlowwave2,
                         TestSlowwave2_EI_EA:test_fun_par,
-#                         TestBeta:test_fun_par,
-                        TestBeta_EI_EA:test_fun_par,  
-                        TestGo_NoGo_compete:test_fun_par,
+                        TestBeta:test_fun_par,
+#                         TestBeta_EI_EA:test_fun_par,  
+#                         TestGo_NoGo_compete:test_fun_par,
 #                         TestBcpnnH0,
 #                         TestBcpnnH1,
 
@@ -5429,7 +5489,7 @@ if __name__ == '__main__':
 # 
 #     big_suite = unittest.TestSuite(suites_list)
 #     unittest.TextTestRunner(verbosity=1).run(big_suite)
-#     #suite = unittest.TestLoader().loadTestsFromTestCase(TestUnittest)
+#     #suite = unittest.TestLoAader().loadTestsFromTestCase(TestUnittest)
 #     #suite = unittest.TestLoader().loadTestsFromTestCase(TestInhibition)
 #     #suite = unittest.TestLoader().loadTestsFromTestCase(TestBcpnn_h1)
 #     #suite = unittest.TestLoader().loadTestsFromTestCase(TestSingle_unit)

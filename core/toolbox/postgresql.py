@@ -50,7 +50,8 @@ psycopg2.extensions.register_type(
         psycopg2.BINARY.values, 'BINARY_PICKLE', cast_pickle))
 
 class Database(object):
-    def __init__(self):
+    def __init__(self, name='test'):
+        self.name=name
         self.computer = my_socket.determine_computer()
         self.conn=None
         self.cur=None
@@ -61,15 +62,18 @@ class Database(object):
     
     def connect(self):
         if self.computer=='supermicro':
-            self.conn, _=connect_from_inside_network()
+#             self.conn, _=connect_from_inside_network()
+            self.conn, self.spf=connect_from_outside_network(self.name)
             self.cur=self.conn.cursor()
             
         if self.computer=='mikaellaptop':
-            self.conn, self.spf=connect_from_outside_network()
+            self.conn, self.spf=connect_from_outside_network(self.name)
             self.cur=self.conn.cursor()
 
         if self.computer=='milner':
-            self.conn, self.spf=connect_from_outside_network()
+            filename='/cfs/milner/scratch/l/lindahlm/.postgresql_los'
+            self.conn, self.spf=connect_from_outside_network(self.name,
+                                                             filename)
             self.cur=self.conn.cursor()
 
     def check_if_table_exist(self, table_name):
@@ -108,6 +112,7 @@ class Database(object):
         s+=');'
         
         self.execute(s)
+        self.commit()
 
     def insert(self, table_name, keys, values):
         s0= "INSERT INTO {} (".format(table_name)
@@ -122,8 +127,9 @@ class Database(object):
         s3=s3[:]+')'
         
         s=s0+s1+s2+s3
-
+#         print s
         self.execute(s)
+        self.commit()
 
     def create_table_from_dic(self, d, table_name):
         s=create_table_string(table_name, dummy_data_small())
@@ -173,8 +179,18 @@ class SSH_port_forwarding():
         
     def do(self):
         
-        p=subprocess.Popen(self.cmd)
+        print 'berore cmd'
+        print self.cmd
+        
+        p=subprocess.Popen(self.cmd,
+                            stdout=subprocess.PIPE)
+        print 'after cmd'
+   
         time.sleep(1)
+        print 'after sleep'
+#         out, err=p.communicate()
+        print 'SSH_port_forwarding'
+#         print out, err
         self.pid=p.pid
         
     def kill(self):
@@ -188,6 +204,76 @@ class SSH_port_forwarding():
             subprocess.Popen(['kill', str(self.pid)])
 
 
+def run_data_base_dump(run, net, script_name, net_name, category, file_name, **kwargs):
+    import nest
+    ks=nest.GetKernelStatus()
+        
+    db_name=kwargs.get('database_name','inhibition')
+    db_table=kwargs.get('database_name','simulations')
+    #need to supply not right picked up by nest
+    lnt=kwargs.get('local_num_threads',ks['local_num_threads'])
+    
+
+    t=time.time()
+    dd=run(net)
+
+    par_data = cPickle.dumps(net.par.dic, -1)
+    
+    keys_db=['computer',#varchar
+             'category',
+             'default_params', #bytea
+             'duration',          #float
+             'local_num_threads', #int
+             'net_name',          #varchar
+             'num_processes',     #int
+             'script',        #varchar
+             'simulation',
+             'size',              #int 
+             'simulation_time',   #float 
+              'total_num_virtual_procs' #int
+          ]
+    
+    l=script_name.split('/')
+    if len(l)==2:
+        simulation, script=l
+    if len(l)==1:
+        simulation=l[0]
+        script=''
+    values_db=[my_socket.determine_computer(),
+               category,
+#                psycopg2.Binary(par_data), 
+               par_data,
+                float(round(time.time()-t,1)),
+                int(lnt),
+                net_name,
+                int(ks['num_processes']),
+                script,
+                simulation, 
+                int(net.par.dic['netw']['size']),
+                float(net.par.dic['simu']['sim_time']),
+                int(ks['num_processes']*lnt),
+            ]
+    to_binary=[False,
+            False,
+            True
+            ]+[False]*9
+    
+    data=[db_name, db_table, keys_db, values_db, to_binary]
+    data_to_disk.pickle_save(data, file_name +'/'+net_name,
+                             file_extension= '.db_dump')
+    return dd
+
+def insert(db_name, db_table, keys_db, values_db, db):
+    DB=Database
+    if not db or (db and db.name!=db_name):
+        db=DB(db_name)
+        db.connect()
+        
+    db.insert(db_table, keys_db, values_db)
+#     db.close()
+    return db
+    
+
 def alter_table_string(table, column, dataype):
     
     s='ALTER TABLE {} ADD {} {}'
@@ -198,7 +284,7 @@ def connect(**kwargs):
     return psycopg2.connect(**kwargs )
     
 
-def connect_from_inside_network():
+def connect_from_inside_network(db_name='test'):
     '''
     inside network connecti directly
     '''
@@ -206,28 +292,30 @@ def connect_from_inside_network():
     s=data_to_disk.text_load(filename)
     s=s[:-1]
     
-    kwargs={'database':'test',
+    kwargs={'database':db_name,
             'user':'mikael',
             'password':s,
             'host':'192.168.1.14',
             'sslmode':'require'}
     return connect(**kwargs), None
 
-def connect_from_outside_network():
-    filename='/home/mikael/.postgresql_los'
+def connect_from_outside_network(db_name='test', filename='/home/mikael/.postgresql_los'):
+    
     s=data_to_disk.text_load(filename)
     s=s[:-1]
 
-    
+    print 'SSH_port_forwarding'
     spf=SSH_port_forwarding()
     spf.do()
 
-    kwargs={'database':'test',
+    kwargs={'database':db_name,
             'user':'mikael',
             'password':s,
             'host':'localhost',
             'port':'1234',
             'sslmode':'require'}
+    
+    print 'connect'
     return connect(**kwargs), spf
 
 def keys_and_dataypes_from_dic(d):

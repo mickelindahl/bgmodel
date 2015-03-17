@@ -21,7 +21,7 @@ from toolbox.parallel_excecution import loop
 
 import numpy
 import sys
-import simulate_beta as module
+import simulate_slow_wave as module
 import oscillation_perturbations15_slow as op
 import pprint
 pp=pprint.pprint

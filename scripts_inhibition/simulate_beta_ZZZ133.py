@@ -33,13 +33,13 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=numpy.arange(0.95, 1.25, 0.05)
+amp_base=numpy.arange(1.1, 1.2, 0.05)
 freqs=numpy.arange(0.3, 1.0, 0.2)
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
 freqs=list(freqs)*n
-STN_amp_mod=range(0, 7, 2)
+STN_amp_mod=range(4, 6, 1)
 num_runs=len(freqs)*len(STN_amp_mod)
 num_sims=NUM_NETS*num_runs
 
@@ -54,7 +54,7 @@ kwargs={
         'debug':False,
         'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
-        
+
         'external_input_mod':['EI','EA'],
         
         'file_name':FILE_NAME,
@@ -109,6 +109,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(40,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

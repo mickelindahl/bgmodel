@@ -568,7 +568,7 @@ def _dict_apply_operation(d, keys, val, op='='):
             return d*val
         if op=='+':  
             return d+val
-    print keys
+#     print keys
     if keys[0] in d.keys():
         
         d[keys[0]]=dict_apply_operation(d[keys[0]], keys[1:], val, op )

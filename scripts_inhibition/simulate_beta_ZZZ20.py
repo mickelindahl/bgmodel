@@ -51,6 +51,7 @@ kwargs={
         'cores_superm':2,
         
         'debug':False,
+        'database_save':True,
         'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
         

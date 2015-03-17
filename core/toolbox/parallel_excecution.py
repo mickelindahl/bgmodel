@@ -13,6 +13,7 @@ Created on Mar 19, 2014
 
 import my_socket
 import monkey_patch as mp
+import psycopg2
 mp.patch_for_milner()
 
 import numpy
@@ -30,7 +31,8 @@ from toolbox import misc
 from toolbox import data_to_disk 
 from toolbox.network import default_params
 from toolbox import job_handler
-
+from toolbox import postgresql as psql
+ 
 from toolbox.data_to_disk import make_bash_script
 from toolbox.parallelization import comm
 
@@ -175,64 +177,41 @@ def epoch(*args):
     script_name=obj.get_name()
     return p, job_id, script_name
 
-# def loop(*args, **kwargs):
-#     chunks, args_list,  kwargs_list=args 
-#     
-#     if not isinstance(chunks, list):
-#         n=len(args_list)/5*2
-#         m=len(args_list)/5
-#         chunks=get_loop_index(chunks, [n,n,m])
-#         
-#         
-#     
-# #     args_list_chunked= chunk(args_list, chunks)  
-# #     kwargs_list_chunked= chunk(kwargs_list, chunks)
-#     host=my_socket.determine_computer()
-#     
-#     
-#     chunks_cumsum0=[0]+list(numpy.cumsum(chunks))
-#     for i_start, i_stop in zip(chunks_cumsum0[:-1], chunks_cumsum0[1:]):
-#         jobs=[]
-#         job_info_milner=[]
-# 
-#         al=args_list[i_start: i_stop]
-#         kl=kwargs_list[i_start: i_stop]
-#         for obj, kwargs in zip(al, kl):
-#             epoch(obj, jobs, job_info_milner, **kwargs)
-# 
-#         if not jobs:
-#             continue
-#         
-#         print jobs
-#         s='Waiting for {} processes to complete ...'.format(chunks)
-#         with misc.Stopwatch(s):
-#             for p in jobs:    
-#                 p.wait()
-# #                 p.terminate()
-# 
-#             if host=='milner':
-#                 
-#                 job_ids=[]
-#                 for fileName in job_info_milner:
-#                     text=data_to_disk.text_load(fileName)
-#                     job_ids.append(int(text.split(' ')[-1]))
-#                 
-#                 from toolbox import job_handler
-#                 
-#                 path=default_params.HOME_DATA+'/active_jobbs.pkl'
-#                        
-#                 print 'Waiting {} seconds to start jobb handler'.format(len(al)) 
-#                 obj=job_handler.Handler(job_ids, 1)
-#                 print obj
-#                 time.sleep(len(al))
-#                 obj.loop(loop_print=True)
+
+def save_to_database(path_results):
+    l=os.listdir(path_results)
+    db=None
+    for fn in l:
+        path=path_results+fn
+        if not os.path.isdir(path):
+            continue
+        if not fn.split('/')[-1][:6]=='script':
+            continue
+        ll=os.listdir(path)
+        for fn2 in ll:
+            if fn2.split('.')[-1]!='db_dump':
+                continue
+            data=data_to_disk.pickle_load(path+'/'+fn2, '.db_dump')
+            db_name, db_table, keys_db, values_db, to_binary=data
+            to_binary=data[-1]
+            values_db=[psycopg2.Binary(a) if tb 
+             else a 
+             for a,tb in zip(values_db,to_binary)]
+            s='Writing to database {} table {} for {}'
+            print s.format(db_name, db_table, fn2)
+            db=psql.insert(db_name, db_table, keys_db, values_db, db)
+            print 'Removing '+path+'/'+fn2
+#             subprocess.Popen(['rm', path+'/'+fn2])
+    db.close()
     
 def loop(*args, **kwargs):
     n, m_list, args_list,  kwargs_list=args 
     
     path_results=kwargs_list[0].get('path_results')
+    db_save=kwargs_list[0].get('database_save', False)
     log_file_name=path_results+'/std/job_handler_log'
     data_to_disk.mkdir(path_results+'/std/')
+    
 
     h=job_handler.Handler(loop_time=5,  
                           log_to_file=True,
@@ -254,7 +233,18 @@ def loop(*args, **kwargs):
     
         h.loop_with_queue(n, q,  epoch, 
                           loop_print=True)
+     
+             
+    if db_save:
+        save_to_database(path_results)
+            
         
+        
+        
+         
+         
+         
+    
         
 def save_params(path_params, path_script, obj):
     data_to_disk.pickle_save([obj, 

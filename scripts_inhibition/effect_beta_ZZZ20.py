@@ -25,7 +25,7 @@ def create_name_and_x(l):
     return 1, l[0]+'_'+l[1]+'_'+l[2]+'_'+l[3]+'_'+l[4]
 
 scale=2
-d=kw={'n_rows':8, 
+d=kw={'n_rows':5, 
       'n_cols':2, 
       'w':int(72/2.54*18)*scale, 
       'h':int(72/2.54*18)/3*scale, 
@@ -35,7 +35,7 @@ d=kw={'n_rows':8,
 
 kwargs={'data_path':('/home/mikael/results/papers/inhibition/network/'
                     +'milner/simulate_beta_ZZZ20/'),
-        'from_diks':0,
+        'from_diks':1,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),
         'title':'Activation (beta)',
         'ax_4x1':True,

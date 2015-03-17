@@ -16,7 +16,7 @@ from simulate import (get_path_rate_runs,
                       pert_add_oscillations) 
 
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_slow_wave2_EI_EA as Builder
+from toolbox.network.manager import Builder_slow_wave2 as Builder
 from toolbox.parallel_excecution import loop
 
 
@@ -69,7 +69,7 @@ kwargs={
         'job_name':'sw_ZZZ13_slow',
         
         'l_hours':  ['00','01','00'],
-        'l_minutes':['45','00','5'],
+        'l_minutes':['45','00','05'],
         'l_seconds':['00','00','00'],
 
         'local_threads_milner':10,
@@ -107,5 +107,5 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 print 'from disk', FROM_DISK_0
 
 
-loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(30,[num_sims,num_sims,num_sims/2], a_list, k_list )
         

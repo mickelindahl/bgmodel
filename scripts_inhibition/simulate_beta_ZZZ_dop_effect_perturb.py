@@ -21,7 +21,7 @@ from simulate import (get_path_rate_runs,
 
 from toolbox.network import default_params
 from toolbox.network.manager import Builder_beta as Builder
-from toolbox.parallel_excecution import get_loop_index, loop
+from toolbox.parallel_excecution import loop
 
 import simulate_beta as module
 import oscillation_perturbations4 as op

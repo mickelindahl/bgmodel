@@ -335,7 +335,7 @@ def norm(x):
     return sqrt(dot(x,x))
 
 
-def phase(x, **kwargs):
+def _phase(x, **kwargs):
 
     lowcut=kwargs.get('lowcut', 10)
     highcut=kwargs.get('highcut', 20)
@@ -364,8 +364,11 @@ def phase(x, **kwargs):
             pylab.ylabel(key)
         pylab.show() 
 
-    return d['phase']
+    return d
 
+def phase(x, **kwargs):
+    d=_phase(x, **kwargs)
+    return d['phase']
 def phases(signals, **kwargs):
 
     a=[phase(s, **kwargs) for s in signals]

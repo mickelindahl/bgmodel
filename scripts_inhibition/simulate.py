@@ -77,7 +77,9 @@ def get_args_list(*args, **kwargs):
                 p=deepcopy(pert)
                 if no_oscillations_control and nets[0]=='Net_0' and len(nets)==1:
                     for pp in p:
-                        if 'p_amplitude_mod' in pp.keys:
+                        if 'p_amplitude_upp' in pp.keys:
+                            pp.set_val(0.0) #set amplitude to zero
+                        if 'p_amplitude_down' in pp.keys:
                             pp.set_val(0.0) #set amplitude to zero
                             print pp
                 
@@ -476,19 +478,24 @@ def iterator_oscillations(freqs, STN_amp_mod, l):
             for i, _l in enumerate(l):
                 yield j, i, STN_amp, _l
 
+
+
 def pert_add_oscillations(**kwargs):
     
-    amp_base=kwargs.get('amp_base')     
+    amp_base=kwargs.get('amp_base') 
+    down_vec=kwargs.get('down_vec')    
     freqs=kwargs.get('freqs')
     freq_oscillation=kwargs.get('freq_oscillation')
     external_input_mod=kwargs.get('external_input_mod',[]) 
     input_mod=kwargs.get('input_mod',['C1', 'C2', 'CF', 'CS'])
     local_num_threads=kwargs.get('local_num_threads')
+    null_down=kwargs.get('null_down', False)
+    null_down_STN=kwargs.get('null_down_stn', False)
     path_rate_runs=kwargs.get('path_rate_runs')
     perturbation_list=kwargs.get('perturbation_list')
     sim_time=kwargs.get('sim_time')
     size=kwargs.get('size')
-    STN_amp_mod=kwargs.get('STN_amp_mod', [1])
+    STN_amp_mod=kwargs.get('STN_amp_mod', [1.])
     
     l=perturbation_list
     for i in range(len(l)):
@@ -512,10 +519,8 @@ def pert_add_oscillations(**kwargs):
 #         for STN_amp in STN_amp_mod:
 #             for i, _l in enumerate(l):
 
-            amp = [numpy.round(damp[_l.name][j], 2), amp_base[j]]
-            
-
-
+            amp = [numpy.round(damp[_l.name][j], 2), 
+                   amp_base[j]]
             
             _l = deepcopy(_l)
             dd = {}
@@ -526,8 +531,18 @@ def pert_add_oscillations(**kwargs):
                 elif key in ['CS']:
                     factor=STN_amp
                 
+                if null_down:
+                    down=-1.
+                elif null_down_STN and key in ['CS']:
+                    down=-1
+                elif down_vec:
+                    down=down_vec[j]
+                else:
+                    down=-amp[0]*factor
+                
                 d = {'type':'oscillation2', 
-                     'params':{'p_amplitude_mod':amp[0]*factor, 
+                     'params':{'p_amplitude_upp':amp[0]*factor, 
+                               'p_amplitude_down':down, 
                                'p_amplitude0':amp[1], 
                                'freq':freq_oscillation}}
                     
@@ -537,6 +552,11 @@ def pert_add_oscillations(**kwargs):
             if STN_amp!=1:
                 _l += pl(dd, '=', **{'name':'amp_{0}_{1}_stn_{2}'.format(amp[0], amp[1],
                                                                          STN_amp)})
+            elif down_vec:
+                _l += pl(dd, '=', **{'name':'amp_{0}-{1}-{2}'.format(amp[0], 
+                                                                     down,
+                                                                     amp[1])})
+           
             else:
                 _l += pl(dd, '=', **{'name':'amp_{0}-{1}'.format(*amp)})
            

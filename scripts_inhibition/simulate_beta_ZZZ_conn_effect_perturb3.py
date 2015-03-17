@@ -22,7 +22,7 @@ from toolbox.parallel_excecution import loop
 
 import sys
 import simulate_beta as module
-import oscillation_perturbations14 as op
+import oscillation_perturbations13_slow as op
 import oscillation_perturbations_conns as op_conns
 import pprint
 pp=pprint.pprint

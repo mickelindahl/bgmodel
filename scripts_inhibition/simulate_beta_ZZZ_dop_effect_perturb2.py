@@ -20,7 +20,7 @@ from simulate import (get_path_rate_runs,
                       pert_add_oscillations) 
 
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_beta_EI_EA as Builder
+from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
 
 import sys

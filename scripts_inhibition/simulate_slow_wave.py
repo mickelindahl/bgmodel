@@ -145,7 +145,19 @@ class Setup(object):
            'models_pdwc': ['ST_ST', 'GP_ST', 'GI_ST', 'GA_ST'],
            }
         return d
-    
+
+    def plot_signals(self):
+        d={ 
+           'lowcut': 0.5,
+           'highcut':1.5,
+           'order':3,
+           'fs':256.0, 
+           'freq':1,
+           't_start':10000.0,
+           't_stop':20000.0,
+           }
+        return d
+   
 def main(builder=Builder,
          from_disk=1,
          perturbation_list=None,

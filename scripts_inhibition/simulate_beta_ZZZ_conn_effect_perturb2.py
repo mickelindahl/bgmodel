@@ -17,7 +17,7 @@ from simulate import (get_path_rate_runs,
                       pert_add_oscillations) 
 
 from toolbox.network import default_params
-from toolbox.network.manager import Builder_beta_EI_EA as Builder
+from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
 
 import sys
@@ -104,6 +104,6 @@ a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(10,[NUM_NETS, NUM_NETS, NUM_NETS/2], a_list, k_list )
+loop(20,[NUM_NETS, NUM_NETS, NUM_NETS/2], a_list, k_list )
 
         
