@@ -106,10 +106,10 @@ class Setup(object):
            't_start':0.0,
            't_stop':20000.0,           
            'fig_and_axes':{'n_rows':2, 
-                                        'n_cols':1, 
-                                        'w':600.0, 
-                                        'h':500.0, 
-                                        'fontsize':16},
+                            'n_cols':1, 
+                            'w':600.0, 
+                            'h':500.0, 
+                            'fontsize':16},
                       'x_lim':[1,1.5], 
                       'x_lim':[1,30], 
            }
@@ -140,7 +140,7 @@ class Setup(object):
                      r'Only FSN$\to$$MSN^{static}',
                      r'Only $GPe_{TA}$\to$MSN',
                      r'No inhibition'],
-                      'x_lim':[1,1.5],
+                      'x_lim':[0.8,1.8],
                       'y_lim':[0,30]}
         return d
         
@@ -154,7 +154,7 @@ class Setup(object):
            'fontsize':24,
            'relative':True,
            'relative_to':[5,0],
-           'x_lim':[1,1.5],
+           'x_lim':[0.8,1.8],
            'y_lim':[0,1],
            'delete':[0,5],
            }
@@ -274,14 +274,14 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
                           keep_ticks=False)
     for i, ax in enumerate(axs):
         ax.set_ylabel('')
-        ax.my_set_no_ticks(yticks=3)
+        ax.my_set_no_ticks(yticks=3, xticks=4)
 #         ax.set_xticks([1.1,1.3,1.5])
         if i==0:
             ax.set_yticks([0,10,20])
         if i==1:
             ax.set_yticks([0,7,14])
             ax.set_ylim([0,20])
-            
+        
     axs[2].lines.remove(axs[2].lines[0])
     axs[2].lines.remove(axs[2].lines[-1])
             

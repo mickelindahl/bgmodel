@@ -16,31 +16,31 @@ from toolbox.parallel_excecution import loop
 
 import scripts_inhibition.Go_NoGo_compete as module
 
-
+import sys
 # from scripts inhibition import Go_NoGo_compete as module
-import oscillation_perturbations13 as op
+import oscillation_perturbations34_slow as op
 import pprint
 pp=pprint.pprint
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=0
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 proportion_connected=[0.1, 0.5, 1.]
 NUM_RUNS=len(proportion_connected)
 NUM_NETS=5
-num_sims=NUM_NETS*NUM_RUNS
+# num_sims=NUM_NETS*NUM_RUNS
 
 LOAD_MILNER_ON_SUPERMICRO=False
 
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*20,
+        'cores_milner':40*4,
         'cores_superm':40,
         
         'debug':False,
         'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'], 
-        'do_nets':[], #none means all
-        'do_runs':[], #none means all
+        'do_nets':['Net_'+str(i) for i in range(0,1)], #none means all
+        'do_runs':[2],#range(NUM_RUNS), #none means all
         'do_obj':False,
         'duration':[900.,100.0],
         
@@ -49,9 +49,9 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'sw_noss_scl_v2',
+        'job_name':'fig5_scl',
 
-        'l_hours':['4','01','00'],
+        'l_hours':['05','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            
@@ -75,8 +75,9 @@ kwargs={
         'path_code':default_params.HOME_CODE,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
-        'perturbation_list':op.get(),
+        'perturbation_list':[op.get()[7]],
         'proportion_connected':proportion_connected, #related to toal number fo runs
+        
         'p_sizes':[1.]*NUM_RUNS,
         'p_subsamp':[1.]*NUM_RUNS,
         
@@ -96,5 +97,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(1, [num_sims,num_sims, NUM_RUNS], a_list, k_list )
+loop(3, [num_sims,num_sims, NUM_RUNS], a_list, k_list )
         

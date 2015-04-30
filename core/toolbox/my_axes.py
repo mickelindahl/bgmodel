@@ -126,7 +126,22 @@ class Mixin(object):
         ax=convert_super_to_sub_class(ax)
         
         return ax
+    def twiny(self):
+        """
+        call signature::
 
+          ax = twinx()
+
+        create a twin of Axes for generating a plot with a sharex
+        x-axis but independent y axis.  The y-axis of self will have
+        ticks on left and the returned axes will have ticks on the
+        right
+        """
+        ax=super( self.my_class, self ).twiny()
+        
+        ax=convert_super_to_sub_class(ax)
+        
+        return ax
 
 class MyAxes3D_base(Axes3D):
     def __init__(self, fig, rect=None, *args, **kwargs):
@@ -273,6 +288,7 @@ def convert_super_to_sub_class(superClass, into=MyAxes):
         subClass = superClass
         del superClass
         subClass.__class__ = into
+#         subClass.__init__(fig)
         subClass._init_extra_attributes()
         
         return subClass        

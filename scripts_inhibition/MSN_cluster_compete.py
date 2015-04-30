@@ -338,8 +338,7 @@ def create_figs(setup, file_name_figs, d, models):
     axs[0].my_remove_axis(xaxis=True, yaxis=False,
                           keep_ticks=False) 
     axs[2].my_remove_axis(xaxis=True, yaxis=False,
-                          keep_ticks=False)
-    
+                          keep_ticks=False)<
     for i, ax in enumerate(axs):
         ax.set_ylabel('')
         ax.my_set_no_ticks(yticks=3, xticks=3)    

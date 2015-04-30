@@ -57,7 +57,7 @@ def get():
          
 
 
-    for y in numpy.arange(1,8., 1.):
+    for y in numpy.arange(1, 8., 1.):
             z=2.5 # ms
             x=2.5
             d={}
@@ -86,7 +86,6 @@ def get():
 
     for y in numpy.arange(1, 11., 2):
         for z in numpy.arange(1, 11., 2):
-            y=2.5
             x=2.5
             d={}
             for keys in s_mul: update(solution, d, keys)  
@@ -112,7 +111,7 @@ def get():
             d['node']['EA']['rate']*=0.7
             
         
-            l[-1]+=pl(d, '=', **{'name':'CSTRdelay_'+str(y)})     
+            l[-1]+=pl(d, '=', **{'name':'CSTRdelay_'+str(y)+'_CSTdelay_'+str(z)})     
          
     return l
 

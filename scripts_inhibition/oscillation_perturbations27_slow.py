@@ -46,48 +46,30 @@ def get():
         
             l[-1]+=pl(d, '=', **{'name':'GIGA_'+str(y)+'_STGA_'+str(z)})    
     
-    for y in numpy.arange(0.1,2,0.3):
+    for y in numpy.arange(1.,6.):
+        for z in numpy.arange(1.,6.):
             x=2.5
             d={}
             for keys in s_mul: update(solution, d, keys)  
+            
+            l+=[pl(d, '*', **{'name':''})]
+        
+    
+              
+            d={}
+            for keys in s_equal: update(solution, d, keys) 
             misc.dict_update(d,{'nest':{'ST_GA_ampa':{'delay':y}}})
             misc.dict_update(d,{'nest':{'ST_GI_ampa':{'delay':y}}})
-            
-            l+=[pl(d, '*', **{'name':''})]
-        
-    
-              
-            d={}
-            for keys in s_equal: update(solution, d, keys) 
+            misc.dict_update(d,{'nest':{'GI_ST_gaba':{'delay':z}}})
             
             misc.dict_update(d,{'nest':{'ST':{'beta_I_AMPA_1': f_beta_rm(x)}}})
             misc.dict_update(d,{'nest':{'ST':{'beta_I_NMDA_1': f_beta_rm(x)}}})
             d['node']['EA']['rate']*=0.7
             
         
-            l[-1]+=pl(d, '=', **{'name':'STGPdelay_'+str(y)})         
-
-    for y in numpy.arange(0.1,2,0.3):
-            x=2.5
-            d={}
-            for keys in s_mul: update(solution, d, keys)  
-            misc.dict_update(d,{'nest':{'GI_ST_gaba':{'delay':y}}})
-            
-            l+=[pl(d, '*', **{'name':''})]
-        
+            l[-1]+=pl(d, '=', **{'name':'STGPdelay_'+str(y)+'_GPSTdelay_'+str(z)})         
     
-              
-            d={}
-            for keys in s_equal: update(solution, d, keys) 
-            
-            misc.dict_update(d,{'nest':{'ST':{'beta_I_AMPA_1': f_beta_rm(x)}}})
-            misc.dict_update(d,{'nest':{'ST':{'beta_I_NMDA_1': f_beta_rm(x)}}})
-            d['node']['EA']['rate']*=0.7
-            
-        
-            l[-1]+=pl(d, '=', **{'name':'GPSTdelay_'+str(y)})  
-    
-    for y in numpy.arange(2.5,21., 2.5):
+    for y in numpy.arange(2.5, 21., 2.5):
             x=2.5
             d={}
             for keys in s_mul: update(solution, d, keys)  
@@ -134,7 +116,7 @@ def get():
          
 
 
-    for y in numpy.arange(1,8., 1.):
+    for y in numpy.arange(1, 8., 1.):
             x=2.5
             d={}
             for keys in s_mul: update(solution, d, keys)  

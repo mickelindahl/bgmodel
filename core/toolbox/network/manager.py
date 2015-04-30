@@ -16,6 +16,7 @@ from toolbox.network.default_params import Perturbation_list as pl,\
     Slow_wave2_EI_EA, Beta_EI_EA, Beta_striatum
 from toolbox.network.default_params import (Beta,
                                             Go_NoGo_compete,
+                                            Compete_with_oscillations,
                                             Inhibition, 
                                             Inhibition_striatum,
                                             MSN_cluster_compete,
@@ -582,9 +583,11 @@ def _get_input_go_nogo_p0_and_p1(res, dur):
     return durations, p0,  p1, x, y
 
 
+    
 def get_input_Go_NoGo(kwargs):
     n_sets=kwargs.get('n_sets', 2)
     
+    input_type=kwargs.get('input_type')
     
     p_pulse=kwargs.get('p_pulse')
     res = kwargs.get('resolution', 2)
@@ -607,6 +610,7 @@ def get_input_Go_NoGo(kwargs):
     input_lists = kwargs.get('input_lists', [['C1'], ['C1', 'C2']])
     
     durations, p0,  p1, x, y = _get_input_go_nogo_p0_and_p1(res, dur)
+
  
     l = []
     for inp_list in input_lists:
@@ -626,7 +630,7 @@ def get_input_Go_NoGo(kwargs):
             if inp not in act_input:
                 continue
             d = misc.dict_update(d, {'node':{inp:{'n_sets':n_sets}}})
-            params = {'type':'burst3', 
+            params = {'type':input_type, 
                 'params':{'n_set_pre':n_sets, 
                           'repetitions':rep}}
             d_sets = {}
@@ -657,7 +661,7 @@ def get_input_Go_NoGo(kwargs):
                 continue
             
             d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
-            params = {'type':'burst3', 
+            params = {'type':input_type, 
                       'params':{'n_set_pre':1, 
                                 'repetitions':rep}}
             d_sets = {}
@@ -672,7 +676,7 @@ def get_input_Go_NoGo(kwargs):
         
         for inp in inp_no_ch:
             d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
-            params = {'type':'burst3', 
+            params = {'type':input_type, 
                       'params':{'n_set_pre':1, 
                                 'repetitions':1}}
             d_sets = {}
@@ -691,7 +695,7 @@ def get_input_Go_NoGo(kwargs):
             pamp=p0[:]
             pamp[1::2]=[p_pulse]*len(pamp[1::2])
             d = misc.dict_update(d, {'node':{inp:{'n_sets':1}}})
-            params = {'type':'burst3', 
+            params = {'type':input_type, 
                       'params':{'n_set_pre':1, 
                                 'repetitions':rep}}
             d_sets = {}
@@ -703,7 +707,27 @@ def get_input_Go_NoGo(kwargs):
             params['params'].update({'params_sets':d_sets})
             d = misc.dict_update(d, {'netw':{'input':{inp:params}}})  
         
+        if input_type in ['burst3_oscillations']:
+                
+            for inp in ['C1','C2','CF','CS']:
+                
+                if kwargs.get('STN_amp_mod') and inp=='CS':
+                    f=kwargs.get('STN_amp_mod')
+                else:
+                    f=1
+                
+                dtmp={'p_amplitude_upp':kwargs.get('freqs')*f,
+                      'p_amplitude_down':-kwargs.get('freqs')*f,
+                      'p_amplitude0':kwargs.get('amp_base'),
+                      'freq': kwargs.get('freq_oscillations'),
+                      'period':'constant'}
+            
+                params={'params':dtmp}
+                d = misc.dict_update(d, {'netw':{'input':{inp:params}}})
+
         l += [pl(d, '=', **{'name':'_'.join(inp_list)})]
+            
+        
         
         
     sequence = 2
@@ -737,6 +761,34 @@ class Builder_Go_NoGo_compete_base(Builder_network):
 
 
 class Builder_Go_NoGo_compete(Builder_Go_NoGo_compete_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
+
+
+
+class Builder_Go_NoGo_compete_oscillations_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Compete_with_oscillations(**{'other':Inhibition(),
+                                            'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+
+    def _variable(self):
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        
+        return l    
+
+
+
+
+class Builder_Go_NoGo_compete_oscillations(Builder_Go_NoGo_compete_oscillations_base, 
                       Mixin_dopamine, 
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
@@ -881,6 +933,33 @@ class Builder_Go_NoGo_with_nodop_FS(Builder_Go_NoGo_with_nodop_FS_base,
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
     pass    
+
+class Builder_Go_NoGo_with_nodop_FS_oscillation_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Compete_with_oscillations(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop(), self._no_dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [
+#                                      ['C1','CF'], 
+                                     ['C1', 'C2', 'CF']
+                                     ]        
+
+        l, self.dic = get_input_Go_NoGo(self.kwargs)    
+        
+        return l    
+
+class Builder_Go_NoGo_with_nodop_FS_oscillation(Builder_Go_NoGo_with_nodop_FS_oscillation_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass 
      
 class Builder_Go_NoGo_with_lesion_FS_base(Builder_network):    
 
@@ -913,6 +992,39 @@ class Builder_Go_NoGo_with_lesion_FS(Builder_Go_NoGo_with_lesion_FS_base,
                                      Mixin_reversal_potential_striatum):
     pass
 
+
+class Builder_Go_NoGo_with_lesion_FS_base_oscillation(Builder_network):    
+
+    def get_parameters(self, per):
+        return Compete_with_oscillations(**{'other':Inhibition(),
+                       'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [['C1','CF'], 
+                                     ['C1', 'C2', 'CF']]
+
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+        
+
+        l = add_lesions_Go_NoGo(l)    
+        
+
+        
+        return l    
+    
+class Builder_Go_NoGo_with_lesion_FS_oscillation(Builder_Go_NoGo_with_lesion_FS_base_oscillation, 
+                                     Mixin_dopamine, 
+                                     Mixin_general_network, 
+                                     Mixin_reversal_potential_striatum):
+    pass
+
+
 class Builder_Go_NoGo_only_D1D2_FS_base(Builder_network):    
 
     def get_parameters(self, per):
@@ -940,6 +1052,7 @@ class Builder_Go_NoGo_only_D1D2_FS(Builder_Go_NoGo_only_D1D2_FS_base,
     pass
 
 
+
 class Builder_Go_NoGo_only_D1D2_nodop_FS_base(Builder_network):    
 
     def get_parameters(self, per):
@@ -961,6 +1074,35 @@ class Builder_Go_NoGo_only_D1D2_nodop_FS_base(Builder_network):
         return l    
     
 class Builder_Go_NoGo_only_D1D2_nodop_FS(Builder_Go_NoGo_only_D1D2_nodop_FS_base, 
+                                     Mixin_dopamine, 
+                                     Mixin_general_network, 
+                                     Mixin_reversal_potential_striatum):
+    pass
+
+
+
+class Builder_Go_NoGo_only_D1D2_nodop_FS_oscillations_base(Builder_network):    
+
+    def get_parameters(self, per):
+        return Compete_with_oscillations(**{'other':Inhibition(),
+                                            'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._no_dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [
+                                     ['C1', 'C2', 'CF']]
+
+        
+        l, self.dic = get_input_Go_NoGo(self.kwargs)      
+            
+        return l    
+    
+class Builder_Go_NoGo_only_D1D2_nodop_FS_oscillations(
+                                    Builder_Go_NoGo_only_D1D2_nodop_FS_oscillations_base, 
                                      Mixin_dopamine, 
                                      Mixin_general_network, 
                                      Mixin_reversal_potential_striatum):
@@ -1275,6 +1417,7 @@ def compute_dependables(obj, dout, kwargs, key, _set=None):
         if (len(attr)>=len('mean_rate_slices') and 
             attr[0:16]=='mean_rate_slices'):            
 #             pp(kwargs)
+            #pick out kwargs for the signal
             _kwargs=kwargs[attr]
             if _set!=None:
                 update_kwargs_with_set_dic(_kwargs, _set)
@@ -1308,13 +1451,28 @@ def compute(d, models, attr, **kwargs_dic):
             
             module=misc.import_module('toolbox.network.manager')
             
+            #module=manager then there is an 
+            #function of name a_name there.
+            #The function can slice using set information
+            #from a spike obj 
             call=getattr(module, a_name)
             
             k=kwargs_dic.get(a, {}).copy()
             sets=k.pop('sets', None)
             
+            
+#             if (keys[1]=='GA_GA'
+#                 and a=='phases_diff_with_cohere'):
+#                 k['inspect_phases_diff']=True
+# #                 k['inspect_phase_diff']=True
+#             if a=='phases_diff_with_cohere':
+#                 k['inspect_phases_diff']=True
+#                 print keys[1]
+            
             if sets!=None:
                 
+                #ensure that sets i not more than
+                #size of val (spk signal)
                 max_sets=val.wrap.shape[1]
                 
                 sets=[s for s in sets if s<max_sets ]
@@ -1322,6 +1480,8 @@ def compute(d, models, attr, **kwargs_dic):
                 for s in sets:
 
                     update_kwargs_with_set_dic(k, s)
+                    
+                    #call cuts out from set
                     u=call(val, **k)
                     
                     name='set_'+str(s)
@@ -1407,7 +1567,7 @@ def get_storage(file_name, info, nets=None):
 
 def get_storage_list(nets, path, info):        
     sd_list=[]  
-    for net in nets.keys(): 
+    for net in nets: 
         sd_list.append(get_storage(path+'/'+net, info))
     return sd_list
 

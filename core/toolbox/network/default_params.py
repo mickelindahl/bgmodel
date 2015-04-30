@@ -326,6 +326,14 @@ class Perturbation(object):
         for v in self.val:
             s+=self.op+str(v)
         
+        # Such that equal comes before multiplying in sorting
+        #perturbations
+        if self.op=='=':
+            priority='0'
+        else:
+            priority='1'
+         
+        return  priority+'.'+'.'.join(self.keys)+s
         return  '.'.join(self.keys)+s
     
     def __str__(self):
@@ -1045,12 +1053,22 @@ class Par_base_mixin(object):
         ra = {}
         ra['C_m'] = {'active':GetNetw('rand_nodes', 'C_m'), 
                      'gaussian':{'my':GetNest(model, 'C_m'), 
-                                 'sigma':GetNest(model, 'C_m') * 0.1}}
+                                 'sigma':GetNest(model, 'C_m') * 0.2,
+                                 'cut':True, 
+                                 'cut_at':3},}
+        
+        ra['I_e'] = {'active':GetNetw('rand_nodes', 'I_e'), 
+                     'gaussian':{'my':GetNest(model, 'I_e'), 
+                                 'sigma':GetNest(model, 'I_e') * 0.5,
+                                 'cut':True, 
+                                 'cut_at':3},}
+        
         ra['V_th'] = {'active':GetNetw('rand_nodes', 'V_th'), 
                       'gaussian':{'my':GetNest(model, 'V_th'), 
                       'sigma':GetNetw('V_th_sigma'), 
                       'cut':True, 
                       'cut_at':3.}}
+        
         ra['V_m'] = {'active':GetNetw('rand_nodes', 'V_m'), 
             'uniform':{'min':GetNest(model, 'V_th') - 20, 
                 'max':GetNest(model, 'V_th')}}
@@ -1361,7 +1379,7 @@ class Unittest_base(object):
                                      'x0':[3000.0]}
         
  
-        dic['netw']['rand_nodes']={'C_m':True, 'V_th':True, 'V_m':True}
+        dic['netw']['rand_nodes']={'C_m':True, 'V_th':True, 'V_m':True, 'I_e':True}
         dic['netw']['size']=10
         dic['netw']['sub_sampling']={net:1.0} 
         dic['netw']['tata_dop']=0.8
@@ -1373,7 +1391,7 @@ class Unittest_base(object):
         # ========================
         d={inp+'_nest':{'type_id':'poisson_generator'}, 
            net+'_nest':{'type_id':'iaf_cond_exp',
-                 'C_m':200.0, 'V_th':-50.,
+                 'C_m':200.0, 'V_th':-50.,'I_e':0.,
                      'tau_minus':20.0, },
            inp+'_'+net+'_nest':{'type_id':'static_synapse',
                                     'delay':1.0,
@@ -2132,7 +2150,9 @@ class InhibitionPar_base(object):
                                      'x':['node.C1.rate'],
                                      'x0':[700.0]}
                  
-        dic['netw']['rand_nodes']={'C_m':True, 'V_th':True, 'V_m':True}
+        dic['netw']['rand_nodes']={'C_m':True, 'V_th':True, 'V_m':True, 
+                                   'I_e':False #need to be false so that I_vivo can be modified
+                                   }
         
         
         dic['netw']['size']=10000.0 
@@ -2233,7 +2253,7 @@ class InhibitionPar_base(object):
 
         # FSN-MSN static
         dic['nest']['FS_M1_gaba_s']={}
-        dic['nest']['FS_M1_gaba_s']['weight']  =6.*0.2
+        dic['nest']['FS_M1_gaba_s']['weight']  =6.*0.3
         dic['nest']['FS_M1_gaba_s']['delay']   = 1.7    # Taverna 2004   
         dic['nest']['FS_M1_gaba_s']['type_id'] = 'static_synapse'  
         dic['nest']['FS_M1_gaba_s']['receptor_type'] = self.rec['izh']['GABAA_1']   
@@ -2540,7 +2560,7 @@ class InhibitionPar_base(object):
         dic['nest']['FS']['tata_dop'] = DepNetw('calc_tata_dop')
         
         dic['nest']['FS']['beta_I_GABAA_1'] = -0.83 #0.8 # From FSN
-        dic['nest']['FS']['beta_I_GABAA_2'] = -0.83 #0.8 # From GPe A
+        dic['nest']['FS']['beta_I_GABAA_2'] = 0.0#-0.83 #0.8 # From GPe A
     
         
         dic['nest']['FS_low']  = deepcopy(dic['nest']['FS'])
@@ -2637,6 +2657,7 @@ class InhibitionPar_base(object):
         dic['nest']['GP']['beta_E_L'] = 0.181
         dic['nest']['GP']['beta_V_a'] = 0.181
         dic['nest']['GP']['beta_I_AMPA_1']  =-0.45 # 0.4 # From STN
+        dic['nest']['GP']['beta_I_GABAA_1'] = 0.0 #0.8 # From From MSNs
         dic['nest']['GP']['beta_I_GABAA_2'] = -0.83 #0.8 # From GPe A
     
         dic['nest']['GP']['tata_dop'] = DepNetw('calc_tata_dop')
@@ -2939,6 +2960,28 @@ def setup_burst3(dic_other, max_n_set_pre,  inps, dic={}):
     
     return dic
 
+def setup_burst3_wo(dic_other, max_n_set_pre,  inps, dic={}):
+
+    
+    for inp in inps:
+        d={'type':'burst3_with_oscillations',
+           'params':{
+                     'repetitions':2},
+                     }
+        params_sets={}
+        d['params']['n_set_pre'] = dic_other['node'][inp]['n_sets']
+        for i in range(max_n_set_pre):
+            dd = {str(i):{'active':False, 
+                    'amplitudes':[1.0], 
+                    'durations':[100.0], 
+                    'proportion_connected':1}}
+            params_sets.update(dd)
+        
+        d['params'].update({'params_sets':params_sets})
+        dic = misc.dict_update(dic, {'netw':{'input':{inp:d}}})
+    
+    return dic
+
 class Compete_base(object):
 
     def _get_par_constant(self):
@@ -2964,6 +3007,65 @@ class Compete_base(object):
         
 
         return dic
+
+class Compete_with_oscillations_base(object):
+
+    def _get_par_constant(self):
+
+        dic={'netw':{'input':{}},
+             'nest':{},
+             'node':{}}
+        
+        dic_other=self.other.get_par_constant()
+        max_n_set_pre=2
+        inps=['C1', 'C2', 'CF', 'CS']
+        
+        dic = setup_burst3(dic_other, max_n_set_pre, inps, dic)
+    
+        for key in inps: 
+            new_name=key+'d'             
+            dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
+                                   'rates':[0.],
+                                   'timings':[1.]}   
+            dic['node'][key]={'model':new_name}
+        
+#         dic = misc.dict_update(dic_other, dic)
+        
+
+#         dic={'netw':{'input':{}},
+#              'nest':{},
+#              'node':{}}
+        
+        d={'type':'burst3_with_oscillations', 
+             'params':{
+                       'p_amplitude_upp':0.1,
+                       'p_amplitude_down':-0.1,
+                       'p_amplitude0':1.0,
+                       'freq': 20.,
+                       'freq_min':None,
+                       'freq_max':None,
+                       'period':'constant',
+                       }} 
+        
+        for key in ['C1', 'C2', 'CF', 'CS']: 
+            dic['netw']['input'][key]['params'].update(d['params'])
+            dic['netw']['input'][key]['type']='burst3_with_oscillations'
+              
+
+#             dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
+#                                    'rates':[0.],
+#                                    'timings':[1.]
+#                                    }   
+#             dic['node'][key]={'model':new_name
+#                               }
+#         
+        dic = misc.dict_update(dic_other, dic)
+
+        return dic
+
+class Compete_with_oscillations(Par_base, Compete_with_oscillations_base, Par_base_mixin): 
+    pass 
+
 
 
 class MSN_cluster_compete(Par_base, Compete_base, Par_base_mixin): 
@@ -4089,7 +4191,59 @@ def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
                      'times':times, 
                      'idx':idx0,
                      't_stop':stop}] 
-               
+
+
+    if typ=='burst3_oscillations': 
+        # TODO: make sure that when proportion connected is 
+        # less than zero that the other proportion recieves inp
+        
+        n_set_pre=params['n_set_pre']
+        params_sets=params['params_sets']
+        rep=params['repetitions']
+        
+        for k in range(n_set_pre):
+#             print k
+            d=params_sets[str(k)]
+            
+            if not d['active']:
+                continue
+            
+            proportion_connected=d['proportion_connected']
+            
+            m=int(n*proportion_connected)
+            idx=list(range(k,m, n_set_pre))
+            amp=d['amplitudes']   
+            
+            t=numpy.array(d['durations'])        
+            times=numpy.array([[0]+list(numpy.cumsum(t)[0:-1])
+                          +i*numpy.sum(t) for i in range(rep) ])
+            times=list(times.ravel())
+        
+            # remove baseline from rates with -1
+            rates=list(rate*(numpy.array(amp)-1))*rep
+            setup+=[{'rates':rates, 
+                     'times':times, 
+                     'idx':idx,
+                     't_stop':stop}] 
+
+
+        ru=rate*float(params['p_amplitude0']+params['p_amplitude_upp'])
+        rd=rate*max(0., float(params['p_amplitude0']+params['p_amplitude_down']))
+        
+        rates, times = get_oscillation_time_rates(params, 
+                                                  stop, 
+                                                  testing, 
+                                                  ru, 
+                                                  rd)
+#         [ti in]
+        idx=range(n)
+       
+        setup+=[{'rates':rates, 
+                 'times':times, 
+                 'idx':range(n), 
+                 't_stop':stop}]
+        
+        
     if typ=='oscillation':
         ru=rate*(2-params['p_amplitude_mod'])
         rd=rate*params['p_amplitude_mod']
@@ -4320,6 +4474,52 @@ def dummy_args(flag, **kwargs):
                      't_stop': 1500.0,
                      'times': [0.0, 100.0, 200.0, 300.0]}]) 
 
+
+        #BURST3_OSCILLATIONS
+        params={'n_set_pre':3,
+                'repetitions':2,
+                'params_sets':{'0':{'active':True,
+                                    'amplitudes':[3.0,],
+                                  'durations':[100.0],
+                                  'proportion_connected':1,
+                                  },
+                               '1':{'active':True,
+                                    'amplitudes':[2.0,],
+                                  'durations':[200.0],
+                                  'proportion_connected':0.25,
+    
+                                  },
+                               '2':{'active':True,
+                                    'amplitudes':[1.0,1.5],
+                                  'durations':[100.0, 100.0],
+                                  'proportion_connected':0.5,
+           
+                                  }},
+                'p_amplitude_upp':0.1,
+                'p_amplitude_down':-0.1,
+                'p_amplitude0':1.0,
+                'freq': 1.,
+                'period':'constant'}
+        args.append([12, params, 10.0, 100.0, 2000.0, 'burst3_oscillations'])                       
+        out.append( [{'idx': [0, 3, 6, 9],
+                      'rates': [20.0, 20.0],
+                      't_stop': 2000.0,
+                      'times': [0.0, 100.0]},
+                     {'idx': [1], 
+                      'rates': [10.0, 10.0],
+                      't_stop': 2000.0, 
+                      'times': [0.0, 200.0]},
+                     {'idx': [2, 5], 
+                       'rates': [0.0, 5.0, 0.0, 5.0],
+                       't_stop': 2000.0,
+                       'times': [0.0, 100.0, 200.0, 300.0]},
+                     
+                     {'rates': [9, 11, 
+                                9, 11], 
+                     't_stop': 2000.0, 
+                     'idx': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 
+                     'times': [    0.,   500.,  1000.,  1500.]}]) 
+
         #BURST COMPETE
         params={'duration':100.0,
                 'idx_sets':[0, 2],
@@ -4359,12 +4559,18 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
             }
         
         ra={'C_m': {'active':True,
-                     'gaussian':{'sigma':0.1*200.0, 'my':200.0}},
+                     'gaussian':{'sigma':0.2*200.0, 'my':200.0}},
              'V_th':{'active':True,
                      'gaussian':{'sigma':1.0, 'my':-50.0, 
                                }},
              'V_m': {'active':True,
-                     'uniform': {'min': -70.,  'max':-50. }}}
+                     'uniform': {'min': -70.,  'max':-50. }},
+             'I_e':{'active':True,
+                     'gaussian':{'sigma':0.0, 
+                                  'my':0.0, 
+#                                   'cut':True, 
+#                                   'cut_at':3
+                               }}}
         
         d2={'fan_in_distribution':'constant',
             'n':n,
@@ -5309,6 +5515,19 @@ class TestBetaPar_base(unittest.TestCase):
 class TestBeta(TestBetaPar_base, TestMixinPar_base, TestSetup_mixin):
     pass
 
+class TestCompeteWithOscillationsPar_base(unittest.TestCase):
+    def setUp(self):
+        self.kwargs={'other':Inhibition(),
+                     'unittest':False}
+        self.the_class=Compete_with_oscillations
+        self.pert=dummy_perturbations_lists('beta', 'C1_M1_ampa')
+        self.test_node_model='M1'
+        self._setUp()
+
+class TestTestCompeteWithOscillations(TestCompeteWithOscillationsPar_base, 
+           TestMixinPar_base, TestSetup_mixin):
+    pass
+
 class TestBeta_EI_EA_Par_base(unittest.TestCase):
     def setUp(self):
         self.kwargs={'other':Inhibition(),
@@ -5465,8 +5684,9 @@ if __name__ == '__main__':
 #                         TestThalamus,
 #                         TestSlowwave,
 #                         TestSlowwave2,
-                        TestSlowwave2_EI_EA:test_fun_par,
-                        TestBeta:test_fun_par,
+#                         TestSlowwave2_EI_EA:test_fun_par,
+#                         TestBeta:test_fun_par,
+#                         TestTestCompeteWithOscillations:test_fun_par,
 #                         TestBeta_EI_EA:test_fun_par,  
 #                         TestGo_NoGo_compete:test_fun_par,
 #                         TestBcpnnH0,

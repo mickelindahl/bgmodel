@@ -336,7 +336,7 @@ def get_figure2(*args,**kwargs):
                    
     ax_list=[]    
     for x,y in iterator:
-        ax=my_axes.convert(pylab.subplot(gs[x,y]), 
+        ax=my_axes.convert(pylab.subplot(gs[x,y], projection=projection), 
                            into=axes_class)
         ax_list.append( ax )
         

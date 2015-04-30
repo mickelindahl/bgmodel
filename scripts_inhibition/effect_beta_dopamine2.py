@@ -16,8 +16,12 @@ d=kw={'n_rows':8,
         'gs_builder':gs_builder_conn}
 
 kwargs={'add_midpoint':False,
+#         'data_path':('/home/mikael/results/papers/inhibition/network/'
+#                      +'milner/simulate_beta_ZZZ_dop_effect_perturb2/'),
+
         'data_path':('/home/mikael/results/papers/inhibition/network/'
-                     +'milner/simulate_beta_ZZZ_dop_effect_perturb2/'),
+                     +'milner/simulate_beta_ZZZ_dop_effect_perturb_final/'),
+#        
         'from_diks':1,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),
         'title':'Activation (beta)',
@@ -38,12 +42,17 @@ kwargs={'add_midpoint':False,
         'cohere_ylim_bar':[0,2],
         'cohere_ylim_image':[0,4],
         'clim_raw': [[0,4], [0,90], [0,1]],
-        'do_plots':['cohere', 'mse_index', 'synchrony__index'],
+        'do_plots':['cohere', 'mse_index', 'si_oi_index'],
+#         'do_plots':['si_oi_index'],
         'exclude':[ 'striatum'],
         'fontsize_x':7,
+        'fontsize_y':7,
+        
+#         'key_no_pert':'Normal',
         'key_no_pert':'Normal',
+        'si_oi_index_fig':kw,
 
-        'models0': ['GI', 'ST', 'SN',
+        'models0': ['GA','GI', 'ST', 'SN',
                     'GP_GP', 'GA_GA', 'GI_GA', 'GI_GI'],
         'oi_fs':256,
         'title_flipped':True,

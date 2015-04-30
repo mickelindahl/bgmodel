@@ -48,7 +48,7 @@ def get():
        'ST_GI':['ST_GI_ampa'],
        'ST_SN':['ST_SN_ampa'],
        }
-    mod=[0.2, 0.6, # 0.75, 
+    mod=[0.01, 0.2, 0.6, # 0.75, 
          1.4, 1.8, 2.2, 2.6]
     l=[]
     
@@ -63,5 +63,8 @@ def get():
     return l 
  
 if __name__=='__main__':
-    get()
+    l=get()
+    for i, e in enumerate(l):
+        print i,e
+        
  

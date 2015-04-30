@@ -16,31 +16,31 @@ from toolbox.parallel_excecution import get_loop_index, loop
 
 import scripts_inhibition.Go_NoGo_compete as module
 
-
+import sys
 # from scripts inhibition import Go_NoGo_compete as module
-import oscillation_perturbations13 as op
+import oscillation_perturbations34_slow as op
 import pprint
 pp=pprint.pprint
 
 from copy import deepcopy
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=1
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 proportion_connected=[0.1, 0.5, 1.]
 NUM_RUNS=len(proportion_connected)
-NUM_NETS=5
+NUM_NETS=1
 num_sims=NUM_NETS*NUM_RUNS
 
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*5,
+        'cores_milner':40*4,
         'cores_superm':16,
         
         'debug':False,
-        'do_runs':[0, 1],
-        'do_obj':True,
+        'do_runs':range(NUM_RUNS),
+        'do_obj':False,
         'duration':[900.,100.0],
         
         'file_name':FILE_NAME,
@@ -48,10 +48,12 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'noss_0.2_pulse_v2',
+        'job_name':'fig5_scl_STp',
 
-        'l_hours':['5','02','00'],
+
         'l_mean_rate_slices':['mean_rate_slices'],
+        
+        'l_hours':  ['05','02','00'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],             
         'labels':['D1,D2 puls=5',], 
@@ -69,10 +71,10 @@ kwargs={
         'path_code':default_params.HOME_CODE,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
-        'perturbation_list':op.get(),
+        'perturbation_list':[op.get()[7]],
         'proportion_connected':proportion_connected, #related to toal number fo runs
         
-        'pulses':[5],# 5, 5],
+        'p_pulses':[5]*NUM_NETS, #size of labels
 
         'p_sizes':[1.]*NUM_RUNS,
         'p_subsamp':[1.]*NUM_RUNS,

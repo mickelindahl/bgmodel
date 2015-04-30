@@ -499,6 +499,7 @@ class MyNetworkNode(MyGroup):
             
             for gid, vp in local_nodes:
                 val_rand=numpy.round(get_random_number(pyrngs, vp, val),2)
+#                 print val_rand
                 my_nest.SetStatus([gid],{p:val_rand})     
 
 
@@ -770,12 +771,22 @@ def get_random_number(pyrngs, vp, val):
     
     if 'gaussian' in val.keys():
         par=val['gaussian']
-        r=pyrngs[vp].normal(loc=par['my'], scale=par['sigma'])
+        if par['my']==0:
+            return 0.0
+            
+        else:
+            r=pyrngs[vp].normal(loc=par['my'], scale=par['sigma'])
+        
+#         print par.keys()
         if 'cut' in par.keys():
+            
+
             if r<par['my']-par['cut_at']*par['sigma']:
                 r=par['my']-par['cut_at']*par['sigma']
             elif r>par['my']+par['cut_at']*par['sigma']:
                 r=par['my']+par['cut_at']*par['sigma']
+          
+        
                 
         return r
     

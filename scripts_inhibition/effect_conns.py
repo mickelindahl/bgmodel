@@ -1,4 +1,4 @@
-'''
+'''bu
 Created on Sep 10, 2014
 
 @author: mikael
@@ -10,6 +10,7 @@ import pylab
 import os
 import toolbox.plot_settings as ps
 
+from matplotlib import ticker
 from matplotlib.font_manager import FontProperties
 from toolbox.my_signals import Data_bar
 from toolbox import misc
@@ -55,6 +56,9 @@ def gather(path, nets, models, attrs, **kwargs):
             if not os.path.isfile(name):
                 print name
                 continue
+            if kwargs.get('ignore_files'):
+                if kwargs.get('ignore_files')(name):
+                    continue
 #             slice(0,-4)
             file_name=name[:-4]
             sd = Storage_dic.load(file_name)
@@ -84,17 +88,42 @@ def extract_data(d, nets, models, attrs, **kwargs):
                   [v, v_max]]        
             
         if keys[-1]=='firing_rate':
+            val.y=val.y[100:] #remove transient artifacts at start of sim
             std=numpy.std(val.y)
             v=numpy.mean(val.y)
-            synchrony_index=(std**2)/v
-#             print keys, round(synchrony_index,1)#, round(v,1), round(std,1)
+            
+            if numpy.isnan(v):
+                print keys
+                raise
+            
+            if keys[0]=='M2_pert_mod7' and keys[2]=='GI':
+                print v,std, keys
+#                 pylab.plot(val.y)
+#                 pylab.show()
+            
+            if v>0.1:
+                synchrony_index=(std**2)/v
+            else:
+                synchrony_index=0.0
+                
+            if keys[0]=='SN' and keys[1]=='Net_1':
+#                 print keys, synchrony_index
+
+                print (keys, round(synchrony_index,1), 
+                       round(v,1),  round(std,1))#, round(v,1), round(std,1)
+            if keys[0]=='Normal' and keys[1]=='Net_1':
+#                 print keys, synchrony_index
+
+                print (keys, round(synchrony_index,1), 
+                       round(v,1),  round(std,1))            
+            
             fs=kwargs.get('oi_fs',1000.)
             x=val.x[kwargs.get('oi_start', fs):]
             y=val.y[kwargs.get('oi_start', fs):]
   
             k=kwargs.get('psd',{'NFFT':128*8*4, 
-                               'fs':kwargs.get('oi_fs',1000.), 
-                               'noverlap':128*8*4/2}) 
+                                'fs':kwargs.get('oi_fs',1000.), 
+                                'noverlap':128*8*4/2}) 
 
               
             d={'x':x, 'y':y}
@@ -107,62 +136,57 @@ def extract_data(d, nets, models, attrs, **kwargs):
   
               
             ypsd,xpsd=sp.psd(deepcopy(y), **k)
+            
+            
+            if numpy.isnan(numpy.min(ypsd)):
+                pp(ypsd)
+                print keys
+                
             d={'x':xpsd,'y':ypsd}
             psd=Data_psd(**d)
 
-#             pylab.subplot(211).plot(x, y)
-#             pylab.subplot(212).plot(psd.x, psd.y)
-#             pylab.title(str(keys))
-#             pylab.show()
-
-#             pylab.subplot(212).plot(psd2.x, psd2.y)
-#             pylab.subplot(212).plot(psd3.x, psd3.y)
-            
             
             bol=(psd.x>kwargs.get('oi_min', 15))*(psd.x<kwargs.get('oi_max', 25))
             integral1=sum(psd.y[bol])
             
-#             integral2=sum(val.y[val.x<100])
             
-            bol=(psd.x>0)*(psd.x<kwargs.get('oi_upper', 1000))
+            idx=numpy.argmax(psd.y)    
+                    
+#             kwargs['oi_upper']=psd.x[idx]*1.6
+#             print psd.x[idx], keys
+            
+            oi_upper=kwargs.get('oi_upper', psd.x[idx]*1.6)
+            
+            bol=(psd.x>0)*(psd.x<oi_upper)
             integral2=sum(psd.y[bol])
             oscillation_index=integral1/integral2
 
             args=[[keys, keys[0:-1]+['synchrony_index'],
-                   keys[0:-1]+['oscillation_index']],
+                   keys[0:-1]+['oscillation_index'],
+                  keys[0:-1]+['psd2']],
                   [v, synchrony_index,
-                   oscillation_index]]
-
-#             if keys[-2]=='M2_GI':
-#                 pylab.plot(psd.x, psd.y)
-#                 print keys
-#                 pylab.show()
-#  
-#             ypsd,xpsd=sp.psd(deepcopy(y-numpy.mean(y)), **kwargs)
-# #             ypsd,xpsd=sp.psd(deepcopy(y), **kwargs)
-#             d={'x':xpsd,'y':ypsd}
-#             psd3=Data_psd(**d)
-#              
-#             psd=val.get_psd(**kwargs)
-#             pylab.subplot(211).plot(val.x, val.y)
-#             pylab.subplot(211).plot(x, y)
-#             pylab.subplot(212).plot(psd.x, psd.y)
-#              
-#             pylab.subplot(212).plot(psd2.x, psd2.y)
-#             pylab.subplot(212).plot(psd3.x, psd3.y)
-#             pylab.show()
-            
+                   oscillation_index,
+                   psd]]
+        
         if keys[-1]=='psd':
-            bol=(val.x>kwargs.get('oi_min', 15))*(val.x<kwargs.get('oi_max', 25))
-            integral1=sum(val.y[bol])
-#             integral2=sum(val.y[val.x<100])
-            integral2=sum(val.y)
+            psd=val
+            
+            idx=numpy.argmax(psd.y)            
+#             print idx
+            
+            oi_upper=kwargs.get('oi_upper', psd.x[idx]*1.6)
+            
+                            
+            bol=(psd.x>kwargs.get('oi_min', 15))*(psd.x<kwargs.get('oi_max', 25))
+            integral1=sum(psd.y[bol])
+
+            
+            bol=(psd.x>0)*(psd.x<oi_upper)
+            integral2=sum(psd.y[bol])
             oscillation_index=integral1/integral2
-             
-            v_max=max(val.y[2:20])
-            v=numpy.mean(val.y[2:20])
-            args=[[keys],
-                  [v]]   
+            args=[[keys,
+                    keys[0:-1]+['psd_oi']],
+                  [val, oscillation_index]]   
     
         
         for k, v in zip(*args):
@@ -205,7 +229,8 @@ def compute_performance(d, nets, models, attrs, **kwargs):
     midpoint=kwargs.get('midpoint',1)
     
     for run in d.keys():
-        if run=='no_pert':
+        
+        if run=='no_pert' and not kwargs.get('exclude_no_pert',False):
             continue
         for model in models:
             for attr in attrs:
@@ -220,15 +245,20 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                     name=s+'_'+t
                 elif len(run_key_list)==3:
                     name,_,mod=run_key_list
-                    x=int(mod[3:])
+#                     print mod
+                    if not mod.isdigit() and not mod[0:3]=='mod':
+                        x=1
+                        name='_'.join(run_key_list)
+                    else:     
+                        x=int(mod[3:])
                 elif len(run_key_list)==2:
                     s,t=run_key_list
                     name=s+'_'+t
                     x=1
                 elif len(run_key_list)==1:
                     name=run_key_list[0]
-                    x=1
-                print name 
+                    x=0
+#                 print name 
                 keys1=[run, 'Net_0', model, attr]
                 keys2=[run, 'Net_1', model, attr]
                 keys3=['control',name, model, attr]
@@ -256,21 +286,15 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 if not misc.dict_haskey(d, keys_c ):
                     continue
                       
-                v_control0=misc.dict_recursive_get(d,keys_c)
-                v_lesion0=misc.dict_recursive_get(d,keys_l)
-               
-#                 if type(v_lesion0)==str:
-#                     print v_lesion0
-#                 if type(v_control0)==str:
-#                     print v_control0
-
-                v_mse0=compute_mse(v_control0, v_lesion0)
 #                 if model=='ST' and keys_c[-1]=='synchrony_index':
 #                     print keys_c, v_mse0                
                 
 
                     
-
+                if attr=='psd':
+                    continue
+                if attr=='psd2':
+                    continue
                
                 if attr=='firing_rate':
                     s='fr'
@@ -284,8 +308,20 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                     s='oi'
                 if attr=='synchrony_index':
                     s='si'
-                if attr=='psd':
-                    s='psd'                    
+                if attr=='psd_oi':
+                    s='psd_oi'                    
+
+
+                v_control0=misc.dict_recursive_get(d,keys_c)
+                v_lesion0=misc.dict_recursive_get(d,keys_l)
+               
+#                 if type(v_lesion0)==str:
+#                     print v_lesion0
+#                 if type(v_control0)==str:
+#                     print v_control0
+#                 print keys_c
+                v_mse0=compute_mse(v_control0, v_lesion0)
+
                     
                 keys5=['control',name, model, 'mse_rel_control_'+s]
                 keys6=['lesion', name, model, 'mse_rel_control_'+s]
@@ -310,7 +346,9 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                                          0, v_mse0/v_mse0]):         
                         l=misc.dict_recursive_get(results, keys)
 #                         print keys, l
-                        if not (midpoint, val) in l: 
+#                         print keys_c
+#                         print (midpoint, val)
+                        if not midpoint in [e[0] for e in l]: 
                             l.append((midpoint, val)) 
                     
     for keys, val in misc.dict_iter(results):
@@ -329,10 +367,10 @@ def compute_performance(d, nets, models, attrs, **kwargs):
         a1,a2=9,45
         y=val[1]
         h=0.25
-        if len(y)>6:
-            g=(-y[0]+a1*y[1]-a2*y[2]+a2*y[4]-a1*y[5]+y[6])/(60*h)
-        else:
-            g=1
+#         if len(y)>6:
+#             g=(-y[0]+a1*y[1]-a2*y[2]+a2*y[4]-a1*y[5]+y[6])/(60*h)
+#         else:
+        g=1
         d=misc.dict_recursive_add(gradients, keys, g)         
     return results, gradients
 
@@ -499,15 +537,47 @@ def gs_builder_oi_si(*args, **kwargs):
     order=kwargs.get('order', 'col')
     
     gs = gridspec.GridSpec(n_rows, n_cols)
-    gs.update(wspace=kwargs.get('wspace', 0.05 ), 
-              hspace=kwargs.get('hspace', 1. / n_cols ))
+    gs.update(wspace=kwargs.get('wspace', 0.1 ), 
+              hspace=kwargs.get('hspace', 0.1 ))
 
-    iterator = [[slice(0,1), slice(0,1) ],
-                [slice(0,1), slice(1,4) ],
-                [slice(1,2), slice(0,1) ],
-                [slice(1,2), slice(1,4) ]]
+    iterator = [[slice(1,5), slice(0,2) ],
+                [slice(1,5), slice(3,6) ],
+                [slice(5,9), slice(0,2) ],
+                [slice(5,9), slice(3,6) ]]
     
     return iterator, gs, 
+
+def gs_builder_oi_si_simple(*args, **kwargs):
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',3)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.1 ), 
+              hspace=kwargs.get('hspace', 0.1 ))
+
+    iterator = [[slice(0,1), slice(0,9) ],
+
+                [slice(1,2), slice(0,9) ]]
+    
+    return iterator, gs,
+
+
+def gs_builder_psd(*args, **kwargs):
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',3)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.15 ), 
+              hspace=kwargs.get('hspace', 0.15 ))
+
+    iterator=[]
+    for i in range(n_rows):
+        for j in range(n_cols):
+            iterator.append([slice(i,i+1), slice(j,j+1)])
+                
+    return iterator, gs,
 
 def gs_builder_coher2(*args, **kwargs):
     n_rows=kwargs.get('n_rows',2)
@@ -555,9 +625,9 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
                         out[attr][model][dk].append(vv)
     
     for keys, val in misc.dict_iter(out):
-        print numpy.array(val).shape
+#         print numpy.array(val).shape
         val=numpy.array(val).ravel()
-        print val.shape
+#         print val.shape
         out=misc.dict_recursive_set(out, keys, val)
 
     l1=[m for m in ['M1', 'M2', 'FS', 'GA', 'GI', 'GP','SN', 'ST'] if m in models]
@@ -569,14 +639,20 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
                               'labelsx_meta':labelsx_meta},
         'oscillation_index':{'labelsy':l1, 
                               'labelsx_meta':labelsx_meta},
+        'psd':{'labelsy':l1, 
+                              'labelsx_meta':labelsx_meta},
+        'psd2':{'labelsy':l1, 
+                              'labelsx_meta':labelsx_meta},
+        'psd_oi':{'labelsy':l1, 
+                              'labelsx_meta':labelsx_meta},
         'mse_rel_control_fr':{'labelsy':l1, 
                               'labelsx_meta':labelsx_meta},
         'mse_rel_control_si':{'labelsy':l1, 
                               'labelsx_meta':labelsx_meta},
         'mse_rel_control_oi':{'labelsy':l1, 
                               'labelsx_meta':labelsx_meta},
-        'mse_rel_control_psd':{'labelsy':l1, 
-                              'labelsx_meta':labelsx_meta},
+#         'mse_rel_control_psd':{'labelsy':l1, 
+#                               'labelsx_meta':labelsx_meta},
         'mean_coherence':{'labelsy':l2, 
                           'labelsx_meta':labelsx_meta},
         'mean_coherence_max':{'labelsy':l2, 
@@ -586,10 +662,14 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
         'mse_rel_control_mcm':{'labelsy':l2, 
                               'labelsx_meta':labelsx_meta},
         'mse_rel_control_pdwc':{'labelsy':l2, 
-                              'labelsx_meta':labelsx_meta}}
+                              'labelsx_meta':labelsx_meta},
+        
+#         'phases_diff_with_cohere':{'labelsy':l2, 
+#                               'labelsx_meta':labelsx_meta}
+        }
     
     for attr, d in dd.items():
-        print attr
+#         print attr
         if flag=='raw':
 #             print d
             key=out['firing_rate'].keys()[0]
@@ -623,62 +703,502 @@ def separate_M1_M2(*args, **kwargs):
                 d1[k]=d1[k][kwargs.get(k+'_sep_at',2):]
         l.extend([d0,d1])
     return l
+# 
+# def psd(self, bin_w = 5., nmax = 4000,time_range = []):
+#     
+#     
+#     ids = np.unique(spikes[:,0])[:nmax]
+#     nr_neurons = len(ids)
+#     bins = np.arange(time_range[0],time_range[1],bin_w)
+#     a,b = np.histogram(spikes[:,1], bins)
+#     ff = abs(np.fft.fft(a- np.mean(a)))**2
+#     Fs = 1./(bin_w*0.001)
+#     freq2 = np.fft.fftfreq(len(bins))[0:len(bins/2)+1]
+#     freq = np.linspace(0,Fs/2,len(ff)/2+1)
+#     px = ff[0:len(ff)/2+1]
+#     max_px = np.max(px[1:])
+#     idx = px == max_px
+#     corr_freq = freq[pl.find(idx)]
+#     new_px = px/sum(px)
+#     return new_px,freq, freq2, corr_freq[0]
 
 
-def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
+
+def spec_entropy(power, freq, freq_range = []):
+
+    if freq_range!=[]:
+        power = power[(freq>freq_range[0]) & (freq < freq_range[1])]
+        freq = freq[(freq>freq_range[0]) & (freq < freq_range[1])]
+    
+    k = len(freq)
+    sum_power = 0
+    
+    
+    power/=sum(power)
+    for ii in range(k):
+        sum_power += (power[ii]*numpy.log(power[ii]))
+    spec_ent = -(sum_power/numpy.log(k))
+    return spec_ent
+
+def plot_psd(d0,d1, flag='dop', labelsx=[], **k):
+
     fs=k.get('cohere_fig_fontsize',16)
-    tfs=k.get('cohere_fig_title_fontsize',16)
-    fig, axs=ps.get_figure2(n_rows=2,
-                             n_cols=5,  
-                             w=800,
-                             h=400,
-#                             w=k.get('w',500), 
-#                             h=k.get('h',900), 
-                            linewidth=1,
-                            fontsize=fs,
-                            title_fontsize=tfs,
-                            gs_builder=k.get('cohere_gs', gs_builder_oi_si)) 
+    tfs=k.get('cohere_fig_title_fontsize',6)
+    scale=4
     
-    ax=axs[0]
-    bol=[l=='Normal' for l in d1['labelsx_meta']]
-    y=[numpy.mean(d0['y'][0,:]),
-       d1['y'][0, numpy.array(bol)]]
+    n=int(numpy.sqrt(len(d1['labelsx_meta'])))+1
     
-#     Data_bar(**{'y':[[y_mean[0], y_mean[1]],
-#                      [Y[0][0],  Y[0][1]]],
-#                 'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
-#                          [0.,  0.]]}).bar2(axs[i], **{'edgecolor':'k',
-#                                                       'top_lable_rotation':0,
-#                                                       'top_label_round_off':0})
-                         
-    posy=[0.5,1.5]    
+    figs=[]
+    for iModel in range(len(d1['labelsy'])):
+#         kw= {'n_rows':n,
+#              'n_cols':n,  
+#              'w':int(72/2.54*11.6)*(4./3)*scale,
+#              'h':int(72/2.54*11.6)*scale,
+#              'linewidth':1*scale,
+#              'fontsize':7*scale,
+#              'title_fontsize':7*scale,
+#              'gs_builder':gs_builder_psd,
+#              'projection':None}
+#         fig, axs=ps.get_figure2(**kw
+#                                 ) 
+        
+        
+        kw= {'n_rows':n,
+             'n_cols':n,  
+             'w':int(72/2.54*11.6)*(4./3)*scale,
+             'h':int(72/2.54*11.6)*scale,
+             'linewidth':1*scale,
+             'fontsize':7*scale,
+             'title_fontsize':7*scale,
+             'gs_builder':gs_builder_psd,
+             'projection':'3d'}
+        fig, axs=ps.get_figure2(**kw
+                                ) 
+        
+        fig.suptitle(d1['labelsy'][iModel])
+        for ax in axs:
+            ax.tick_params(direction='out',
+                           length=2,
+                           width=0.5,
+                           pad=0.01,
+                            top=False, right=False
+                            )
+      
+        for i, ax in enumerate(axs):
+            
+            if i>=len(d1['labelsx_meta']):
+                continue
+            
+            
+            if k.get('psd_data_set', 'lesion')=='control':
+                data=d0['y'][iModel,i]
+            
+            if k.get('psd_data_set', 'lesion')=='lesion':
+                data=d1['y'][iModel,i]
+#             data=d1['y'][iModel,i]
+            
+            if type(data) not in [list, numpy.ndarray]:
+                data=[data]
+            colors=misc.make_N_colors('copper', len(data))
+            Z=[]
+            
+            oi=[]
+            oi2=[]
+            for j, psd in enumerate(data):
+                
+                
+#                 idx=numpy.argmax(psd.y)
+#                 k['oi_upper']=psd.x[idx]*0.8
+                
+                
+                bol=(psd.x>k.get('oi_min', 15))*(psd.x<k.get('oi_max', 25))
+                integral1=sum(psd.y[bol])
+                
+                bol=(psd.x>0)*(psd.x<k.get('oi_upper', 1000))
+                integral2=sum(psd.y[bol])
+                oi.append(integral1/integral2)
+                oi2.append(spec_entropy(psd.y, psd.x,freq_range = [0, k.get('oi_upper')]))
+#                  x=numpy.linspace(-numpy.pi*3,numpy.pi*3,len(trace))
+                norm=sum(psd.y)*(psd.x[-1]-psd.x[0])/len(psd.x)
+                
+                if norm==0.0:
+                    print d1['labelsy'][iModel], d1['labelsx_meta'][i]
+#                     raise
+                else:
+                    psd.y/=norm 
+                Z.append(psd.y)
+#                 psd.plot(ax, color=colors[j])
+            
+#             ax.plot(oi, marker='o')
+#             ax.plot(oi2, marker='o')
+            Z=numpy.array(Z)
+            if numpy.isnan(numpy.min(Z)):
+                pp(Z)
+                print d1['labelsy'][iModel], d1['labelsx_meta'][i]
+#                 raise
+            
+            X = numpy.arange(Z.shape[1])
+            Y = numpy.arange(Z.shape[0])
+            X, Y = numpy.meshgrid(X, Y)
+            
+            Z[numpy.isnan(Z)]=0
+            from matplotlib import cm
+            image=axs[i].plot_surface(X, Y, Z, 
+                                      cstride=1,
+                                      rstride=1,
+                                      vmin=0,vmax=1, 
+                                       cmap=cm.coolwarm,
+                                linewidth=0, antialiased=False
+                                 )
+            ax.set_zlim([0, .5])
+            image.set_clim([0,numpy.max(Z)])
+#             pylab.show()
+#             pylab.show()  
+#             ax.set_ylim([0,1])
+            ax.set_title(d1['labelsx_meta'][i])
+#             ax.set_xlim([0,80])
+#             if i==0:
+#                 sm = pylab.cm.ScalarMappable(cmap='copper', 
+#                                              norm=pylab.normalize(vmin=0,
+#                                                                   vmax=len(data)-1))
+#                 sm._A = []
+#                     
+#                 box = ax.get_position()
+#                 pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
+#                      0.01, box.height*0.8]
+#                 axColor=pylab.axes(pos)
+#                 cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(data)))
+#                 
+#                 cbar.ax.tick_params( length=1, )
+#     #             cbar.ax.set_yticklabels(ranln)  
+#                  
+#                 ax.text(1.32,  0.5, r'Perturbation', 
+#                         transform=ax.transAxes, va='center', rotation=270) 
+#                 
+#     #             x.set_xlabel(r'Angle (rad)')
+#     #             ax.set_ylabel('Norm. count TI-TA')
+#                 ax.my_set_no_ticks(xticks=4)
+#                 ax.my_set_no_ticks(yticks=4)
+            if i!=0:
+                ax.my_remove_axis(xaxis=True, yaxis=True)
+            
+#             ax.set_ylim([0,0.31])
 
-    ax.bar(posy,y, align='center', color='0.5',
-    #                    linewidth=0.1
-            )
-#     ax.plot([1,1], [0,stopy], 'k', linewidth=1, linestyle='--')    
-#     ax.set_ylim([0,stopy])      
+        figs.append(fig)
+#     kw={}
+#     images=[]    
+#     ax=axs[0]
+    return figs
+
+def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
+    fs=k.get('cohere_fig_fontsize',16)
+    tfs=k.get('cohere_fig_title_fontsize',6)
+    scale=k.get('scale', 1)
+    fig, axs=ps.get_figure2(**k['oi_si_simple_fig_kw']) 
+
+    for ax in axs:
+        ax.tick_params(direction='in',
+                       length=2, top=False, right=False)  
+  
+    kw={}
+    images=[]    
+    ax=axs[0]
     
+
+
+    bol=[l=='no_pert' for l in d3['labelsx_meta']]
+    y=[
+        d1['y'][0, numpy.array(bol)][0][0],
+        d1['y'][1, numpy.array(bol)][0][0],
+        d1['y'][2, numpy.array(bol)][0][0],
+        d1['y'][3, numpy.array(bol)][0][0]] 
+    v=[]
+    
+    
+    bol=numpy.array([l not in ['no_pert'] 
+                     for l in d1['labelsx_meta']])
+    for i in range(4):    
+        e=numpy.array(list(d1['y'][i,bol])).ravel()
+        v.append(e/y[i])
+    v=numpy.array(v)
+    kw['ax']=ax
+    kw['d']={'z':v,
+            'labelsx_meta':[e for i, e in enumerate(d0['labelsx_meta']) 
+                            if bol[i]],
+            'labelsx':range(v.shape[1]),
+            'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+            'labelsy':range(len(v))}
+    
+    kw['images']=images
+    kw['z_key']='z'
+    kw['startx']=0
+    kw['starty']=0
+    kw['flip_axes']=False
+    kw['vertical_lines']=True
+    kw['horizontal_lines']=False
+    kw['fontsize_x']=k.get('fontsize_x',24)
+    kw['fontsize_y']=k.get('fontsize_y',24)
+    kw['nice_labels_x']=nice_labels(version=0)
+    kw['nice_labels_y']=nice_labels(version=0)
+    kw['cmap']='coolwarm'
+    kw['color_line']='k'
+    _plot_conn(**kw)
+    
+    box = ax.get_position()
+    pos=[box.x0+1.03*box.width, box.y0+box.height*0.1, 
+         0.01,  box.height*0.8]
+        
+    for l in ax.patches:
+        pylab.setp(l,**{'edgecolor':'0.5'})
+    
+    axColor=pylab.axes(pos)
+    cbar=pylab.colorbar(images[0], cax = axColor, 
+                        orientation="vertical")
+
+    
+    tick_locator = ticker.MaxNLocator(nbins=3)
+    cbar.locator = tick_locator
+    cbar.update_ticks()
+    cbar.ax.tick_params( length=1, ) 
+
+    ax.text(1.18, 0.0, '-/+ relative lesion', 
+            transform=ax.transAxes, va='center', rotation=270) 
+  
     ax=axs[1]
-    for i in range(3):
-        posx=range(len(d0['y'][i,:]))
-        ax.plot(posx, d0['y'][i,:],'k')
-        ax.plot(posx, d1['y'][i,:])
-    ax.set_xticks(posx)
-    ax.set_xticklabels(d0['labelsx_meta'],
-                       fontsize=k.get('fontsize_y',7),
-                       rotation=70)
+    
+
+    bol=[l=='no_pert' for l in d3['labelsx_meta']]
+    y2=[
+        d3['y'][0, numpy.array(bol)][0][0],
+        d3['y'][1, numpy.array(bol)][0][0],
+        d3['y'][2, numpy.array(bol)][0][0],
+        d3['y'][3, numpy.array(bol)][0][0] ] 
+    v=[]
+
+    bol=numpy.array([l not in ['no_pert'] 
+                     for l in d1['labelsx_meta']] )
+    for i in range(4):    
+        e=numpy.array(list(d3['y'][i,bol])).ravel()
+        
+        
+    
+        if y2[i]>0:
+            v.append(e/y2[i])
+        else:
+            v.append(0.0)
+    
+    v=numpy.array(v)
+    kw['ax']=ax
+    kw['d']={'z':v,
+            'labelsx_meta':[e for i, e in 
+                            enumerate(d2['labelsx_meta']) if bol[i]],
+            'labelsx':range(v.shape[1]),
+            'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+            'labelsy':range(len(v))}
+    _plot_conn(**kw)
+
+
+    box = ax.get_position()
+    pos=[box.x0+1.03*box.width, box.y0+box.height*0.1, 
+         0.01,  box.height*0.8]
+        
+    for l in ax.patches:
+        pylab.setp(l,**{'edgecolor':'0.5'})
+    
+    axColor=pylab.axes(pos)
+    cbar=pylab.colorbar(images[1], cax = axColor, 
+                        orientation="vertical")
+
+    
+    tick_locator = ticker.MaxNLocator(nbins=3)
+    cbar.locator = tick_locator
+    cbar.update_ticks()
+    cbar.ax.tick_params( length=1, ) 
+
+    images[0].set_clim(k.get('oi_si_simple_clim0', [0,2]))
+    images[1].set_clim(k.get('oi_si_simple_clim1', [0,2]))
+
+    for i in [0]:
+        axs[i].my_remove_axis(xaxis=True, yaxis=False)
+        axs[i].set_ylabel('Synchrony')
+    
+    for i in [1]:
+        axs[i].set_ylabel('Oscillation') 
+    
+#     pylab.show()
+    return fig
+def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
+    
+    fs=k.get('cohere_fig_fontsize',16)
+    tfs=k.get('cohere_fig_title_fontsize',6)
+    scale=k.get('scale', 1)
+    fig, axs=ps.get_figure2(n_rows=13,
+                             n_cols=6,  
+                             w=int(72/2.54*11.6)*scale,
+                             h=int((72/2.54*11.6)/2)*scale,
+                             linewidth=1,
+                             fontsize=fs*scale,
+                             title_fontsize=tfs*scale,
+                             gs_builder=k.get('cohere_gs', gs_builder_oi_si)) 
+    
+    
+    for ax in axs:
+        ax.tick_params(direction='in',
+                       length=2, top=False, right=False)  
+    ax=axs[0]
+    
+    bol=[l=='Normal' for l in d1['labelsx_meta']]
+    ax.set_xlim([-0.2,4.])
+    y=[[numpy.mean(d0['y'][0,:]),
+        numpy.mean(d0['y'][1,:]),
+        numpy.mean(d0['y'][2,:]),
+        numpy.mean(d0['y'][3,:])],
+       [d1['y'][0, numpy.array(bol)][0],
+        d1['y'][1, numpy.array(bol)][0],
+        d1['y'][2, numpy.array(bol)][0],
+        d1['y'][3, numpy.array(bol)][0]]]
+
+    
+    Data_bar(**{'y':y}).bar2(ax,  **{'edgecolor':'k',
+                                     'top_lable_rotation':0,
+                                     'top_label_round_off':0,
+                                     'colors':['k','w'],
+                                     'alphas':[1,1],
+                                     'color_axis':1,
+                                     'top_label':False
+                                     })
+    
+ 
+    ax=axs[2]
+    
+    ax.text(0.02,  -.35, 'Black=Control',  transform=ax.transAxes,
+                va='center', rotation=0)  
+    ax.text(0.02, -.58,'White=Lesion',  transform=ax.transAxes,
+                va='center', rotation=0) 
+    
+    bol=[l=='Normal' for l in d3['labelsx_meta']]
+
+    y2=[[numpy.mean(d2['y'][0,:]),
+         numpy.mean(d2['y'][1,:]),
+         numpy.mean(d2['y'][2,:]),
+         numpy.mean(d2['y'][3,:])],
+       [d3['y'][0, numpy.array(bol)][0],
+        d3['y'][1, numpy.array(bol)][0],
+        d3['y'][2, numpy.array(bol)][0],
+        d3['y'][3, numpy.array(bol)][0]]]
+
+    Data_bar(**{'y':y2}).bar2(ax,  **{'edgecolor':'k',
+                                     'top_lable_rotation':0,
+                                     'top_label_round_off':0,
+                                     'colors':['k','w'],
+                                     'alphas':[1,1],
+                                     'color_axis':1,
+                                     'top_label':False})             
+    ax.set_xlim([-0.2,4.])
+    ax.set_xticklabels(['TA', 'TI','SNr', 'STN'])
+    
+    kw={}
+    images=[]    
+    ax=axs[1]
+    
+    bol=numpy.array([l not in ['Normal','all'] 
+                     for l in d1['labelsx_meta']])
+    v=[]
+    for i in range(4):        
+        v.append(d1['y'][i,bol]/y[1][i])
+        
+    kw['ax']=ax
+    kw['d']={'z':numpy.array(v),
+            'labelsx_meta':[e for i, e in enumerate(d0['labelsx_meta']) 
+                            if bol[i]],
+            'labelsx':range(len(d0['y'][0,bol])),
+            'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+            'labelsy':range(len(v))}
+    kw['images']=images
+    kw['z_key']='z'
+    kw['startx']=0
+    kw['starty']=0
+    kw['flip_axes']=False
+    kw['vertical_lines']=False
+    kw['vertical_lines']=False
+    kw['fontsize_x']=k.get('fontsize_x',24)*scale
+    kw['fontsize_y']=k.get('fontsize_y',24)*scale
+    kw['nice_labels_x']=nice_labels(version=0)
+    kw['nice_labels_y']=nice_labels(version=0)
+    kw['cmap']='coolwarm'
+    kw['color_line']='k'
+    _plot_conn(**kw)
+    
+    box = ax.get_position()
+    pos=[box.x0+1.03*box.width, box.y0+box.height*0.1, 
+         0.01,  box.height*0.8]
+    
+    
+    for l in ax.patches:
+        pylab.setp(l,**{'edgecolor':'0.5'})
+    
+    axColor=pylab.axes(pos)
+    cbar=pylab.colorbar(images[0], cax = axColor, 
+                        orientation="vertical")
+
+    ax.text(1.18, 0.0, '-/+ relative lesion', 
+            transform=ax.transAxes, va='center', rotation=270) 
+    
+    tick_locator = ticker.MaxNLocator(nbins=3)
+    cbar.locator = tick_locator
+    cbar.update_ticks()
+    cbar.ax.tick_params( length=1, ) 
+
     
     ax=axs[3]
-    for i in range(3):
-        posx=range(len(d2['y'][i,:]))
-        ax.plot(posx, d2['y'][i,:],'k')
-        ax.plot(posx, d3['y'][i,:])
-    ax.set_xticks(posx)
-    ax.set_xticklabels(d2['labelsx_meta'],
-                       fontsize=k.get('fontsize_y',7),
-                       rotation=70)
-    pylab.show()
+    
+    bol=numpy.array([l not in ['Normal','all'] 
+                     for l in d1['labelsx_meta']])
+
+    v=[]
+    for i in range(4):    
+        v.append(d3['y'][i,bol]/y2[1][i])
+
+    kw['ax']=ax
+    kw['d']={'z':numpy.array(v),
+            'labelsx_meta':[e for i, e in enumerate(d2['labelsx_meta']) if bol[i]],
+            'labelsx':range(len(d2['y'][0,bol])),
+            'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+            'labelsy':range(len(v))}
+    _plot_conn(**kw)
+    box = ax.get_position()
+    pos=[box.x0+1.03*box.width, box.y0+box.height*0.1, 
+         0.01,  box.height*0.8]
+        
+    for l in ax.patches:
+        pylab.setp(l,**{'edgecolor':'0.5'})
+    
+    axColor=pylab.axes(pos)
+    cbar=pylab.colorbar(images[1], cax = axColor, 
+                        orientation="vertical")
+
+    
+    tick_locator = ticker.MaxNLocator(nbins=2)
+    cbar.locator = tick_locator
+    cbar.update_ticks()
+    cbar.ax.tick_params( length=1, ) 
+
+    images[0].set_clim(k.get('oi_si_simple_clim0', [0,2]))
+    images[1].set_clim(k.get('oi_si_simple_clim1', [0,2]))
+
+#     for image in images:
+#         image.set_clim([0,2])
+
+    for i in [0,1]:
+        axs[i].my_remove_axis(xaxis=True, yaxis=False)
+        axs[i].set_ylabel('Synchrony')
+    for i in [0,2]:
+        axs[i].my_set_no_ticks(yticks=4)
+    
+    for i in [2,3]:
+        axs[i].set_ylabel('Oscillation')
+
+    return fig
 
 def plot_coher(d, labelsy, flag='dop', labelsx=[], **k):
     
@@ -908,8 +1428,15 @@ def _plot_conn(**kwargs):
     x1,y1=numpy.meshgrid(numpy.linspace(startx, stopx, stopx+1), 
                          numpy.linspace(starty, stopy, stopy+1)) 
     
-        
+    
+#     Z=[]
+#     for i in range(d[z_key].shape[0]):
+#         e=numpy.array([list(x) for x in d[z_key][i,:]]).ravel()
+#         Z.append(e)
+#     Z=numpy.array(Z)
+#     
     im = ax.pcolor(x1, y1, d[z_key][::-1,], cmap=cmap)       
+#     im = ax.pcolor(x1, y1, Z[::-1,], cmap=cmap)       
 
     if vertical_lines:
         x=numpy.linspace(0, stopx, stopx_meta+1)
@@ -1126,12 +1653,19 @@ def add(d0,d1):
     d0['y']=numpy.concatenate((d0['y'], d1['y']), axis=0)
     return d0
 
-def get_data(models, nets, attrs, path, from_disk, attr_add, sd, **kwargs):
-    exclude=kwargs.get('exclude',[])
+def get_data(models, nets, attrs, paths, from_disk, attr_add, sd, **kwargs):
+    exclude=kwargs.pop('exclude',[])
+    
+    if type(paths)!=list:
+        paths=[paths]
     
     d = {}
     if not from_disk:
-        d['raw'] = gather(path, nets, models, attrs, **kwargs)
+        dtmp={}
+        for path in paths:
+            dtmp.update(gather(path, nets, models, attrs, **kwargs))
+        
+        d['raw'] = dtmp#gather(path, nets, models, attrs, **kwargs)
         d['data'], attrs = extract_data(d['raw'], nets, models, attrs, **kwargs)
 #         if kwargs.get('compute_performance', True):
         out = compute_performance(d['data'], nets, models, attrs, **kwargs)
@@ -1164,8 +1698,12 @@ def get_data(models, nets, attrs, path, from_disk, attr_add, sd, **kwargs):
             **kwargs)
         d['d_gradients_lesion'] = v
 
-        del d['raw']
-        del d['data']
+        if 'raw' not in kwargs.get('keep', []):
+            del d['raw']
+        
+        if 'data' not in kwargs.get('keep', []):
+            del d['data']
+            
         del d['change_raw']
         del d['gradients']
         
@@ -1255,18 +1793,45 @@ def create_figs(d, **kwargs):
         fig=plot_coher(d2, d2['labelsx'], **kwargs)
         figs.append(fig)        
         
-    if 'synchrony__index' in do_plots:
+    if 'si_oi_index' in do_plots:
         d0 = d['d_raw_control']['synchrony_index']
         d1 = d['d_raw_lesion']['synchrony_index']
         d2 = d['d_raw_control']['oscillation_index']
         d3 = d['d_raw_lesion']['oscillation_index']
-#         d2 = add(d0, d1)
-#         kwargs['labelx0']='Synchronizy'
-#         kwargs['labelx1']='Oscillation'
         
         fig=plot_oi_si(d0,d1,d2,d3, **kwargs)
         figs.append(fig)          
+
+    if 'si_oi_index_simple' in do_plots:
+        d0 = d['d_raw_control']['synchrony_index']
+        d1 = d['d_raw_lesion']['synchrony_index']
+        d2 = d['d_raw_control']['oscillation_index']
+        d3 = d['d_raw_lesion']['oscillation_index']
+
         
+        fig=plot_oi_si_simple(d0,d1,d2,d3, **kwargs)
+        figs.append(fig)
+    if 'si_oi_index_simple2' in do_plots:
+        d0 = d['d_raw_control']['synchrony_index']
+        d1 = d['d_raw_lesion']['synchrony_index']
+        d2 = d['d_raw_control']['psd_oi']
+        d3 = d['d_raw_lesion']['psd_oi']
+
+        
+        fig=plot_oi_si_simple(d0,d1,d2,d3, **kwargs)
+        figs.append(fig)
+    if 'psd' in do_plots:
+        d0 = d['d_raw_control']['psd']
+        d1 = d['d_raw_lesion']['psd']
+        
+        figs+=plot_psd(d0,d1, **kwargs)
+#         figs.append(fig)
+    if 'psd2' in do_plots:
+        d0 = d['d_raw_control']['psd2']
+        d1 = d['d_raw_lesion']['psd2']
+        
+        figs+=plot_psd(d0,d1, **kwargs)
+#         figs.append(fig) 
     return figs
 
 
@@ -1303,7 +1868,9 @@ def main(**kwargs):
     attr_add=['mse_rel_control_fr', 'mse_rel_control_mc',
               'mse_rel_control_pdwc', 'mse_rel_control_mcm',
               'mse_rel_control_oi', 'mse_rel_control_si',
-              'mse_rel_control_psd']
+#               'mse_rel_control_psd', 
+#               'psd_oi'
+              ]
     
 #     exclude+=['MS_MS', 'FS_MS', 'MS']
     sd = get_storage(file_name, '')
@@ -1316,12 +1883,12 @@ def main(**kwargs):
                  sd,
                  **kwargs)
 
-    pp(kwargs)
+#     pp(kwargs)
     figs = create_figs(d, **kwargs)
 
+    pylab.show()
     save_figures(figs, script_name, dpi=200)
         
-    pylab.show()
     
 
 #     pp(d)

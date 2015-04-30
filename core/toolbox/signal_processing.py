@@ -225,11 +225,14 @@ def corrcoef(*args):
 def coherences(signals1, signals2, **kwargs):
 
 
+#     args=[[s1,s2, kwargs] 
+#           for s1, s2 in iter_double(signals1, signals2) 
+# #           if numpy.any(s1-s2)
+#           ] 
     args=[[s1,s2, kwargs] 
-          for s1, s2 in iter_double(signals1, signals2) 
+          for s1, s2 in zip(signals1, signals2) 
 #           if numpy.any(s1-s2)
-          ] 
-    
+          ]     
     
 
     args=zip(*args)
@@ -254,6 +257,7 @@ def coherences(signals1, signals2, **kwargs):
         raise type(e)(e.message + s), None, sys.exc_info()[2]
         
     Cxy, f=l[:,0,:], l[:,1,:]
+
 
     if kwargs.get('inspect', False):
         
@@ -369,6 +373,7 @@ def _phase(x, **kwargs):
 def phase(x, **kwargs):
     d=_phase(x, **kwargs)
     return d['phase']
+
 def phases(signals, **kwargs):
 
     a=[phase(s, **kwargs) for s in signals]
@@ -376,13 +381,14 @@ def phases(signals, **kwargs):
 
 def phase_diff(signal1, signal2, kwargs):
     
-    inspect=kwargs.get('inspect', False)
+    inspect=kwargs.get('inspect_phase_diff', False)
 #     kwargs['inspect']=False
 
     rand=numpy.random.random()
     a=phase(signal1,  **kwargs)
     b=phase(signal2,  **kwargs)
-
+    
+    
     if rand>0.5:
         x=a-b
     else:
@@ -390,16 +396,23 @@ def phase_diff(signal1, signal2, kwargs):
     x[x>numpy.pi]=x[x>numpy.pi]-2*numpy.pi
     x[x<-numpy.pi]=x[x<-numpy.pi]+2*numpy.pi
 
-     
+#     inspect=True 
     if inspect:
+        
+        fig=pylab.figure(figsize=(30.,10.))
+        fig.add_subplot(211)
+        fig.add_subplot(212)
+        fig.get_axes()[0].plot(a)
+        fig.get_axes()[0].plot(b)
+        
         bins=numpy.linspace(-numpy.pi,numpy.pi, kwargs.get('num',100.))
-        pylab.hist(x, bins)  
+        fig.get_axes()[1].hist(x, bins)  
         pylab.xlim((-numpy.pi, numpy.pi))  
         pylab.xlabel('Angle')
         pylab.ylabel('Occurance') 
         pylab.show() 
         
-    return x
+    return x,a,b
 
     
 
@@ -407,20 +420,23 @@ def phase_diff(signal1, signal2, kwargs):
 def phases_diff(signals1, signals2, **kwargs):
 
     idx_filter=kwargs.get('idx_filter', None)
-    inspect=kwargs.get('inspect', False)
+    inspect=kwargs.get('inspect_phases_diff', False)
     kwargs['inspect']=False
 #     l=[phase_diff(s1, s2, *args, **kwargs) 
 #        for s1,s2 in iter_double(signals1, signals2)]
 #     
-    args=[[s1,s2, kwargs] 
-          for s1, s2 in iter_double(signals1, signals2)
+#     args0=[[s1,s2, kwargs] 
+#           for s1, s2 in iter_double(signals1, signals2)
+# #           if numpy.any(s1-s2)
+#           ] 
+    args0=[[s1,s2, kwargs] 
+          for s1, s2 in zip(signals1, signals2)
 #           if numpy.any(s1-s2)
-          ] 
-    
+          ]     
     if numpy.any(idx_filter):
-        args=[args[idx] for idx in idx_filter]
+        args0=[args0[idx] for idx in idx_filter]
         
-    args=zip(*args)
+    args=zip(*args0)
     
 #     args=[[s1,s2, kwargs] for s1, s2 in iter_double(signals1, signals2)] 
 #     args=zip(*args)
@@ -428,16 +444,88 @@ def phases_diff(signals1, signals2, **kwargs):
 
     
     l=map_parallel(phase_diff, *args, **{'local_num_threads': kwargs.get('local_num_threads',1)})
-    x=numpy.array(l)
+    x=numpy.array(zip(*l)[0])
+    a,b=numpy.array(zip(*l)[1:])
     #x=numpy.array(l).ravel()
-    
+#     inspect=True
     if inspect:
-        bins=numpy.linspace(-numpy.pi,numpy.pi, kwargs.get('num',100.))
-        pylab.hist(x.ravel(), bins)
-        pylab.xlim((-numpy.pi, 2*numpy.pi))  
+        
+        bins=numpy.linspace(2.1*-numpy.pi, 2.1*numpy.pi, kwargs.get('num',100.))
+        fig=pylab.figure(figsize=(30.,20.))
+        k=1
+        for i in range(5):
+            for j in range(5):
+                fig.add_subplot(5,5,k)
+                k+=1
+        i=0
+        
+        for s1,s2,e in zip(signals1, signals2, x):
+            
+            
+           
+#             print len(fig.get_axes())
+            fig.get_axes()[i].hist(e.ravel(), bins)
+            pylab.xlim((4.1*-numpy.pi, 4.1*numpy.pi))
+            m1=numpy.mean(args0[i][0])
+            m2=numpy.mean(args0[i][1])
+            fig.get_axes()[i].set_title(str(m1)[0:3]+','+str(m2)[0:3]+',' +str(len(e)))
+
+            pylab.title(str(len(e)))
+            pylab.xlabel('Angle')
+            pylab.ylabel('Occurance') 
+            
+            i+=1
+            if i==23:
+                break
+
+        
+        fig.get_axes()[i].hist(x.ravel(), bins, color='k')
+        pylab.xlim((4.1*-numpy.pi, 4.1*numpy.pi)) 
         pylab.xlabel('Angle')
         pylab.ylabel('Occurance') 
-        pylab.show() 
+        fig.get_axes()[i].set_title(str(len(x))+','+str(len(x.ravel())))
+        
+                
+#         fig=pylab.figure(figsize=(30.,20.))
+#         k=1
+#         for i in range(5):
+#             for j in range(5):
+#                 fig.add_subplot(5,5,k)
+#                 k+=1
+#         i=0
+# #         for s1,s2 in zip(a, b):
+#         
+#         bins=numpy.linspace(0,10000, 2000)
+#         for s1,s2 in zip(signals1, signals2):
+#             
+#             fig.get_axes()[i].hist(s1, bins, histtype='step')
+#             fig.get_axes()[i].hist(s2, bins, histtype='step')
+# 
+#             i+=1
+#             if i==23:
+#                 break
+
+        fig=pylab.figure(figsize=(30.,20.))
+        k=1
+        for i in range(5):
+            for j in range(5):
+                fig.add_subplot(5,5,k)
+                k+=1
+        i=0
+        for s1,s2, _ in args0:
+#         for s1,s2 in zip(signals1, signals2):
+             
+            fig.get_axes()[i].plot(e)
+#             fig.get_axes()[i].plot(b)
+ 
+            i+=1
+            if i==23:
+                break
+        pylab.show()
+        
+
+    
+
         
     return x
 

@@ -39,13 +39,17 @@ models=['M1', 'M2', 'SN']
 paths=[]
 
 
-paths.append('/home/mikael/results/papers/inhibition/network/'
-             +'milner/simulate_Go_NoGo_XXX_no_ss_act0.2_v2/')
-paths.append('/home/mikael/results/papers/inhibition/network/'
-             +'milner/simulate_Go_NoGo_XXX_no_ss_act0.2_ST_pulse_v2/')
+# paths.append('/home/mikael/results/papers/inhibition/network/'
+#              +'milner/simulate_Go_NoGo_XXX_no_ss_act0.2_v2/')
+# paths.append('/home/mikael/results/papers/inhibition/network/'
+#              +'milner/simulate_Go_NoGo_XXX_no_ss_act0.2_ST_pulse_v2/')
 
+paths.append('/home/mikael/results/papers/inhibition/network/'
+             +'milner/fig5_simulate_Go_NoGo_XXX_no_ss_act0.2_ST_pulse_v2/')
+paths.append('/home/mikael/results/papers/inhibition/network/'
+             +'milner/fig5_simulate_Go_NoGo_XXX_no_ss_scaling_act_ST_pulse_v2/')
 
-s1='script_000{}_MsGa-MS-weight0.25_ST-GI-0.75-GaMs-0.4-down-C2-EiEa-mod-fast-5.0-ss-1.0'
+s1='script_000{}_GAGA_25.0_GIGA_5.0-ss-1.0'
 
 nets1=['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4']
 nets2=['Net_0']
@@ -62,6 +66,7 @@ for key, val in files.items():
                               dic_keys=[key], 
                               file_names=[val[0]])
     misc.dict_update(d, d_tmp)
+
 print d.keys()
 # pp(d)
 
@@ -73,8 +78,18 @@ dd={}
 i=0
 for name, nets in builder:
     for net in nets:
-        dd['Net_{}'.format(i)]=d[name][net]
+        print name, net
+        if not (net in d[name].keys()):
+            i+=1
+            continue
+        dd['Net_{:0>2}'.format(i)]=d[name][net]
+        
+#         titles.append(name+'_'+net)
         i+=1 
+# for name, nets in builder:
+#     for net in nets:
+#         dd['Net_{}'.format(i)]=d[name][net]
+#         i+=1 
 pp(dd)
 print len(dd['Net_0']['set_1']['SN']['mean_rate_slices'].y)
 

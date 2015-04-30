@@ -18,6 +18,7 @@ import numpy
 import toolbox.plot_settings as ps
 import pprint
 from toolbox import data_to_disk
+# from scripts_inhibition.simulate_beta_ZZZ10 import path_rate_runs
 pp=pprint.pprint
 
 
@@ -60,6 +61,8 @@ def get_file_name_figs(script_name, par=None):
 
 def get_args_list(*args, **kwargs):
     
+    
+    from_disk=kwargs.get('from_disk_0')
     builder=kwargs.get('Builder')
     do_obj=kwargs.get('do_obj') 
     file_name=kwargs.get('file_name')    
@@ -98,7 +101,7 @@ def get_args_list(*args, **kwargs):
                                      'script_name':script_name, 
                                      'setup':setup})
                 
-                if do_obj:
+                if do_obj and (i in kwargs.get('do_runs')) and from_disk<=j:
                     obj.do()
                     
                 args_list.append(obj)
@@ -199,6 +202,69 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
     args=[p_list, get_setup_args_and_kwargs]
     return get_args_list(*args, **kwargs)
 
+
+def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
+    
+    def get_setup_args_and_kwargs(i_p_list, **kwargs):
+        duration=kwargs.get('duration')
+        amp_base=kwargs.get('amp_base')
+        freqs=kwargs.get('freqs')
+        freq_oscillations=kwargs.get('freq_oscillations')  
+        input_type=kwargs.get('input_type','burst3')
+        labels=kwargs.get('labels',['Only D1', 
+                                    'D1,D2',
+                                    'MSN lesioned (D1, D2)',
+                                    'FSN lesioned (D1, D2)',
+                                    'GPe TA lesioned (D1,D2)'])
+        laptime=kwargs.get('laptime')
+        l_mean_rate_slices=kwargs.get('l_mean_rate_slices')
+        local_num_threads=kwargs.get('local_num_threads')
+        other_scenario=kwargs.get('other_scenario', False)
+#         oscillation_returbations_index=kwargs.get('oscillation_returbations_index')
+        p_pulses=kwargs.get('p_pulses')
+        path_rate_runs=kwargs.get('path_rate_runs')
+        perturbation_list=kwargs.get('perturbation_list')
+        props_conn=kwargs.get('proportion_connected', 1.)
+        res=kwargs.get('res')
+        rep=kwargs.get('rep')
+        STN_amp_mod=kwargs.get('STN_amp_mod')     
+        time_bin=kwargs.get('time_bin')
+        
+        
+        damp = process(path_rate_runs, [freqs])
+        for key in sorted(damp.keys()):
+            val = damp[key]
+            print  key, numpy.round(val, 2)
+
+        freqs = numpy.round(damp[perturbation_list[0].name][0], 2) 
+    
+        
+        
+        if type(props_conn)==list:
+            pc=props_conn[i_p_list]
+        else:
+            pc=props_conn
+
+        kwargs={'amp_base':amp_base,
+                'duration':duration,
+                'freqs':freqs,
+                'freq_oscillations':freq_oscillations,
+                'input_type':input_type,
+                'l_mean_rate_slices':l_mean_rate_slices,
+                'labels':labels,
+                'laptime':laptime,
+                'local_num_threads':local_num_threads,
+                'other_scenario':other_scenario,
+                'proportion_connected':pc,
+                'p_pulses':p_pulses,
+                'resolution':res,
+                'repetition':rep,
+                'time_bin':time_bin,
+                'STN_amp_mod':STN_amp_mod, }
+        return [], kwargs
+    
+    args=[p_list, get_setup_args_and_kwargs]
+    return get_args_list(*args, **kwargs)
 
     
 def get_kwargs_list_indv_nets(n_pert, kwargs):
@@ -456,6 +522,9 @@ def pert_add_go_nogo_ss(**kwargs):
             ll.append(_l)
 
     return ll
+
+
+
 
 def pert_add(p_list, **kwargs):
     

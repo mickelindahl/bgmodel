@@ -22,16 +22,16 @@ from toolbox.parallel_excecution import loop
 import numpy
 import sys
 import simulate_beta as module
-import oscillation_perturbations28_slow as op
+import oscillation_perturbations27_slow as op
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ28_slow/')
+path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ27_slow/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
-NUM_NETS=2
+NUM_NETS=4
 
 amp_base=[1.15]#numpy.arange(1.1, 1.2, 0.05)
 freqs=[0.8]#numpy.arange(0.3, 1.0, 0.2)
@@ -52,7 +52,7 @@ kwargs={
         'cores_superm':2,
         
         'debug':False,
-        'do_runs':range(30,num_runs), #A run for each perturbation
+        'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
         
         'external_input_mod':['EI','EA'],
@@ -65,7 +65,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'b_ZZZ28_slow',
+        'job_name':'b_ZZZ27_slow',
         
         'l_hours':  ['00','01','00'],
         'l_minutes':['45','00','05'],

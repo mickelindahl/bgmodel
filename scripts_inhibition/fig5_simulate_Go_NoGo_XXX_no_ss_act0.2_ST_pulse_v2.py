@@ -16,16 +16,16 @@ from toolbox.parallel_excecution import get_loop_index, loop
 
 import scripts_inhibition.Go_NoGo_compete as module
 
-
+import sys
 # from scripts inhibition import Go_NoGo_compete as module
-import oscillation_perturbations13 as op
+import oscillation_perturbations34_slow as op
 import pprint
 pp=pprint.pprint
 
 from copy import deepcopy
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=1
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=1
 NUM_RUNS=1
@@ -38,7 +38,7 @@ kwargs={
         'cores_superm':16,
         
         'debug':False,
-        'do_runs':[0, 1],
+        'do_runs':range(NUM_RUNS),
         'do_obj':False,
         'duration':[900.,100.0],
         
@@ -47,7 +47,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_name':'noss_0.2_pulse_v2',
+        'job_name':'fig5_0.2_STp',
 
         'l_hours':['10','02','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
@@ -68,10 +68,10 @@ kwargs={
         'path_code':default_params.HOME_CODE,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
-        'perturbation_list':op.get(),
+        'perturbation_list':[op.get()[7]],
         'proportion_connected':[0.2]*1, #related to toal number fo runs
         
-        'pulses':[5],
+        'p_pulses':[5],
         'p_sizes':[
                     1,
                 ],

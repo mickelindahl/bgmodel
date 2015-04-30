@@ -26,7 +26,7 @@ from toolbox.parallel_excecution import loop
 import sys
 import simulate_beta as module
 import oscillation_perturbations13_slow as op
-import oscillation_perturbations_dop2 as op_dop
+import oscillation_perturbations_dop_final as op_dop
 import pprint
 pp=pprint.pprint
 

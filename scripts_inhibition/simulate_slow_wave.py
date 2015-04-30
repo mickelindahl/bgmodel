@@ -50,7 +50,11 @@ class Setup(object):
     def coherence(self):
         d = {'fs':self.fs, 'NFFT':128 * 8, 
             'noverlap':int(128 * 8)/2, 
-            'sample':100.}
+            'sample':100.**2,
+            'min_signal_mean':0.0, #minimum mean a signal is alowed to have, toavoid calculating coherence for 0 signals
+            'exclude_equal_signals':True, #do not compute for equal signals
+            
+            }
         return d
     
 
@@ -75,12 +79,14 @@ class Setup(object):
             'fs':self.fs,#100.0, 
             'NFFT':128*8 , 
             'noverlap':128*8/2, 
-            'sample':30.,
+            'sample':30.**2,
             
             'lowcut':0.5, 
             'highcut':2., 
             'order':3, 
-
+            'min_signal_mean':0.0, #minimum mean a signal is alowed to have, toavoid calculating coherence for 0 signals
+            'exclude_equal_signals':True, #do not compute for equal signals
+            
              #Skip convolving when calculating phase shif
 
 #              'bin_extent':self.fs/2,#500., 

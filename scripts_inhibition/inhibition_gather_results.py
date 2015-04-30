@@ -24,7 +24,9 @@ def get_amlitudes(freqs, data):
     for key, val in data.items():
         out[key]=[]
         for freq in freqs:
-            if freq<=val.x[-1] and freq>=val.x[0]:
+            if freq==0.:
+                out[key].append(0.0)
+            elif freq<=val.x[-1] and freq>=val.x[0]:
                 out[key].append(val(freq)-1)
             else:
                 out[key].append(numpy.NAN)
@@ -40,6 +42,7 @@ def gather(path):
         file_name=path+name[:-4]
         sd = Storage_dic.load(file_name)
         
+        #Tuning after M1
         dd=sd.load_dic(*['Net_0', 'M1','mean_rate_slices'])
         d = misc.dict_update(d, {name[:-4]:dd['Net_0']})
     
@@ -50,14 +53,14 @@ def gather(path):
             if name[0:6]!='script':
                 continue
 #             i+=1
-            ax=pylab.subplot(5,6,i)
+#             ax=pylab.subplot(5,6,i)
             file_name=path+name+'/'+'Net_0'
             sd = Storage_dic.load(file_name)
             dd=sd.load_dic(*['Net_0', 'M1','mean_rate_slices', 'firing_rate'])
             print file_name
             
 #             ax.plot(dd['Net_0']['M1']['firing_rate'].y)
-            ax.text(0.1,0.1,name, transform=ax.transAxes, fontsize=7)
+#             ax.text(0.1,0.1,name, transform=ax.transAxes, fontsize=7)
             d = misc.dict_update(d, {name:dd['Net_0']})
             
             
@@ -71,6 +74,8 @@ def interpolate(d):
 
     
     for keys, val in misc.dict_iter(d):
+        if keys[-1]!= 'mean_rate_slices':
+            continue
         key='_'.join(keys[0].split('_')[2:])
         dinter[key]=interp1d(val.y, val.x)
     return dinter

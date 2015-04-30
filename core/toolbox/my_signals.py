@@ -201,7 +201,7 @@ class Data_bar_base(object):
         ind=numpy.arange(m)
         width=0.8/n
 
-        alphas=numpy.linspace(1,1./n,n)
+        alphas=k.pop('alphas',numpy.linspace(1,1./n,n))
         colors=k.pop('colors',misc.make_N_colors('jet',m ))
         color_axis=k.pop('color_axis',0)
         alpha=k.pop('alpha',True)
@@ -216,7 +216,7 @@ class Data_bar_base(object):
 #                 h=ax.bar(0+ind, self.y, width, yerr=self.y_std, **k )
                 H.append(ax.bar(ind+i*width,self.y[i,:], width, 
                                 yerr=self.y_std[i,:], 
-                                ecolor='k',
+                                ecolor='grey',
                                  **k ))
             
             else: 
@@ -333,6 +333,9 @@ class Data_phases_diff_with_cohere_base(object):
         
         h=[]
         
+        remove_peaks=k.pop('remove_peaks', False)
+        xcut=k.pop('xcut',False)
+        
         if all:
             a=numpy.mean(self.y_bins, axis=0)[0:-1]
             step=numpy.diff(a)[0]
@@ -341,6 +344,17 @@ class Data_phases_diff_with_cohere_base(object):
                           dtype=numpy.float).ravel()
            
             norm=sum(b)*(a[-1]-a[0])/len(a)
+            
+            if remove_peaks:
+                idx=numpy.argmax(b)
+                b[idx-1]=(b[idx-2]+b[idx+2])/2.
+                b[idx]  =(b[idx-2]+b[idx+2])/2.
+                b[idx+1]=(b[idx-2]+b[idx+2])/2.
+            if xcut:
+                bol=(a>xcut[0])*(a<xcut[1])
+                a=a[bol]
+                b=b[bol]
+            
             h=ax.plot(a, b/norm, **k)
 
         
@@ -593,11 +607,21 @@ class Data_mean_coherence_base(object):
             ax=my_axes.convert(ax)
         if list(x):
             self.x=x 
-           
+        p_conf95_linsstyle=k.pop('p_conf95_linestyle','-')
+        
+        xcut=k.pop('xcut',False)
+        
+        if xcut:
+            bol=(self.x>xcut[0])*(self.x<xcut[1])
+            self.x=self.x[bol]
+            self.y=self.y[bol]
+            self.p_conf95=self.p_conf95[bol]
+        
         h=ax.plot(self.x, self.y, **k)
         
         if hasattr(self, 'p_conf95'):
-            ax.plot(self.x, self.p_conf95, **{'color':'k'}) 
+            ax.plot(self.x, self.p_conf95, **{'color':'k',
+                                              'linestyle':p_conf95_linsstyle}) 
            
         ax.set_xlabel('Frequency (Hz)') 
         ax.set_ylabel('Coherence') 
@@ -618,7 +642,7 @@ class Data_mean_rates_base(object):
         k['histtype']=k.get('histtype','step')
         
         k['label']=k.get('label','')+' '+str(numpy.mean(self.y))[:4]
-        
+    
         ax.hist(numpy.array(self.y), **k)
         ax.set_xlabel('Rate (Hz)')     
         ax.set_ylabel('Count (#)')
@@ -1360,20 +1384,22 @@ class MySpikeList(SpikeList):
         high=kwargs.get('highcut', 1.5)
         time_bin=1000./fs
         other=kwargs.get('other', None)
-        sample=kwargs.get('sample',10)
+
+        sample=kwargs.get('sample',100)
+        
+        exclude_equal=kwargs.get('exclude_equal_signals', True)
         
         assert other!=None, 'need to provide other spike list'
         
-        ids1, ids2=shuffle(*[self.id_list, other.id_list],
-                           **{'sample':sample})
-               
-        sl1=self.id_slice(ids1)
-        sl2=other.id_slice(ids2)
-        
-        signals1=sl1.firing_rate(time_bin, average=False, **kwargs)
-        signals2=sl2.firing_rate(time_bin, average=False, **kwargs)       
+        out=self.generate_rate_signals(time_bin, **kwargs)
+        ids1,ids2,signals1,signals2=out      
         
 #         args=[lowcut, highcut, order, fs]
+
+
+        sample_means=[]
+        out=remove_silent_signals(signals1, signals2,sample_means, **kwargs)
+        signals1, signals2,i=out
 
         y=sp.phases_diff(signals1, signals2, **kwargs)
         vals=[]
@@ -1406,7 +1432,11 @@ class MySpikeList(SpikeList):
             'y_bins':numpy.array(bins),
             'coherence':v,
             'idx_sorted':idx,
-            'p_conf95':p_conf95}
+            'p_conf95':p_conf95,            
+            'success_sample_phases_diff_proportion':float(sample-i)/sample,
+            'sample_means':sample_means,
+            'sample_phases_diff':sample,
+            'sample_cohere':sample}
 
         return Data_phases_diff_with_cohere(**d)
 
@@ -1421,36 +1451,38 @@ class MySpikeList(SpikeList):
            'y':y}
         return Data_isis(**d)
 
+
+
+
+
     def Factory_mean_coherence(self, *args, **kwargs):
         fs=kwargs.get('fs',1000.0)
         kwargs['fs']=fs
         other=kwargs.get('other', None)
-        sample=kwargs.get('sample',10)
-        
         assert other!=None, 'need to provide other spike list'
-        
         time_bin=1000./fs
         
-        ids1, ids2=shuffle(*[self.id_list, other.id_list],
-                           **{'sample':sample})
-               
-        sl1=self.id_slice(ids1)
-        sl2=other.id_slice(ids2)
+        out=self.generate_rate_signals(time_bin, **kwargs)
+        ids1,ids2,signals1,signals2=out
         
-        signals1=sl1.firing_rate(time_bin, average=False, **kwargs)
-        signals2=sl2.firing_rate(time_bin, average=False, **kwargs) 
+        sample_means=[]
+        out=remove_silent_signals(signals1, signals2,sample_means, **kwargs)
+        signals1, signals2,i=out
         
-                
         x, y=sp.mean_coherence(signals1, signals2, **kwargs)
 
         L=float(len(signals1[0])/kwargs.get('NFFT'))
         p_conf95=numpy.ones(len(x))*(1-0.05**(1/(L-1)))  
         
+        sample=kwargs.get('sample',10)
         d={'ids1':ids1,
             'ids2':ids2, 
             'x':x, 
             'y':y,
-            'p_conf95':p_conf95} 
+            'p_conf95':p_conf95,
+            'success_sample_proportion':float(sample-i)/sample,
+            'sample_means':sample_means,
+            'sample':sample} 
         
         
         return Data_mean_coherence(**d)       
@@ -1649,6 +1681,41 @@ class MySpikeList(SpikeList):
 #         kwargs=kwargs.get('kwargs',{})
 #         return call.firing_rate(time_bin, display, average, binary, kwargs)
 
+    def generate_rate_signals(self, time_bin, **kwargs):
+        other=kwargs.get('other', None)
+        ids1, ids2=shuffle_signals(*[self.id_list, other.id_list],
+                                   **{'sample':kwargs.get('sample',10)})
+        
+        import nest
+        print len(numpy.unique(ids1)), nest.Rank(), max(ids1)
+        print len(numpy.unique(ids2)), nest.Rank(), max(ids2)
+        
+        sl1=self.id_slice(numpy.unique(ids1)) 
+        sl2=other.id_slice(numpy.unique(ids2))
+        
+        r1=sl1.firing_rate(time_bin, average=False, **kwargs)
+        r2=sl2.firing_rate(time_bin, average=False, **kwargs) 
+        
+
+        print r1.shape, len(numpy.unique(ids1)), nest.Rank(), len(sl1.id_list), len(ids1)
+        print r2.shape, len(numpy.unique(ids2)), nest.Rank(), len(sl2.id_list), len(ids2)
+        
+        trl1={}
+        trl2={}
+        for i, e in enumerate(numpy.unique(ids1)): trl1[e]=i
+        for i, e in enumerate(numpy.unique(ids2)): trl2[e]=i
+           
+        
+        r1=[e for e in r1]
+        r2=[e for e in r2]
+        
+        signals1=[r1[trl1[idx]] for idx in ids1]
+        signals2=[r2[trl2[idx]] for idx in ids2]
+        
+        print 'done'
+        
+        return ids1, ids2, signals1, signals2
+
     def get_mean_coherence(self,*args, **kwargs):
         
 #         try:
@@ -1775,6 +1842,7 @@ class MySpikeList(SpikeList):
             mean_rate, mean_rate_std
         """
 #         rates = []
+        
         n=len(self.id_list)
         t_starts=[t_start]*n
         t_stops=[t_stop]*n
@@ -2525,6 +2593,22 @@ def get_mean_rate_slices(ids,  kwargs, y):
     
     return d
    
+def remove_silent_signals(signals1, signals2,sample_means, **kwargs):
+    i=0
+    tmp1=[]
+    tmp2=[]
+    for s1,s2 in zip(signals1,signals2):
+        
+        sample_means.append( [numpy.mean(s1), numpy.mean(s2)])
+        if (numpy.mean(s1)<=kwargs.get('min_signal_mean',0.0) 
+          or numpy.mean(s2)<=kwargs.get('min_signal_mean',0.0)):
+            i+=1
+            continue    
+        tmp1.append(s1)
+        tmp2.append(s2)
+    signals1, signals2=tmp1, tmp2
+    return signals1, signals2,i
+   
 def shuffle(*args, **kwargs):
     out=[]
     sample=kwargs.get('sample',1)
@@ -2533,6 +2617,18 @@ def shuffle(*args, **kwargs):
         numpy.random.shuffle(a_copy)
         out.append(a_copy[0:sample])
     return out 
+    
+def shuffle_signals(*args, **kwargs):
+    idx0, idx1=args
+    sample=int(kwargs.get('sample',1))
+    exclude_equals=kwargs.get('exclude_equal_signals')
+    idx=[[a, b] for a in idx0 for b in idx1 if not exclude_equals and a!=b]
+    numpy.random.seed(1) #try to see if different mpi processes uses different seeds
+    numpy.random.shuffle(idx)
+#     print  zip(*idx[0:sample])
+    return zip(*idx[0:sample])
+    
+    
     
 def transpose_if_axis_1(axis, m):
     if axis==0:

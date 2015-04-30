@@ -325,7 +325,7 @@ def set_text_on_bars(axs, i, names, coords):
 #     
 
 def plot_spk_stats_STN(d, axs, i, **k):
-    y_lim_scale=1.5
+    y_lim_scale=1.
     color_red=misc.make_N_colors('jet', 2)[1]
     
     leave_out=k.get('leave_out',[])
@@ -357,45 +357,65 @@ def plot_spk_stats_STN(d, axs, i, **k):
         Y=[get_STN_activation_rate(dm),
            get_STN_activation_CV(dm)]
 
+    kw={'edgecolor':'k',
+        'top_lable_rotation':0,
+        'top_label_round_off':0,
+        'colors':k.get('spk_stats_colors',misc.make_N_colors('jet',2 )),
+        'alphas':k.get('alphas',numpy.linspace(1,1./2,2)),
+        'color_axis':k.get('spk_stats_color_axis',0),
+        'top_label':k.get('top_label',True)} 
+ 
+
     # *******
     # GPe FR
     # *******      
     Data_bar(**{'y':[[y_mean[0], y_mean[1]],
                      [Y[0][0],  Y[0][1]]],
                 'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
-                         [0.,  0.]]}).bar2(axs[i], **{'edgecolor':'k',
-                                                      'top_lable_rotation':0,
-                                                      'top_label_round_off':0})
+                         [0.,  0.]]}).bar2(axs[i], **kw.copy())
           
     axs[i].set_ylabel('Rate (Hz)')
     axs[i].set_xticklabels(['Control', 'Lesion'])
     axs[i].set_title('STN')
-    axs[i].set_ylim([0,40*y_lim_scale])
+    axs[i].set_ylim([0,40])
+    axs[i].set_xlim([-0.2,2.0])
     
-    set_text_on_bars(axs, i, names, coords)
+    if k.get('set_text_on_bars',True):
+        set_text_on_bars(axs, i, names, coords)
     i += 1
+  
+    kw={'edgecolor':'k',
+        'top_lable_rotation':0,
+        'top_label_round_off':1,
+        'colors':k.get('spk_stats_colors_ti_ta',[color_red,color_red]),
+        'alphas':k.get('alphas',numpy.linspace(1,1./2,2)),
+        'hatchs':k.get('hatchs_ti_ti',['/', 'o']), 
+        'color_axis':k.get('spk_stats_color_axis',0),
+        'top_label':k.get('top_label',True)} 
 
-    # *******
-    # GPe CV
-    # *******    
     Data_bar(**{'y':[[y_CV[0], y_CV[1]],
                      [Y[1][0], Y[1][1]]],
                 'y_std':[[y_CV_SEM[0], y_CV_SEM[1]],
-                         [0., 0.]]}).bar2(axs[i],
-                                           **{'edgecolor':'k',
-                                              
-                                                      'top_label_round_off':1,
-                                              'top_lable_rotation':0
-                                              })
+                         [0., 0.]]}).bar2(axs[i], **kw.copy())
+    # *******
+    # GPe CV
+    # *******    
+    
+
     
 #     Data_bar(**{'y':y_CV}).bar(axs[i])
     axs[i].set_ylabel('CV')
     axs[i].set_xticklabels(['Control', 'Lesion'])
     axs[i].set_title('STN')
-    axs[i].set_ylim([0, 1.9*y_lim_scale])
-    set_text_on_bars(axs, i, names, coords)
+    axs[i].set_ylim([0, 2.1*y_lim_scale])
+    axs[i].set_xlim([-0.2,2.0])
+    
+    if k.get('set_text_on_bars',True):
+        set_text_on_bars(axs, i, names, coords)
     i += 1
     return i
+
+
 def plot_spk_stats(d, axs, i, **k):
     y_lim_scale=1.1
     color_red=misc.make_N_colors('jet', 2)[1]
@@ -435,41 +455,52 @@ def plot_spk_stats(d, axs, i, **k):
             
     # *******
     # GPe FR
-    # *******      
+    # *******     
+    kw={'alphas':k.get('alphas',numpy.linspace(1,1./2,2)),
+        'edgecolor':'k',
+        'top_lable_rotation':0,
+        'top_label_round_off':0,
+        'colors':k.get('spk_stats_colors',misc.make_N_colors('jet',2 )),
+        
+        'color_axis':k.get('spk_stats_color_axis',0),
+        'top_label':k.get('top_label',True)} 
+    
     Data_bar(**{'y':[[y_mean[0], y_mean[1]],
                      [Y[0][0],  Y[0][1]]],
                 'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
-                         [0.,  0.]]}).bar2(axs[i], **{'edgecolor':'k',
-                                                      'top_lable_rotation':0,
-                                                      'top_label_round_off':0})
+                         [0.,  0.]]}).bar2(axs[i], **kw.copy())
           
     axs[i].set_ylabel('Rate (Hz)')
     axs[i].set_xticklabels(['Control', 'Lesion'])
     axs[i].set_title('GPe')
     axs[i].set_ylim([0,40*y_lim_scale])
     
-    set_text_on_bars(axs, i, names, coords)
+    axs[i].set_xlim([-0.2,2.0])
+    
+    
+    if k.get('set_text_on_bars',True):
+        set_text_on_bars(axs, i, names, coords)
     i += 1
 
     # *******
     # GPe CV
     # *******    
+    kw['top_label_round_off']=1
     Data_bar(**{'y':[[y_CV[0], y_CV[1]],
                      [Y[1][0], Y[1][1]]],
                 'y_std':[[y_CV_SEM[0], y_CV_SEM[1]],
                          [0., 0.]]}).bar2(axs[i],
-                                           **{'edgecolor':'k',
-                                              
-                                                      'top_label_round_off':1,
-                                              'top_lable_rotation':0
-                                              })
+                                           **kw.copy())
     
 #     Data_bar(**{'y':y_CV}).bar(axs[i])
     axs[i].set_ylabel('CV')
     axs[i].set_xticklabels(['Control', 'Lesion'])
     axs[i].set_title('GPe')
     axs[i].set_ylim([0, 1.9*y_lim_scale])
-    set_text_on_bars(axs, i, names, coords)
+    axs[i].set_xlim([-0.2,2.0])
+    
+    if k.get('set_text_on_bars',True):
+        set_text_on_bars(axs, i, names, coords)
     
     
     i += 1            
@@ -496,28 +527,38 @@ def plot_spk_stats(d, axs, i, **k):
         axs[i].set_title('Control')
         axs[i].set_xticklabels(['TI', 'TA'])
         axs[i].set_ylim([0,40*y_lim_scale])
-        set_text_on_bars(axs, i, names[0::2], coords[0::2])
+        if k.get('set_text_on_bars',True):
+            set_text_on_bars(axs, i, names[0::2], coords[0::2])
     
     
         i += 1
 #     pylab.show()
-    
+ 
+    kw={'edgecolor':'k',
+        'top_lable_rotation':0,
+        'top_label_round_off':0,
+        'colors':k.get('spk_stats_colors_ti_ta',[color_red,color_red]),
+        'alphas':k.get('alphas',numpy.linspace(1,1./2,2)),
+        'hatchs':k.get('hatchs_ti_ti',['/', 'o']), 
+        'color_axis':k.get('spk_stats_color_axis',0),
+        'top_label':k.get('top_label',True)} 
+        
+        
     # *****************
     # TI/TA FR lesion
     # *****************   
     Data_bar(**{'y':[[y_mean[2],y_mean[3]],
                      [Y[2][0], Y[2][1]]],
                 'y_std':[[y_mean_SEM[2],y_mean_SEM[3]],
-                         [0., 0.]]}).bar2(axs[i],  **{'colors':[color_red,color_red], 
-                                              'top_label_round_off':0,
-                                                      'top_lable_rotation':0,
-                                                      'hatchs':['/', 'o'], 
-                                                      'edgecolor':'k'})
+                         [0., 0.]]}).bar2(axs[i],  **kw.copy())
     axs[i].set_ylabel('Rate (Hz)')
     axs[i].set_title('Lesion')
     axs[i].set_xticklabels(['TI', 'TA'])
     axs[i].set_ylim([0,40*y_lim_scale])
-    set_text_on_bars(axs, i, names, coords)   
+    axs[i].set_xlim([-0.2,2.0])
+    
+    if k.get('set_text_on_bars',True):
+        set_text_on_bars(axs, i, names, coords)   
     i += 1
 
 
@@ -530,22 +571,22 @@ def plot_spk_stats(d, axs, i, **k):
         axs[i].set_title('Control')
         axs[i].set_xticklabels(['TI', 'TA'])
         axs[i].set_ylim([0,1.9*y_lim_scale])
-        set_text_on_bars(axs, i, names[0::2], coords[0::2])
+        if k.get('set_text_on_bars',True):
+            set_text_on_bars(axs, i, names[0::2], coords[0::2])
         i += 1
-
+    kw['top_label_round_off']=1
     Data_bar(**{'y':[[y_CV[2], y_CV[3]],
                      [Y[3][0], Y[3][1]]],
                 'y_std':[[y_CV_SEM[2], y_CV_SEM[3]],
-                         [0., 0.]]}).bar2(axs[i],  **{'colors':[color_red,color_red], 
-                                              'top_lable_rotation':0,
-                                                      'top_label_round_off':1,
-                                                      'hatchs':['/', 'o'], 
-                                                      'edgecolor':'k'})
+                         [0., 0.]]}).bar2(axs[i],  **kw.copy())
     axs[i].set_ylabel('CV')
     axs[i].set_title('Lesion')
     axs[i].set_xticklabels(['TI', 'TA'])
     axs[i].set_ylim([0,1.9*y_lim_scale])
-    set_text_on_bars(axs, i, names, coords)
+    axs[i].set_xlim([-0.2,2.0])
+    
+    if k.get('set_text_on_bars',True):
+        set_text_on_bars(axs, i, names, coords)
        
     i += 1
     
@@ -585,13 +626,22 @@ def plot_coherence(d, axs, i, **k):
 #     models=k.get()
     ax = axs[i]
     colors=misc.make_N_colors('jet', len( d.keys()))
+    colors=k.get('coherence_color', colors)
     for i_key, key in enumerate(sorted(d.keys())):
         v = d[key]
         for j, model in enumerate(['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA']):
             ax = axs[i+j]
             ch = v[model]['mean_coherence']
-            ch.plot(ax, **{'color':colors[i_key]})
+            ch.plot(ax, **{'color':colors[i_key],
+                           'xcut':k.get('coherence_xcut',False),
+                           'p_conf95_linestyle':k.get('coherence_p_conf95_linestyle','-')})
+
+            
+            
+            
+            
             ax.set_xlim(k.get('xlim_cohere',[0,2]))
+            ax.set_ylim(k.get('ylim_cohere',[0,1]))
             ax.set_title(td[model[0:2]]+' vs '+td[model[-2:]])
             
     i+=4
@@ -603,13 +653,28 @@ def plot_coherence_STN(d, axs, i, **k):
 #     models=k.get()
     ax = axs[i]
     colors=misc.make_N_colors('jet', len( d.keys()))
+    colors=k.get('coherence_color', colors)
     for i_key, key in enumerate(sorted(d.keys())):
         v = d[key]
         for j, model in enumerate(['ST_ST', 'GA_ST', 'GI_ST', 'GA_ST']):
             ax = axs[i+j]
             ch = v[model]['mean_coherence']
-            ch.plot(ax, **{'color':colors[i_key]})
+            ch.plot(ax, **{'color':colors[i_key],
+                           'xcut':k.get('coherence_xcut',False),
+                           'p_conf95_linestyle':k.get('coherence_p_conf95_linestyle','-')})
+
+            ssp=ch.success_sample_proportion
+            sm=sorted(ch.sample_means, key=lambda x:x[1])
+            sm=sorted(sm, key=lambda x:x[0])
+            print
+            print model, ch.sample, ssp
+            for iE, e in enumerate(sm):
+                print iE, str(e[0])[0:3],str(e[1])[0:3]
+            
+            
             ax.set_xlim(k.get('xlim_cohere',[0,2]))
+            ax.set_ylim(k.get('ylim_cohere',[0,1]))
+
             ax.set_title(td[model[0:2]]+' vs '+td[model[-2:]])
             
     i+=4
@@ -621,6 +686,7 @@ def plot_phases_diff_with_cohere(d, axs, i, xmax=5, **k):
     models=k.get('models_pdwc', ['GP_GP', 'GI_GI', 'GI_GA', 'GA_GA', 
                                  'ST_ST', 'GP_ST', 'GA_ST', 'GI_ST',])
     colors=misc.make_N_colors('jet', len( d.keys()))
+    colors=k.get('phases_diff_with_cohere_colors', colors)
     for i_key, key in enumerate(sorted(d.keys())):
         v = d[key]
         for j, model in enumerate(models):
@@ -629,8 +695,11 @@ def plot_phases_diff_with_cohere(d, axs, i, xmax=5, **k):
             
             ch.hist(ax, **{'color':colors[i_key], 
                            'all':k.get('all',True), 
-                           'p_95':k.get('p_95',True)})
-            ax.set_xlim([-numpy.pi, numpy.pi])
+                           'p_95':k.get('p_95',True),
+                           'xcut':k.get('phases_diff_with_cohere_xcut',False),
+                           'remove_peaks':k.get('phases_diff_with_cohere_remove_peaks',False)})
+            ax.set_xlim([-numpy.pi*1.05, numpy.pi*1.05])
+
             ax.set_title(td[model[0:2]]+' vs '+td[model[-2:]])
     i+=8
     return i
@@ -665,6 +734,7 @@ def plot_isi(d, axs, i):
 
 def show_summed(d, **k):
 #     import toolbox.plot_settings as ps  
+
     fig, axs=ps.get_figure(n_rows=5, 
                            n_cols=4, 
                            w=1400.0, 
@@ -687,22 +757,28 @@ def show_summed(d, **k):
     return fig
 
 def show_summed_STN(d, **k):
+    scale=k.get('scale',1)
     kw={'n_rows':6, 
         'n_cols':16, 
-        'w':72/2.54*11.6, 
-        'h':175, 
-        'fontsize':7,
+        'w':72/2.54*11.6*scale, 
+        'h':175*scale, 
+        'fontsize':7*scale,
         'frame_hight_y':0.5,
         'frame_hight_x':0.7,
-        'title_fontsize':7,
-        'font_size':7,
-        'text_fontsize':7,
-        'linewidth':1.,
+        'title_fontsize':7*scale,
+        'font_size':7*scale,
+        'text_fontsize':7*scale,
+        'linewidth':k.get('linewidth',1)*scale,
         'gs_builder':gs_builder}
 #     kwargs_fig=kwargs.get('kwargs_fig', kw)
     
     fig, axs=ps.get_figure2(**kw) 
-       
+
+
+    for ax in axs:
+        ax.tick_params(direction='in',
+                       length=2, top=False, right=False)  
+           
     i=0
     i = plot_spk_stats_STN(d, axs, i, **k)
     i+=2
@@ -736,8 +812,10 @@ def show_summed_STN(d, **k):
     for i in range(4,12):
         axs[i].set_ylabel('')
         
-#     for i in range(4,8):
-        axs[i].set_yticks([0.0, 0.5])
+    for i in range(4,8):
+        upper= int(round(k.get('ylim_cohere',[0,1])[1]/2.*10))/10.0
+        axs[i].set_yticks([0,upper])
+#         axs[i].set_yticks([0.0, 0.5])
         
     for i in range(8,12):
 
@@ -769,6 +847,7 @@ def show_summed_STN(d, **k):
     for i, s in zip([1],['STN']):
         font0 = FontProperties()
         font0.set_weight('bold')
+        font0.set_size(7*scale)
         axs[i].text(0.5, 
                     -0.35, 
                     s, 
@@ -802,8 +881,47 @@ def show_summed_STN(d, **k):
 #                 fontsize=24,
                 transform=axs[8].transAxes,
                 verticalalignment='center', 
-                rotation=90)  
-  
+                rotation=90)
+    axs[0].text(0.1, 
+                1.38,
+                k.get('label_model','M=Model'), 
+#                 fontsize=24,
+                transform=axs[0].transAxes,
+                va='center', 
+#                 ha='center', 
+#                 ha='center',
+                rotation=0)  
+    axs[0].text(0.1, 
+                1.15,
+                k.get('label_exp','E=Experiment, Mallet et al 2008'), 
+#                 fontsize=24,
+                transform=axs[0].transAxes,
+                va='center', 
+#                 ha='center', 
+#                 ha='center',
+                rotation=0)        
+    mode=k.get('statistics_mode', 'activation')
+    if mode=='slow_wave':
+        s='Slow wave'
+    else:
+        s='Activation (beta)'
+#     s='Activation (beta)'
+    font0 = FontProperties()
+    font0.set_weight('bold')
+    axs[8].text(1.25, 
+            -1.,
+            s, 
+#             fontsize=28,
+            transform=axs[8].transAxes,
+            fontproperties=font0,
+            va='center', 
+#                 ha='center', 
+#                 ha='center',
+            rotation=270)   
+    
+    
+
+    
     return fig
 def gs_builder(*args, **kwargs):
     import matplotlib.gridspec as gridspec
@@ -843,6 +961,75 @@ def gs_builder_singals(*args, **kwargs):
 
     iterator = [[slice(0,1),slice(0,1)],
                 [slice(1,2),slice(0,1)],
+                ]
+    
+    return iterator, gs,     
+
+
+def gs_builder_isis(*args, **kwargs):
+    import matplotlib.gridspec as gridspec
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',6)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.05 ), 
+              hspace=kwargs.get('hspace', 0.05 ))
+
+    iterator = [
+                [slice(0,2),slice(0,1)],
+                [slice(0,2),slice(1,2)],
+                [slice(0,2),slice(2,3)],
+                [slice(0,2),slice(3,4)],
+                [slice(0,2),slice(5,6)],
+                [slice(0,2),slice(6,7)],
+                [slice(0,2),slice(7,8)],
+                [slice(0,2),slice(8,9)],
+                
+                [slice(3,5),slice(0,1)],
+                [slice(3,5),slice(1,2)],
+                [slice(3,5),slice(2,3)],
+                [slice(3,5),slice(3,4)],
+                [slice(3,5),slice(5,6)],
+                [slice(3,5),slice(6,7)],
+                [slice(3,5),slice(7,8)],
+                [slice(3,5),slice(8,9)],
+                
+                [slice(6,8),slice(0,1)],
+                [slice(6,8),slice(1,2)],
+                [slice(6,8),slice(2,3)],
+                [slice(6,8),slice(3,4)],
+                [slice(6,8),slice(5,6)],
+                [slice(6,8),slice(6,7)],
+                [slice(6,8),slice(7,8)],
+                [slice(6,8),slice(8,9)],
+                
+                ]
+    
+    return iterator, gs,     
+
+def gs_builder_correlation(*args, **kwargs):
+    import matplotlib.gridspec as gridspec
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',6)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.05 ), 
+              hspace=kwargs.get('hspace', 0.05 ))
+
+    iterator=[]
+    for a,b in [[0,2], [3,5], [6,8],
+                [9,11], [12,14], [15,17]]:
+        iterator += [
+                    [slice(a,b),slice(0,1)],
+                    [slice(a,b),slice(1,2)],
+                    [slice(a,b),slice(2,3)],
+                    [slice(a,b),slice(3,4)],
+                    [slice(a,b),slice(5,6)],
+                    [slice(a,b),slice(6,7)],
+                    [slice(a,b),slice(7,8)],
+                    [slice(a,b),slice(8,9)],
                 ]
     
     return iterator, gs,     
@@ -906,18 +1093,19 @@ def show_signals(d, **k):
   
 def show_summed2(d, **k):
 #     import toolbox.plot_settings as ps  
-
+    scale=k.get('scale',1)
     kw={'n_rows':6, 
         'n_cols':16, 
-        'w':72/2.54*11.6, 
-        'h':175, 
-        'fontsize':7,
+        'w':72/2.54*11.6*scale, 
+        'h':175*scale, 
+        'fontsize':7*scale,
         'frame_hight_y':0.5,
         'frame_hight_x':0.7,
-        'title_fontsize':7,
-        'font_size':7,
-        'text_fontsize':7,
-        'linewidth':1.,
+        'title_fontsize':7*scale,
+#         'font_size':7*scale,
+        'text_fontsize':7*scale,
+        'title_fontsize':7*scale,
+        'linewidth':k.get('linewidth',1)*scale,
         'gs_builder':gs_builder}
 #     kwargs_fig=kwargs.get('kwargs_fig', kw)
     
@@ -1042,7 +1230,7 @@ def show_summed2(d, **k):
 #     plot_letter(axs[0], 'S', 0.1, 1.1)
     axs[0].text(0.1, 
                 1.38,
-                'M=Model', 
+                k.get('label_model','M=Model'), 
 #                 fontsize=24,
                 transform=axs[0].transAxes,
                 va='center', 
@@ -1051,7 +1239,7 @@ def show_summed2(d, **k):
                 rotation=0)  
     axs[0].text(0.1, 
                 1.15,
-                'E=Experiment, Mallet et al 2008', 
+                k.get('label_exp','E=Experiment, Mallet et al 2008'), 
 #                 fontsize=24,
                 transform=axs[0].transAxes,
                 va='center', 
@@ -1078,10 +1266,196 @@ def show_summed2(d, **k):
 #                 ha='center',
             rotation=270)  
     
-        
+         
     
     return fig
 
+def show_isi(d, **k):
+#     import toolbox.plot_settings as ps  
+    scale=1
+    kw={'n_rows':8, 
+        'n_cols':9, 
+        'w':72/2.54*11.6*scale, 
+        'h':175*scale, 
+        'fontsize':7*scale,
+        'frame_hight_y':0.5,
+        'frame_hight_x':0.7*scale,
+        'title_fontsize':7*scale,
+        'font_size':7*scale,
+        'text_fontsize':7*scale,
+        'linewidth':1.,
+        'gs_builder':gs_builder_isis}
+#     kwargs_fig=kwargs.get('kwargs_fig', kw)
+    
+    fig, axs=ps.get_figure2(**kw)
+    
+    models=['GA', 'GI', 'ST']
+        
+    n_bin=100
+    bin_max=200.
+    bin_extent=bin_max/n_bin
+    i=0
+
+    for model in  models:
+        for net in ['Net_0', 'Net_1']:
+            H=[]
+            data=d[net][model]['spike_statistic'].isi['raw']
+            CV=d[net][model]['spike_statistic'].cv_isi['mean']
+            cv_isi_raw=d[net][model]['spike_statistic'].cv_isi['raw']
+            rates=numpy.mean(d[net][model]['firing_rate'].y_raw, axis=1)            
+            
+            for a in data:
+                bins=numpy.linspace(0, bin_max,n_bin+1)
+                h,_=numpy.histogram(a, bins)
+                H.append(h)
+                
+            H=numpy.array(H)
+            H=H.transpose()
+            stepx=1
+            stepy=1
+            starty=bin_extent/2.
+            startx=0
+            stopx=len(data)
+            stopy=bin_max-bin_extent/2.
+            maxy=n_bin
+            maxx=len(data)
+            
+            posy=numpy.linspace(starty,stopy, n_bin)
+#             posx=numpy.linspace(0.5,maxx-0.5, maxx)
+            axs[i+1].barh(posy, numpy.mean(H,axis=1)[::-1], 
+                        align='center', 
+                        color='0.5',
+                        edgecolor='0.5'
+                        )
+#             axs[1].plot([1,1], [0,stopy], 'k', linestyle='--')
+            axs[i+1].my_remove_axis(xaxis=False, yaxis=True)
+            axs[i+1].my_set_no_ticks(xticks=2)
+            x1,y1=numpy.meshgrid(numpy.linspace(startx, stopx, maxx+1),
+                                numpy.linspace(starty, stopy, maxy+1))
+#                                     stopy-numpy.linspace(stopy, starty, maxy+1),)
+            
+            ax=axs[i+2]
+            
+            nb=10
+            hg,_=numpy.histogram(cv_isi_raw, numpy.linspace(0.,1.,nb+1))
+            pos=numpy.linspace(0.025, 0.975, nb)
+            axs[i+2].my_remove_axis(xaxis=False, yaxis=True)
+            ax.bar(pos, hg, 
+                        align='center', 
+                        color='0.5',
+                        edgecolor='0.5',
+                        width=0.08
+                        )
+#             pylab.subplot(121).bar(pos, hg, width=0.08)
+#             pylab.subplot(122).plot(pos, hg)
+#             pylab.show()
+            ax.set_title(sum(hg))
+            ax.set_xlim(0,1)
+            axs[i+2].my_set_no_ticks(xticks=2)
+#             ax.twinx()
+
+
+            ax=axs[i+3]
+            
+            nb=10
+            hg,_=numpy.histogram(rates, numpy.linspace(0.,50.,nb+1))
+            pos=numpy.linspace(0.0, 50, nb)
+            axs[i+2].my_remove_axis(xaxis=False, yaxis=True)
+            ax.bar(pos, hg, 
+                        align='center', 
+                        color='0.5',
+                        edgecolor='0.5',
+#                         width=0.08
+                        )
+#             pylab.subplot(121).bar(pos, hg, width=0.08)
+#             pylab.subplot(122).plot(pos, hg)
+#             pylab.show()
+            ax.set_title(sum(hg))
+            ax.set_xlim(0,50)
+            axs[i+3].my_set_no_ticks(xticks=2)
+
+            im = axs[i].pcolor(x1, y1, H, cmap='jet', 
+#                                 vmin=_vmin, vmax=_vmax
+                               )
+            axs[i].invert_yaxis()
+            axs[i].set_title(model+' CV:'+str(CV)[0:5])
+            axs[i].my_set_no_ticks(xticks=4, yticks=3)
+            axs[i].set_ylabel('Time (ms)')
+            if i in [8,10]:
+                axs[i].set_xlabel('Neuron id')
+         
+            i+=4
+        
+    return fig
+
+def show_correlation(d, **k):
+#     import toolbox.plot_settings as ps  
+    scale=1
+    kw={'n_rows':17, 
+        'n_cols':9, 
+        'w':72/2.54*17.6*scale, 
+        'h':200*scale, 
+        'fontsize':7*scale,
+        'frame_hight_y':0.5,
+        'frame_hight_x':0.7*scale,
+        'title_fontsize':7*scale,
+        'font_size':7*scale,
+        'text_fontsize':7*scale,
+        'linewidth':1.,
+        'gs_builder':gs_builder_correlation}
+#     kwargs_fig=kwargs.get('kwargs_fig', kw)
+    
+    fig, axs=ps.get_figure2(**kw)
+    
+    models=[['GA','GA'],['GI','GI'],['GA','GI'],
+            
+            ['GA','ST'],['GI','ST'],['ST','ST']
+            ]
+        
+    n_bin=100
+    bin_max=200.
+    bin_extent=bin_max/n_bin
+    i=0
+    win=40
+    for model in  models:
+        m0, m1=model
+        for net in ['Net_0', 'Net_1']:
+
+
+            s0=d[net][m0]['firing_rate'].y_raw[0:2]   
+            s1=d[net][m1]['firing_rate'].y_raw[0:2] 
+            v=[]
+            for a in s0:
+                for b in s1:
+#                     a=a[0:-1]
+#                     b=b[0:-1]
+                    n=len(a)
+                    out=numpy.correlate(a, b, 'full')
+                    out1=numpy.correlate(b, a, 'full')
+                    out=(out+out1)/2
+                    out[n-1]=0
+                    out=out[n-1-win:n-1+win]
+#                     out=(out+out[::-1])/2
+                    norm=numpy.array(list(numpy.arange(win+1,1.,-1)/n)+list(numpy.arange(2.,win+2,1)/n))
+                    axs[i].plot(numpy.linspace(-win,win,len(out))/256., out/n/((numpy.mean(a)+numpy.mean(b))/2))
+#                     axs[i].set_title(str((numpy.mean(a)+numpy.mean(b))/2)[0:4])
+                    axs[i].set_title(m0+'-'+m1)
+                    axs[i].my_set_no_ticks(xticks=3)
+                    axs[i].set_ylim([0,50])
+                    if i%4!=0:
+                        axs[i].my_remove_axis(xaxis=False, yaxis=True)
+
+                    if i<40:
+                        axs[i].my_remove_axis(xaxis=True)
+                    if i>=40:
+                        axs[i].set_xlabel('Time (s)')
+#                     if i==0:
+                    i+=1                        
+    axs[0].my_remove_axis(xaxis=True)   
+#     pylab.show()
+    return fig
+            
+  
 class Setup(object):
 
     def __init__(self, period, local_num_threads, **kwargs):
@@ -1113,9 +1487,13 @@ class Setup(object):
     
       
     def coherence(self):
-        d = {'fs':self.fs, 'NFFT':128 * 8, 
-            'noverlap':int(128 * 8)/2, 
-            'sample':100.}
+        d = {'fs':self.fs, 'NFFT':128 * 2, 
+            'noverlap':int(128 * 2)/2, 
+            'sample':400.,
+            'min_signal_mean':0.0, #minimum mean a signal is alowed to have, toavoid calculating coherence for 0 signals
+            'exclude_equal_signals':True, #do not compute for equal signals
+            
+            }
         return d
     
 
@@ -1138,14 +1516,17 @@ class Setup(object):
     def phases_diff_with_cohere(self):
         d={
             'fs':self.fs,#100.0, 
-            'NFFT':128*8 , 
-            'noverlap':128*8/2, 
-            'sample':30.,
-            
-            'lowcut':0.5, 
-            'highcut':2., 
+            'NFFT':128*2 , 
+            'noverlap':128*2/2, 
+            'sample':400., #products of the two populations size
+            'lowcut':15, 
+            'highcut':25., 
             'order':3, 
 
+#             't_start':1000.0,
+
+            'min_signal_mean':0.0, #minimum mean a signal is alowed to have, toavoid calculating coherence for 0 signals
+            'exclude_equal_signals':True, #do not compute for equal signals             
              #Skip convolving when calculating phase shif
 
 #              'bin_extent':self.fs/2,#500., 
@@ -1192,7 +1573,7 @@ class Setup(object):
     
     def plot_summed2(self):
         d={
-           'xlim_cohere':[0, 5],
+           'xlim_cohere':[0, 20],
            'all':True,
            'p_95':False,
            'leave_out':['control_fr', 'control_cv'],
@@ -1202,7 +1583,7 @@ class Setup(object):
         return d
     
     def plot_summed_STN(self):
-        d={'xlim_cohere':[0, 10],
+        d={'xlim_cohere':[0, 20],
            'all':True,
            'p_95':False,
            'leave_out':['control_fr', 'control_cv'],
@@ -1275,7 +1656,10 @@ def simulate(builder=Builder,
     for p in sorted(perturbation_list.list):
         print p
 #     print nets['Net_0'].par['nest']['M1_M1_gaba']['weight']
+# print nets['Net_1'].par['nest']['GA_FS_gaba']['weight']
 # pp(nets['Net_0'].par['node']['EI']['spike_setup'])
+# pp(nets['Net_1'].par['node']['EA']['rate']
+#pp(nets['Net_0'].par['node']['EI']['rate'])
 
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
@@ -1290,7 +1674,7 @@ def simulate(builder=Builder,
 #     sd = get_storage(file_name, info)
 
     # Adding nets no file name
-    sd_list=get_storage_list(nets, file_name, info)
+    sd_list=get_storage_list(nets.keys(), file_name, info)
     
     d = {}
         
@@ -1406,13 +1790,27 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
                 ax.my_remove_axis(xaxis=True)
                 ax.set_xlabel('')
         y_mean=[]
+        
+        for net in ['Net_0', 'Net_1']:
+            st = d[net]['GA']['spike_statistic']
+            y_mean.append(st.rates['mean'])
+        axs[4].text(0.5,0.8,'C:{:.2f} Hz L:{:.2f} Hz'.format(*y_mean), 
+                    transform=axs[4].transAxes,
+                    verticalalignment='center', 
+                    horizontalalignment='center',
+#                     color='grey'
+                    )
+
+        y_mean=[]
         for net in ['Net_0', 'Net_1']:
             st = d[net]['ST']['spike_statistic']
             y_mean.append(st.rates['mean'])
-        axs[6].text(0.5,0.1,'C:{:.2f} Hz L:{:.2f} Hz'.format(*y_mean), 
+        axs[5].text(0.5,0.8,'C:{:.2f} Hz L:{:.2f} Hz'.format(*y_mean), 
                     transform=axs[5].transAxes,
                     verticalalignment='center', 
-                    horizontalalignment='center')
+                    horizontalalignment='center',
+#                     color='grey'
+                    )
         
 #         figs.append(show_hr(d, models))
 #         figs.append(show_psd(d, models=models))
@@ -1436,6 +1834,8 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 #             ax.my_set_no_ticks(yticks=3)
         
         figs.append(show_signals(d, **d_plot_signals))
+        figs.append(show_isi(d, **{}))
+        figs.append(show_correlation(d, **{}))
         
         sd_figs.save_figs(figs, format='png', dpi=200)
         sd_figs.save_figs(figs[1:], format='svg', in_folder='svg')
@@ -1457,7 +1857,7 @@ def main(*args, **kwargs):
 def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory'):
     from toolbox.network.default_params import Perturbation_list as pl
     from simulate import  get_path_rate_runs, pert_add_oscillations
-    import oscillation_perturbations4 as op
+    import oscillation_perturbations32_slow as op
 
     local_num_threads=12
     sim_time=10000.0
@@ -1470,8 +1870,8 @@ def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory
             'freqs':[1.5],
             'freq_oscillation':20.,
             'local_num_threads':local_num_threads,
-            'path_rate_runs':get_path_rate_runs('simulate_inhibition_ZZZ4/'),
-            'perturbation_list':[op.get()[7]],
+            'path_rate_runs':get_path_rate_runs('simulate_inhibition_ZZZ32_slow/'),
+            'perturbation_list':[op.get()[0]],
             'sim_time':sim_time,
             'size':size,
             }
@@ -1506,7 +1906,7 @@ class TetsOscillationRun(unittest.TestCase):
         pass
     
     def test_run(self):
-        v=run_simulation(from_disk=2,local_num_threads=12)
+        v=run_simulation(from_disk=1,local_num_threads=12)
         d, file_name_figs, from_disks, models, models_coher, setup=v        
 #         pp(d)
         dd={}
@@ -1544,7 +1944,7 @@ class TetsOscillationRun(unittest.TestCase):
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
         
-        v=run_simulation(from_disk=2, 
+        v=run_simulation(from_disk=1, 
                          local_num_threads=12)
         d, file_name_figs, from_disks, models, models_coher, setup=v
         
@@ -1640,6 +2040,28 @@ class TestOcsillation(unittest.TestCase):
                            'GI_ST', 'GA_ST']}
         show_summed_STN(self.d, **d)
         pylab.show()
+
+
+    def testShowISI(self):
+#         d={'xlim_cohere':[0, 10],
+#            'leave_out':['control_fr', 'control_cv'],
+#            'statistics_mode':'slow_wave',
+#            'models_pdwc': ['ST_ST', 'GP_ST', 
+#                            'GI_ST', 'GA_ST']}
+        d={}
+        show_isi(self.d, **d)
+        pylab.show()
+
+    def testShowCorr(self):
+#         d={'xlim_cohere':[0, 10],
+#            'leave_out':['control_fr', 'control_cv'],
+#            'statistics_mode':'slow_wave',
+#            'models_pdwc': ['ST_ST', 'GP_ST', 
+#                            'GI_ST', 'GA_ST']}
+        d={}
+        show_correlation(self.d, **d)
+        pylab.show()
+
 
     def test_create_figs(self):
         create_figs(self.file_name_figs, 
@@ -1743,6 +2165,8 @@ if __name__ == '__main__':
 #                         'testShowSummed',
 #                         'testShowSummed2',
 #                         'testShowSummed_STN',  
+#                           'testShowISI',
+#                          'testShowCorr',
 #                         'test_show_fr',
 #                         'test_show_coherence',
 #                         'test_show_phase_diff',

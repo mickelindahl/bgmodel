@@ -52,7 +52,7 @@ kwargs={
         'cores_superm':2,
         
         'debug':False,
-        'do_runs':range(31, num_runs), #A run for each perturbation
+        'do_runs':range(31),#num_runs), #A run for each perturbation
         'do_obj':False,
         
         'external_input_mod':['EI','EA'],

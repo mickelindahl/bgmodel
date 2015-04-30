@@ -37,7 +37,7 @@ kwargs={
         'from_disk':0,
         
         'debug':False,
-        'do_runs':range(NUM_RUNS), #A run for each perturbation
+        'do_runs':range(32, NUM_RUNS), #A run for each perturbation
         'do_obj':False,
         
         'i0':FROM_DISK_0,

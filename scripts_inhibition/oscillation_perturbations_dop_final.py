@@ -103,15 +103,27 @@ def get_change_to(flag, E_rev='low'):
         for conn in ['M1_M1_gaba', 'M1_M2_gaba','M2_M1_gaba','M2_M2_gaba']:
             misc.dict_update(d,{'conn':{conn:{'beta_fan_in': x}}})         
     
-    return d
+    #15 *
+    if flag=='M2_GI':
+        d={'nest':{'GI':{'beta_I_GABAA_1':x,
+                         }}}
 
+
+
+    #16 *
+    if flag=='FS':
+        d={'nest':{'FS':{'beta_E_L':x,
+                         }}}
+    
+    return d
+    
 def get():
     
     l=[]
     
     d={}
     for name in ['M1', 'CTX_M1', 'CTX_M2', 'MS_MS', 'FS_FS', 
-                 'GP_FS', 'FS_M2']:
+                 'GP_FS', 'FS_M2', 'M2_GI', 'FS']:
 
         d=misc.dict_update(d, get_change_to(name))
         
@@ -122,21 +134,23 @@ def get():
     for name in ['CTX_ST', 'GP_ST', 'GP', 'ST_GP', 'GP_GP', 'SN', 'M1_SN']:
         d=misc.dict_update(d, get_change_to(name))
         
-    l+=[pl(d,'*', **{'name':'no_ch_dop-GP-ST-SN'})]
+    l+=[pl(d,'*', **{'name':'no_ch_dop-GP_ST_SN'})]
     
     
     d={}
     for name in ['M1', 'CTX_M1', 'CTX_M2', 'MS_MS', 'FS_FS', 
                  'GP_FS', 'FS_M2', 'CTX_ST', 'GP_ST', 'GP',
-                 'ST_GP', 'GP_GP', 'SN', 'M1_SN']:
+                 'ST_GP', 'GP_GP', 'SN', 'M1_SN',
+                     'M2_GI', 'FS']:
         d=misc.dict_update(d, get_change_to(name))
         pp(d)
         
     l+=[pl(d,'*', **{'name':'no_ch_dop-all'})]
 
     for s in ['M1', 'CTX_M1', 'CTX_M2', 'MS_MS', 'FS_FS', 
-                     'GP_FS', 'FS_M2', 'CTX_ST', 'GP_ST', 'GP',
-                     'ST_GP', 'GP_GP', 'SN', 'M1_SN']:
+              'GP_FS', 'FS_M2', 'CTX_ST', 'GP_ST', 'GP',
+              'ST_GP', 'GP_GP', 'SN', 'M1_SN', 'M2_GI',
+              'FS']:
         d={}
         for name in [s]:
             d=misc.dict_update(d, get_change_to(name))
@@ -150,5 +164,6 @@ def get():
  
  
 if __name__=='__main__':
-    get()
- 
+    l=get()
+    for i, e in enumerate(l):
+        print i,e

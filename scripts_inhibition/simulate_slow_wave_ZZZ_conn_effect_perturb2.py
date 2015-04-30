@@ -21,7 +21,7 @@ from toolbox.parallel_excecution import loop
 
 import sys
 import simulate_slow_wave as module
-import oscillation_perturbations13 as op
+import oscillation_perturbations34_slow_sw as op
 import oscillation_perturbations_conns as op_conns
 import pprint
 pp=pprint.pprint
@@ -32,11 +32,11 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 #Total number of runs 18*2*2+18
 NUM_NETS=len(op_conns.get())*2
-path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ13/')
+path_rate_runs=get_path_rate_runs('simulate_inhibition_ZZZ34_slow_sw/')
 
 kwargs={
         
-        'amp_base':[1.],
+        'amp_base':[.95],
         
         'Builder':Builder,
         
@@ -48,7 +48,7 @@ kwargs={
         'do_obj':False,
         
         'file_name':FILE_NAME,
-        'freqs':[0.8],
+        'freqs':[0.7],
         'freq_oscillation':1.,
         'from_disk_0':FROM_DISK_0,
         
@@ -75,7 +75,7 @@ kwargs={
         'path_rate_runs':path_rate_runs,
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
-        'perturbation_list':op.get(),
+        'perturbation_list':[op.get()[7]],
         
         'sim_time':40000.0,
         'size':20000.0 ,
