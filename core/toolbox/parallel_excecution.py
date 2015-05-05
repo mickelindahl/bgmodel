@@ -11,13 +11,11 @@ Created on Mar 19, 2014
 ##################
 
 
-import my_socket
-import monkey_patch as mp
+from toolbox import my_socket
+from toolbox import monkey_patch as mp
 import psycopg2
 mp.patch_for_milner()
 
-import numpy
-# print '1'
 import os
 import sys
 import subprocess
@@ -26,24 +24,13 @@ import pprint
 pp=pprint.pprint
 import Queue
 
-from itertools import izip
-from toolbox import misc
 from toolbox import data_to_disk 
-from toolbox.network import default_params
+from toolbox import directories as dr
 from toolbox import job_handler
 from toolbox import postgresql as psql
  
 from toolbox.data_to_disk import make_bash_script
 from toolbox.parallelization import comm
-
-# if my_signal.determine_host() in ['milner', 'milner_login']:
-#     HOME='/cfs/milner/scratch/l/lindahlm'
-# else: 
-#     HOME = expanduser("~")
-
-HOME=default_params.HOME
-print HOME
-sys.path.append(HOME+'/tmp/') #for testing
 
 
 def chunk(l, n):
@@ -54,7 +41,8 @@ def chunk(l, n):
 
 def do(*args, **kwargs):
     
-    path_out, path_err, args_call=args
+    path_out, path_err=args[0:2]
+    args_call=args[2:]
         
     path='/'.join(path_out.split('/')[0:-1])
     if not os.path.isdir(path):
@@ -66,6 +54,7 @@ def do(*args, **kwargs):
     if kwargs.get('debug', False):
         p=subprocess.Popen(args_call, stderr=subprocess.STDOUT)
     else:
+        print args_call
         p=subprocess.Popen(args_call,
                             stdout=f_out,
                             stderr=f_err,
@@ -84,11 +73,11 @@ def do(*args, **kwargs):
 #     print err
 
     return p
-  
-def do_milner():
-    pass
-    
-    
+#   
+# def do_milner():
+#     pass
+#     
+#     
 def get_loop_index(n, l=[1,1,1]):
     out=[]
     for m in l:
@@ -106,76 +95,82 @@ def generate_args(*args):
 
 
 def epoch(*args):
-    obj, kwargs=args
+    obj, kw=args
     
-    if not kwargs.get('active'):
-        return False
+#     if not kw.get('active'):
+#         return False
          
-
-    host=my_socket.determine_computer()
-    job_id=''
-           
-    path_code=kwargs.get('path_code')
-    path_results=kwargs.get('path_results')
+    path_results=kw.get('path_results')
+#     process_type=kw.get('process_type')
     
     if not os.path.isdir(path_results):
-        data_to_disk.mkdir(path_results)
+        data_to_disk.mkdir(path_results)   
+        
+         
+    ja=kw.get('job_admin')(**kw)
+    wp=kw.get('wrapper_process')
     
-    num_mpi_task=kwargs.get('num-mpi-task', 2)     
-    index=kwargs['index']
+#     gen_subp_job_script=kwargs.get('subp_job_script', gen_subp_job_script_milner)
+#     get_subp_job_id=kwargs.get('get_subp_job_id', get_subp_job_id)
+#     save_obj=kwargs.get('save_obj', save_obj)
     
-    path_out=path_results+"std/subp/out{0:0>4}".format(index)
-    path_err=path_results+'std/subp/err{0:0>4}'.format(index)
-    path_sbatch_out=path_results+"std/sbatch/out{0:0>4}".format(index)
-    path_sbatch_err=path_results+'std/sbatch/err{0:0>4}'.format(index)
-    path_tee_out=path_results+'std/tee/out{0:0>4}'.format(index)
-    path_params=path_results+'params/run{0:0>4}.pkl'.format(index)
-    path_script=path_code+'/core/toolbox/parallel_excecution/simulation.py'
-    path_bash0=path_code+'/core/toolbox/parallel_excecution/jobb0.sh'
-    path_bash=path_results+'/jobbs/jobb_{0:0>4}.sh'.format(index)
     
-    data_to_disk.mkdir('/'.join(path_sbatch_out.split('/')[0:-1]))
-    data_to_disk.mkdir('/'.join(path_tee_out.split('/')[0:-1]))
-
-    save_params(path_params, path_script, obj)
+#     host=my_socket.determine_computer()
+    
+           
+#     path_code=kwargs.get('path_code')
 
     
-    if host=='milner':
+         
+#     index=kwargs['index']
+    
+    
+#     data_to_disk.mkdir('/'.join(path_sbatch_out.split('/')[0:-1]))
+#     data_to_disk.mkdir('/'.join(path_tee_out.split('/')[0:-1]))
 
-        o=generate_milner_bash_script(path_sbatch_err,
-                                      path_sbatch_out,
-                                      path_tee_out,
-                                      path_params,
-                                      path_script,
-                                      path_bash0,
-                                      path_bash,
-                                       **kwargs )
-        args_bash_call=o
-        p=do(path_out, path_err, args_bash_call, **kwargs)
+#     save_obj(path_params, path_script, obj)
+    ja.save_obj(obj)
+    ja.gen_job_script()
+    args=ja.get_subp_args()
+    
+    p=do(*args, **kw)
+    ja.process=p   
+    
+    job_id=ja.get_job_id()
+    
+#     if process_type=='mpi':
+#         subp_job_script_milner(**kwargs)
+#         o=generate_milner_bash_script(path_sbatch_err,
+#                                       path_sbatch_out,
+#                                       path_tee_out,
+#                                       path_params,
+#                                       path_script,
+#                                       path_bash0,
+#                                       path_bash,
+#                                        **kwargs )
+#     args=cb.gen_subp_job_script(**kwargs)
         
-        time.sleep(1)
-        text=data_to_disk.text_load(path_out)
+#     p=do(*args, **kwargs)
         
-        i=0
-        while not text and i<10:
-            time.sleep(1) # wait for file to be populated
-            text=data_to_disk.text_load(path_out)
-            i+=1
-            
-        job_id=int(text.split(' ')[-1])
-        
-    if host in ['supermicro', 'mikaellaptop']:
-        if num_mpi_task==1:
-            args_call=['python', path_script, path_params]
-        else:
-            args_call=['mpirun', '-np', str(num_mpi_task), 'python', 
-                       path_script, path_params,
-                       '2>&1','|', 'tee', path_tee_out]
-            
-        p=do(path_out, path_err, args_call,  **kwargs)
+# 
+#         
+#     if host in ['supermicro', 'mikaellaptop', 'thalamus']:
+#         num_mpi_task=kwargs.get('num-mpi-task')
+#         if num_mpi_task==1:
+#             args_call=['python', path_script, path_params]
+#         else:
+#             args_call=['mpirun', '-np', str(num_mpi_task), 'python', 
+#                        path_script, path_params,
+#                        '2>&1','|', 'tee', path_tee_out]
+#             
+#         p=do(path_out, path_err, args_call,  **kwargs)
         
     script_name=obj.get_name()
-    return p, job_id, script_name
+    
+    p=wp(p, job_id, script_name)
+    return p
+
+
 
 
 def save_to_database(path_results):
@@ -207,21 +202,26 @@ def save_to_database(path_results):
 def loop(*args, **kwargs):
     n, m_list, args_list,  kwargs_list=args 
     
-    path_results=kwargs_list[0].get('path_results')
+
     db_save=kwargs_list[0].get('database_save', False)
+    path_results=kwargs_list[0].get('path_results')
+    process_type=kwargs_list[0].get('process_type')
+    read_subp_jobs=kwargs_list[0].get('read_subp_jobs')
+    
     log_file_name=path_results+'/std/job_handler_log'
     data_to_disk.mkdir(path_results+'/std/')
     
 
     h=job_handler.Handler(loop_time=5,  
                           log_to_file=True,
-                          log_file_name=log_file_name)
+                          log_file_name=log_file_name,
+                          process_type=process_type,
+                          read_subp_jobs=read_subp_jobs)
     
     for m in m_list:
         
         q=Queue.Queue()
 
-        
         for _ in range(m): 
             if not kwargs_list:
                 continue
@@ -239,78 +239,287 @@ def loop(*args, **kwargs):
         save_to_database(path_results)
             
         
-        
-        
-         
-         
-         
+class Job_admin_abstract(object):
+    '''
+    Callback class needed to be provided when running epoch
+    '''
     
+
+    def __init__(self,**kw):
         
-def save_params(path_params, path_script, obj):
-    data_to_disk.pickle_save([obj, 
-                              path_script.split('/')[-1]], 
-                              path_params)
+        self.index=kw['index']
+        self.path_results=kw.get('path_results')
+        self.p_par=self.path_results+'params/run{0:0>4}.pkl'.format(self.index)
+        self.p_script=dr.HOME_CODE+'/core/toolbox/parallel_excecution/simulation.py'
+        
+        for key, value in kw.items():
+            self.__dict__[key] = value
 
 
-def generate_milner_bash_script(*args, **kwargs):
     
-    p_mil_err, p_mil_out, p_tee_out, p_par, p_script, p_bash0, p_bash=args
-    local_threads=10
-    _kwargs={'home':default_params.HOME,
-             'hours':'00',
-             'deptj':1,
-             'job_name':'dummy_job',
-             'cores_hosting_OpenMP_threads':40/local_threads,
-             'local_num_threads':local_threads, 
-             'memory_per_node':int(819*local_threads),
-             'num-mpi-task':40/local_threads,
-             'num-of-nodes':40/40,
-             'num-mpi-tasks-per-node':40/local_threads,
-             'num-threads-per-mpi-process':local_threads, 
-             'minutes':'10',
-             'path_sbatch_err':p_mil_err,
-             'path_sbatch_out':p_mil_out,
-             'path_tee_out':p_tee_out,
-             'path_params':p_par,
-             'path_script':p_script,
-             'seconds':'00',
-             
-        }
-    _kwargs.update(kwargs) 
+    def get(self,key):
+        if key in self.__dict__.keys():
+            return self.__dict__[key]
+        else: return None
+    
+    def gen_job_script(self):   
+        '''
+        Creating a bash file if necessary. 
+        ''' 
+        pass
      
-    host=my_socket.determine_computer()
-    if host=='milner':
-#             call='aprun -n 2 -N 1 -d 20 python {SCRIPT} 2>&1 | tee delme_simulation'
-        call=('aprun '
-              +'-n {num-mpi-task} '
-              +'-N {num-mpi-tasks-per-node} '
-              +'-d {num-threads-per-mpi-process} '
-              +'-m {memory_per_node} '
-              +'python {path_script} {path_params} '
-              +'2>&1 | tee {path_tee_out}')
- 
-#         call=('aprun -n {n_mpi_processes} -N {n_tasks_per_node} '
-#               +'-d {depth} '
-#               +'-m {memory_per_node} python {path_script}'
-#               +' {path_params} 2>&1 | tee {path_tee_out}')
-        _kwargs['on_milner']=1
-        args_bash_call=['sbatch', p_bash]
+    def get_subp_args(self):
+        '''
+        Create arguments for subprocess call
+        '''
+        raise NotImplementedError 
         
-    else:
-        call=('mpirun -np 20 python {path_script}'
-              +' {path_params} 2>&1 | tee {path_tee_out}')
-        _kwargs['on_milner']=0
-        args_bash_call=[p_bash]
+          
+    def get_job_id(self):
+        '''
+        Function that returns a identifier for the process that were started.
+        Can be subprocess id or jobb id form supercomputer jobb list.
+        Only neccesary for print outs by jobb handler. Can be empty string.
+        '''
+        return '' 
+
+    def save_obj(self, obj):
+        '''
+        Function that save object. Can then be loaded by the simuation
+        script. Way of passing parameters in to the simulation script
+        '''
+
+       
+        data_to_disk.pickle_save([obj, 
+                                  self.p_script.split('/')[-1]], 
+                                  self.p_par)
+
+class Wrapper_process_sbatch():
+    
+    def __init__(self, p, *args):        
+        self.p=p
+        self.job_id=args[0]
+        self.script_name=args[1]
+             
+    def __repr__(self):
+        return self.script_name+'_id_'+str(self.job_id)
+        
+    def poll(self):
+        '''
+        should return None if process is not finnished
+        '''
+        jobs=job_handler.read_subp_jobs_milner()()
+        if  self.job_id in jobs:
+            return None
+        else:
+            return 1
+    
+class Wrapper_process_batch():
+    
+    def __init__(self, p, *args):        
+        self.p=p
+        self.job_id=args[0]
+        self.script_name=args[1]
+             
+    def __repr__(self):
+        return self.script_name+'_id_'+str(self.job_id)
+        
+    def poll(self):
+        '''
+        should return None if process is not finnished
+        '''
+        return self.p.poll()
+               
+class Job_admin_sbatch(Job_admin_abstract):
+    def __init__(self,**kw):
+        
+        index=kw.get('index') #simulation index
+#         path_code=kw.get('path_code')
+        pr=kw.get('path_results')
+    
+        self.local_threads=10
+    
+        self.p_subp_out=pr+"/std/subp/out{0:0>4}".format(index)
+        self.p_subp_err=pr+'/std/subp/err{0:0>4}'.format(index)
+        self.p_sbatch_out=pr+"/std/sbatch/out{0:0>4}".format(index)
+        self.p_sbatch_err=pr+'/std/sbatch/err{0:0>4}'.format(index)
+        self.p_tee_out=pr+'/std/tee/out{0:0>4}'.format(index)
+        self.p_par=pr+'/params/run{0:0>4}.pkl'.format(index)
+        self.p_script=dr.HOME_CODE+'/core/toolbox/parallel_excecution/simulation.py'
+        self.p_bash0=dr.HOME_CODE+'/core/toolbox/parallel_excecution/jobb0_milner.sh'
+        self.p_bash=pr+'/jobbs/jobb_{0:0>4}.sh'.format(index)
+        
+        data_to_disk.mkdir('/'.join(self.p_subp_out.split('/')[0:-1]))
+        data_to_disk.mkdir('/'.join(self.p_sbatch_out.split('/')[0:-1]))
+        data_to_disk.mkdir('/'.join(self.p_tee_out.split('/')[0:-1]))
+                       
+        for key, value in kw.items():
+            self.__dict__[key] = value
             
     
-    call=call.format(**_kwargs)
-     
-    _kwargs['call']=call
     
-    make_bash_script(p_bash0, p_bash, **_kwargs)
-    
-    return args_bash_call
+    def gen_job_script(self, **kw):
+        '''
+        Creating a bash file, out and errr for subprocess call as well
+        as the parameters for the subprocesses call. 
         
+        Returns:
+        path out
+        path err
+        *subp call, comma seperate inputs (se code) 
+        '''
+#         home=kw.get('home')
+#         index=kw.get('index') #simulation index
+# #         path_code=kw.get('path_code')
+#         path_results=kw.get('path_results')
+    
+#         p_subp_out=path_results+"std/subp/out{0:0>4}".format(index)
+#         p_subp_err=path_results+'std/subp/err{0:0>4}'.format(index)
+#         p_sbatch_out=path_results+"std/sbatch/out{0:0>4}".format(index)
+#         p_sbatch_err=path_results+'std/sbatch/err{0:0>4}'.format(index)
+#         p_tee_out=path_results+'std/tee/out{0:0>4}'.format(index)
+#         p_par=path_results+'params/run{0:0>4}.pkl'.format(index)
+#         p_script=dr.HOME_CODE+'/core/toolbox/parallel_excecution/simulation.py'
+#         p_bash0=dr.HOME_CODE+'/core/toolbox/parallel_excecution/jobb0_milner.sh'
+#         p_bash=path_results+'/jobbs/jobb_{0:0>4}.sh'.format(index)
+    
+
+    
+        
+        kw_bash={'home':dr.HOME,
+                 'hours':'00',
+                 'deptj':1,
+                 'job_name':'dummy_job',
+                 'cores_hosting_OpenMP_threads':40/self.local_threads,
+                 'local_num_threads':self.local_threads, 
+                 'memory_per_node':int(819*self.local_threads),
+                 'num-mpi-task':40/self.local_threads,
+                 'num-of-nodes':40/40,
+                 'num-mpi-tasks-per-node':40/self.local_threads,
+                 'num-threads-per-mpi-process':self.local_threads, 
+                 'minutes':'10',
+                 'path_sbatch_err':self.p_sbatch_err,
+                 'path_sbatch_out':self.p_sbatch_out,
+                 'path_tee_out':self.p_tee_out,
+                 'path_params':self.p_par,
+                 'path_script':self.p_script,
+                 'seconds':'00',
+                 
+            }
+        kw_bash.update(kw) 
+        make_bash_script(self.p_bash0, self.p_bash, **kw_bash) #Creates the bash file 
+        
+    def get_subp_args(self):
+        args=[self.p_subp_out, self.p_subp_err,'sbatch', self.p_bash]
+        
+        return args
+     
+    def get_job_id(self, **kw):
+        '''
+        Function that returns a identifier for the process that were started.
+        Can be subprocess id or jobb id form supercomputer jobb list.
+        Only neccesary for print outs by jobb handler. Can be empty string.
+        '''
+        time.sleep(1)
+        text=data_to_disk.text_load(self.p_subp_out)
+        
+        i=0
+        while not text and i<10:
+            time.sleep(1) # wait for file to be populated
+            text=data_to_disk.text_load(self.p_subp_out)
+            i+=1
+            
+        job_id=int(text.split(' ')[-1])
+        
+        return job_id    
+
+ 
+class Job_admin_batch(Job_admin_abstract): 
+    
+    def __init__(self,**kw):
+        
+        index=kw.get('index') #simulation index
+        pr=kw.get('path_results')
+ 
+        self.p_subp_out=pr+"/std/subp/out{0:0>4}".format(index)
+        self.p_subp_err=pr+'/std/subp/err{0:0>4}'.format(index)
+        self.p_tee_out=pr+'/std/tee/out{0:0>4}'.format(index)
+        self.p_par=pr+'/params/run{0:0>4}.pkl'.format(index)
+        self.p_script=dr.HOME_CODE+'/core/toolbox/parallel_excecution/simulation.py'
+        self.p_bash0=dr.HOME_CODE+'/core/toolbox/parallel_excecution/jobb0_supermicro.sh'
+        self.p_bash=pr+'/jobbs/jobb_{0:0>4}.sh'.format(index)     
+                
+        data_to_disk.mkdir('/'.join(self.p_subp_out.split('/')[0:-1]))
+        data_to_disk.mkdir('/'.join(self.p_tee_out.split('/')[0:-1]))
+        data_to_disk.mkdir('/'.join(self.p_bash.split('/')[0:-1]))
+            
+        for key, value in kw.items():
+            self.__dict__[key] = value
+    
+    def gen_job_script(self, **kw):
+
+        kw_bash={
+                 'path_tee_out':self.p_tee_out,
+                 'path_params':self.p_par,
+                 'path_script':self.p_script,  
+                 }
+        kw_bash.update(kw) 
+        
+        make_bash_script(self.p_bash0, self.p_bash, **kw_bash)
+    
+    def get_subp_args(self):
+        args=[self.p_subp_out, self.p_subp_err, self.p_bash]
+        
+        return args
+    
+    def get_job_id(self):
+        '''
+        Function that returns a identifier for the process that were started.
+        Can be subprocess id or jobb id form supercomputer jobb list.
+        Only neccesary for print outs by jobb handler. Can be empty string.
+        '''
+        return self.process.pid   
+
+class Job_admin_mpi_python(Job_admin_abstract):
+    
+    def __init__(self, **kw):
+        
+        index=kw.get('index') #simulation index
+#         path_code=kw.get('path_code')
+        pr=kw.get('path_results')
+        self.num_mpi_task=kw.get('num-mpi-task')
+#         self.local_threads=10
+    
+        self.p_subp_out=pr+"/std/subp/out{0:0>4}".format(index)
+        self.p_subp_err=pr+'/std/subp/err{0:0>4}'.format(index)
+        self.p_par=pr+'/params/run{0:0>4}.pkl'.format(index)
+        self.p_script=dr.HOME_CODE+'/core/toolbox/parallel_excecution/simulation.py'     
+
+        data_to_disk.mkdir('/'.join(self.p_subp_out.split('/')[0:-1]))
+     
+        for key, value in kw.items():
+            self.__dict__[key] = value
+
+        
+    def get_subp_args(self):
+
+        if self.num_mpi_task==1:
+            args_call=['python', self.p_script, self.p_par]
+        else:
+            args_call=['mpirun', '-np', str(self.num_mpi_task), 'python', 
+                       self.p_script, self.p_par]
+            
+        args=[self.p_subp_out, self.p_subp_err]+args_call
+        
+        return args
+    
+    def get_job_id(self):
+        '''
+        Function that returns a identifier for the process that were started.
+        Can be subprocess id or jobb id form supercomputer jobb list.
+        Only neccesary for print outs by jobb handler. Can be empty string.
+        '''
+        return self.process.pid         
 
 def fun1(d):
     print 'Works '+str(d)
@@ -336,9 +545,13 @@ class Mockup_class():
         #print '__setstate__ executed'
         self.__dict__ = d 
     
+    def get_name(self):
+        return 'mockup_class'
+    
     def do(self):
         import pickle
         f=open(self.path,'wb')
+        print f
         pickle.dump([1], f, -1)
         f.close()
 
@@ -346,173 +559,114 @@ import unittest
 class TestModuleFuncions(unittest.TestCase):
 
     def setUp(self):
-        self.m=misc.import_module('toolbox.network.default_params')
-
-        host=my_socket.determine_host()
-
-        self.dir=HOME+'/results/unittest/parallel_excecution/'+host
-
-        sys.path.append(HOME+'/tmp/')
+        sys.path.append(dr.HOME+'/tmp/')
         
-        self.threads=2
-        self.path_code=default_params.HOME+'/git/bgmodel/core/toolbox'
-        self.path_bash0=self.path_code+'/parallel_excecution/jobb0.sh'
-        self.path_bash=(self.path_code+'/parallel_excecution/'
-                        +'jobb_unittest_'+host+'.sh')
-        self.path_script=self.path_code+'/parallel_excecution/simulation.py'
-        self.path_params=self.dir+'/params_in.pkl'
-        self.path_tee_out=self.dir+'/tee_mpi_out'
-        self.path_sbatch_out=self.dir+'/sbatch_out'
-        self.path_sbatch_err=self.dir+'/sbatch_err'
-        self.path_subprocess_out=self.dir+'/subprocess_out'
-        self.path_subprocess_err=self.dir+'/subprocess_err'
-        
-        self.path_out_data=self.dir+'/data_out.pkl'
-  
-        self.obj=Mockup_class(self.path_out_data)
-        
-        
-        for path in [self.path_tee_out, self.path_subprocess_out,
-                     self.path_subprocess_err, self.path_bash,
-                     self.path_sbatch_out, self.path_sbatch_err]:
-            if os.path.isdir(path):
+    def clear_paths(self, cb):
+        for key in ['p_tee_out', 'p_subp_out','p_subp_err', 
+                    'p_bash','p_sbatch_out', 'p_sbatch_err']: 
+            if cb.get(key) and os.path.isdir(cb.get(key)):
                 if comm.rank()==0:
-                    os.remove(path)
+                    os.remove(cb.get(key))
 
-                     
-    def test_do_supermicro(self):
-#         run_generate_script(self.path_script)
-        save_params(self.path_params, 
-                        self.path_script, 
-                        self.obj)
-        args_call=['mpirun', 
-                   '-np', 
-                   str(self.threads), 
-                   'python', 
-                   self.path_script, 
-                   self.path_params]
+    def p_out_data(self, host):
+        path=dr.HOME+'/results/unittest/parallel_excecution/'+host
+        data_to_disk.mkdir(path)
         
-        p=do(self.path_subprocess_out, 
-             self.path_subprocess_err,  
-             args_call,**{'debug':True})        
+        return path
+    
+    
+    def create_obj(self, host):
+        return Mockup_class(self.p_out_data(host)+'/data_out.pkl')
+        
+    def create_job_admin(self, job_admin, host):
+        d={'job_admin':Job_admin_batch,
+           'index':0,
+           'num-mpi-task':2,
+           'path_results':self.p_out_data(host),
+           'wrapper_process':Wrapper_process_batch,
+           }
+                 
+        cb=job_admin(**d)
+        self.clear_paths(cb)
+        return cb     
+       
+    def test_do_mpi_python(self):
+        host='mpi_python'
+        cb=self.create_job_admin(Job_admin_mpi_python, host)
+        obj=self.create_obj(host)
+        cb.save_obj(obj)
+        args=cb.get_subp_args()
+        
+        p=do(*args,**{'debug':False})        
         p.wait()
           
-        l=data_to_disk.pickle_load(self.path_out_data)
+        l=data_to_disk.pickle_load(self.p_out_data(host)+'/data_out.pkl')
         self.assertListEqual(l, [1])
          
-        self.assertTrue(os.path.isfile(self.path_subprocess_out))
-        self.assertTrue(os.path.isfile(self.path_subprocess_err))
+        self.assertTrue(os.path.isfile(cb.p_subp_out))
+        self.assertTrue(os.path.isfile(cb.p_subp_err))
 
-    def test_do_shared_memory(self):
-#         run_generate_script(self.path_script)
-        save_params(self.path_params, 
-                        self.path_script, 
-                        self.obj)
-        args_call=['python', self.path_script, self.path_params]
-        p=do(self.path_subprocess_out, self.path_subprocess_err, 
-                            args_call, **{'debug':False})    
-        p.wait()    
-        l=data_to_disk.pickle_load(self.path_out_data)
-        self.assertListEqual(l, [1])
+    def test_do_batch(self):
+        host='batch'
+        cb=self.create_job_admin(Job_admin_batch, host)
+        obj=self.create_obj(host)
+
+        cb.save_obj(obj)
+        cb.gen_job_script()
+        
+        args=cb.get_subp_args()
+        
+        p=do(*args,**{'debug':False})       
+        p.wait()       
+         
+        time.sleep(1) 
           
-        self.assertTrue(os.path.isfile(self.path_subprocess_out))
-        self.assertTrue(os.path.isfile(self.path_subprocess_err))
-        os.remove(self.path_subprocess_out)
-        os.remove(self.path_subprocess_err)
-        
-    def test_do_milner(self):
-
-        kwargs={'hours':'00',
-                'job_name':'lindahl_test_job',
-                'minutes':'10',
-                'path_sbatch_err':self.path_sbatch_err,
-                'path_sbatch_out':self.path_sbatch_out,
-                'path_tee_out':self.path_tee_out,
-                'path_params':self.path_params,
-                'path_script':self.path_script,
-                'seconds':'00',
-                'threads':20
-                }
-        
-        
-#         print self.path_sbatch_err
-#         print self.path_sbatch_out
-#         print self.path_tee_out
-#         print self.path_params
-#         print self.path_script
-#         print self.path_bash
-#         print self.path_bash0
-        
-        save_params(self.path_params, 
-                        self.path_script, 
-                        self.obj)
-        
-        args_call=generate_milner_bash_script(self.path_sbatch_err,
-                                    self.path_sbatch_out,
-                                    self.path_tee_out,
-                                    self.path_params,
-                                    self.path_script,
-                                    self.path_bash0,
-                                    self.path_bash,
-                                    **kwargs )
-
-        p=do(self.path_subprocess_out, 
-             self.path_subprocess_err, 
-             args_call, 
-            **kwargs)
-        
-        if my_socket.determine_host()=='milner_login':
-            print 'waiting 20 s'
-            time.sleep(20)
-
-        l=data_to_disk.pickle_load(self.path_out_data)
+        l=data_to_disk.pickle_load(self.p_out_data(host)+'/data_out.pkl')
         self.assertListEqual(l, [1])
-          
-        self.assertTrue(os.path.isfile(self.path_subprocess_out
-                                       +'_mpi_milner'))
-        self.assertTrue(os.path.isfile(self.path_subprocess_err
-                                       +'_mpi_milner')) 
-        self.assertTrue(os.path.isfile(self.path_tee_out))        
-        
-        if my_socket.determine_host() in ['milner_login', 'milner']:
-            self.assertTrue(os.path.isfile(self.path_sbatch_out))
-            self.assertTrue(os.path.isfile(self.path_sbatch_err)) 
+         
+        self.assertTrue(os.path.isfile(cb.p_subp_out))
+        self.assertTrue(os.path.isfile(cb.p_subp_err))
+        self.assertTrue(os.path.isfile(cb.p_tee_out))
+           
+ 
+    def test_epoch_mpi_python(self):
+        host='mpi_python2'
+        obj=self.create_obj(host)
+        kw={'job_admin':Job_admin_mpi_python,
+            'index':0,
+             'num-mpi-task':2,
+             'path_results':self.p_out_data(host),
+             'wrapper_process':Wrapper_process_batch,
+             }
+        args=[obj, kw]
+        out=epoch(*args)
+        print out
             
-
-    def test_mpi_script(self):
-         
-        data_to_disk.pickle_save([self.obj, 'Dummy_script_name'], 
-                                 self.path_params)
-         
-        p=subprocess.Popen(['mpirun', '-np', str(self.threads), 'python', 
-                            self.path_script, self.path_params],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)    
-      
-        out, err = p.communicate()
-#         print out
-#         print err
-#          
-        l=data_to_disk.pickle_load(self.path_out_data)
-        self.assertListEqual(l, [1])
-
-                               
+    def test_epoch_batch(self):
+        host='batch2'
+        obj=self.create_obj(host)
+        kw={'job_admin':Job_admin_batch,
+            'index':0,
+             'num-mpi-task':2,
+             'path_results':self.p_out_data(host),
+             'wrapper_process':Wrapper_process_batch,
+             }
+        args=[obj, kw]
+        out=epoch(*args)
+        print out
+                                     
 if __name__ == '__main__':
     d={TestModuleFuncions:[
-                            'test_do_supermicro',
-                            'test_do_shared_memory',
-                            'test_do_milner',
-#                             'test_mpi_script',
+                            'test_do_mpi_python',
+                            'test_do_batch',
+                              'test_epoch_mpi_python',
+                              'test_epoch_batch',
+
                            ]} 
     test_classes_to_run=d
     suite = unittest.TestSuite()
     for test_class, val in  test_classes_to_run.items():
         for test in val:
-            host=my_socket.determine_host()
-            bo=test in ['test_do_milner']
-            if host=='milner_login' and not bo :
-                continue
-            
             suite.addTest(test_class(test))
 
     unittest.TextTestRunner(verbosity=2).run(suite)

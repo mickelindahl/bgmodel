@@ -7,7 +7,7 @@ import sys
 import time
 import subprocess
 
-print sys.argv[1:]
+print 'epoch_milner_args:',sys.argv[1:]
 path,id,=sys.argv[1:]
 id=int(id)
 # time.sleep(id*2)

@@ -197,7 +197,7 @@ def set_mode(pylab, mode='large', w = None, h = None, fontsize=10, **kwargs):
           'text.usetex' : kwargs.get('text_usetex',False),
           'xtick.labelsize': fs,
           'ytick.labelsize': fs,
-          'legend.pad': 0.2,     # empty space around the legend box
+#           'legend.pad': 0.2,     # empty space around the legend box
           'legend.fontsize': kwargs.get('legend_fontsize',fs),
           'lines.markersize': 3,
           'lines.linewidth':kwargs.get( 'linewidth', 2.),
@@ -215,12 +215,12 @@ def set_mode(pylab, mode='large', w = None, h = None, fontsize=10, **kwargs):
           'figure.dpi':  kwargs.get('dpi',72),       # dots per inches, increase and font size follows
           'savefig.dpi': kwargs.get('dpi',72),
           
-          'axes.frameon':False,
+#           'axes.frameon':False,
           'axes.linewidth':.5,
           'path.simplify':False,
 #           'svg.fonttype':'none' #makes it possible to edit text, but subscripts can get fucked up
         }  
-        
+#         pp(pl.rcParams.keys())
 #         matplotlib.rcParams['svg.fonttype'] = 'none'  
         pl.rcParams.update(params8)
         
@@ -373,13 +373,20 @@ import unittest
 
 class TestPlotSettings(unittest.TestCase):     
     def setUp(self):
-        self.fname='/home/mikael/results/papers/inhibition/network/unittest/plot_settings/'
+        from toolbox import data_to_disk
+        import os
+        
+        self.path='/home/mikael/results/papers/inhibition/network/unittest/plot_settings/'
+        
+        if not os.path.isdir(self.path):
+            data_to_disk.mkdir(self.path)
+        
     def test_get_figure(self):
         fig1, axs=get_figure( 2, 2, 100, 100, 12, order='col', projection=None, **{'dpi':72})
-        fig1.savefig(self.fname+'fig_1')
+        fig1.savefig(self.path+'fig_1')
         fig2, axs=get_figure( 2, 2, 1200, 1200, 12, order='col', projection=None, **{'dpi':72})
 
-        fig2.savefig(self.fname+'fig_2')
+        fig2.savefig(self.path+'fig_2')
 # show_phase_diff(d, models=models_coher)
 
 if __name__ == '__main__':

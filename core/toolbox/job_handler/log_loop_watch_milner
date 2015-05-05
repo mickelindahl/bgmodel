@@ -26,3 +26,143 @@ Job names:[3]
 All jobs:    []
 Handler jobs:[]
 Job names:[]
+0 seconds
+All jobs:    [28377]
+Handler jobs:[28377]
+Job names:[1]
+1 seconds
+All jobs:    [28377, 28378]
+Handler jobs:[28377, 28378]
+Job names:[1, 2]
+2 seconds
+All jobs:    [28377, 28378, 28379]
+Handler jobs:[28377, 28378, 28379]
+Job names:[1, 2, 3]
+3 seconds
+All jobs:    [28378, 28379]
+Handler jobs:[28378, 28379]
+Job names:[2, 3]
+4 seconds
+All jobs:    [28378, 28379]
+Handler jobs:[28378, 28379]
+Job names:[2, 3]
+5 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+6 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+7 seconds
+All jobs:    []
+Handler jobs:[]
+Job names:[]
+0 seconds
+All jobs:    [28377]
+Handler jobs:[28377]
+Job names:[1]
+1 seconds
+All jobs:    [28377, 28378]
+Handler jobs:[28377, 28378]
+Job names:[1, 2]
+2 seconds
+All jobs:    [28378, 28379]
+Handler jobs:[28378, 28379]
+Job names:[2, 3]
+3 seconds
+All jobs:    [28378, 28379]
+Handler jobs:[28378, 28379]
+Job names:[2, 3]
+4 seconds
+All jobs:    [28378, 28379]
+Handler jobs:[28378, 28379]
+Job names:[2, 3]
+5 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+6 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+7 seconds
+All jobs:    []
+Handler jobs:[]
+Job names:[]
+0 seconds
+All jobs:    [28377]
+Handler jobs:[28377]
+Job names:[1]
+1 seconds
+All jobs:    [28377, 28378]
+Handler jobs:[28377, 28378]
+Job names:[1, 2]
+2 seconds
+All jobs:    [28377, 28378, 28379]
+Handler jobs:[28377, 28378, 28379]
+Job names:[1, 2, 3]
+3 seconds
+All jobs:    [28378, 28379]
+Handler jobs:[28378, 28379]
+Job names:[2, 3]
+4 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+5 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+6 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+7 seconds
+All jobs:    []
+Handler jobs:[]
+Job names:[]
+0 seconds
+All jobs:    [28377]
+Handler jobs:[28377]
+Job names:[1]
+1 seconds
+All jobs:    [28377, 28378]
+Handler jobs:[28377, 28378]
+Job names:[1, 2]
+2 seconds
+All jobs:    [28378, 28379]
+Handler jobs:[28378, 28379]
+Job names:[2, 3]
+3 seconds
+All jobs:    [28378, 28379]
+Handler jobs:[28378, 28379]
+Job names:[2, 3]
+4 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+5 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+6 seconds
+All jobs:    [28379]
+Handler jobs:[28379]
+Job names:[3]
+7 seconds
+All jobs:    []
+Handler jobs:[]
+Job names:[]
+0 seconds
+All jobs:    [28377]
+Handler jobs:[28377]
+Job names:[1]
+1 seconds
+All jobs:    [28377, 28378]
+Handler jobs:[28377, 28378]
+Job names:[1, 2]
+2 seconds
+All jobs:    []
+Handler jobs:[]
+Job names:[]

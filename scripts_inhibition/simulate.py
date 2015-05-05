@@ -18,6 +18,8 @@ import numpy
 import toolbox.plot_settings as ps
 import pprint
 from toolbox import data_to_disk
+# from scripts_inhibition import config
+
 # from scripts_inhibition.simulate_beta_ZZZ10 import path_rate_runs
 pp=pprint.pprint
 
@@ -93,14 +95,13 @@ def get_args_list(*args, **kwargs):
                 
                 k.update({'nets_to_run':nets})
                 
-                setup = module.Setup(*a, **k)
+                config = module.Setup(*a, **k)
                 
                 obj = module.Main(**{'builder':builder, 
                                      'from_disk':j, 
                                      'perturbation_list':p, 
                                      'script_name':script_name, 
-                                     'setup':setup})
-                
+                                     'setup':config})
                 if do_obj and (i in kwargs.get('do_runs')) and from_disk<=j:
                     obj.do()
                     
@@ -111,12 +112,22 @@ def get_args_list_oscillation(p_list, **kwargs):
     
 
     def get_setup_args_and_kwargs(_, **kwargs):
-        freq_oscillation=kwargs.get('freq_oscillation')
+        freq_oscillation=kwargs.get('freq_oscillation')        
         local_num_threads=kwargs.get('local_num_threads')
         args=[1000.0 / freq_oscillation, 
                local_num_threads,]
+
+        home=kwargs.get('home')
+        home_data=kwargs.get('home_data')
+        home_module=kwargs.get('home_module') 
         
-        return args, {}
+        kwargs={
+                'home':home,
+                'home_data':home_data,
+                'home_module':home_module,
+                }
+        
+        return args, kwargs
     
     args=[p_list, get_setup_args_and_kwargs]
     return get_args_list(*args, **kwargs)
@@ -127,7 +138,10 @@ def get_args_list_inhibition(p_list, **kwargs):
     
 
     def get_setup_args_and_kwargs(_, **kwargs):
-
+        
+        home=kwargs.get('home')
+        home_data=kwargs.get('home_data')
+        home_module=kwargs.get('home_module') 
         local_num_threads=kwargs.get('local_num_threads')
         lower=kwargs.get(('lower'))
         res=kwargs.get('resolution')
@@ -135,11 +149,15 @@ def get_args_list_inhibition(p_list, **kwargs):
         upper=kwargs.get('upper')
                 
         
-        kwargs={'local_num_threads':local_num_threads,
-                  'resolution':res,
-                  'repetition':rep,
-                  'lower':lower,
-                  'upper':upper}
+        kwargs={
+                'home':home,
+                'home_data':home_data,
+                'home_module':home_module,
+                'local_num_threads':local_num_threads,
+                'resolution':res,
+                'repetition':rep,
+                'lower':lower,
+                'upper':upper}
         return [], kwargs
     
     args=[p_list, get_setup_args_and_kwargs]
@@ -166,6 +184,9 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
     
     def get_setup_args_and_kwargs(i_p_list, **kwargs):
         duration=kwargs.get('duration')
+        home=kwargs.get('home')
+        home_data=kwargs.get('home_data')
+        home_module=kwargs.get('home_module') 
         labels=kwargs.get('labels',['Only D1', 
                                     'D1,D2',
                                     'MSN lesioned (D1, D2)',
@@ -187,6 +208,9 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
             pc=props_conn
 
         kwargs={'duration':duration,
+                'home':home,
+                'home_data':home_data,
+                'home_module':home_module,
                 'l_mean_rate_slices':l_mean_rate_slices,
                 'labels':labels,
                 'laptime':laptime,
@@ -210,6 +234,9 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
         amp_base=kwargs.get('amp_base')
         freqs=kwargs.get('freqs')
         freq_oscillations=kwargs.get('freq_oscillations')  
+        home=kwargs.get('home')
+        home_data=kwargs.get('home_data')
+        home_module=kwargs.get('home_module')   
         input_type=kwargs.get('input_type','burst3')
         labels=kwargs.get('labels',['Only D1', 
                                     'D1,D2',
@@ -249,6 +276,9 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
                 'duration':duration,
                 'freqs':freqs,
                 'freq_oscillations':freq_oscillations,
+                'home':home,
+                'home_data':home_data,
+                'home_module':home_module,
                 'input_type':input_type,
                 'l_mean_rate_slices':l_mean_rate_slices,
                 'labels':labels,
@@ -268,8 +298,12 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
 
     
 def get_kwargs_list_indv_nets(n_pert, kwargs):
+    
+
     do_runs=kwargs.get('do_runs')
     from_disk_0=kwargs.get('from_disk_0')
+#     process_type=kwargs.get('process_type')
+#     subp_job_script=kwargs.get('subp_job_script')   
     
     kwargs_list=[]
     index=-1
@@ -331,18 +365,19 @@ def get_kwargs_list(n_pert, kwargs):
 
 
      
-def get_path_logs(from_milner_on_supermicro, file_name):
-    _bool = my_socket.determine_host() == 'supermicro'
-    if from_milner_on_supermicro and _bool:
-        path_results = (default_params.HOME_DATA_BASE 
-                        + 'milner/' 
-                        + file_name 
-                        + '/')
-    else:
-        path_results = (default_params.HOME_DATA 
-                        + file_name 
-                        + '/')
-    return path_results
+# def get_path_logs(from_milner_on_supermicro, file_name):
+# def get_path_logs(home_data, file_name):
+# #     _bool = my_socket.determine_host() == 'supermicro'
+# #     if from_milner_on_supermicro and _bool:
+# #         path_results = (default_params.HOME_DATA_BASE 
+# #                         + 'milner/' 
+# #                         + file_name 
+# #                         + '/')
+# #     else:
+#     path_results = (home_data, 
+#                         + file_name 
+#                         + '/')
+#     return path_results
 
 def get_path_nest(script_name, keys, par=None):
     if not par:
@@ -368,15 +403,15 @@ def get_threads_postprocessing(t_shared, t_mpi, shared):
         threads = t_mpi
     return threads
 
-def get_type_of_run(shared=False): 
-    if my_socket.determine_computer()=='milner':
-        type_of_run='mpi_milner'
-    else: 
-        if not shared:
-            type_of_run='mpi_supermicro'
-        else:
-            type_of_run='shared_memory'
-    return type_of_run
+# def get_type_of_run(shared=False): 
+#     if my_socket.determine_computer()=='milner':
+#         type_of_run='mpi_milner'
+#     else: 
+#         if not shared:
+#             type_of_run='mpi_supermicro'
+#         else:
+#             type_of_run='shared_memory'
+#     return type_of_run
     
 def main_loop_conn(from_disk, attr, models, sets, nets, kwargs_dic, sd):
     d = {}
@@ -435,33 +470,34 @@ def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd_list, **kwargs
 
 def par_process_and_thread(**kwargs):
     
-    cores_milner=kwargs.get('cores_milner',40)
-    cores_superm=kwargs.get('cores_superm',20)
+    cores_mpi=kwargs.get('cores_mpi',40)
+    cores_shared_memory=kwargs.get('cores_shared_memory',20)
     local_threads_milner=kwargs.get('local_threads_milner',10)
-    local_threads_superm=kwargs.get('local_threads_superm',5)
+    local_threads_else=kwargs.get('local_threads_else',5)
+    process_type=kwargs.get('process_type')
     
     # core have to be multiple of 40 for milner
     host = my_socket.determine_computer() 
 
     
-    if host == 'milner':
+#     if host in ['milner']:
+    if process_type=='milner':
         local_threads=local_threads_milner
         
-    
         d={
            'cores_hosting_OpenMP_threads':40/local_threads,
            'local_num_threads':local_threads, 
            'memory_per_node':int(819*local_threads),
-           'num-mpi-task':cores_milner/local_threads,
-           'num-of-nodes':cores_milner/40,
+           'num-mpi-task':cores_mpi/local_threads,
+           'num-of-nodes':cores_mpi/40,
            'num-mpi-tasks-per-node':40/local_threads,
            'num-threads-per-mpi-process':local_threads,
            } 
-        
-    elif host in [ 'supermicro', 'mikaellaptop']:
-        local_threads=local_threads_superm
+    if process_type=='else': 
+#     elif host in [ 'supermicro', 'mikaellaptop', 'thalamus' ]:
+        local_threads=local_threads_else
         d={
-           'num-mpi-task':cores_superm/local_threads,
+           'num-mpi-task':cores_shared_memory/local_threads,
            'local_num_threads':local_threads, 
            'num-threads-per-mpi-process':local_threads,
            }
@@ -680,18 +716,18 @@ def pert_add_MSN_cluster_compete(**kwargs):
         
     return l
 
-def pert_set_data_path_to_milner_on_supermicro(l, set_it):
-    if (my_socket.determine_host()=='milner') or (not set_it):
-        return l
-    
-    dp=default_params.HOME_DATA_BASE+'/milner/'
-    df=default_params.HOME_DATA_BASE+'milner_supermicro/fig/'
-    for i in range(len(l)):
-        l[i] += pl({'simu':{'path_data':dp, 
-                            'path_figure':df}}, 
-            '=')
-    
-    return l
+# def pert_set_data_path_to_milner_on_supermicro(l, set_it):
+#     if (my_socket.determine_host()=='milner') or (not set_it):
+#         return l
+#     
+#     dp=default_params.HOME_DATA_BASE+'/milner/'
+#     df=default_params.HOME_DATA_BASE+'milner_supermicro/fig/'
+#     for i in range(len(l)):
+#         l[i] += pl({'simu':{'path_data':dp, 
+#                             'path_figure':df}}, 
+#             '=')
+#     
+#     return l
 
 def show_plot(axs, name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k):
     dd={}
@@ -777,6 +813,8 @@ def show_mr(d, models, axs, **k):
     if k.get('relative', False):
         r_to1, r_to2=k.get('relative_to') #index
         for ax in axs:
+            if len(ax.lines)<=r_to1 or len(ax.lines)<=r_to2:
+                continue
             print ax.lines
             y_upp=ax.lines[r_to1].get_ydata()
             y_low=ax.lines[r_to2].get_ydata()
@@ -801,6 +839,9 @@ def show_mr(d, models, axs, **k):
     if k.get('delete', False):
         j=0
         for i in k.get('delete'):
+            if len(ax.lines)<=i-j:
+                continue
+            
             del ax.lines[i-j]
             j+=1 
             

@@ -22,7 +22,6 @@
 #SBATCH -o {path_sbatch_out}
 
 
-#if [ "foo" = "bar"  ]; then
 if [ {on_milner} -eq 1 ]; then
 	echo "Inside"
 
@@ -41,8 +40,12 @@ PYTHON=/pdc/vol/nest/2.2.2-wo-music/lib/python2.7/site-packages
 PYTHON_GNU=/pdc/vol/python/2.7.6-gnu/lib/python2.7/site-packages
 SRC=$HOME/git/bgmodel/core:HOME/git/bgmodel/
 
+export BGMODEL_HOME="/cfs/milner/scratch/l/lindahlm"
+export BGMODEL_HOME_CODE="$BGMODEL_HOME/git/bgmodel"
+export BGMODEL_HOME_DATA="$BGMODEL_HOME/results/papers/inhibition/network/milner"
+export BGMODEL_HOME_MODULE="$BGMODEL_HOME/opt/NEST/module/install-module-130701-nest-2.2.2-wo-music"
+
 export PYTHONPATH=$PYTHONPATH:$NEURO_TOOLS:$PYTHON:$PYTHON_GNU:$SRC
 export OMP_NUM_THREADS={num-threads-per-mpi-process}
 
-
-{call}
+aprun -n {num-mpi-task} -N {num-mpi-tasks-per-node} -d {num-threads-per-mpi-process} -m {memory_per_node} python {path_script} {path_params} 2>&1 | tee {path_tee_out}

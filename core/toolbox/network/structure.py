@@ -16,7 +16,8 @@ import gc
 
 from copy import deepcopy
 from itertools import izip
-from toolbox import data_to_disk, my_nest, my_population, misc
+from toolbox import data_to_disk, my_nest, my_population, misc, directories
+
 from toolbox.misc import my_slice, Base_dic
 from toolbox.parallelization import map_parallel, comm, Barrier
 from toolbox.network import default_params
@@ -27,7 +28,7 @@ pp=pprint.pprint
 
 
 
-HOME = default_params.HOME
+HOME = directories.HOME
 
     
 class Surface(object):

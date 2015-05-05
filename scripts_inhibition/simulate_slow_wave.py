@@ -20,17 +20,17 @@ THREADS=10
 class Setup(object):
 
     def __init__(self, period, local_num_threads, **kwargs):
-        self.period=period
+        self.fs=256 #Same as Mallet 2008
         self.local_num_threads=local_num_threads
-
         self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
                                                     'Net_1' ])
-        
-        self.fs=256 #Same as Mallet 2008
-        
+        self.period=period        
     def builder(self):
         return {}
-    
+
+    def default_params(self):
+        return {}
+ 
     def director(self):
         return {'nets_to_run':self.nets_to_run}  
 

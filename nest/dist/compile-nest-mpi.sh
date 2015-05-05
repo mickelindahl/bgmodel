@@ -5,6 +5,8 @@
 # Also this directory have to be provided when compling the 
 # module.
 
+# OBS Strange error, sometimes need to delete instal folder by hand to make it work
+
 #Start time watch
 START=$(date +%s)
 
@@ -30,12 +32,23 @@ echo "Log dir: $logDir"
 echo "Press [Enter] key to continue..."
 read TMP
 
-if [ -d "$buildDir" ]; then rm -r $buildDir 
+if [ -d "$buildDir" ]; 
+then
+echo "Removing $buildDir"
+rm -r $buildDir 
 fi
-if [ -d "$installDir" ]; then rm -r $installDir 
+
+if [ -d "$installDir" ]; 
+then 
+echo "Removing $installDir"
+rm -r $installDir 
 fi
+
 if [ ! -d "$logDir" ]; then mkdir $logDir 
 fi
+
+echo "Press [Enter] key to continue..."
+read TMP
 
 #Make new build directory, configure and run make, make install and make installcheck
 echo "Create new build and install dir directory: "

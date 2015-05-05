@@ -530,7 +530,9 @@ def make_bash_script(path_bash0, path_bash, **kwargs):
     s=text_load(path_bash0)
     s=s.format(**kwargs)
     text_save(s, path_bash)
-    p=subprocess.Popen(['chmod', '777',path_bash])
+    
+    p=subprocess.Popen(['chmod', '777', path_bash])
+#     p=subprocess.Popen(['chmod', 'a+x', path_bash])
     p.wait()
 
 def _mkdir(path):

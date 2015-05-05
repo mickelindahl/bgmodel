@@ -6,42 +6,50 @@ Created on Aug 12, 2013
 
 from toolbox.network.manager import Builder_striatum as Builder
 from toolbox.parallel_excecution import loop
-from toolbox.network import default_params
+from toolbox import directories as dr
 
-from simulate import (get_path_logs, 
+from simulate import (
                       get_args_list_inhibition,
                       get_kwargs_list_indv_nets,
                       par_process_and_thread,
-                      pert_set_data_path_to_milner_on_supermicro, 
                       pert_add_inhibition) 
+from toolbox import my_socket
 
+import config
 import inhibition_striatum as module
 import oscillation_perturbations41_slow as op
 import pprint
 pp=pprint.pprint
 
+
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=0
-LOAD_MILNER_ON_SUPERMICRO=False
+
 NUM_NETS=1
-NUM_RUNS=len(op.get()) #A run for each perturbation
+ops=op.get()[0:2]
+NUM_RUNS=len(ops) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
+
+JOB_ADMIN=config.Ja_milner if my_socket.determine_computer()=='milner' else config.Ja_else
+PROCESS_TYPE='milner' if my_socket.determine_computer()=='milner' else 'else'
+WRAPPER_PROCESS=config.Wp_milner if my_socket.determine_computer()=='milner' else config.Wp_else
 
 kwargs={
         'Builder':Builder,
-        
-        'cores_milner':40*1,
-        'cores_superm':4,
+                             
+        'cores_mpi':40*1,
+        'cores_shared_memory':4,
         
         'file_name':FILE_NAME,
-        'from_disk':0,
+        'from_disk_0':FROM_DISK_0,
         
         'debug':False,
-        'do_runs':range(20,NUM_RUNS), #A run for each perturbation
+        'do_runs':range(NUM_RUNS), #A run for each perturbation
         'do_obj':False,
-        
+                 
         'i0':FROM_DISK_0,
         
+        'job_admin':JOB_ADMIN, #user defined class
         'job_name':'inh_YYY',
         
         'l_hours':  ['00','00','00'],
@@ -50,9 +58,8 @@ kwargs={
         
         'lower':1,
         'local_threads_milner':20,
-        'local_threads_superm':1,
+        'local_threads_else':2,
 
-        
         'module':module,    
         
         'nets':['Net_{}'.format(i) for i in range(NUM_NETS)],
@@ -60,22 +67,22 @@ kwargs={
         'resolution':5,
         'repetitions':1,
         
-        'path_code':default_params.HOME_CODE,
-        'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
-                                     FILE_NAME),
-        'perturbation_list':op.get(),
-        
+        'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
+        'perturbation_list':ops,
+        'process_type':PROCESS_TYPE,
+                
         'size':3000,
         
-        'upper':3}
+        'upper':3,
+        
+        'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
+        }
 
 d_process_and_thread=par_process_and_thread(**kwargs)
 pp(d_process_and_thread)
 kwargs.update(d_process_and_thread)
 
 p_list = pert_add_inhibition(**kwargs)
-p_list = pert_set_data_path_to_milner_on_supermicro(p_list,
-                                                  LOAD_MILNER_ON_SUPERMICRO)
 
 for i, p in enumerate(p_list): print i, p
 
@@ -87,6 +94,6 @@ for obj in a_list:
 
 # for i, a in enumerate(args_list):
 #     print i, a
-loop(min(num_sim, 10),[num_sim, num_sim, NUM_RUNS], a_list, k_list )
-# loop(args_list, path, 1)
+loop(min(num_sim, 10),[num_sim, num_sim, NUM_RUNS], a_list, k_list, **{'config':config} )
+
 

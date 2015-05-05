@@ -8,7 +8,8 @@ import os
 
 from os.path import expanduser
 from simulate import (main_loop, show_fr, show_mr, 
-                      get_file_name, get_file_name_figs)
+                      get_file_name, get_file_name_figs,
+                      get_path_nest)
 from toolbox import pylab
 from toolbox.data_to_disk import Storage_dic
 from toolbox.network import manager
@@ -42,10 +43,12 @@ def get_kwargs_builder(**k_in):
 def get_kwargs_engine():
     return {'verbose':True}
 
-def get_networks(builder, **k_in):
+def get_networks(builder, k_builder, k_default_params):
     info, nets, builder=manager.get_networks(builder,
-                                             get_kwargs_builder(**k_in),
-                                             get_kwargs_engine())
+                                             get_kwargs_builder(**k_builder),
+                                             {}, #director
+                                             get_kwargs_engine(),
+                                             k_default_params)
     
     intervals=builder.dic['intervals']
     rates=builder.dic['amplitudes']
@@ -88,6 +91,9 @@ class Setup(object):
             'lower':self.low, 
             'upper':self.upp}
         return d
+    
+    def default_params(self):
+        return {}
     
     def firing_rate(self):
         d={'average':False, 
@@ -177,10 +183,15 @@ def simulate(builder,
     sets = []
     
     info, nets, intervals, amplitudes, rep = get_networks(builder,
-                                                          **setup.builder())
+                                                          setup.builder(),
+                                                          setup.default_params())
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
     file_name_figs = get_file_name_figs(script_name,  nets[key].par)   
+    
+    path_nest=get_path_nest(script_name, nets.keys(), nets[key].par)
+    for net in nets.values():
+        net.set_path_nest(path_nest)
     
     d_firing_rate = setup.firing_rate()
     
@@ -243,6 +254,8 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
    
 #     ps.shift('left', axs, 0.5, n_rows=len(axs), n_cols=1)
     for ax in axs[2:4]:
+        if not ax.legend():
+            continue
 #         ax.legend(bbox_to_anchor=(2.2, 1))
         ax.legend().set_visible(False)
 #         ax.set_ylabel('')
@@ -281,9 +294,10 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
         if i==1:
             ax.set_yticks([0,7,14])
             ax.set_ylim([0,20])
-        
-    axs[2].lines.remove(axs[2].lines[0])
-    axs[2].lines.remove(axs[2].lines[-1])
+    
+    if len(axs[2].lines)>2:
+        axs[2].lines.remove(axs[2].lines[0])
+        axs[2].lines.remove(axs[2].lines[-1])
             
     sd_figs.save_figs(figs, format='png', dpi=100)
     sd_figs.save_figs(figs, format='svg', in_folder='svg')

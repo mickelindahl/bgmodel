@@ -41,7 +41,7 @@ class Director(object):
     def set_builder(self, builder):
         self.builder=builder
         
-    def get_networks(self, kwargs_director, kwargs_engine):
+    def get_networks(self, kwargs_director, kwargs_engine, kwargs_default_params):
         
         per=self.builder.get_perturbations()
         
@@ -54,7 +54,7 @@ class Director(object):
             if get_these and not (name in get_these):
                 continue
             info+='Net_'+str(i)+':'+ p.name+'\n'
-            par=self.builder.get_parameters(p)
+            par=self.builder.get_parameters(p, **kwargs_default_params)
 #             perturbation_consistency(p, par)
             net=self.builder.get_network(name, par, **kwargs_engine)
             nets[net.get_name()]=net
@@ -191,7 +191,7 @@ class Builder_abstract(object):
         comb=[sum(c) for c in comb]
         return comb        
         
-    def get_parameters(self, per):
+    def get_parameters(self, per, **kwargs):
         raise NotImplementedError     
     
     def get_network(self, name, par, **kwargs):
@@ -209,8 +209,11 @@ class Builder_network_base(Builder_abstract):
     def _get_striatal_reversal_potentials(self):
         return [self._low()]    
 
-    def get_parameters(self, per):
-        return Inhibition(**{'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        return Inhibition(**{'home':kwargs.get('home'),
+                             'home_data':kwargs.get('home_data'),
+                             'home_module':kwargs.get('home_module'),
+                             'perturbations':per})
      
 class Builder_network(Builder_network_base, 
                       Mixin_dopamine, 
@@ -285,10 +288,11 @@ class Builder_MSN_cluster_compete_base(Builder_abstract):
     def _get_striatal_reversal_potentials(self):
         return [self._low()]    
 
-    def get_parameters(self, per):
-        
-#         per.get_
-        return MSN_cluster_compete(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return MSN_cluster_compete(**{'other':Inhibition(**d),
                                       'perturbations':per})   
 
      
@@ -402,8 +406,11 @@ class Builder_inhibition_striatum_base(Builder_network_base):
         return l
     
    
-    def get_parameters(self, per):
-        return Inhibition_striatum(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Inhibition_striatum(**{'other':Inhibition(**d),
                                       'perturbations':per})   
 
     def _get_dopamine_levels(self):
@@ -435,8 +442,11 @@ class Builder_striatum_base(Builder_network_base):
         return l
     
    
-    def get_parameters(self, per):
-        return Inhibition_striatum(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Inhibition_striatum(**{'other':Inhibition(**d),
                                       'perturbations':per})   
 
     def _get_dopamine_levels(self):
@@ -453,14 +463,17 @@ class Builder_slow_wave_base(Builder_abstract):
     def _get_striatal_reversal_potentials(self):
         return [self._low()]    
 
-    def get_parameters(self, per):
-        return Slow_wave(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Slow_wave(**{'other':Inhibition(**d),
                             'perturbations':per})
      
 class Builder_slow_wave(Builder_slow_wave_base, 
-                      Mixin_dopamine, 
-                      Mixin_general_network, 
-                      Mixin_reversal_potential_striatum):
+                        Mixin_dopamine, 
+                        Mixin_general_network, 
+                        Mixin_reversal_potential_striatum):
     pass
 
 class Builder_slow_wave2_base(Builder_abstract):    
@@ -468,8 +481,11 @@ class Builder_slow_wave2_base(Builder_abstract):
     def _get_striatal_reversal_potentials(self):
         return [self._low()]    
 
-    def get_parameters(self, per):
-        return Slow_wave2(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Slow_wave2(**{'other':Inhibition(**d),
                             'perturbations':per})
      
 class Builder_slow_wave2(Builder_slow_wave2_base, 
@@ -483,8 +499,11 @@ class Builder_slow_wave2_EI_EA_base(Builder_abstract):
     def _get_striatal_reversal_potentials(self):
         return [self._low()]    
 
-    def get_parameters(self, per):
-        return Slow_wave2_EI_EA(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Slow_wave2_EI_EA(**{'other':Inhibition(**d),
                                    'perturbations':per})
      
 class Builder_slow_wave2_EI_EA(Builder_slow_wave2_EI_EA_base, 
@@ -504,8 +523,11 @@ class Builder_slow_wave2_perturb_base(Builder_abstract):
     def _get_dopamine_levels(self):
         return [self._dop(), self._no_dop()]    
 
-    def get_parameters(self, per):
-        return Slow_wave2(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Slow_wave2(**{'other':Inhibition(**d),
                             'perturbations':per})
      
 class Builder_slow_wave2_perturb(Builder_slow_wave2_perturb_base, 
@@ -520,8 +542,11 @@ class Builder_beta_base(Builder_abstract):
     def _get_striatal_reversal_potentials(self):
         return [self._low()]    
 
-    def get_parameters(self, per):
-        return Beta(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Beta(**{'other':Inhibition(**d),
                        'perturbations':per})
      
 class Builder_beta(Builder_beta_base, 
@@ -535,9 +560,12 @@ class Builder_beta_EI_EA_base(Builder_abstract):
     def _get_striatal_reversal_potentials(self):
         return [self._low()]    
 
-    def get_parameters(self, per):
-        return Beta_EI_EA(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Beta_EI_EA(**{'other':Inhibition(**d),
+                             'perturbations':per})
      
 class Builder_beta_EI_EA(Builder_beta_EI_EA_base, 
                       Mixin_dopamine, 
@@ -550,8 +578,11 @@ class Builder_beta_striatum_base(Builder_abstract):
     def _get_striatal_reversal_potentials(self):
         return [self._low()]    
 
-    def get_parameters(self, per):
-        return Beta_striatum(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Beta_striatum(**{'other':Inhibition(**d),
                                 'perturbations':per})
      
 class Builder_beta_striatum(Builder_beta_striatum_base, 
@@ -742,8 +773,11 @@ def get_input_Go_NoGo(kwargs):
 
 class Builder_Go_NoGo_compete_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Go_NoGo_compete(**{'other':Inhibition(**d),
                                   'perturbations':per})
 
 
@@ -770,8 +804,11 @@ class Builder_Go_NoGo_compete(Builder_Go_NoGo_compete_base,
 
 class Builder_Go_NoGo_compete_oscillations_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Compete_with_oscillations(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Compete_with_oscillations(**{'other':Inhibition(**d),
                                             'perturbations':per})
 
 
@@ -856,9 +893,12 @@ def set_lesions_scenarios_GPe_Go_NoGo(l):
 
 class Builder_Go_NoGo_with_lesion_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Go_NoGo_compete(**{'other':Inhibition(**d),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -885,9 +925,12 @@ class Builder_Go_NoGo_with_lesion(Builder_Go_NoGo_with_lesion_base,
 
 class Builder_Go_NoGo_with_nodop_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Go_NoGo_compete(**{'other':Inhibition(**d),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -909,9 +952,12 @@ class Builder_Go_NoGo_with_nodop(Builder_Go_NoGo_with_nodop_base,
 
 class Builder_Go_NoGo_with_nodop_FS_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Go_NoGo_compete(**{'other':Inhibition(**d),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -936,9 +982,12 @@ class Builder_Go_NoGo_with_nodop_FS(Builder_Go_NoGo_with_nodop_FS_base,
 
 class Builder_Go_NoGo_with_nodop_FS_oscillation_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Compete_with_oscillations(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Compete_with_oscillations(**{'other':Inhibition(**d),
+                                            'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -963,9 +1012,12 @@ class Builder_Go_NoGo_with_nodop_FS_oscillation(Builder_Go_NoGo_with_nodop_FS_os
      
 class Builder_Go_NoGo_with_lesion_FS_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Go_NoGo_compete(**{'other':Inhibition(**d),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -995,9 +1047,12 @@ class Builder_Go_NoGo_with_lesion_FS(Builder_Go_NoGo_with_lesion_FS_base,
 
 class Builder_Go_NoGo_with_lesion_FS_base_oscillation(Builder_network):    
 
-    def get_parameters(self, per):
-        return Compete_with_oscillations(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Compete_with_oscillations(**{'other':Inhibition(**d),
+                                            'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -1027,9 +1082,12 @@ class Builder_Go_NoGo_with_lesion_FS_oscillation(Builder_Go_NoGo_with_lesion_FS_
 
 class Builder_Go_NoGo_only_D1D2_FS_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Go_NoGo_compete(**{'other':Inhibition(**d),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -1055,9 +1113,12 @@ class Builder_Go_NoGo_only_D1D2_FS(Builder_Go_NoGo_only_D1D2_FS_base,
 
 class Builder_Go_NoGo_only_D1D2_nodop_FS_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Go_NoGo_compete(**{'other':Inhibition(**d),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -1083,8 +1144,11 @@ class Builder_Go_NoGo_only_D1D2_nodop_FS(Builder_Go_NoGo_only_D1D2_nodop_FS_base
 
 class Builder_Go_NoGo_only_D1D2_nodop_FS_oscillations_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Compete_with_oscillations(**{'other':Inhibition(),
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Compete_with_oscillations(**{'other':Inhibition(**d),
                                             'perturbations':per})
 
 
@@ -1110,9 +1174,12 @@ class Builder_Go_NoGo_only_D1D2_nodop_FS_oscillations(
 
 class Builder_Go_NoGo_with_lesion_FS_ST_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        d={'home':kwargs.get('home'),
+           'home_data':kwargs.get('home_data'),
+           'home_module':kwargs.get('home_module')}
+        return Go_NoGo_compete(**{'other':Inhibition(**d),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -1142,9 +1209,9 @@ class Builder_Go_NoGo_with_lesion_FS_ST(Builder_Go_NoGo_with_lesion_FS_ST_base,
 
 class Builder_Go_NoGo_with_lesion_FS_ST_pulse_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        return Go_NoGo_compete(**{'other':Inhibition(**kwargs),
+                                   'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -1170,9 +1237,9 @@ class Builder_Go_NoGo_with_lesion_FS_ST_pulse(Builder_Go_NoGo_with_lesion_FS_ST_
 
 class Builder_Go_NoGo_with_GP_scenarios_FS_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        return Go_NoGo_compete(**{'other':Inhibition(**kwargs),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -1201,10 +1268,9 @@ class Builder_Go_NoGo_with_GP_scenarios__FS(Builder_Go_NoGo_with_GP_scenarios_FS
  
 class Builder_Go_NoGo_with_GP_scenarios_FS_ST_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
-
+    def get_parameters(self, per, **kwargs):
+        return Go_NoGo_compete(**{'other':Inhibition(**kwargs),
+                                  'perturbations':per})
 
     def _get_dopamine_levels(self):
         return [self._dop()]    
@@ -1232,9 +1298,9 @@ class Builder_Go_NoGo_with_GP_scenarios_FS_ST(Builder_Go_NoGo_with_GP_scenarios_
         
 class Builder_Go_NoGo_with_lesion_FS_act_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        return Go_NoGo_compete(**{'other':Inhibition(**kwargs),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -1266,9 +1332,9 @@ class Builder_Go_NoGo_with_lesion_FS_act(Builder_Go_NoGo_with_lesion_FS_act_base
 
 class Builder_Go_NoGo_with_lesion_GA_act_base(Builder_network):    
 
-    def get_parameters(self, per):
-        return Go_NoGo_compete(**{'other':Inhibition(),
-                       'perturbations':per})
+    def get_parameters(self, per, **kwargs):
+        return Go_NoGo_compete(**{'other':Inhibition(**kwargs),
+                                  'perturbations':per})
 
 
     def _get_dopamine_levels(self):
@@ -1303,8 +1369,8 @@ class Builder_Go_NoGo_with_lesion_GA_act(Builder_Go_NoGo_with_lesion_GA_act_base
 
 class Builder_single_base(Builder_abstract):   
     
-    def get_parameters(self, per):
-        return Single_unit(**{'other':Inhibition(**{'perturbations':per}),
+    def get_parameters(self, per, **kwargs):
+        return Single_unit(**{'other':Inhibition(**kwargs),
                               'perturbations':per})
 
 class Builder_single_FS(Builder_single_base, 
@@ -1546,12 +1612,12 @@ def get_simu(k):
        }
     return d    
 
-def get_networks(Builder, k_builder={}, k_director={}, k_engine={}):
+def get_networks(Builder, k_builder={}, k_director={}, k_engine={}, k_default_params={}):
     
     builder = Builder(**k_builder)
     director = Director()
     director.set_builder(builder)
-    info, nets = director.get_networks(k_director, k_engine)
+    info, nets = director.get_networks(k_director, k_engine, k_default_params)
     return info, nets, builder
 
 def get_storage(file_name, info, nets=None):
@@ -1645,17 +1711,6 @@ def psd(data, **k):
     return data.get_psd(**k)
 
 def run(net):
-#     from toolbox.network import default_params
-#     from toolbox.data_to_disk import pickle_load, pickle_save
-#     path=default_params.HOME_CODE+'/core/toolbox/network/manager/'
-#     path_in=path+'data_in.pkl'
-#     path_out=path+'data_out.pkl'
-#     
-#     pickle_save(net, path_in)
-#     
-#     
-#     
-#     
 
     d=net.simulation_loop()
     return {net.get_name():d}
@@ -1671,8 +1726,8 @@ class TestModuleFunctions(unittest.TestCase):
     def setUp(self):
         self.d=dummy_data_dic()
         self.file_name=HOME+'/tmp/manager_unittest'
-        self.main_path=HOME+'/tmp/manager_unittest/'
-        
+        self.main_path=HOME+'/tmp/manager_unittest/'    
+        self.kwargs_default_params={}
         
     def test_get_model_conn_perturbation(self):
         l=get_model_conn_perturbation()
@@ -1692,14 +1747,15 @@ class TestModuleFunctions(unittest.TestCase):
 #                     continue
 #                 _=call(val)  
 # 
-#     def test_get_metwork(self):
-#         
-#         info, nets, builder=get_networks(Builder_network, 
-#                                 kwargs_builder={'netw':{'size':10}}, 
-#                                 kwargs_engine={'verbose':False})
-#         self.assertTrue(type(info)==str)
-#         self.assertTrue(type(nets)==dict)
-#         self.assertTrue(isinstance(builder, Builder_abstract))
+    def test_get_metwork(self):
+        info, nets, builder=get_networks(Builder_network, 
+                                         k_builder={'netw':{'size':10}}, 
+                                         k_engine={'verbose':False},
+                                         k_default_params=self.kwargs_default_params)
+        
+        self.assertTrue(type(info)==str)
+        self.assertTrue(type(nets)==dict)
+        self.assertTrue(isinstance(builder, Builder_abstract))
         
     def test_get_input_Go_NoGo(self):
         
@@ -1711,15 +1767,15 @@ class TestModuleFunctions(unittest.TestCase):
         for ll in l[0]:
             for p in ll:
                 print p
-                
-        
+                     
 #     def test_load(self):
 #         self.test_save()
 #         d1=self.s.load_dic(self.file_name)    
 #         self.assertTrue(isinstance(d1,dict))
-#     
+     
     def test_compute(self):
         class Network_mockup():
+            
             @classmethod
             def simulation_loop(cls):
                 return dummy_data_dic()['net1']
@@ -1728,14 +1784,13 @@ class TestModuleFunctions(unittest.TestCase):
             def get_name(self):
                 return 'net1'
              
-         
         attr=['firing_rate',
               'mean_rates',
               'mean_rates_0',
               'spike_statistic']
          
         dmrs={'intervals':[[0,100], [200, 300], [300, 400],
-                         [600,700], [800, 900], [900, 1000]],
+                           [600,700], [800, 900], [900, 1000]],
               'repetition':2, 'threads':2}
         kwargs_dic={'firing_rate':{'mean_rate_slices':dmrs,
                                    'mean_rate_slices_0':dmrs}}
@@ -1750,8 +1805,7 @@ class TestModuleFunctions(unittest.TestCase):
                              sorted(attr+['mean_rate_slices', 'mean_rate_slices_0']))
         self.assertListEqual(sorted(d['net1']['dummy2'].keys()), 
                              sorted(attr+['mean_rate_slices', 'mean_rate_slices_0']))                
-         
-#      
+               
 #     def test_save(self):
 #         self.s=Storage_dic(self.file_name)
 #         save(self.s, self.d)
@@ -1769,12 +1823,12 @@ class TestBuilderMixin(object):
     def test_1_perturbations_functions(self):
         v=1
         for method in ['_get_general',
-                       '_get_striatal_reversal_potentials',
-                       '_get_dopamine_levels',
-                       '_get_variable',
-                       'get_perturbations'
-                       ]:
-            call=getattr(self.builder,method)
+                           '_get_striatal_reversal_potentials',
+                           '_get_dopamine_levels',
+                           '_get_variable',
+                           'get_perturbations',
+                           ]:
+            call=getattr(self.builder, method)
             l=call()
             
             if method=='get_perturbations':
@@ -1787,8 +1841,7 @@ class TestBuilderMixin(object):
                 self.assertTrue(isinstance(e, pl))
 
     def test_2_get_parameters(self):
-        
-        
+      
         per=self.builder.get_perturbations()
         par=self.builder.get_parameters(per[0])
         self.assertTrue(isinstance(par, Par_base))
@@ -1810,13 +1863,15 @@ class TestDirectorMixin(object):
     def test_4_director(self):
         director=Director()
         director.set_builder(self.builder)
-        _, nets=director.get_networks({},{})
+        
+        _, nets=director.get_networks({}, {}, {})
         for net in nets.values():
             self.assertTrue(isinstance(net, Network_base))
         
 class TestBuilder_network_base(unittest.TestCase):
     def setUp(self):
         self.builder=Builder_network()
+        self.builder.kwargs['p_pulses']=[1.]
 
 
 class TestBuilder_network(TestBuilder_network_base, TestBuilderMixin, 
@@ -1826,7 +1881,7 @@ class TestBuilder_network(TestBuilder_network_base, TestBuilderMixin,
 class TestBuilder_single_base(unittest.TestCase):
     def setUp(self):
         self.builder=Builder_network()
-
+        self.builder.kwargs['p_pulses']=[1.]
 
 class TestBuilder_single(TestBuilder_single_base, TestBuilderMixin, 
                           TestDirectorMixin):
@@ -1836,7 +1891,7 @@ class TestBuilder_single(TestBuilder_single_base, TestBuilderMixin,
 class TestBuilder_inhibition_striatum_base(unittest.TestCase):
     def setUp(self):
         self.builder=Builder_inhibition_striatum()
-
+        self.builder.kwargs['p_pulses']=[1.]
 
 class TestBuilder_inhibition_striatum(TestBuilder_inhibition_striatum_base, TestBuilderMixin, 
                           TestDirectorMixin):
@@ -1846,7 +1901,7 @@ class TestBuilder_inhibition_striatum(TestBuilder_inhibition_striatum_base, Test
 class TestBuilder_MSN_cluster_compete_base(unittest.TestCase):
     def setUp(self):
         self.builder=Builder_MSN_cluster_compete()
-
+        self.builder.kwargs['p_pulses']=[1.]
 
 class TestBuilder_MSN_cluster_compete(TestBuilder_MSN_cluster_compete_base, 
                                       TestBuilderMixin, 
@@ -1856,7 +1911,7 @@ class TestBuilder_MSN_cluster_compete(TestBuilder_MSN_cluster_compete_base,
 class TestBuilder_Go_NoGo_with_lesion_FS_base(unittest.TestCase):
     def setUp(self):
         self.builder=Builder_Go_NoGo_with_lesion_FS()
-
+        self.builder.kwargs['p_pulses']=[1.]
 
 class TestBuilder_Go_NoGo_with_lesion_FS(TestBuilder_Go_NoGo_with_lesion_FS_base, 
                                       TestBuilderMixin, 
@@ -1866,7 +1921,7 @@ class TestBuilder_Go_NoGo_with_lesion_FS(TestBuilder_Go_NoGo_with_lesion_FS_base
 class TestBuilder_Go_NoGo_with_lesion_FS_ST_pulse_base(unittest.TestCase):
     def setUp(self):
         self.builder=Builder_Go_NoGo_with_lesion_FS_ST_pulse()
-
+        self.builder.kwargs['p_pulses']=[1.]
 
 class TestBuilder_Go_NoGo_with_lesion_FS_ST_pulse(TestBuilder_Go_NoGo_with_lesion_FS_ST_pulse_base, 
                                       TestBuilderMixin, 
@@ -1877,11 +1932,11 @@ if __name__ == '__main__':
     
     test_classes_to_run=[
                         TestModuleFunctions,
-#                         TestBuilder_network,
-#                          TestBuilder_single,
-#                         TestBuilder_inhibition_striatum,
-#                         TestBuilder_MSN_cluster_compete,
-#                         TestBuilder_Go_NoGo_with_lesion_FS
+                        TestBuilder_network,
+                        TestBuilder_single,
+                        TestBuilder_inhibition_striatum,
+                        TestBuilder_MSN_cluster_compete,
+                        TestBuilder_Go_NoGo_with_lesion_FS,
                         TestBuilder_Go_NoGo_with_lesion_FS_ST_pulse,
                         ]
     suites_list = []

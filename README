@@ -1,3 +1,89 @@
 misc - for example small scripts investigating a property in nest
 script_"project_name" - scripts associated with a specific project
 toolbox - toolbox with classes for simulation and data analysis. This can be seen as the model core.
+
+
+INSTALLATION
+
+Required packages
+python: numpy, scipy, mpi4py, NeuroTools (0.2.0), psycopg2
+
+others: openmpi, libncurses-dev, libreadline-dev, libopenmpi-dev, libgsl, gsl (gnu scitific library, solver, neccesary for module) 
+
+Recomended
+
+CLONE PROJECT
+Clone project to ~/git/
+
+INSTALL NEST
+Download nest to ~/opt/NEST/dist/ (nest-2.2.2)
+Create link from ~/git/bgmodel/nest/dist//compile-nest-mpi.sh to ~/opt/NEST/dist/compile-nest-mpi.sh
+
+go to ~/opt/NEST/dist 
+run ./compile-nest-mpi.sh nest-2.2.2 (OBS make sure you have GSL libaries)
+
+add to PYTHONPATH /home/mikael/opt/NEST/dist/install-nest-2.2.2/lib/python2.7/site-packages/
+in ~/.bashrc
+
+PYNEST=/home/mikael/opt/NEST/dist/install-nest-2.2.2/lib/python2.7/site-packages/
+export PYTHONPATH=$PYTHONPATH:$PYNEST
+
+test if pynest works python->import nest
+
+INSTALL MODULE
+Required packages: autoconf, automake
+
+link
+ln -s /home/mikael/git/bgmodel/nest/module/compile-module /home/mikael/opt/NEST/module/module-130701
+ln -s /home/mikael/git/bgmodel/nest/module/compile-module.sh /home/mikael/opt/NEST/module/compile-module.sh
+
+run compile-module.sh with  module folder, nest version, nest installation directory, nest model source directory as parameters.
+
+don't forget to add nest installation directory to LD_LIBRARY_PATH in bashrc
+NEST_INSTALL_DIR=/home/mikael/opt/NEST/dist/install-nest-2.2.2
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$NEST_INSTALL_DIR/lib/nes
+reload .bashrc: . ~/.bashrc
+
+don't forget to install gsl libaries, and that NEST is compiled with it!!!
+
+/compile-module.sh module-130701 nest-2.2.2 /home/mikael/opt/NEST/dist/install-nest-2.2.2/ /home/mikael/opt/NEST/dist/nest-2.2.2/models/
+
+RUNNING MODEL
+
+ENVIRONMENTAL VARIABLES
+add these to environmental variables on your system
+BGMODEL_HOME, BGMODEL_HOME_CODE, BGMODEL_HOME_DATA, BGMODEL_HOME_MODULE
+
+example:
+export BGMODEL_HOME=$HOME
+export BGMODEL_HOME_CODE="$BGMODEL_HOME/git/bgmodel"
+export BGMODEL_HOME_DATA="$BGMODEL_HOME/results/papers/inhibition/network/thalamus"
+export BGMODEL_HOME_MODULE="$BGMODEL_HOME/opt/NEST/module/install-module-130701-nest-2.2.2"
+
+BGMODEL_HOME - home folder
+BGMODEL_HOME_DATA - folder to store data in. It constitutes of a main path plust the name of the host you are running on. Se moudle my_socket how it is retireed. Host is usally your computer name. 
+BGMODEL_HOME_CODE - folder where python code for project resides
+BGMODEL_HOME_MODULE - folder where nest module is installed
+
+Add your script folder to bgmodel. Mine is script_ihibition.
+
+Look at config.py. Might need to adjust these methods depending on
+your system. If you are running on a system that can mpirun then
+you should be fine. But if you are using a supercomputer system then 
+some adjustment might be needed in order to get the job_handler to work.
+There is one set of config classes which works on a system that uses sbatch to initiate scripts with
+a aprun command. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -432,7 +432,7 @@ def GetConn(soruces, targets):
             c.extend(nest.GetStatus(nest.FindConnections([s], [t])))     
     return c
 
-def get_default_module_paths(home):
+def get_default_module_paths(home_module):
 
     if nest.version()=='NEST 2.2.2':
         if my_socket.determine_computer()=='milner':
@@ -445,10 +445,8 @@ def get_default_module_paths(home):
     if nest.version()=='NEST 2.4.2':
         s='nest-2.4.2'   
           
-    path= (home+'/opt/NEST/module/'
-                  +'install-module-130701-'+s+'/lib/nest/ml_module')
-    sli_path =(home+'/opt/NEST/module/'
-                      +'install-module-130701-'+s+'/share/ml_module/sli')
+    path= (home_module+'/lib/nest/ml_module')
+    sli_path =(home_module+'/share/ml_module/sli')
     
     return path, sli_path
 # 
@@ -466,7 +464,16 @@ def install_module(path, sli_path, model_to_exist='my_aeif_cond_exp'):
     
     if not model_to_exist in nest.Models(): 
         nest.sr('('+sli_path+') addpath')
-        nest.Install(path)
+        #nest.Install(path)
+        
+        # Solves weird problem that I need to load it twice
+        # only on my wheezy debian
+        try: 
+            nest.Install(path)#always fails in Nest 2.4.X
+        except:
+            nest.Install(path)#running twice fixes Nest 2.4.X
+        print '...successful'
+        
         
 
 def GetConnProp(soruces, targets, prop_name, time):

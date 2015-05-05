@@ -19,16 +19,18 @@ THREADS=10
 
 class Setup(object):
 
-    def __init__(self, period, local_num_threads, **kwargs):
-        self.period=period
-        self.local_num_threads=local_num_threads
-
-        self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
-                                                    'Net_1' ])
+    def __init__(self, period, local_num_threads, **k):
         self.fs=256.
-   
+        self.local_num_threads=local_num_threads
+        self.nets_to_run=k.get('nets_to_run', ['Net_0',
+                                                'Net_1' ])
+        self.period=period
+       
   
     def builder(self):
+        return {}
+    
+    def default_params(self):
         return {}
     
     def director(self):

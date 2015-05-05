@@ -68,11 +68,12 @@ def get_kwargs_builder(**k_in):
 def get_kwargs_engine():
     return {'verbose':True}
 
-def get_networks(builder, k_builder, k_director):
+def get_networks(builder, k_builder, k_director, k_default_params):
     info, nets, builder=manager.get_networks(builder,
                                              get_kwargs_builder(**k_builder),
                                              k_director,
-                                             get_kwargs_engine())
+                                             get_kwargs_engine(),
+                                             k_default_params)
     
     intervals=builder.dic['intervals']
     rep=builder.dic['repetitions']
@@ -913,6 +914,7 @@ class Setup(object):
         self.freqs=k.get('freqs')
         self.freq_oscillations=k.get('freq_oscillations')
         self.fr_xlim=k.get('fr_xlim',[0,10000])
+
         self.input_type=k.get('input_type','burst3')
         self.laptime=k.get('laptime',1500.0)
         self.labels=k.get('labels',['Only D1', 
@@ -954,7 +956,10 @@ class Setup(object):
 #             'sub_sampling':6.25,            
             }
         return d
-
+    
+    def default_params(self):
+        return {}
+    
     def director(self):
         return {'nets_to_run':self.nets_to_run}
 
@@ -1041,12 +1046,6 @@ class Setup(object):
         return self.l_mean_rate_slices
 
 def simulate(builder, from_disk, perturbation_list, script_name, setup):
-    home = expanduser("~")
-    
-
-   
-#     file_name = get_file_name(script_name)
-#     file_name_figs = get_file_name_figs(script_name)
      
     d_firing_rate = setup.firing_rate()
     d_mrs = setup.mean_rate_slices()
@@ -1061,7 +1060,8 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
     
     info, nets, intervals, rep, x_set, y_set = get_networks(builder, 
                                                             setup.builder(),
-                                                            setup.director())
+                                                            setup.director(),
+                                                            setup.default_params())
 
     add_perturbations(perturbation_list, nets)
     

@@ -67,9 +67,11 @@ network  - define layers and populations
 '''
 
 from copy import deepcopy
+from toolbox import directories as dr
 from toolbox import misc
 from toolbox.misc import my_slice
 import sys
+import os
 
 from toolbox import my_nest as nest # Has to after misc. 
 from toolbox import my_socket
@@ -80,25 +82,7 @@ import warnings
 import pprint
 pp=pprint.pprint
 
-from os.path import expanduser
 
-
-if my_socket.determine_host() in ['milner', 'milner_login']:
-    HOME='/cfs/milner/scratch/l/lindahlm'
-else: 
-    HOME = expanduser("~")
-
-HOME_CODE=HOME+'/git/bgmodel/'
-HOME_DATA_BASE=HOME+'/results/papers/inhibition/network/'
-HOME_DATA=(HOME+'/results/papers/inhibition/network/'
-           +my_socket.determine_computer()+'/')
-
-path, sli_path=nest.get_default_module_paths(HOME)
-
-nest.install_module(path, sli_path, model_to_exist='my_aeif_cond_exp' )
-
- 
-    
 #@todo: change name on Node to Surface
 class Call(object):
 
@@ -478,10 +462,7 @@ class Perturbation_list(object):
         for p in val:
             key='.'.join(p.keys+[p.op])
             self.dic[key]=p
-        
-     
-
-        
+                
 class Par_base(object):
     
     def __init__(self, **kwargs):
@@ -500,7 +481,11 @@ class Par_base(object):
                       'dic_rep':True}
 
         self.dep={} #dic storing dependable calculations, dynamically growing
-        self.other=kwargs.get('other', None)                
+
+        self.other=kwargs.get('other', None)    
+        
+        path, sli_path=nest.get_default_module_paths(dr.HOME_MODULE)
+        nest.install_module(path, sli_path, model_to_exist='my_aeif_cond_exp' )
         
         self.rec={}
         df=nest.GetDefaults('my_aeif_cond_exp')['receptor_types']
@@ -1353,8 +1338,8 @@ class Unittest_base(object):
         dic['simu']['sd_params']={'to_file':True, 'to_memory':False}
         
 
-        dc=HOME+'/results/unittest/conn/'
-        dp=HOME+'/results/unittest/' +self.__class__.__name__+'/'
+        dc=dr.HOME+'/results/unittest/conn/'
+        dp=dr.HOME+'/results/unittest/' +self.__class__.__name__+'/'
         df=dp
         dn=dp+'/nest/'
         
@@ -1939,12 +1924,12 @@ class Single_unit_base(object):
         dic['simu']=dic_other['simu']
         
 
-        dc=(HOME+'/results/papers/inhibition/single/conn/')        
-        dp=(HOME+'/results/papers/inhibition/single/'
+        dc=(dr.HOME+'/results/papers/inhibition/single/conn/')        
+        dp=(dr.HOME+'/results/papers/inhibition/single/'
             +self.other.__class__.__name__)+'/'
-        df=(HOME+'/projects/papers/inhibition/figures/'
+        df=(dr.HOME+'/projects/papers/inhibition/figures/'
             +self.other.__class__.__name__)+'/'
-        dn=(HOME+'/results/papers/inhibition/single/'
+        dn=(dr.HOME+'/results/papers/inhibition/single/'
             +self.other.__class__.__name__+'/nest/')         
         
         dic['simu']['path_conn']=dc
@@ -2084,11 +2069,11 @@ class InhibitionPar_base(object):
                                    'to_memory':False,
                                    'record_from':['V_m'] }
 
-        dp=HOME_DATA 
+        dp=dr.HOME_DATA+'/'
         dco= dp + 'conn/'       
         dcl= dp + self.__class__.__name__+'/'
         df=  dp + 'fig/'
-        dn=  dp + self.__class__.__name__+'/nest/'        
+        dn=  dp +  self.__class__.__name__+'/nest/'        
         
         dic['simu']['path_data']=dp
         dic['simu']['path_conn']=dco
@@ -3321,19 +3306,17 @@ class ThalamusPar_base(object):
         
         #@TODO change save path
         dic['simu']={}
-        
-        dc=(HOME+'/results/papers/inhibition/'
-            +'network/conn')        
-        dp=(HOME+'/results/papers/inhibition/'
-            +'network/'+self.__class__.__name__)
-        df=(HOME+'/projects/papers/inhibition/'
-           +'figures/'+self.__class__.__name__)
-        dn=(HOME+'/results/papers/inhibition/'
-            +'network/'+self.__class__.__name__+'/nest')     
+
+        dp=dr.HOME_DATA+'/'
+        dco= dp + 'conn/'       
+        dcl= dp + self.__class__.__name__+'/'
+        df=  dp + 'fig/'
+        dn=  dp +  self.__class__.__name__+'/nest/'
         
                  
-        dic['simu']['path_conn']=dc
         dic['simu']['path_data']=dp
+        dic['simu']['path_conn']=dco
+        dic['simu']['path_class']=dcl
         dic['simu']['path_figure']=df
         dic['simu']['path_nest']=dn
         
@@ -3499,13 +3482,13 @@ class Bcpnn_h0_base(object):
         
         dic['simu']={}
         
-        dc=(HOME+'/results/papers/bcpnn/'
+        dc=(dr.HOME+'/results/papers/bcpnn/'
             +'network/conn')        
-        dp=(HOME+'/results/papers/bcpnn/'
+        dp=(dr.HOME+'/results/papers/bcpnn/'
             +'network/'+self.__class__.__name__)
-        df=(HOME+'/projects/papers/bcpnn/'
+        df=(dr.HOME+'/projects/papers/bcpnn/'
            +'figures/'+self.__class__.__name__)
-        dn=(HOME+'/results/papers/bcpnn/'
+        dn=(dr.HOME+'/results/papers/bcpnn/'
             +'network/'+self.__class__.__name__+'/nest')     
         
                  
@@ -4049,7 +4032,6 @@ def calc_n(d_nuclei_sizes, d_sub_sampl, name, netw_size, obj=None):
         
     
     return dict(zip(nodes, node_sizes))[name]
-
 
 def get_oscillation_time_rates(params, stop, testing, ru, rd):
     if params['period'] == 'constant':
@@ -4613,7 +4595,7 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
             'netw_size':size,
             'save':{'active':False,
                     'overwrite':False, 
-                    'path':HOME+('/results/unittest/conn/'
+                    'path':dr.HOME+('/results/unittest/conn/'
                                  +format_connectionn_save_path(**k))}, 
             'tata_dop':0.0,
             'local_num_threads':4,
@@ -4660,7 +4642,7 @@ def dummy_unittest_extend(flag=False):
         'fan_in':10.0,
         'netw_size':10.0,
         'save':{'active':True,
-                'path':(HOME+'/results/unittest/'
+                'path':(dr.HOME+'/results/unittest/'
                         +'conn/10_n1-n9s3_n2-n1s3_bfi-0.0_r-set-set')}, 
         'tata_dop':0.0,
         'local_num_threads':1.,
@@ -4713,7 +4695,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'fan_in':1.0,
         'netw_size':52,
         'save':{'active':True,
-                'path':HOME+'/results/unittest/conn/52_i1-n1s1_n1-n1s1_bfi-0.0_r-1-1'}, 
+                'path':dr.HOME+'/results/unittest/conn/52_i1-n1s1_n1-n1s1_bfi-0.0_r-1-1'}, 
         'local_num_threads':4,
        }
 
@@ -4723,7 +4705,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'fan_in':1.0,
         'netw_size':52,        
         'save':{'active':True,
-                'path':HOME+'/results/unittest/conn/52_n1-n1s1_n2-n1s1_bfi-0.0_r-1-1'}, 
+                'path':dr.HOME+'/results/unittest/conn/52_n1-n1s1_n2-n1s1_bfi-0.0_r-1-1'}, 
         'tata_dop':0.0,
         'local_num_threads':4,
         'weight': {'params':0.0}, 
@@ -4736,7 +4718,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'fan_in':1.0,
         'netw_size':52,
         'save':{'active':True,
-                'path':HOME+'/results/unittest/conn/52_n1-n1s1_n2-n1s1_bfi-0.0_r-1-1'}, 
+                'path':dr.HOME+'/results/unittest/conn/52_n1-n1s1_n2-n1s1_bfi-0.0_r-1-1'}, 
         'tata_dop':0.0,
         'local_num_threads':4,
         'weight': {'params':0.0}, 
@@ -4749,7 +4731,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'fan_in':1.0,
         'netw_size':52,
         'save':{'active':True,
-                'path':HOME+'/results/unittest/conn/52_i2-n1s1_n2-n1s1_bfi-0.0_r-1-1'}, 
+                'path':dr.HOME+'/results/unittest/conn/52_i2-n1s1_n2-n1s1_bfi-0.0_r-1-1'}, 
         'tata_dop':0.0,
         'local_num_threads':4,
         'weight': {'params':10.0}, 
@@ -4761,7 +4743,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'fan_in':1,
         'netw_size':52,
         'save':{'active':True,
-                'path':HOME+'/results/unittest/conn/52_m1-n50s1_v1-n1s1_bfi-0.0_r-all-all'}, 
+                'path':dr.HOME+'/results/unittest/conn/52_m1-n50s1_v1-n1s1_bfi-0.0_r-all-all'}, 
         'tata_dop':0.0,
         'local_num_threads':4,
         'weight': {'params':1.0}, 
@@ -4773,7 +4755,7 @@ def dummy_unittest_bcpnn_dopa(flag=True):
         'fan_in':1.0,
         'netw_size':52,
         'save':{'active':True,
-                'path':HOME+'/results/unittest/conn/52_i3-n50s1_m1-n50s1_bfi-0.0_r-1-1'}, 
+                'path':dr.HOME+'/results/unittest/conn/52_i3-n50s1_m1-n50s1_bfi-0.0_r-1-1'}, 
         'tata_dop':0.0,
         'local_num_threads':4,
         'weight': {'params':10.0}, 
@@ -5403,7 +5385,7 @@ class TestUnittestExtend(TestUnittestExtendPar_base, TestMixinPar_base,TestMixin
 
 class TestUnittestBcpnnDopaPar_base(unittest.TestCase):
     def setUp(self):
-        self.dummy=dummy_unittest_bcpnn_dopa
+        self.dummy=dummy_unittest_bcpnn_dopa        
         self.kwargs={'other':Unittest(),
                      'unittest':True}
         self.the_class=Unittest_bcpnn_dopa
@@ -5417,7 +5399,7 @@ class TestUnittestBcpnnDopa(TestUnittestBcpnnDopaPar_base, TestMixinPar_base,Tes
 
 class TestUnittestStdpPar_base(unittest.TestCase):
     def setUp(self):
-        self.dummy=dummy_unittest_bcpnn
+        self.dummy=dummy_unittest_bcpnn        
         self.kwargs={'other':Unittest_bcpnn_dopa(**{'other':Unittest()}),
                      'unittest':True}
         self.the_class=Unittest_stdp
@@ -5481,7 +5463,7 @@ class TestSlowwave(TestSlowWavePar_base, TestMixinPar_base, TestSetup_mixin):
 
 class TestSlowWave2Par_base(unittest.TestCase):
     def setUp(self):
-        self.kwargs={'other':Inhibition(),
+        self.kwargs={ 'other':Inhibition(),
                      'unittest':False}
         self.the_class=Slow_wave2
         self.pert=dummy_perturbations_lists('slow_wave', 'C1_M1_ampa')
@@ -5685,7 +5667,7 @@ if __name__ == '__main__':
 #                         TestSlowwave,
 #                         TestSlowwave2,
 #                         TestSlowwave2_EI_EA:test_fun_par,
-#                         TestBeta:test_fun_par,
+                        TestBeta:test_fun_par,
 #                         TestTestCompeteWithOscillations:test_fun_par,
 #                         TestBeta_EI_EA:test_fun_par,  
 #                         TestGo_NoGo_compete:test_fun_par,

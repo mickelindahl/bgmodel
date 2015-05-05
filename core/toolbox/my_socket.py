@@ -7,23 +7,24 @@ Created on Sep 28, 2014
 from socket import *
 import socket
 
-EXCLUDE=['supermicro','mikaellaptop']
+INCLUDE=['supermicro','mikaellaptop', 'thalamus']
     
 
 def determine_host():
 
     HOST=socket.gethostname().split('.')
-    if (len(HOST)==1 and HOST[0] not in EXCLUDE):
+    if (len(HOST)==1 and HOST[0] not in INCLUDE):
         return 'milner'
-    if HOST[0][0:6]=='milner':
+    elif HOST[0][0:6]=='milner':
         return 'milner_login'
     else:
         return HOST[0]
 
+
 def determine_computer():
 
     HOST=socket.gethostname().split('.')
-    if (len(HOST)==1 and HOST[0] not in EXCLUDE) or (HOST[0][0:6]=='milner'):
+    if (len(HOST)==1 and HOST[0] not in INCLUDE) or (HOST[0][0:6]=='milner'):
         return 'milner'
     else:
         return HOST[0]

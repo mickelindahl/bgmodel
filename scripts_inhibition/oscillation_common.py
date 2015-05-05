@@ -258,11 +258,12 @@ def get_kwargs_builder(**k_in):
 def get_kwargs_engine():
     return {'verbose':True}
 
-def get_networks(builder, k_bulder, k_director):
+def get_networks(builder, k_bulder, k_director, k_default_params):
     return manager.get_networks(builder, 
                                 get_kwargs_builder(**k_bulder),
                                 k_director,  
-                                get_kwargs_engine(),)
+                                get_kwargs_engine(),
+                                k_default_params)
 
 def create_relations(models_coher, dd):
     for key in dd.keys():
@@ -1458,17 +1459,25 @@ def show_correlation(d, **k):
   
 class Setup(object):
 
-    def __init__(self, period, local_num_threads, **kwargs):
-        self.period=period
+    def __init__(self, period, local_num_threads, **k):
+        self.home=k.get('home')
+        self.home_data=k.get('home_data')
+        self.home_module=k.get('home_module')
+        self.fs=256 #Same as Mallet 2008       
         self.local_num_threads=local_num_threads
+        self.nets_to_run=k.get('nets_to_run', ['Net_0',
+                                               'Net_1' ])
+        
 
-        self.nets_to_run=kwargs.get('nets_to_run', ['Net_0',
-                                                    'Net_1' ])
-        
-        self.fs=256 #Same as Mallet 2008
-        
+        self.period=period       
     def builder(self):
         return {}
+    
+    def default_params(self):
+        d={'home':self.home,
+           'home_data':self.home_data,
+           'home_module':self.home_module}
+        return d
     
     def director(self):
         return {'nets_to_run':self.nets_to_run}  
@@ -1651,7 +1660,8 @@ def simulate(builder=Builder,
     
     info, nets, _ = get_networks(builder, 
                                  setup.builder(), 
-                                 setup.director())
+                                 setup.director(),
+                                 setup.default_params())
     add_perturbations(perturbation_list, nets)
     for p in sorted(perturbation_list.list):
         print p
