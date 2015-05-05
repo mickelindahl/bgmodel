@@ -13,7 +13,7 @@ from toolbox.parallel_excecution import Job_admin_abstract, make_bash_script
 
 
 class Ja_milner(Job_admin_abstract):
-    def __init__(self,**kw):
+    def __init__(self, **kw):
         
         index=kw.get('index') #simulation index
 #         path_code=kw.get('path_code')
@@ -37,10 +37,9 @@ class Ja_milner(Job_admin_abstract):
                        
         for key, value in kw.items():
             self.__dict__[key] = value
+        self.kw=kw
             
-    
-    
-    def gen_job_script(self, **kw):
+    def gen_job_script(self):
         '''
         Creating a bash file, out and errr for subprocess call as well
         as the parameters for the subprocesses call. 
@@ -50,28 +49,11 @@ class Ja_milner(Job_admin_abstract):
         path err
         *subp call, comma seperate inputs (se code) 
         '''
-#         home=kw.get('home')
-#         index=kw.get('index') #simulation index
-# #         path_code=kw.get('path_code')
-#         path_results=kw.get('path_results')
-    
-#         p_subp_out=path_results+"std/subp/out{0:0>4}".format(index)
-#         p_subp_err=path_results+'std/subp/err{0:0>4}'.format(index)
-#         p_sbatch_out=path_results+"std/sbatch/out{0:0>4}".format(index)
-#         p_sbatch_err=path_results+'std/sbatch/err{0:0>4}'.format(index)
-#         p_tee_out=path_results+'std/tee/out{0:0>4}'.format(index)
-#         p_par=path_results+'params/run{0:0>4}.pkl'.format(index)
-#         p_script=dr.HOME_CODE+'/core/toolbox/parallel_excecution/simulation.py'
-#         p_bash0=dr.HOME_CODE+'/core/toolbox/parallel_excecution/jobb0_milner.sh'
-#         p_bash=path_results+'/jobbs/jobb_{0:0>4}.sh'.format(index)
-    
-
-    
-        
+        self.local_threads=self.local_threads_milner
         kw_bash={'home':dr.HOME,
                  'hours':'00',
                  'deptj':1,
-                 'job_name':'dummy_job',
+                 'job_name':self.job_name,
                  'cores_hosting_OpenMP_threads':40/self.local_threads,
                  'local_num_threads':self.local_threads, 
                  'memory_per_node':int(819*self.local_threads),
@@ -88,7 +70,7 @@ class Ja_milner(Job_admin_abstract):
                  'seconds':'00',
                  
             }
-        kw_bash.update(kw) 
+        kw_bash.update(self.kw) 
         make_bash_script(self.p_bash0, self.p_bash, **kw_bash) #Creates the bash file 
         
     def get_subp_args(self):
@@ -113,7 +95,7 @@ class Ja_milner(Job_admin_abstract):
             
         job_id=int(text.split(' ')[-1])
         
-        return job_id    
+        return job_id      
 
 class Ja_else(Job_admin_abstract):
     
@@ -170,7 +152,7 @@ class Wp_milner():
         '''
         should return None if process is not finnished
         '''
-        jobs=job_handler.read_subp_jobs_milner()()
+        jobs=job_handler.read_subp_jobs_milner()
         if  self.job_id in jobs:
             return None
         else:

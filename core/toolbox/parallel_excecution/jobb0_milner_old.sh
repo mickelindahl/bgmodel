@@ -21,6 +21,10 @@
 #SBATCH -e {path_sbatch_err}
 #SBATCH -o {path_sbatch_out}
 
+
+#if [ {on_milner} -eq 1 ]; then
+echo "Inside"
+
 #enable modules within the batch system
 . /opt/modules/default/etc/modules.sh
 
@@ -28,6 +32,7 @@
 module swap PrgEnv-cray PrgEnv-gnu
 module add python
 module add nest/2.2.2-wo-music
+#fi
 
 HOME={home}
 NEURO_TOOLS=$HOME/local/lib/python2.7/site-packages

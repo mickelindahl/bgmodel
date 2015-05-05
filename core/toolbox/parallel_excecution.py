@@ -215,8 +215,7 @@ def loop(*args, **kwargs):
     h=job_handler.Handler(loop_time=5,  
                           log_to_file=True,
                           log_file_name=log_file_name,
-                          process_type=process_type,
-                          read_subp_jobs=read_subp_jobs)
+                          **kwargs)
     
     for m in m_list:
         
@@ -356,8 +355,6 @@ class Job_admin_sbatch(Job_admin_abstract):
         for key, value in kw.items():
             self.__dict__[key] = value
             
-    
-    
     def gen_job_script(self, **kw):
         '''
         Creating a bash file, out and errr for subprocess call as well
@@ -368,24 +365,7 @@ class Job_admin_sbatch(Job_admin_abstract):
         path err
         *subp call, comma seperate inputs (se code) 
         '''
-#         home=kw.get('home')
-#         index=kw.get('index') #simulation index
-# #         path_code=kw.get('path_code')
-#         path_results=kw.get('path_results')
-    
-#         p_subp_out=path_results+"std/subp/out{0:0>4}".format(index)
-#         p_subp_err=path_results+'std/subp/err{0:0>4}'.format(index)
-#         p_sbatch_out=path_results+"std/sbatch/out{0:0>4}".format(index)
-#         p_sbatch_err=path_results+'std/sbatch/err{0:0>4}'.format(index)
-#         p_tee_out=path_results+'std/tee/out{0:0>4}'.format(index)
-#         p_par=path_results+'params/run{0:0>4}.pkl'.format(index)
-#         p_script=dr.HOME_CODE+'/core/toolbox/parallel_excecution/simulation.py'
-#         p_bash0=dr.HOME_CODE+'/core/toolbox/parallel_excecution/jobb0_milner.sh'
-#         p_bash=path_results+'/jobbs/jobb_{0:0>4}.sh'.format(index)
-    
 
-    
-        
         kw_bash={'home':dr.HOME,
                  'hours':'00',
                  'deptj':1,
@@ -654,13 +634,22 @@ class TestModuleFuncions(unittest.TestCase):
         args=[obj, kw]
         out=epoch(*args)
         print out
-                                     
+        
+    def test_gen_job_script_milner(self):
+        host='batch'
+        cb=self.create_job_admin(Job_admin_sbatch, host)
+        obj=self.create_obj(host)
+
+        cb.save_obj(obj)
+        cb.gen_job_script()
+                                  
 if __name__ == '__main__':
     d={TestModuleFuncions:[
-                            'test_do_mpi_python',
-                            'test_do_batch',
-                              'test_epoch_mpi_python',
-                              'test_epoch_batch',
+#                             'test_do_mpi_python',
+#                             'test_do_batch',
+#                               'test_epoch_mpi_python',
+#                               'test_epoch_batch',
+                              'test_gen_job_script_milner',
 
                            ]} 
     test_classes_to_run=d

@@ -11,6 +11,7 @@ from toolbox.network import default_params
 from toolbox.network.default_params import Perturbation_list as pl
 from toolbox import my_socket
 from toolbox.data_to_disk import Storage_dic
+from toolbox import directories as dr
 
 from inhibition_gather_results import process
 
@@ -391,9 +392,9 @@ def get_path_nest(script_name, keys, par=None):
 
 def get_path_rate_runs(simulation_name):
     if my_socket.determine_computer() == 'milner':
-        path_rate_runs = default_params.HOME_DATA + simulation_name
+        path_rate_runs = dr.HOME_DATA + '/'+simulation_name
     else:
-        path_rate_runs = default_params.HOME_DATA + simulation_name
+        path_rate_runs = dr.HOME_DATA + '/'+simulation_name
     return path_rate_runs
 
 def get_threads_postprocessing(t_shared, t_mpi, shared):
