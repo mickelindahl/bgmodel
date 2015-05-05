@@ -57,7 +57,11 @@ def get():
                                      +'_STGAw_'+str(b)
                                      +'_GAGA_'+str(y)
                                      +'_GIGA_'+str(30-y)}) 
-
+		print l[0]
+		for e in sorted(l[0].list):
+			print e
+		raise
+		
     for reset in [-52., -51., -50., -49.]:
         d={}
         misc.dict_update(d, solution['mul'])  
