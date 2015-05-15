@@ -20,7 +20,8 @@ pp=pprint.pprint
 
 
 from_disk=0
-scale=1
+
+scale=4
 paths=[('/home/mikael/results/papers/inhibition/network/'
              +'milner/fig10_control_beta/'),
         ('/home/mikael/results/papers/inhibition/network/'
@@ -59,10 +60,6 @@ def create_name(file_name):
             v=str(v).zfill(4)
         return v
 
-
-
-
-
 fig, axs=ps.get_figure2(n_rows=4,
                          n_cols=3,  
                          w=int(72/2.54*11.6*(1+1./2))*scale,
@@ -75,7 +72,8 @@ fig, axs=ps.get_figure2(n_rows=4,
                         gs_builder=gs_builder) 
 
 models=['M1', 'M2', 'FS', 'GA', 'GI', 'GP', 'ST','SN',
-                   'GI_ST', 'GP_GP', 'GA_GA', 'GI_GA', 'GI_GI']
+                   'GI_ST', 'GP_GP', 'GA_GA', 'GI_GA', 'GI_GI','ST_ST', 'GA_ST',
+                   'GP_ST']
 
 # models=[m for m in models if not ( m in exclude)]
 
@@ -93,7 +91,7 @@ attrs=[
 
 
 
-organize={'beta':slice(0,20),
+organize={'beta':slice(0,10),
          'sw':slice(20,40), 
          }
 
@@ -113,10 +111,11 @@ script_name=(__file__.split('/')[-1][0:-3] +'/data')
 file_name = get_file_name(script_name)
 sd = get_storage(file_name, '')
  
-attr_add=['mse_rel_control_fr', 'mse_rel_control_mc',
-          'mse_rel_control_pdwc', 'mse_rel_control_mcm',
-          'mse_rel_control_oi', 'mse_rel_control_si',
-          'mse_rel_control_psd']
+# attr_add=['mse_rel_control_fr', 'mse_rel_control_mc',
+#           'mse_rel_control_pdwc', 'mse_rel_control_mcm',
+#           'mse_rel_control_oi', 'mse_rel_control_si',
+#           'mse_rel_control_psd']
+attr_add=[]
  
 #     exclude+=['MS_MS', 'FS_MS', 'MS']
 
@@ -127,7 +126,7 @@ d=effect_conns.get_data(models,
                  from_disk, 
                  attr_add, 
                  sd,
-                 **{'key_no_pert':'0000',#control_sim',
+                 **{'key_no_pert':'0019',#control_sim',
                     'name_maker':create_name,
                     'add_midpoint':False,
                     'psd':{'NFFT':128, 
@@ -137,7 +136,8 @@ d=effect_conns.get_data(models,
                     'oi_max':25.,
                     'oi_upper':1000.,
                     'oi_fs':256,
-                               'keep':['data']})
+                    'keep':['data'],
+                    'skip_mse':True})
     
 '''
 ['d_gradients_lesion', 
@@ -163,66 +163,66 @@ d['d_gradients_lesion']['oscillation_index']['labelsy']
 #########################################
 # TA to MS tau snapse figure
 #########################################
-ax=axs[0]
-  
-dd=d['d_raw_control']['oscillation_index']['labelsy']
-bol= numpy.array([l in ['M1', 'M2'] for l in dd])
-v=d['d_raw_control']['oscillation_index']['y'][bol,organize['GAtau']]
-  
-  
-ax.plot(range(5,55,5),v.transpose())
-ax.set_xlim([0,60])
-ax.set_xlabel(r'$\tau_{GPe_{TA}\to striatum}$ (ms)')
-ax.set_ylabel('Oscillation index')
-ax.my_set_no_ticks(xticks=4)
-ax.my_set_no_ticks(yticks=4)
- 
-for s, c, coords in zip(['M1', 'M2'],
-                        ['b', 'g'],
-                        [[0.87,0.19], [0.87,0.07]]):
-       
-    ax.text(coords[0], coords[1], s, color=c, 
-        transform=ax.transAxes, va='center', rotation=0)
-     
-# #########################################
-# # CS-STN delay effect on phase shift ST-TI #TA-TI 
-# #########################################
-# ax=axs[1]
-#  
-# l=[]
-# for key in sorted(d['data'].keys()):
-#     v=d['data'][key]['Net_1']['GI_ST']['phases_diff_with_cohere']
-#     l.append(v)
-# l=l[organize['CSdelay']]
-# colors=misc.make_N_colors('copper', len(l))
+# ax=axs[0]
 #   
-# for i, trace in enumerate(l):
-#     x=numpy.linspace(-numpy.pi*3,numpy.pi*3,len(trace))
-#     norm=sum(trace)*(x[-1]-x[0])/len(x)
-#     ax.plot(x, trace/norm, color=colors[i])
-# ax.set_xlim([-numpy.pi,numpy.pi])
+# dd=d['d_raw_control']['oscillation_index']['labelsy']
+# bol= numpy.array([l in ['M1', 'M2'] for l in dd])
+# v=d['d_raw_control']['oscillation_index']['y'][bol,organize['GAtau']]
 #   
-#  
-# sm = pylab.cm.ScalarMappable(cmap='copper', 
-#                              norm=pylab.normalize(vmin=2.5, vmax=20))
-# sm._A = []
 #   
-# box = ax.get_position()
-# pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
-#      0.01,  box.height*0.8]
-# axColor=pylab.axes(pos)
-# cbar=pylab.colorbar(sm, cax=axColor)
-# tick_locator = ticker.MaxNLocator(nbins=4)
-# cbar.locator = tick_locator
-# cbar.update_ticks()
-# cbar.ax.tick_params( length=1, )
-#   
-# ax.text(1.25, 0.5,  r'Delay CTX$\to$STN (ms)', 
-#         transform=ax.transAxes,  va='center', rotation=270) 
-# ax.set_xlabel(r'Angle (rad)')
-# ax.set_ylabel('Norm. count ST-TI')
+# ax.plot(range(5,55,5),v.transpose())
+# ax.set_xlim([0,60])
+# ax.set_xlabel(r'$\tau_{GPe_{TA}\to striatum}$ (ms)')
+# ax.set_ylabel('Oscillation index')
 # ax.my_set_no_ticks(xticks=4)
 # ax.my_set_no_ticks(yticks=4)
+#  
+# for s, c, coords in zip(['M1', 'M2'],
+#                         ['b', 'g'],
+#                         [[0.87,0.19], [0.87,0.07]]):
+#        
+#     ax.text(coords[0], coords[1], s, color=c, 
+#         transform=ax.transAxes, va='center', rotation=0)
+#      
+# #########################################
+# # Aamp beta on coherence in GP vs GP
+# #########################################
+ax=axs[0]
+  
+l=[]
+for key in sorted(d['data'].keys()):
+    v=d['data'][key]['Net_1']['GP_GP']['mean_coherence']
+    l.append(v)
+l=l[organize['beta']]
+colors=misc.make_N_colors('copper', len(l))
+   
+for i, trace in enumerate(l):
+    x=numpy.linspace(0,128,len(trace))
+#     norm=sum(trace)*(x[-1]-x[0])/len(x)
+    ax.plot(x, trace, color=colors[i])
+ax.set_xlim([0,50])
+   
+  
+sm = pylab.cm.ScalarMappable(cmap='copper', 
+                             norm=pylab.normalize(vmin=0., vmax=20))
+sm._A = []
+   
+box = ax.get_position()
+pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
+     0.01,  box.height*0.8]
+axColor=pylab.axes(pos)
+cbar=pylab.colorbar(sm, cax=axColor)
+tick_locator = ticker.MaxNLocator(nbins=4)
+cbar.locator = tick_locator
+cbar.update_ticks()
+cbar.ax.tick_params( length=1, )
+   
+ax.text(1.25, 0.5,  r'Beta amplitude (Hz)', 
+        transform=ax.transAxes,  va='center', rotation=270) 
+ax.set_xlabel(r'Frequency (Hz)')
+ax.set_ylabel('Coherence GP vs GP')
+ax.my_set_no_ticks(xticks=4)
+ax.my_set_no_ticks(yticks=4)
 # ax.set_ylim([0,0.31])
 #  
 #  
@@ -230,44 +230,43 @@ for s, c, coords in zip(['M1', 'M2'],
 # # fan in  str to GA 
 # #########################################
 #  
-# ax=axs[2]
-#    
-# l=[]
-# for key in sorted(d['data'].keys()):
-#     v=d['data'][key]['Net_1']['GI_GA']['phases_diff_with_cohere']
-#     l.append(v)
-# l=[l[0]]+l[organize['M2GAfan']]
-#  
-# colors=misc.make_N_colors('copper', len(l))
-#      
-# for i, trace in enumerate(l):
-#     x=numpy.linspace(-numpy.pi*3,numpy.pi*3,len(trace))
+ax=axs[1]
+  
+l=[]
+for key in sorted(d['data'].keys()):
+    v=d['data'][key]['Net_1']['ST_ST']['mean_coherence']
+    l.append(v)
+l=l[organize['beta']]
+colors=misc.make_N_colors('copper', len(l))
+   
+for i, trace in enumerate(l):
+    x=numpy.linspace(0,128,len(trace))
 #     norm=sum(trace)*(x[-1]-x[0])/len(x)
-#     ax.plot(x, trace/norm, color=colors[i])
-# ax.set_xlim([-numpy.pi,numpy.pi])
-#    
-# sm = pylab.cm.ScalarMappable(cmap='copper', 
-#                              norm=pylab.normalize(vmin=0, vmax=125))
-# sm._A = []
-#    
-#    
-# box = ax.get_position()
-# pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
-#      0.01, box.height*0.8]
-# axColor=pylab.axes(pos)
-# cbar=pylab.colorbar(sm, cax=axColor)
-# tick_locator = ticker.MaxNLocator(nbins=4)
-# cbar.locator = tick_locator
-# cbar.update_ticks()
-# cbar.ax.tick_params( length=1, )
-#    
-# ax.text(1.25, 0.5, r'Fan in MSN$\to$TA (#)', 
-#         transform=ax.transAxes, va='center', rotation=270)
-#   
-# ax.set_xlabel(r'Angle (rad)')
-# ax.set_ylabel('Norm. count TI-TA')
-# ax.my_set_no_ticks(xticks=4)
-# ax.my_set_no_ticks(yticks=4)
+    ax.plot(x, trace, color=colors[i])
+ax.set_xlim([0,50])
+   
+  
+sm = pylab.cm.ScalarMappable(cmap='copper', 
+                             norm=pylab.normalize(vmin=0., vmax=20))
+sm._A = []
+   
+box = ax.get_position()
+pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
+     0.01,  box.height*0.8]
+axColor=pylab.axes(pos)
+cbar=pylab.colorbar(sm, cax=axColor)
+tick_locator = ticker.MaxNLocator(nbins=4)
+cbar.locator = tick_locator
+cbar.update_ticks()
+cbar.ax.tick_params( length=1, )
+   
+ax.text(1.25, 0.5,  r'Beta amplitude (Hz)', 
+        transform=ax.transAxes,  va='center', rotation=270) 
+ax.set_xlabel(r'Frequency (Hz)')
+ax.set_ylabel('Coherence ST vs ST')
+ax.my_set_no_ticks(xticks=4)
+ax.my_set_no_ticks(yticks=4)
+
 # ax.set_ylim([0,0.31])
 #  
 #  

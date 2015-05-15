@@ -259,7 +259,7 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
         time_bin=kwargs.get('time_bin')
         
         
-        damp = process(path_rate_runs, [freqs])
+        damp = process(path_rate_runs, [freqs],**kwargs)
         for key in sorted(damp.keys()):
             val = damp[key]
             print  key, numpy.round(val, 2)
@@ -469,41 +469,42 @@ def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd_list, **kwargs
     return from_disks, d
 
 
-def par_process_and_thread(**kwargs):
-    
-    cores_mpi=kwargs.get('cores_mpi',40)
-    cores_shared_memory=kwargs.get('cores_shared_memory',20)
-    local_threads_milner=kwargs.get('local_threads_milner',10)
-    local_threads_else=kwargs.get('local_threads_else',5)
-    process_type=kwargs.get('process_type')
-    
-    # core have to be multiple of 40 for milner
-    host = my_socket.determine_computer() 
-
-    
-#     if host in ['milner']:
-    if process_type=='milner':
-        local_threads=local_threads_milner
-        
-        d={
-           'cores_hosting_OpenMP_threads':40/local_threads,
-           'local_num_threads':local_threads, 
-           'memory_per_node':int(819*local_threads),
-           'num-mpi-task':cores_mpi/local_threads,
-           'num-of-nodes':cores_mpi/40,
-           'num-mpi-tasks-per-node':40/local_threads,
-           'num-threads-per-mpi-process':local_threads,
-           } 
-    if process_type=='else': 
-#     elif host in [ 'supermicro', 'mikaellaptop', 'thalamus' ]:
-        local_threads=local_threads_else
-        d={
-           'num-mpi-task':cores_shared_memory/local_threads,
-           'local_num_threads':local_threads, 
-           'num-threads-per-mpi-process':local_threads,
-           }
-        
-    return d
+# def par_process_and_thread(**kwargs):
+#     
+#     cores_milner=kwargs.get('cores_milner',40)
+#     cores_else=kwargs.get('cores_else',20)
+#     local_threads_milner=kwargs.get('local_threads_milner',10)
+#     local_threads_else=kwargs.get('local_threads_else',5)
+#     process_type=kwargs.get('process_type')
+#     
+#     # core have to be multiple of 40 for milner
+#     host = my_socket.determine_computer() 
+# 
+#     
+# #     if host in ['milner']:
+#     if process_type=='milner':
+#         local_threads=local_threads_milner
+#         
+#         d={
+#            'cores_hosting_OpenMP_threads':40/local_threads,
+#            'local_num_threads':local_threads, 
+#            'memory_per_node':int(819*local_threads),
+#            'num-mpi-task':cores_milner/local_threads,
+#            'num-of-nodes':cores_milner/40,
+#            'num-mpi-tasks-per-node':40/local_threads,
+#            'num-threads-per-mpi-process':local_threads,
+#            } 
+#         
+#     if process_type=='else': 
+# #     elif host in [ 'supermicro', 'mikaellaptop', 'thalamus' ]:
+#         local_threads=local_threads_else
+#         d={
+#            'num-mpi-task':cores_else/local_threads,
+#            'local_num_threads':local_threads, 
+#            'num-threads-per-mpi-process':local_threads,
+#            }
+#         
+#     return d
 
 
 # def iterator_go_nogo_ss(p_subsamp, p_sizes, STN_pulses):
@@ -573,6 +574,7 @@ def pert_add(p_list, **kwargs):
     for l in op:
         l_copy = deepcopy(l)
         for ll in p_list:
+            pp(ll)
             ll_copy = deepcopy(ll)
             ll_copy += l_copy
             out.append(ll_copy)
@@ -613,7 +615,7 @@ def pert_add_oscillations(**kwargs):
                 'netw':{'size':size}}, 
             '=')
     
-    damp = process(path_rate_runs, freqs)
+    damp = process(path_rate_runs, **kwargs)
     for key in sorted(damp.keys()):
         val = damp[key]
         print  key, numpy.round(val, 2)
@@ -667,17 +669,13 @@ def pert_add_oscillations(**kwargs):
                 _l += pl(dd, '=', **{'name':'amp_{0}-{1}'.format(*amp)})
            
             if external_input_mod:
-#                 d = {'type':'oscillation2', 
-#                             'params':{'p_amplitude_mod':0, 
-#                                       'p_amplitude0':amp[1], 
-#                                       'freq':freq_oscillation}}
+
                 dd={}
                 for key in external_input_mod:
-#                     dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
                     dd = misc.dict_update(dd, {'node':{key:{'rate':amp[1]}}})
                                                
-#                 pl(dd, '*', **{'name':''})
-                pl(dd, '=', **{'name':''})
+
+                _l +=pl(dd, '*', **{'name':'EIEA_{0}'.format(amp[1])})
             
 
             ll.append(_l)

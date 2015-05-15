@@ -70,7 +70,7 @@ for key, val in files.items():
 print d.keys()
 # pp(d)
 
-from Go_NoGo_compete import show_heat_map
+from Go_NoGo_compete import show_heat_map, show_variability_several
 
 builder=[['20', nets1],
          ['20-ST', nets2]]
@@ -93,7 +93,7 @@ for name, nets in builder:
 pp(dd)
 print len(dd['Net_00']['set_1']['SN']['mean_rate_slices'].y)
 
-
+figs=[]
 fig, axs=ps.get_figure2(n_rows=19, 
                         n_cols=16,
                         w=int(72/2.54*17.6*(17./48)),
@@ -101,7 +101,7 @@ fig, axs=ps.get_figure2(n_rows=19,
                         fontsize=7,
                         title_fontsize=7,
                         gs_builder=gs_builder) 
-
+figs.append(fig)
 k={'axs':axs,
    'do_colorbar':False, 
    'fig':fig,
@@ -116,6 +116,7 @@ k={'axs':axs,
              r'Pulse STN'],
     'type_of_plot':'mean',
     'vlim_rate':[-100, 100]}
+
 
 
 show_heat_map(dd, 'mean_rate_slices', **k)
@@ -145,7 +146,7 @@ cbar.ax.tick_params(labelsize=7,
                     length=2, ) 
 # cbar.ax.set_yticks(fontsize=18)
 # cbar.set_ticklabels( fontsize=18)
-
+ 
 axs[1].legend(['Dual selection',
                'Selection', 
                'No selection'], 
@@ -163,42 +164,80 @@ axs[1].legend(['Dual selection',
 # tick_locator = ticker.MaxNLocator(nbins=4)
 # cbar.locator = tick_locator
 # cbar.update_ticks()
+axs_list=[]
+axs_list.append(axs)
 
+fig, axs=ps.get_figure2(n_rows=19, 
+                        n_cols=16,
+                        w=int(72/2.54*17.6*(17./48)),
+                        h=300,  
+                        fontsize=7,
+                        title_fontsize=7,
+                        gs_builder=gs_builder) 
+figs.append(fig)
+k={'axs':axs,
+   'do_colorbar':False, 
+   'fig':fig,
+   'models':['SN'],
+   'print_statistics':False,
+   'resolution':10,
+   'titles':['Only D1',
+             'D1 & D2',
+             r'No MSN$\to$MSN',
+             r'No FSN$\to$MSN',
+             r'No $GPe_{TA}$$\to$MSN',
+             r'Pulse STN'],
+    'type_of_plot':'mean',
+    'vlim_rate':[-100, 100]}
 
-for i, ax in enumerate(axs): 
-    ax.set_xlabel('')
-    ax.set_ylabel('')
-#     a=ax.get_xticklabels()
-    ax.tick_params(axis='both', which='major', 
-#                    labelsize=20
-                   )
-#     ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
-#     ax.set_yticklabels(fontsize=20)
-    ax.set_xticks([1, 1.5, 2, 2.5, 3])
-    ax.set_yticks([1, 1.5, 2, 2.5, 3])
- 
-    if i==4:
-        ax.text(1.05, -.37, 
-                  'Cortical input action 1',
-                    horizontalalignment='center', 
-                    transform=axs[i].transAxes,
-#                     fontsize=20
-                    ) 
-        ax.set_xticks([1,1.5, 2, 2.5])
-#         ax.set_xticklabels(['1.0','1.5','2.0','2.5'])
-            
-    if i==2:
-        ax.set_ylabel('Cortical input action 2',
-#                       fontsize=20
-                      )
-       
-axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
-axs[1].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
-axs[2].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
-axs[3].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
-axs[4].my_remove_axis(xaxis=False, yaxis=False,keep_ticks=True)
-axs[5].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True)
+show_variability_several(dd, 'mean_rate_slices', **k)
 
-save_figures([fig], __file__.split('/')[-1][0:-3]+'/data', dpi=200)
+axs_list.append(axs)
+
+# show_heat_map(dd, 'mean_rate_slices', **k)
+for ax in axs:
+        ax.tick_params(direction='out',
+                       length=2,
+                       width=0.5,
+                       pad=0.01,
+                        top=False, right=False
+                        )  
+
+for axs in axs_list:
+    for i, ax in enumerate(axs): 
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+    #     a=ax.get_xticklabels()
+        ax.tick_params(axis='both', which='major', 
+    #                    labelsize=20
+                       )
+    #     ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
+    #     ax.set_yticklabels(fontsize=20)
+        ax.set_xticks([1, 1.5, 2, 2.5, 3])
+        ax.set_yticks([1, 1.5, 2, 2.5, 3])
+     
+        if i==4:
+            ax.text(1.05, -.37, 
+                      'Cortical input action 1',
+                        horizontalalignment='center', 
+                        transform=axs[i].transAxes,
+    #                     fontsize=20
+                        ) 
+            ax.set_xticks([1,1.5, 2, 2.5])
+    #         ax.set_xticklabels(['1.0','1.5','2.0','2.5'])
+                
+        if i==2:
+            ax.set_ylabel('Cortical input action 2',
+    #                       fontsize=20
+                          )
+           
+    axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
+    axs[1].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
+    axs[2].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
+    axs[3].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
+    axs[4].my_remove_axis(xaxis=False, yaxis=False,keep_ticks=True)
+    axs[5].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True)
+
+save_figures(figs, __file__.split('/')[-1][0:-3]+'/data', dpi=200)
 
 pylab.show()

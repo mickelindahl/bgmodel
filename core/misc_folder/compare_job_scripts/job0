@@ -1,0 +1,46 @@
+#!/bin/bash -l
+
+# The name of the script is myjob
+#SBATCH -J b_ZZZ41_slow
+
+# Wall-clock time will be given to this job
+#SBATCH -t 00:45:00
+
+# Number of MPI tasks.
+#SBATCH -n 2
+
+# Number of nodes
+#SBATCH -N 0
+
+# Number of MPI tasks per node
+#SBATCH --ntasks-per-node=2
+
+# Number of cores hosting OpenMP threads
+#SBATCH -c 2
+
+#SBATCH -e /cfs/milner/scratch/l/lindahlm/results/papers/inhibition/network/milner/simulate_beta_ZZZ41_slow//std/sbatch/err0000
+#SBATCH -o /cfs/milner/scratch/l/lindahlm/results/papers/inhibition/network/milner/simulate_beta_ZZZ41_slow//std/sbatch/out0000
+
+#enable modules within the batch system
+. /opt/modules/default/etc/modules.sh
+
+#load the modules
+module swap PrgEnv-cray PrgEnv-gnu
+module add python
+module add nest/2.2.2-wo-music
+
+HOME=/cfs/milner/scratch/l/lindahlm
+NEURO_TOOLS=$HOME/local/lib/python2.7/site-packages
+PYTHON=/pdc/vol/nest/2.2.2-wo-music/lib/python2.7/site-packages
+PYTHON_GNU=/pdc/vol/python/2.7.6-gnu/lib/python2.7/site-packages
+SRC=$HOME/git/bgmodel/core:HOME/git/bgmodel/
+
+export BGMODEL_HOME="/cfs/milner/scratch/l/lindahlm"
+export BGMODEL_HOME_CODE="$BGMODEL_HOME/git/bgmodel"
+export BGMODEL_HOME_DATA="$BGMODEL_HOME/results/papers/inhibition/network/milner"
+export BGMODEL_HOME_MODULE="$BGMODEL_HOME/opt/NEST/module/install-module-130701-nest-2.2.2-wo-music"
+
+export PYTHONPATH=$PYTHONPATH:$NEURO_TOOLS:$PYTHON:$PYTHON_GNU:$SRC
+export OMP_NUM_THREADS=20
+aprun -n 2 -N 2 -d 20 -m 16380 python /cfs/milner/scratch/l/lindahlm/git/bgmodel//core/toolbox/parallel_excecution/simulation.py /cfs/milner/scratch/l/lindahlm/results/papers/inhibition/network/milner/simulate_beta_ZZZ41_slow/params/run0000.pkl 2>&1 | tee /cfs/milner/scratch/l/lindahlm/results/papers/inhibition/network/milner/simulate_beta_ZZZ41_slow/std/tee/out0000
+aprun -n 2 -N 2 -d 20 -m 16380 python /cfs/milner/scratch/l/lindahlm/git/bgmodel/core/toolbox/parallel_excecution/simulation.py /cfs/milner/scratch/l/lindahlm/results/papers/inhibition/network/milner/simulate_beta_ZZZ41_slow//params/run0000.pkl 2>&1 | tee /cfs/milner/scratch/l/lindahlm/results/papers/inhibition/network/milner/simulate_beta_ZZZ41_slow//std/tee/out0000

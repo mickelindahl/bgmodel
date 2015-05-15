@@ -36,6 +36,7 @@ ml_module_la_SOURCES =  ml_module.cpp                   ml_module.h         	\
                       	izhik_cond_exp.cpp           	izhik_cond_exp.h   		\
                         bcpnn_connection_dopamine.cpp   bcpnn_connection_dopamine.h      \
                      	my_aeif_cond_exp.cpp           	my_aeif_cond_exp.h		\
+                     	my_aeif_cond_exp_2.cpp          my_aeif_cond_exp_2.h		\
                      	my_poisson_generator.cpp        my_poisson_generator.h   \
                      	poisson_generator_periodic.cpp  poisson_generator_periodic.h   \
                      	poisson_generator_dynamic.cpp   poisson_generator_dynamic.h   \                     	

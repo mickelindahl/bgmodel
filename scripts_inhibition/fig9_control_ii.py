@@ -20,9 +20,9 @@ pp=pprint.pprint
 
 
 from_disk=0
-scale=1
+scale=3
 path=('/home/mikael/results/papers/inhibition/network/'
-             +'milner/simulate_beta_ZZZ_control_slow_beta2/')
+             +'milner/simulate_beta_ZZZ_control_slow_beta_ii/')
 
 
 def gs_builder(*args, **kwargs):
@@ -159,8 +159,8 @@ bol= numpy.array([l in ['M1', 'M2'] for l in dd])
 v=d['d_raw_control']['oscillation_index']['y'][bol,organize['GAtau']]
   
   
-ax.plot(range(5,55,5),v.transpose())
-ax.set_xlim([0,60])
+ax.plot(range(5,55,5), v.transpose())
+# ax.set_xlim([0,60])
 ax.set_xlabel(r'$\tau_{GPe_{TA}\to striatum}$ (ms)')
 ax.set_ylabel('Oscillation index')
 ax.my_set_no_ticks(xticks=4)
@@ -172,7 +172,9 @@ for s, c, coords in zip(['M1', 'M2'],
        
     ax.text(coords[0], coords[1], s, color=c, 
         transform=ax.transAxes, va='center', rotation=0)
-     
+    
+pylab.show()
+
 #########################################
 # CS-STN delay effect on phase shift ST-TI #TA-TI 
 #########################################
@@ -317,8 +319,8 @@ for key in sorted(d['data'].keys()):
 l=[l[0]]+l[organize['STGA']]
 
 ln=list_names[organize['STGA']]
-ln=[str(int(float(a[4])))+', '
-    +str(round(float(a[5].split('-')[0]),2)) for a in ln]
+ln=[str(int(float(a[-2])))+', '
+    +str(round(float(a[-1].split('-')[0]),2)) for a in ln]
 
 colors=misc.make_N_colors('copper', len(l))
   
@@ -394,7 +396,7 @@ for key in sorted(d['data'].keys()):
 l=[l[0]]+l[organize['GAGItoGA']]
 
 ln=list_names[organize['GAGItoGA']]
-ln=[str(int(float(a[2])))+','+str(int(float(a[4].split('-')[0]))) for a in ln]
+ln=[str(int(float(a[-3])))+','+str(int(float(a[-1].split('-')[0]))) for a in ln]
 
 colors=misc.make_N_colors('copper', len(l))
   

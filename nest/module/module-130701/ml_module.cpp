@@ -35,6 +35,7 @@
 #include "iaf_cond_alpha_bias.h"
 #include "izhik_cond_exp.h"
 #include "my_aeif_cond_exp.h"
+#include "my_aeif_cond_exp_2.h"
 #include "poisson_generator_periodic.h"
 #include "my_poisson_generator.h"
 #include "poisson_generator_dynamic.h"
@@ -215,7 +216,8 @@ mynest::Ml_Module::~Ml_Module()
 
     nest::register_model<my_aeif_cond_exp>(nest::NestModule::get_network(),
                                                 "my_aeif_cond_exp");
-
+    nest::register_model<my_aeif_cond_exp_2>(nest::NestModule::get_network(),
+                                                "my_aeif_cond_exp_2");
     nest::register_model<poisson_generator_periodic>(nest::NestModule::get_network(),
                                                 "poisson_generator_periodic");
     nest::register_model<poisson_generator_dynamic>(nest::NestModule::get_network(),

@@ -17,7 +17,7 @@ from toolbox import my_socket
 
 import config
 import inhibition_striatum as module
-import oscillation_perturbations41_slow as op
+import oscillation_perturbations_new_beginning_slow2 as op
 import pprint
 pp=pprint.pprint
 
@@ -58,8 +58,7 @@ kwargs={
         'l_seconds':['00','00','00'],
         
         'lower':1,
-        'local_threads_milner':20,
-        'local_threads_else':2,
+        'local_num_threads':LOCAL_NUM_THREADS,
 
         'module':module,    
         

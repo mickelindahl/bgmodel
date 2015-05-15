@@ -1,5 +1,5 @@
 /*
- *  my_aeif_cond_exp.h
+ *  my_aeif_cond_exp_2.h
  *
  *  This file is part of NEST
  *
@@ -17,11 +17,10 @@
  *
  */
 
-#ifndef MY_AEIF_COND_EXP_H
-#define MY_AEIF_COND_EXP_H
+#ifndef MY_AEIF_COND_EXP_2_H
+#define MY_AEIF_COND_EXP_2_H
 
 #include "config.h"
-
 
 //Remeber, nest has to have been compiled with GSL before
 //module is compiled.
@@ -39,40 +38,54 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_odeiv.h>
 
-
 /* BeginDocumentation
-Name: my_aeif_cond_exp - Conductance based exponential integrate-and-fire neuron model according to Brette and Gerstner (2005).
+Name: my_aeif_cond_exp_2 - Conductance based exponential integrate-and-fire neuron model according to Brette and Gerstner (2005).
+
 Description:
-my_aeif_cond_exp is the adaptive exponential integrate and fire neuron according to Brette and Gerstner (2005).
+my_aeif_cond_exp_2 is the adaptive exponential integrate and fire neuron according to Brette and Gerstner (2005).
+
 This implementation uses the embedded 4th order Runge-Kutta-Fehlberg solver with adaptive stepsize to integrate
 the differential equation.
+
 The membrane potential is given by the following differential equation:
 C dV/dt= -g_L(V-E_L)+g_L*Delta_T*exp((V-V_T)/Delta_T)-g_e(t)(V-E_e) -g_i(t)(V-E_i)-w +I_e
+
 and
+
 tau_w * dw/dt= a(V-E_L) -W
+
 if V_a < V: a = a_1
 else:       a = a_2
+
 If V > V_peak
 	if ( u < 0  )
 		V = min(V_reset + u*V_reset_slope1, V_reset_max_slope1);
 	else if ( u >= 0  )
 		V = min(V_reset + u*V_reset_slope2, V_reset_max_slope1);
+
 	u = u + a
+
 I = g_AMPA_1( V - AMPA_1_E_rev) + g_NMDA_1( V - NMDA_1_E_rev) + g_GABAA( V - GABAA_E_rev) + I_e
+
 with dopamine modulation
+
 If I_AMPA_1=g_AMPA_1( V - AMPA_1_E_rev)
 then I_AMPA_1=I_AMPA_1*(1-beta_I_AMPA_1*tata_dop).
 Same for NMDA_1 and GABA.
+
 Parameters: 
 The following parameters can be set in the status dictionary.
+
 Dynamic state variables:
   V_m        double - Membrane potential in mV
   w          double - Spike-adaptation current in pA.
+
 Reset adaptation parameters:
 V_reset_slope1          double - Slope of v below u=u_thr_slopes
 V_reset_slope2          double - Slope of v above u=u_thr_slopes
 V_reset_max_slope1      double - V max when u<u_thr_slopes
 V_reset_max_slope2      double - V max when u>=u_thr_slopes
+
 Membrane Parameters:
   C_m        double - Capacity of the membrane in pF
   t_ref      double - Duration of refractory period in ms. 
@@ -81,6 +94,7 @@ Membrane Parameters:
   E_L        double - Leak reversal potential in mV. 
   g_L        double - Leak conductance in nS.
   I_e        double - Constant external input current in pA.
+
 Spike adaptation parameters:
   V_a        double - Recovery variable voltage threshold
   a_1	       double - Subthreshold adaptation in nS. [-inf v_b]
@@ -89,25 +103,37 @@ Spike adaptation parameters:
   Delta_T    double - Slope factor in mV
   tau_w      double - Adaptation time constant in ms
   V_t        double - Spike initiation threshold in mV (V_th can also be used for compatibility).
+
+
+
 Synaptic parameters
   AMPA_1_E_rev         double - AMPA_1 reversal potential in mV.
   AMPA_1_Tau_decay     double - Exponential decay time of the AMPA_1 synapse in ms.
+
   NMDA_1_E_rev         double - NMDA_1 reversal potential in mV.
   NMDA_1_Tau_decay     double - Exponential decay time of the NMDA_1 synaptse in ms.
   NMDA_1_Sact          double - For voltage dependence of NMDA_1-synapse mV, see eq. above
   NMDA_1_Vact          double - For voltage dependence of NMDA_1-synapse mV, see eq. ab
+
   GABAA_1_E_rev      double - GABAA 1 reversal potential in mV.
   GABAA_1_Tau_decay  double - Exponential decay time of the GABAA 1 synaptse in ms.
+
   GABAA_2_E_rev      double - GABAA 2 reversal potential in mV.
   GABAA_2_Tau_decay  double - Exponential decay time of the GABAA 2 synaptse in ms.
+
 Integration parameters
   gsl_error_tol  double - This parameter controls the admissible error of the GSL integrator.
                           Reduce it if NEST complains about numerical instabilities.
+
 Author: Adapted from aeif_cond_alpha by Lyle Muller
+
 Sends: SpikeEvent
+
 Receives: SpikeEvent, CurrentEvent, DataLoggingRequest
+
 References: Brette R and Gerstner W (2005) Adaptive Exponential Integrate-and-Fire Model as 
             an Effective Description of Neuronal Activity. J Neurophysiol 94:3637-3642
+
 SeeAlso: iaf_cond_exp, aeif_cond_alpha
  */
 
@@ -124,16 +150,16 @@ namespace mynest
  * @param void* Pointer to model neuron instance.
  */
 extern "C"
-int my_aeif_cond_exp_dynamics (double, const double*, double*, void*);
+int my_aeif_cond_exp_2_dynamics (double, const double*, double*, void*);
 
-class my_aeif_cond_exp: public nest::Archiving_Node
+class my_aeif_cond_exp_2: public nest::Archiving_Node
 {
 
 public:        
 
-	my_aeif_cond_exp();
-	my_aeif_cond_exp(const my_aeif_cond_exp&);
-	~my_aeif_cond_exp();
+	my_aeif_cond_exp_2();
+	my_aeif_cond_exp_2(const my_aeif_cond_exp_2&);
+	~my_aeif_cond_exp_2();
 
 	/**
 	 * Import sets of overloaded virtual functions.
@@ -178,11 +204,9 @@ private:
 	/**
 	 * Spike receptors (SUP_SPIKE_RECEPTOR=3).
 	 */
-	// Three spike receptors AMPA_1, NMDA_1 and GABAA. OBS GABAA_3 is a dummy. Only not implemented yet.
-	// Necessary to get the count right compared to izhik model
+	// Three spike receptors AMPA_1, NMDA_1 and GABAA. 
 	enum SpikeSynapseTypes { AMPA_1=MIN_SPIKE_RECEPTOR, NMDA_1, GABAA_1, GABAA_2, AMPA_2,
 		SUP_SPIKE_RECEPTOR };
-
 	static const nest::size_t NUM_SPIKE_RECEPTORS = SUP_SPIKE_RECEPTOR - MIN_SPIKE_RECEPTOR;
 
 	/**
@@ -205,11 +229,11 @@ private:
 	// Friends --------------------------------------------------------
 
 	// make dynamics function quasi-member
-	friend int mynest::my_aeif_cond_exp_dynamics(double, const double*, double*, void*);
+	friend int mynest::my_aeif_cond_exp_2_dynamics(double, const double*, double*, void*);
 
 	// The next two classes need to be friends to access the State_ class/member
-	friend class nest::RecordablesMap<my_aeif_cond_exp>;
-	friend class nest::UniversalDataLogger<my_aeif_cond_exp>;
+	friend class nest::RecordablesMap<my_aeif_cond_exp_2>;
+	friend class nest::UniversalDataLogger<my_aeif_cond_exp_2>;
 
 private:
 	// ---------------------------------------------------------------- 
@@ -225,15 +249,21 @@ private:
 		double_t C_m;         //!< Membrane Capacitance in pF
 		double_t E_L;         //!< Leak reversal Potential (aka resting potential) in mV
 		double_t Delta_T;     //!< Slope faktor in ms.
-		double_t tau_w;       //!< adaptation time-constant in ms.
-		double_t b;           //!< Spike-triggered adaptation in pA
+		nest::double_t tau_w1;       //!< adaptation time-constant in ms.
+		nest::double_t tau_w2;       //!< adaptation time-constant in ms.
 		double_t V_th;        //!< Spike threshold in mV.
 		double_t I_e;         //!< Intrinsic current in pA.
 
-		nest::double_t V_a;			   //!< Recovery variable voltage threshold
-		nest::double_t a_1;				 //!< Subthreshold adaptation in nS. voltage interval [-inf v_b]
-		nest::double_t a_2;				 //!< Subthreshold adaptation in nS. interval [v_b +inf]
+		nest::double_t V_a1;			   //!< Recovery variable voltage threshold
+		nest::double_t a1_1;				 //!< Subthreshold adaptation in nS. voltage interval [-inf v_b]
+		nest::double_t a1_2;				 //!< Subthreshold adaptation in nS. interval [v_b +inf]
 
+		nest::double_t b1;           //!< Spike-triggered adaptation in pA
+		nest::double_t b2;           //!< Spike-triggered adaptation in pA
+
+		nest::double_t V_a2;			   //!< Recovery variable voltage threshold
+		nest::double_t a2_1;				 //!< Subthreshold adaptation in nS. voltage interval [-inf v_b]
+		nest::double_t a2_2;				 //!< Subthreshold adaptation in nS. interval [v_b +inf]
 
 		nest::double_t  V_reset_slope1;          //!< Slope of v rested point
 		nest::double_t  V_reset_slope2;          //!< Slope of v rested point
@@ -296,7 +326,7 @@ public:
 	{
 
 		//! Symbolic indices to the elements of the state vector y
-		enum StateVecElems_ { V_M = 0, u,
+		enum StateVecElems_ { V_M = 0, u1, u2,
 			G_AMPA_1,
 			G_AMPA_2,
 			G_NMDA_1,
@@ -354,11 +384,11 @@ public:
 	 */
 	struct Buffers_
 	{
-		Buffers_(my_aeif_cond_exp &);                    //!<Sets buffer pointers to 0
-		Buffers_(const Buffers_ &, my_aeif_cond_exp &);  //!<Sets buffer pointers to 0
+		Buffers_(my_aeif_cond_exp_2 &);                    //!<Sets buffer pointers to 0
+		Buffers_(const Buffers_ &, my_aeif_cond_exp_2 &);  //!<Sets buffer pointers to 0
 
 		//! Logger for all analog data
-		nest::UniversalDataLogger<my_aeif_cond_exp> logger_;
+		nest::UniversalDataLogger<my_aeif_cond_exp_2> logger_;
 
 		/** buffers and sums up incoming spikes/currents */
 		// One ring buffer for each synapse. Need to register this in receptor
@@ -442,11 +472,11 @@ public:
 	Buffers_    B_;
 
 	//! Mapping of recordables names to access functions
-	static nest::RecordablesMap<my_aeif_cond_exp> recordablesMap_;
+	static nest::RecordablesMap<my_aeif_cond_exp_2> recordablesMap_;
 };
 
 inline
-nest::port mynest::my_aeif_cond_exp::check_connection(nest::Connection& c, nest::port receptor_type)
+nest::port mynest::my_aeif_cond_exp_2::check_connection(nest::Connection& c, nest::port receptor_type)
 {
 	nest::SpikeEvent e;
 	e.set_sender(*this);
@@ -455,7 +485,7 @@ nest::port mynest::my_aeif_cond_exp::check_connection(nest::Connection& c, nest:
 }
 
 inline
-nest::port mynest::my_aeif_cond_exp::connect_sender(nest::SpikeEvent&, nest::port receptor_type)
+nest::port mynest::my_aeif_cond_exp_2::connect_sender(nest::SpikeEvent&, nest::port receptor_type)
 {
 	// If receptor type is less than 1 =(MIN_SPIKE_RECEPTOR) or greater or equal to 4
 	// (=SUP_SPIKE_RECEPTOR) then provided receptor type is not a spike receptor.
@@ -475,7 +505,7 @@ nest::port mynest::my_aeif_cond_exp::connect_sender(nest::SpikeEvent&, nest::por
 }
 
 inline
-nest::port mynest::my_aeif_cond_exp::connect_sender(nest::CurrentEvent&, nest::port receptor_type)
+nest::port mynest::my_aeif_cond_exp_2::connect_sender(nest::CurrentEvent&, nest::port receptor_type)
 {
 	// If receptor type is less than 4 (MIN_CURR_RECEPTOR) or greater or equal
 	// to 5 (SUP_CURR_RECEPTOR) the provided receptor type is not current
@@ -494,7 +524,7 @@ nest::port mynest::my_aeif_cond_exp::connect_sender(nest::CurrentEvent&, nest::p
 }
 
 inline
-nest::port mynest::my_aeif_cond_exp::connect_sender(nest::DataLoggingRequest& dlr,
+nest::port mynest::my_aeif_cond_exp_2::connect_sender(nest::DataLoggingRequest& dlr,
 		nest::port receptor_type)
 {
 	// If receptor type does not equal 0 then it is not a data logging request
@@ -520,7 +550,7 @@ nest::port mynest::my_aeif_cond_exp::connect_sender(nest::DataLoggingRequest& dl
 
 
 inline
-void my_aeif_cond_exp::get_status(DictionaryDatum &d) const
+void my_aeif_cond_exp_2::get_status(DictionaryDatum &d) const
 {
 	P_.get(d);
 	S_.get(d);
@@ -545,7 +575,7 @@ void my_aeif_cond_exp::get_status(DictionaryDatum &d) const
 }
 
 inline
-void my_aeif_cond_exp::set_status(const DictionaryDatum &d)
+void my_aeif_cond_exp_2::set_status(const DictionaryDatum &d)
 {
 	Parameters_ ptmp = P_;  // temporary copy in case of errors
 	ptmp.set(d);            // throws if BadProperty
@@ -566,4 +596,4 @@ void my_aeif_cond_exp::set_status(const DictionaryDatum &d)
 } // namespace
 
 #endif // HAVE_GSL_1_11
-#endif // MY_AEIF_COND_EXP_H
+#endif // MY_AEIF_COND_EXP_2_H

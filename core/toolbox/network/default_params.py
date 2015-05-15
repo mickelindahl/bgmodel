@@ -74,7 +74,6 @@ import sys
 import os
 
 from toolbox import my_nest as nest # Has to after misc. 
-from toolbox import my_socket
 
 import numpy
 import operator
@@ -390,9 +389,11 @@ class Perturbation_list(object):
     def _add_to_dic(self, key, p):
         if key in self.dic:
             if p.op=='*':
-                warnings.warn('Got perturbation {} adding {}'.format(self.dic[key],p))
+                warnings.warn('Existing perturbation {} adding {}'.format(self.dic[key],p))
                 self.dic[key].val+=p.val
-
+            elif p.op=='=':
+                warnings.warn('Exsisting perturbation {} overwriting to {}'.format(self.dic[key],p))
+                self.dic[key]=p
             else:
                 raise RuntimeError('Perturbation {} already exist'.format(self))
         else:
@@ -2560,7 +2561,7 @@ class InhibitionPar_base(object):
         dic['nest']['ST']={}
         dic['nest']['ST']['type_id'] = 'my_aeif_cond_exp'
         
-        dic['nest']['ST']['tau_w']    =333.0 # I-V relation, spike frequency adaptation
+        dic['nest']['ST']['tau_w']    = 333.0 # I-V relation, spike frequency adaptation
         dic['nest']['ST']['a_1']      =  0.3    # I-V relation
         dic['nest']['ST']['a_2']      =  0.0      # I-V relation
         dic['nest']['ST']['b']        =  0.05    #0.1 #0.1#200./5.                                                     

@@ -30,7 +30,12 @@ class Setup(object):
 
     def default_params(self):
         return {}
- 
+    
+    def engine(self):
+        d={'record':['spike_signal'],
+           'verbose':True}
+        return d
+     
     def director(self):
         return {'nets_to_run':self.nets_to_run}  
 

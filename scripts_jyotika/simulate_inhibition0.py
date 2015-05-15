@@ -37,8 +37,8 @@ WRAPPER_PROCESS=config.Wp_else #if my_socket.determine_computer()=='milner' else
 kwargs={
         'Builder':Builder,
                              
-        'cores_mpi':40*1,
-        'cores_shared_memory':2,
+        'cores_milner':40*1,
+        'cores_else':2,
         
         'file_name':FILE_NAME,
         'from_disk_0':FROM_DISK_0,

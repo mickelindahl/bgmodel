@@ -3,8 +3,8 @@ import sys
 import shutil 
 files=os.listdir('.')
 
-home=/'home
-folder='/
+
+folder='./'
 n_folders=int(sys.argv[1])
 
 for i in range(n_folders):

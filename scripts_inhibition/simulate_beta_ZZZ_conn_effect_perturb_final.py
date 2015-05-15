@@ -32,7 +32,7 @@ FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 
-amp_base=[1.05] #numpy.arange(1.05, 1.2, 0.05)
+amp_base=[1.25] #numpy.arange(1.05, 1.2, 0.05)
 freqs=[0.7] #numpy.arange(0.5, .8, 0.2)
 #Total number of runs 18*2*2+18
 NUM_NETS=len(op_conns.get()*2)

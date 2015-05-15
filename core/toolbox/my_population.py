@@ -32,9 +32,11 @@ import my_topology
 import copy
 import unittest
 import pprint
+from toolbox.my_signals import CondunctanceListMatrix
 pp=pprint.pprint
 import pylab
 
+import toolbox.directories as dr 
 from numpy.random import random_integers
 from my_signals import (MyConductanceList, MyCurrentList, 
                         MyVmList, MySpikeList, SpikeListMatrix,
@@ -94,7 +96,7 @@ class MyGroup(object):
         self.model=model
         self.name=name
         self.n=n
-        self.sets=kwargs.get('sets', misc.my_slice(0, n, 1))
+        self.sets=kwargs.get('sets', [misc.my_slice(0, n, 1)])
 
     @property
     def ids(self):
@@ -125,6 +127,11 @@ class MyGroup(object):
     
     def __str__(self):
         return self.__class__.__name__+':'+self.name 
+    
+    def __iter__(self):
+        for i in self.ids:
+            yield i
+        
                      
     def get(self, attr, **k):
                
@@ -293,6 +300,8 @@ class MyNetworkNode(MyGroup):
         d={'active':False,
            'params': {"withgid": True, 
                       'to_file':False, 
+                      'start':0.0, 
+                      'stop':numpy.inf,
                       'to_memory':True }} 
         d=misc.dict_update(d, d_add) 
         if d['active']:
@@ -313,16 +322,7 @@ class MyNetworkNode(MyGroup):
             files=os.listdir(data_path)
             file_names=[data_path+s for s in files 
              if s.split('-')[0]==self.sd['model']]
-                
-#             network_size=str(my_nest.GetKernelStatus(['network_size'])[0])
-            
-#             gid = str(self.sd['id'][0])
-#             gid = '0' * (len(network_size) - len(gid)) + gid
-#             n = len(str(n_vp))
-#             s=data_path + '/' + self.sd['model'] + '-' + gid + '-'  
-#             file_names = [s+ '0'* (n - len(str(vp))) + str(vp) 
-#                            + '.gdf' for vp in range(n_vp)]
-#             
+                        
             s, t = my_nest.get_spikes_from_file(file_names)
             
         else:  
@@ -388,8 +388,6 @@ class MyNetworkNode(MyGroup):
             #pylab.plot(e['V_m'][e['senders'] ==12])
             #pylab.show()
             
-            
-            
             if start!=None and stop!=None:
                 s=s[(t>start)*(t<stop)]   
                 v=v[(t>start)*(t<stop)] 
@@ -448,6 +446,14 @@ class MyNetworkNode(MyGroup):
     def get_voltage_signal(self):
         l=list(self.iter_voltage_signals(self.sets))
         return VmListMatrix(l)
+    
+    def get_conductance_signals(self):
+        d={}
+        for key in self.conductance_signals.keys():
+            l=list(self.iter_voltage_signals(self.sets))
+            d[key]=CondunctanceListMatrix(l)
+        return d
+        
         
     def iter_spike_signals(self, sets):
         for se in sets:
@@ -528,6 +534,148 @@ class MyNetworkNode(MyGroup):
             raise Exception('The vectors has to be the same length')
         
         return times, voltage
+
+    def run_IF( self, I_vec, id = None, tStim = None ):    
+        '''
+        Function that creates I-F curve
+        Inputs:
+                id      - id of neuron to use for calculating 
+                                 I-F relation
+                tStim   - lenght of each step current injection 
+                                in miliseconds
+                I_vec   - step currents to inject
+        
+        Returns: 
+                fIsi          - first interspike interval 
+                mIsi          - mean interspike interval
+
+                
+        Examples:
+                >> n  = nest.Create('izhik_cond_exp')
+                >> sc = [ float( x ) for x in range( 10, 270, 50 ) ]
+                >> f_isi, m_isi, l_isi = IF_curve( id = n, sim_time = 500, I_vec = sc ):
+        '''
+        if not id: id=self.ids[0]
+        if isinstance( id, int ): id =[ id ] 
+
+        
+        fIsi, mIsi, lIsi  = [], [], []  # first, mean and last isi
+        if not tStim: tStim = 500.0 
+        tAcum = 0
+    
+        I_e0=my_nest.GetStatus(id)[0]['I_e'] # Retrieve neuron base current
+        
+        isi_list=[]
+        for I_e in I_vec:
+            
+            my_nest.SetStatus( id, params = { 'I_e': float(I_e+I_e0) } )   
+            my_nest.SetStatus( id, params = { 'V_m': float(-61) } )            
+            #my_nest.SetStatus( id, params = { 'w': float(0) } )
+            
+            rec=my_nest.GetStatus(id)[0]['recordables']
+            
+            for key in ['u', 'u1', 'u2']:
+                if key not in rec:
+                    continue
+                my_nest.SetStatus( id, params = { key: float(0) } )
+           
+            simulate=True
+            tStart=tAcum
+            while simulate:
+                my_nest.Simulate( tStim )
+                tAcum+=tStim    
+                
+#                 self.get_signal('s', start=tStart, stop=tAcum)
+                                
+                kw= {'t_start':tStart, 't_stop':tAcum}             
+                signal=self.spike_signal.time_slice(**kw)
+                
+                
+                if signal.mean_rate()>0.1 or tAcum>20000:
+                    simulate=False
+                    
+            isi=signal.isi()[0]      
+            if not any(isi): isi=[1000000.] 
+              
+            fIsi.append( isi[ 0 ] )            # retrieve first isi
+            mIsi.append( numpy.mean( isi ) )   # retrieve mean isi
+            if len(isi)>100:lIsi.append( isi[ -1 ] )
+            else:lIsi.append( isi[ -1 ] )           # retrieve last isi
+            isi_list.append(numpy.array(isi))
+            
+        fIsi=numpy.array(fIsi)
+        mIsi=numpy.array(mIsi)
+        lIsi=numpy.array(lIsi)
+        
+        I_vec=numpy.array(I_vec)
+            
+        return I_vec, fIsi, mIsi, lIsi
+ 
+    def run_IV_I_clamp(self, I_vec, id = None, tStim = 2000):    
+        '''
+        Assure no simulations has been run before this (reset kernel).
+        Function that creates I-V by injecting hyperpolarizing currents 
+        and then measuring steady-state membrane (current clamp). Each 
+        trace is preceded and followed by 1/5 of the simulation time 
+        of no stimulation
+        Inputs:
+            I_vec          - step currents to inject
+            id             - id of neuron to use for calculating I-F relation
+            tStim          - lenght of each step current stimulation in ms
+
+        Returns: 
+            I_vec          - current for each voltage
+            vSteadyState   - steady state voltage 
+                
+        Examples:
+                >> n  = my_nest.Create('izhik_cond_exp')
+                >> sc = [ float( x ) for x in range( -300, 100, 50 ) ] 
+                >> tr_t, tr_v, v_ss = IV_I_clamp( id = n, tSim = 500, 
+                I_vec = sc ):
+        '''
+        
+        vSteadyState=[]
+        
+        if not id: id=self.ids[0]
+        if isinstance( id, int ): id =[ id ] 
+        
+                                                                           
+        tAcum  = 1    # accumulated simulation time, step_current_generator
+                      # recuires it to start at t>0    
+        
+        scg = my_nest.Create( 'step_current_generator' )  
+        rec=my_nest.GetStatus(id)[0]['receptor_types']
+        my_nest.Connect( scg, id, params = { 'receptor_type' : rec['CURR'] } )             
+        
+        ampTimes=[]
+        ampValues=[]
+        for I_e in I_vec:
+
+            ampTimes.extend([ float(tAcum) ])
+            ampValues.extend([ float(I_e) ])
+            tAcum+=tStim
+            
+        my_nest.SetStatus( scg, params = { 'amplitude_times':ampTimes,       
+                                           'amplitude_values' :ampValues } )   
+        my_nest.Simulate(tAcum)    
+        
+#         self.get_signal( 'v','V_m', stop=tAcum ) # retrieve signal
+#         self.get_signal('s')
+        if 0 < self.spike_signal.mean_rate():
+            print 'hej'
+        tAcum  = 1 
+        for I_e in I_vec:
+            kw= {'t_start':tAcum+10, 't_stop':tAcum+tStim}
+            if 0>=self.spike_signal.mean_rate(**kw):
+                signal=self.voltage_signal.my_time_slice(tAcum+10, tAcum+tStim)
+                vSteadyState.append( signal[1].signal[-1] )
+            tAcum+=tStim
+    
+            
+        I_vec=I_vec[0:len(vSteadyState)]         
+        return numpy.array(I_vec), numpy.array(vSteadyState)
+               
+    
     
 class MyInput():
         def __init__(self,  **kwargs):
@@ -699,51 +847,50 @@ class MyPoissonInput(MyGroup):
                      for v in zip(rates, t_starts, t_stops)] 
             my_nest.SetStatus(self.ids_generator[hash(tuple(idx))], params)
 
-class MyLayerPoissonInput(MyPoissonInput):
-    
-    def __init__(self, layer_props={},  ids=[], model = 'spike_generator', n=1, params = {}, mm_dt=1.0, 
-                 sname='', spath='', sname_nb='', sd=False, sd_params={},
-                 mm=False, record_from=[]):
-                 
-                layer=my_topology.CreateLayer(layer_props)
-                ids=my_nest.GetLeaves(layer)[0]
-                
-                super( MyLayerPoissonInput, self ).__init__(model, n, params, mm_dt, 
-                                                   sname, spath, sname_nb, sd, 
-                                                   sd_params, mm, record_from,ids)
-                self._init_extra_attributes_poisson_input(layer, layer_props)
-          
-    def _init_extra_attributes_poisson_input(self, layer, props):
-        
-        
-        # Add new attribute
-        self.layer_id=layer
-        self.conn={}
-        self.id_mod=[]
-    
-    def sort_ids(self, pos=[[0,0]]):     
-        node=my_topology.FindCenterElement(self.layer_id)
-
-        ids=self.ids
-        d=numpy.array(my_topology.Distance(node*len(ids),ids))
-        idx=sorted(range(len(d)), key=d.__getitem__, reverse=True)
-
-        return idx 
-    def plot(self, ax=None, nodecolor='b', nodesize=20):        
-        my_topology.MyPlotLayer(self.layer_id, ax,nodecolor, nodesize)
     
 def default_kwargs_net(n, n_sets):
+    d={ 'tau_w': 20.,  # I-V relation, spike frequency adaptation
+        'a_1':3. ,     # I-V relation
+        'a_2':3.,      # I-V relation
+        'b':200.,   # I-F relation
+        'C_m': 80.,    # t_m/R_in
+        'Delta_T':1.8,                      
+        'g_L':3.,
+        'E_L':-55.8,    #
+        'I_e':15.0 ,
+        'V_peak':20.,                                                               # 
+        'V_reset':-65.,    # I-V relation
+        'V_th':-55.2,    # 
+        'V_a':-55.8,     # I-V relation
+        
+        #STN-SNr
+        'AMPA_1_Tau_decay': 12.,   # n.d.; set as for STN to GPE
+        'AMPA_1_E_rev':0.,   # n.d. same as CTX to STN
+        
+        # EXT-SNr
+        'AMPA_2_Tau_decay':5.0,
+        'AMPA_2_E_rev':0.,
+        
+        # MSN D1-SNr
+        'GABAA_1_E_rev':-80.,     # (Connelly et al. 2010)
+        'GABAA_1_Tau_decay':12.,      # (Connelly et al. 2010)
+        
+        # GPe-SNr
+        'GABAA_2_E_rev':-72.,     # (Connelly et al. 2010)
+        'GABAA_2_Tau_decay':5.,
+        }
+    path, sli_path=my_nest.get_default_module_paths(dr.HOME_MODULE)
+    my_nest.install_module(path, sli_path, model_to_exist='my_aeif_cond_exp' )
     
     sets=[misc.my_slice(i, n,n_sets) for i in range(n_sets)]
     return  {'n':n, 
-             'model':'iaf_cond_exp', 
+             'model':'my_aeif_cond_exp', 
              'mm':{'active':True,
                    'params':{'interval':1.0,
                              'to_memory':True, 
                              'to_file':False,
-                             'record_from':['V_m']}},
-             'params':{'I_e':280.0,
-                       'C_m':200.0},
+                             'record_from':['V_m','g_AMPA_1_', 'g_GABAA_1']}},
+             'params':d,
              'sd':{'active':True,
                    'params':{'to_memory':True, 
                              'to_file':False}},
@@ -766,6 +913,23 @@ def default_spike_setup(n, stop):
        'idx':range(n)}
     return d
 
+def get_nullcline_aeif(**kw):
+    a_1=kw.get('a_1')
+    a_2=kw.get('a_2')
+    Delta_T=kw.get('Delta_T')
+    g_L=kw.get('g_L')
+    E_L=kw.get('E_L')
+    V0=kw.get('V')
+    V_a=kw.get('V_a')
+    V_th=kw.get('V_th')
+    
+    V=V0[V0<V_a]
+    l0=g_L*(V-E_L)-g_L*Delta_T*numpy.exp((V-V_th)/Delta_T)+a_1*(V-V_a)
+    
+    V=V0[V0>=V_a]
+    l1=g_L*(V-E_L)-g_L*Delta_T*numpy.exp((V-V_th)/Delta_T)+a_2*(V-V_a)
+    return V0, -numpy.array(list(l0)+list(l1)) 
+    
 def get_random_number(pyrngs, vp, val):
     
     
@@ -797,6 +961,19 @@ def get_random_number(pyrngs, vp, val):
 def sim_group(sim_time, *args, **kwargs):
         
     g=MyNetworkNode(*args, **kwargs)
+
+    df=my_nest.GetDefaults('my_aeif_cond_exp')['receptor_types']
+
+    inp_ex=my_nest.Create('poisson_generator',params={'rate':30.})
+    inp_ih=my_nest.Create('poisson_generator',params={'rate':30.})
+    
+    for pre in inp_ex:
+        for post in inp_ih:
+            my_nest.Connect(pre, post, {'receptor_type':df['g_AMPA_1']})
+    for pre in inp_ex:
+        for post in inp_ih:
+            my_nest.Connect(pre, post, {'receptor_type':df['g_GABAA_1']})
+                
     my_nest.Simulate(sim_time)
     return g
     
@@ -893,6 +1070,10 @@ class TestMyNetworkNode(unittest.TestCase):
     
     def test_3_get_voltage_signal(self):
         l=self.sim_group().get_voltage_signal()
+        self.assertEqual(l.shape[1], self.n_sets)
+
+    def test_3_get_conductance_signals(self):
+        l=self.sim_group().get_conductance_signals()()
         self.assertEqual(l.shape[1], self.n_sets)
  
     def test_4_multiple_threads(self):
@@ -1045,8 +1226,8 @@ if __name__ == '__main__':
         TestMyNetworkNode:[
 #                            'test_1_create', 
 #                             'test_21_get_spike_signal_from_memory', 
-                            'test_22_get_spike_signal_from_file',
-#                            'test_3_get_voltage_signal',
+#                             'test_22_get_spike_signal_from_file',
+                            'test_3_get_voltage_signal',
 #                            'test_4_multiple_threads', 
 #                            'test_5_load_from_disk', 
 #                             'test_61_mpi_run',

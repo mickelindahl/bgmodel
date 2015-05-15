@@ -15,27 +15,26 @@ from simulate import save_figures
 from Go_NoGo_compete import (show_heat_map, 
                              show_variability, 
                              show_variability_several, 
+#                              gs_builder,
                              gs_builder_var,
                              gs_builder_var_mul)
 
 
-def gs_builder(*args, **kwargs):
-
+def gs_builder_new(*args, **kwargs):
+ 
     n_rows=kwargs.get('n_rows',2)
     n_cols=kwargs.get('n_cols',3)
     order=kwargs.get('order', 'col')
-    
+     
     gs = gridspec.GridSpec(n_rows, n_cols)
-    gs.update(wspace=kwargs.get('wspace', 0. ), 
-              hspace=kwargs.get('hspace', 0.4 ))
-
-    iterator = [[slice(2,7), slice(1,8)],
-                [slice(2,7), slice(9,16)],
-                [slice(8,13), slice(1,8)],
-                [slice(8,13), slice(9,16)],
-                [slice(14,19), slice(1,8)],
-                [slice(14,19), slice(9,16)]]
-    
+    gs.update(wspace=kwargs.get('wspace', 0.5 ), 
+              hspace=kwargs.get('hspace', 0.5 ))
+ 
+    iterator=[]
+    for i in range(n_rows):
+        for j in range(n_cols):
+            iterator += [[slice(i,i+1), slice(j,j+1)]]
+     
     return iterator, gs, 
 
 attrs=['mean_rate_slices', 'set_0', 'set_1']
@@ -109,7 +108,7 @@ print len(dd['Net_00']['set_1']['SN']['mean_rate_slices'].y)
 #                         fontsize=7*scale,
 #                         title_fontsize=7*scale,
 #                         gs_builder=gs_builder_var) 
-# 
+#  
 # k={'axs':axs,
 #    'do_colorbar':False, 
 #    'fig':fig,
@@ -137,34 +136,45 @@ print len(dd['Net_00']['set_1']['SN']['mean_rate_slices'].y)
 # show_variability(dd, 'mean_rate_slices', net='Net_05',**k)
 # show_variability(dd, 'mean_rate_slices', net='Net_06',**k)
 
-scale=8
-fig, axs=ps.get_figure2(n_rows=12*3, 
-                        n_cols=12*2,
-                        w=int(72/2.54*20*(17./48))*scale,
-                        h=300*scale,  
+scale=4
+fig, axs=ps.get_figure2(n_rows=4, 
+                        n_cols=2,
+                        w=int(72/2.54*8.9) *scale,
+                        h=450*scale,  
                         fontsize=7*scale,
                         title_fontsize=7*scale,
-                        grid=[3,2],
-                        gs_builder=gs_builder_var_mul) 
-len(axs)
-pylab.show()
+#                         grid=[3,2],
+                        gs_builder=gs_builder_new) 
+
+
+
+
+print len(axs)
+# pylab.show()
 k={'axs':axs,
-   'do_colorbar':False, 
+#    'do_colorbar':False, 
    'fig':fig,
-   'models':['SN'],
+   'model':'SN',
    'print_statistics':False,
-   'resolution':10,
+    'resolution':10,
    'scale':scale,
    'titles':['D1 & D2 beta',
              'D1 & D2 no beta',
+             r'Only D1',
+             r'D1 & S2',
              r'No MSN$\to$MSN',
              r'No FSN$\to$MSN',
-             r'No $GPe_{TA}$$\to$MSN',
-             r'Pulse STN'],
-    'type_of_plot':'mean',
-    'vlim_rate':[-100, 100]}
+             r'No TA$\to$MSN',
+#              r'No FSN$\to$MSN',
+#              r'Net_4',
+#              r'Net_5',
+#              r'Net_6'
+            ],
+#     'type_of_plot':'mean',
+#     'vlim_rate':[-100, 100]
+    }
 
-
+show_variability_several(dd, 'mean_rate_slices',  **k)
 
 
 

@@ -33,7 +33,9 @@ def get_amlitudes(freqs, data):
                 print val.x[-1]
     return out
 
-def gather(path): 
+def gather(path, **kw):
+    tuning_key=kw.get('tuning_freq_amp_to')
+             
     fs=os.listdir(path)
     d={}
     for name in fs:
@@ -42,8 +44,7 @@ def gather(path):
         file_name=path+name[:-4]
         sd = Storage_dic.load(file_name)
         
-        #Tuning after M1
-        dd=sd.load_dic(*['Net_0', 'M1','mean_rate_slices'])
+        dd=sd.load_dic(*['Net_0', tuning_key,'mean_rate_slices'])
         d = misc.dict_update(d, {name[:-4]:dd['Net_0']})
     
 #     ax=pylab.subplot(211)
@@ -56,7 +57,7 @@ def gather(path):
 #             ax=pylab.subplot(5,6,i)
             file_name=path+name+'/'+'Net_0'
             sd = Storage_dic.load(file_name)
-            dd=sd.load_dic(*['Net_0', 'M1','mean_rate_slices', 'firing_rate'])
+            dd=sd.load_dic(*['Net_0', tuning_key,'mean_rate_slices', 'firing_rate'])
             print file_name
             
 #             ax.plot(dd['Net_0']['M1']['firing_rate'].y)
@@ -80,8 +81,9 @@ def interpolate(d):
         dinter[key]=interp1d(val.y, val.x)
     return dinter
 
-def process(path, freqs):
-    d=gather(path)
+def process(path, **kw):
+    freqs=kw.get('freqs')
+    d=gather(path, **kw)
     dinter=interpolate(d)
     damp=get_amlitudes(freqs, dinter)
     return damp

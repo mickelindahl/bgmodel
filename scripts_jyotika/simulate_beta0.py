@@ -60,7 +60,7 @@ kwargs={
         'Builder':Builder,
         
         'cores_milner':40*1,
-        'cores_superm':2,
+        'cores_else':2,
         
         'debug':False,
         'do_runs':range(num_runs),#[15],#range(num_runs), #A run for each perturbation

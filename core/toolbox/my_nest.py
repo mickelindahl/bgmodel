@@ -21,6 +21,7 @@ import nest
 import nest.pynestkernel as _kernel        
 
 import time
+import toolbox.directories as dr
 from copy import deepcopy
 from toolbox.parallelization import comm, Barrier
 from toolbox.misc import Stopwatch
@@ -572,7 +573,7 @@ def _Simulate(sim_time, chunksize=None):
             
             sim_time-=chunksize
     else:
-        nest.Simulate(time)
+        nest.Simulate(sim_time)
 
 
 def _Simulate_mpi(*args, **kwargs):
@@ -611,7 +612,7 @@ class TestModuleFunctions(unittest.TestCase):
         from toolbox.network import default_params
         from toolbox import data_to_disk
         
-        self.path=default_params.HOME+'/results/unittest/my_nest/'
+        self.path=dr.HOME+'/results/unittest/my_nest/'
         self.path_nest=self.path+'nest/'
         data_to_disk.mkdir(self.path_nest)
         

@@ -84,7 +84,7 @@ for key, val in files.items():
 print d.keys()
 pp(d)
 
-from Go_NoGo_compete import show_heat_map
+from Go_NoGo_compete import show_heat_map, show_variability_several
 
 builder=[['10-noss', nets1],
 #         ['25-noss', nets1],
@@ -109,6 +109,8 @@ pp(dd)
 
 val=int(72/2.54*17.6*(1-17./48))
 scale=1
+axs_list=[]
+figs=[]
 fig, axs=ps.get_figure2(n_rows=11, 
                         n_cols=11,
                         w=val*scale,
@@ -116,6 +118,8 @@ fig, axs=ps.get_figure2(n_rows=11,
                         fontsize=7*scale,
                         title_fontsize=7*scale,
                         gs_builder=gs_builder) 
+figs.append(fig)
+axs_list.append(axs)
 
 k={'axs':axs,
    'do_colorbar':False, 
@@ -128,6 +132,7 @@ k={'axs':axs,
     'vlim_rate':[-100, 100], 
     'marker_size':8}
 
+# show_variability_several(dd, 'mean_rate_slices', **k)
 show_heat_map(dd, 'mean_rate_slices', **k)
 # pylab.show()
 for ax in axs:
@@ -155,7 +160,7 @@ cbar.ax.tick_params(labelsize=7*scale,
                     length=2, ) 
 # cbar.ax.set_yticks(fontsize=18)
 # cbar.set_ticklabels( fontsize=18)
-
+ 
 axs[0].legend(['Dual selection','Selection', 'No selection'], 
 #               ncol=1, 
           scatterpoints=1,
@@ -167,60 +172,63 @@ axs[0].legend(['Dual selection','Selection', 'No selection'],
           prop={'size':7*scale},
           markerscale=2.5)
 
-labels= ['{} %'.format(i) for i in [10,50,100]]
-for i, s in zip(range(4,15,5),labels):
-    axs[i].text( 0.5, -.3, s, 
-                transform=axs[i].transAxes,
-                horizontalalignment='center')
 
-axs[9].text( 0.5, -0.65, 'Action pool activation', 
-                transform=axs[9].transAxes,
-                horizontalalignment='center')
 
-labels= ['Only D1',
-             'D1 & D2',
-             r'No MSN$\to$MSN',
-             r'No FSN$\to$MSN',
-             r'No $GPe_{TA}$$\to$MSN']
-for i, s in enumerate(labels):
-    axs[i].text(k.get('cohere_ylabel_ypos', -0.1), 
-                0.5, 
-                s, 
-                transform=axs[i].transAxes,
-                horizontalalignment='right', 
-                rotation=0,
-                fontsize=5)    
 
-for i, ax in enumerate(axs): 
-    ax.set_xlabel('')
-    ax.set_ylabel('')
-#     a=ax.get_xticklabels()
-    ax.tick_params(axis='both', which='major', labelsize=7*scale)
-#     ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
-#     ax.set_yticklabels(fontsize=20)
+fig, axs=ps.get_figure2(n_rows=11, 
+                        n_cols=11,
+                        w=val*scale,
+                        h=300*scale,  
+                        fontsize=7*scale,
+                        title_fontsize=7*scale,
+                        gs_builder=gs_builder) 
+figs.append(fig)
+axs_list.append(axs)
+k={'axs':axs,
+   'do_colorbar':False, 
+   'fig':fig,
+   'models':['SN'],
+   'print_statistics':False,
+   'resolution':10,
+   'titles':['']*5*5,
+    'type_of_plot':'mean',
+    'vlim_rate':[-100, 100], 
+    'marker_size':8}
 
-    ax.my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
+show_variability_several(dd, 'mean_rate_slices', **k)
+
+for axs in axs_list:
+    labels= ['{} %'.format(i) for i in [10,50,100]]
+    for i, s in zip(range(4,15,5),labels):
+        axs[i].text( 0.5, -.3, s, 
+                    transform=axs[i].transAxes,
+                    horizontalalignment='center')
     
-#     axs[0].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
-#     axs[1].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
-#     axs[2].my_remove_axis(xaxis=True, yaxis=False,keep_ticks=True)
-#     axs[3].my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
-#     axs[4].my_remove_axis(xaxis=False, yaxis=False,keep_ticks=True)
-#     axs[5].my_remove_axis(xaxis=False, yaxis=True,keep_ticks=True)
+    axs[9].text( 0.5, -0.65, 'Action pool activation', 
+                    transform=axs[9].transAxes,
+                    horizontalalignment='center')
     
+    labels= ['Only D1',
+                 'D1 & D2',
+                 r'No MSN$\to$MSN',
+                 r'No FSN$\to$MSN',
+                 r'No $GPe_{TA}$$\to$MSN']
+    for i, s in enumerate(labels):
+        axs[i].text(k.get('cohere_ylabel_ypos', -0.1), 
+                    0.5, 
+                    s, 
+                    transform=axs[i].transAxes,
+                    horizontalalignment='right', 
+                    rotation=0,
+                    fontsize=5)    
     
-#     
-#     if i==4:
-#         ax.text(1.05, -.3, 
-#                   'Cortical input action 1',
-#                     horizontalalignment='center', 
-#                     transform=axs[i].transAxes) 
-#         ax.set_xticks([1,1.5, 2, 2.5])
-#         ax.set_xticklabels(['1.0','1.5','2.0','2.5'])
-#             
-#     if i==2:
-#         ax.set_ylabel('Cortical input action 2')
+    for i, ax in enumerate(axs): 
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+        ax.tick_params(axis='both', which='major', labelsize=7*scale)
+        ax.my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
+
        
-save_figures([fig], __file__.split('/')[-1][0:-3]+'/data', dpi=200)
+save_figures(figs, __file__.split('/')[-1][0:-3]+'/data', dpi=200)
 
 pylab.show()

@@ -11,7 +11,6 @@ Created on Mar 19, 2014
 ##################
 
 
-from toolbox import my_socket
 from toolbox import monkey_patch as mp
 import psycopg2
 mp.patch_for_milner()
@@ -73,11 +72,7 @@ def do(*args, **kwargs):
 #     print err
 
     return p
-#   
-# def do_milner():
-#     pass
-#     
-#     
+ 
 def get_loop_index(n, l=[1,1,1]):
     out=[]
     for m in l:
@@ -97,11 +92,7 @@ def generate_args(*args):
 def epoch(*args):
     obj, kw=args
     
-#     if not kw.get('active'):
-#         return False
-         
     path_results=kw.get('path_results')
-#     process_type=kw.get('process_type')
     
     if not os.path.isdir(path_results):
         data_to_disk.mkdir(path_results)   
@@ -110,25 +101,6 @@ def epoch(*args):
     ja=kw.get('job_admin')(**kw)
     wp=kw.get('wrapper_process')
     
-#     gen_subp_job_script=kwargs.get('subp_job_script', gen_subp_job_script_milner)
-#     get_subp_job_id=kwargs.get('get_subp_job_id', get_subp_job_id)
-#     save_obj=kwargs.get('save_obj', save_obj)
-    
-    
-#     host=my_socket.determine_computer()
-    
-           
-#     path_code=kwargs.get('path_code')
-
-    
-         
-#     index=kwargs['index']
-    
-    
-#     data_to_disk.mkdir('/'.join(path_sbatch_out.split('/')[0:-1]))
-#     data_to_disk.mkdir('/'.join(path_tee_out.split('/')[0:-1]))
-
-#     save_obj(path_params, path_script, obj)
     ja.save_obj(obj)
     ja.gen_job_script()
     args=ja.get_subp_args()
@@ -137,34 +109,7 @@ def epoch(*args):
     ja.process=p   
     
     job_id=ja.get_job_id()
-    
-#     if process_type=='mpi':
-#         subp_job_script_milner(**kwargs)
-#         o=generate_milner_bash_script(path_sbatch_err,
-#                                       path_sbatch_out,
-#                                       path_tee_out,
-#                                       path_params,
-#                                       path_script,
-#                                       path_bash0,
-#                                       path_bash,
-#                                        **kwargs )
-#     args=cb.gen_subp_job_script(**kwargs)
-        
-#     p=do(*args, **kwargs)
-        
-# 
-#         
-#     if host in ['supermicro', 'mikaellaptop', 'thalamus']:
-#         num_mpi_task=kwargs.get('num-mpi-task')
-#         if num_mpi_task==1:
-#             args_call=['python', path_script, path_params]
-#         else:
-#             args_call=['mpirun', '-np', str(num_mpi_task), 'python', 
-#                        path_script, path_params,
-#                        '2>&1','|', 'tee', path_tee_out]
-#             
-#         p=do(path_out, path_err, args_call,  **kwargs)
-        
+            
     script_name=obj.get_name()
     
     p=wp(p, job_id, script_name)
@@ -196,7 +141,7 @@ def save_to_database(path_results):
             print s.format(db_name, db_table, fn2)
             db=psql.insert(db_name, db_table, keys_db, values_db, db)
             print 'Removing '+path+'/'+fn2
-#             subprocess.Popen(['rm', path+'/'+fn2])
+
     db.close()
     
 def loop(*args, **kwargs):
@@ -205,8 +150,8 @@ def loop(*args, **kwargs):
 
     db_save=kwargs_list[0].get('database_save', False)
     path_results=kwargs_list[0].get('path_results')
-    process_type=kwargs_list[0].get('process_type')
-    read_subp_jobs=kwargs_list[0].get('read_subp_jobs')
+#     process_type=kwargs_list[0].get('process_type')
+#     read_subp_jobs=kwargs_list[0].get('read_subp_jobs')
     
     log_file_name=path_results+'/std/job_handler_log'
     data_to_disk.mkdir(path_results+'/std/')
@@ -645,11 +590,11 @@ class TestModuleFuncions(unittest.TestCase):
                                   
 if __name__ == '__main__':
     d={TestModuleFuncions:[
-#                             'test_do_mpi_python',
-#                             'test_do_batch',
-#                               'test_epoch_mpi_python',
-#                               'test_epoch_batch',
-                              'test_gen_job_script_milner',
+                            'test_do_mpi_python',
+                            'test_do_batch',
+                            'test_epoch_mpi_python',
+                            'test_epoch_batch',
+                            'test_gen_job_script_milner',
 
                            ]} 
     test_classes_to_run=d

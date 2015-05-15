@@ -19,7 +19,7 @@ class Ja_milner(Job_admin_abstract):
 #         path_code=kw.get('path_code')
         pr=kw.get('path_results')
     
-        self.local_threads=10
+#         self.local_num_threads=10
     
         self.p_subp_out=pr+"/std/subp/out{0:0>4}".format(index)
         self.p_subp_err=pr+'/std/subp/err{0:0>4}'.format(index)
@@ -49,18 +49,26 @@ class Ja_milner(Job_admin_abstract):
         path err
         *subp call, comma seperate inputs (se code) 
         '''
-        self.local_threads=self.local_threads_milner
+#         cores_hosting_OpenMP_threads=40/self.local_num_threads,
+#         local_num_threads=self.local_num_threads, 
+#         memory_per_node=int(819*self.local_num_threads),
+#         num_mpi_task=self.cores/self.local_num_threads,
+#         num_of_nodes=self.cores/40,
+#         num_mpi_tasks_per_node=40/self.local_num_threads,
+#         num_threads_per_mpi_process=self.local_num_threads,
+        
+#         self.local_num_threads=self.local_num_threads_milner
         kw_bash={'home':dr.HOME,
                  'hours':'00',
                  'deptj':1,
                  'job_name':self.job_name,
-                 'cores_hosting_OpenMP_threads':40/self.local_threads,
-                 'local_num_threads':self.local_threads, 
-                 'memory_per_node':int(819*self.local_threads),
-                 'num-mpi-task':40/self.local_threads,
-                 'num-of-nodes':40/40,
-                 'num-mpi-tasks-per-node':40/self.local_threads,
-                 'num-threads-per-mpi-process':self.local_threads, 
+                 'cores_hosting_OpenMP_threads':40/self.local_num_threads,
+                 'local_num_threads':self.local_num_threads, 
+                 'memory_per_node':int(819*self.local_num_threads),
+                 'num-mpi-task':self.cores/self.local_num_threads,
+                 'num-of-nodes':self.cores/40,
+                 'num-mpi-tasks-per-node':40/self.local_num_threads,
+                 'num-threads-per-mpi-process':self.local_num_threads, 
                  'minutes':'10',
                  'path_sbatch_err':self.p_sbatch_err,
                  'path_sbatch_out':self.p_sbatch_out,
@@ -104,8 +112,8 @@ class Ja_else(Job_admin_abstract):
         index=kw.get('index') #simulation index
 #         path_code=kw.get('path_code')
         pr=kw.get('path_results')
-        self.num_mpi_task=kw.get('num-mpi-task')
-#         self.local_threads=10
+#         self.num_mpi_task=kw.get('num-mpi-task')
+#         self.local_num_threads=10
     
         self.p_subp_out=pr+"/std/subp/out{0:0>4}".format(index)
         self.p_subp_err=pr+'/std/subp/err{0:0>4}'.format(index)
@@ -120,10 +128,15 @@ class Ja_else(Job_admin_abstract):
         
     def get_subp_args(self):
 
-        if self.num_mpi_task==1:
+
+        num_mpi_task=self.cores/self.local_num_threads
+#            'local_num_threads':local_num_threads, 
+#            'num-threads-per-mpi-process':local_num_threads,
+
+        if num_mpi_task==1:
             args_call=['python', self.p_script, self.p_par]
         else:
-            args_call=['mpirun', '-np', str(self.num_mpi_task), 'python', 
+            args_call=['mpirun', '-np', str(num_mpi_task), 'python', 
                        self.p_script, self.p_par]
             
         args=[self.p_subp_out, self.p_subp_err]+args_call

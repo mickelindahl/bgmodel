@@ -258,11 +258,11 @@ def get_kwargs_builder(**k_in):
 def get_kwargs_engine():
     return {'verbose':True}
 
-def get_networks(builder, k_bulder, k_director, k_default_params):
+def get_networks(builder, k_bulder, k_director, k_engine, k_default_params):
     return manager.get_networks(builder, 
                                 get_kwargs_builder(**k_bulder),
                                 k_director,  
-                                get_kwargs_engine(),
+                                k_engine,
                                 k_default_params)
 
 def create_relations(models_coher, dd):
@@ -966,6 +966,20 @@ def gs_builder_singals(*args, **kwargs):
     
     return iterator, gs,     
 
+def gs_builder_singals2(*args, **kwargs):
+    import matplotlib.gridspec as gridspec
+    n_rows=kwargs.get('n_rows',2)
+    n_cols=kwargs.get('n_cols',1)
+    order=kwargs.get('order', 'col')
+    
+    gs = gridspec.GridSpec(n_rows, n_cols)
+    gs.update(wspace=kwargs.get('wspace', 0.1 ), 
+              hspace=kwargs.get('hspace', 0.1 ))
+
+    iterator = [[slice(0,1),slice(0,1)],
+                ]
+    
+    return iterator, gs,  
 
 def gs_builder_isis(*args, **kwargs):
     import matplotlib.gridspec as gridspec
@@ -1091,7 +1105,60 @@ def show_signals(d, **k):
         
     return fig
     
-  
+def show_signals2(d, **k):
+    kw={'n_rows':2, 
+        'n_cols':1, 
+        'w':72/2.54*11.6, 
+        'h':225, 
+        'fontsize':7,
+        'frame_hight_y':0.5,
+        'frame_hight_x':0.7,
+        'title_fontsize':7,
+        'font_size':7,
+        'text_fontsize':7,
+        'linewidth':1.,
+        'gs_builder':gs_builder_singals}
+#     kwargs_fig=kwargs.get('kwargs_fig', kw)
+    
+    fig, axs=ps.get_figure2(**kw) 
+    
+    import toolbox.signal_processing as sp 
+    
+#     phase(x, **kwargs):
+# 
+#     lowcut=kwargs.get('lowcut', 10)
+#     highcut=kwargs.get('highcut', 20)
+#     order=kwargs.get('order',3)
+#     fs=kwargs.get('fs', 1000.0) 
+#     models=['M1', 'M2', 'GP', 'GA', 'GI', 'ST']
+#     models=['M2','FS', 'GP', 'GA', 'GI', 'ST']
+    models=['GP', 'GA', 'GI', 'ST']
+    freq=k.get('freq')
+    if freq==20:
+        m=10
+    if freq==1:
+        m=500
+        
+    
+    
+    for i, net in enumerate(['Net_1']):
+        for model in  models:
+            fr=d[net][model]['firing_rate']
+            bl=(fr.x>k['t_start'])*(fr.x<k['t_stop'])
+            fr.y/=numpy.mean(fr.y)
+            fr.x=fr.x[bl]
+            fr.y=fr.y[bl]
+            fr.plot(axs[i], **{'win':m/(1000/256.)*2})
+        
+        axs[i].plot(fr.x, numpy.sin(fr.x*numpy.pi*(1./m))*0.1+1, color='k')
+#             dd=sp._phase(fr.y, **k)
+#             print dd.keys()
+#             axs[i].plot(fr.x,dd['phase'])
+    
+    for ax in axs:
+        ax.legend(models+['CTX'])
+        
+    return fig  
 def show_summed2(d, **k):
 #     import toolbox.plot_settings as ps  
     scale=k.get('scale',1)
@@ -1474,11 +1541,15 @@ class Setup(object):
         return {}
     
     def default_params(self):
-        d={'home':self.home,
-           'home_data':self.home_data,
-           'home_module':self.home_module}
+        d={}
         return d
     
+    def engine(self):
+        
+        d={'record':['spike_signal'],
+           'verbose':True}
+        
+        return d
     def director(self):
         return {'nets_to_run':self.nets_to_run}  
 
@@ -1656,12 +1727,12 @@ def simulate(builder=Builder,
     models_coher = ['GI_GA', 'GI_GI', 'GA_GA', 'GA_ST', 'GI_ST', 'GP_GP',
                      'ST_ST', 'GP_ST',]
     
-
-    
     info, nets, _ = get_networks(builder, 
                                  setup.builder(), 
                                  setup.director(),
+                                 setup.engine(),
                                  setup.default_params())
+    
     add_perturbations(perturbation_list, nets)
     for p in sorted(perturbation_list.list):
         print p
@@ -1702,25 +1773,16 @@ def simulate(builder=Builder,
             net, fd=vals
         
         if fd == 0:
-            
-            
-#             from toolbox.postgresql import run_data_base_wrapper
-#             dd=run_data_base_wrapper(run, net, script_name, 
-#                                      nets.keys()[0], 'oscillation')
-            
+
             kw={'local_num_threads':setup.local_num_threads}
             dd=run_data_base_dump(run, net, script_name, 
                                 nets.keys()[0], 'oscillation',
                                 file_name,
                                 **kw)
             
-#             dd = run(net)
             add_GPe(dd)
-#             dd = compute(dd, models, attr, **kwargs_dic)
             save(sd, dd)
-            
-            
-        
+
         elif fd == 1:
   
             filt = [net.get_name()] + models + ['spike_signal']+ attr
