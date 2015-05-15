@@ -556,7 +556,7 @@ void mynest::my_aeif_cond_exp::calibrate()
 {
 	B_.logger_.init();  // ensures initialization in case mm connected after Simulate
 	//nest::double_t t=nest::Time::ms(P_.t_ref_);
-	V_.RefractoryCounts_ = 2; //nest::Time(t).get_steps();
+	V_.RefractoryCounts_ = nest::Time(nest::Time::ms(P_.t_ref_)).get_steps(); //nest::Time(t).get_steps();
 	assert(V_.RefractoryCounts_ >= 0);  // since t_ref_ >= 0, this can only fail in error
 }
 

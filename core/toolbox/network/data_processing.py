@@ -151,60 +151,7 @@ class Mixin_spk(object):
         as design pattern.
         '''
         pass
-    
-#         d={'firing_rate':Firing_rate(),
-#            'isi':{'ids':[],  'x':[], 'y':[]},
-#            'isi_parts':{'ids':[],  'x':[], 'y':[]},
-#            'mean_rate':{ 'ids':[],  'x':[],  'y':[]},
-#            'mean_rate_parts':{'ids':[],   'x':[], 'y':[], 'y_std':[]},
-#            'mean_rates':{ 'ids':[],  'x':[],  'y':[]},
-#            'psd':{'ids':[],'x':[],'y':[]},
-#            'phase':{'ids':[],'x':[],'y':[]},
-#            'phases':{'ids':[],'x':[],'y':[]},
-#            'raster':{'ids':[],  'x':[], 'y':[],},
-#            'spike_stats':{'rates':{}, 'isi':{}},
-#             }
-#         self.data=d
-        
 
-               
-#     def get_IF_curve(self):
-#         
-#         if self.isi_parts['y']==[]:
-#             self.compute_set('isi_parts',*[],**{})
-#         
-#         isi={'curr':[], 'first':[], 'mean':[], 'last':[]}
-#         x, y=self.get('isi_parts', attr_list=['x', 'y'])
-#         
-#         y=y.ravel()
-#         for xx, yy in zip(x,y):
-#             #if type(yy)!=list:
-#             #    yy=[yy]
-#                 
-#             for yyy in yy:
-#                 if not yyy.any():
-#                     yyy=[1000000.]
-#                 isi['first'].append( yyy[ 0 ] )            # retrieve first isi
-#                 isi['mean'].append( numpy.mean( yyy ) )   # retrieve mean isi
-#                 isi['last'].append( yyy[ -1 ] )           # retrieve last isi
-#                 isi['curr'].append(xx[0])
-#                 
-#                 if isi['last'][-1]==0:
-#                     print 'je'
-#             n=len(yy)
-#            
-#         for key in isi.keys():
-#             a=numpy.array(isi[key])
-#             if a.shape[0]/n>=2:
-#                 a=a.reshape((a.shape[0]/n, n))
-#             
-#             
-#             if key!='curr':
-#                 a=1000./a #Convert to firing rate
-#             isi[key]=a
-#         return isi['curr'], isi['first'], isi['mean'], isi['last']
-   
- 
     def get_mean_rate_error(self, *args, **kwargs):
         e=self.cmp('mean_rate', *args, **kwargs).y-self.target_rate
         return numpy.mean(numpy.mean(e))

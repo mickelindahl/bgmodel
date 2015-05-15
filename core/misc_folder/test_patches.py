@@ -43,6 +43,30 @@ pos=numpy.meshgrid(numpy.linspace(1+step/2,3-step/2,res),
 
 pos=zip(pos[0].ravel(),pos[1].ravel())
 
+
+def plot_pies(ax, X, Y, Z, radious, colors, **kw):
+    '''
+    X,Y two dimensional grids [n,m]
+    Z three dimensional [n,m,l]
+    colors list with l colors
+    radoius of pie 
+    
+    '''
+    for i in range(X.shape[0]):
+        for j in range(X.shape[1]):
+            x=X[i][j]
+            y=Y[i][j]
+            for k in range(len(Z[i][j])):
+                lower=0 if k==0 else Z[i][j][k-1]
+                upper=Z[i][j][k]
+                c=colors[k]
+                w=Wedge([x,y], radious, 360*lower, 360*upper, 
+                        facecolor =c, **kw)
+                patches += [w] 
+    
+    for p in patches:
+        ax.add_patch(p)
+
 y=[]
 for _ in range(res**2):
     v=numpy.random.randint(low=1, high=3,size=4)
@@ -60,10 +84,7 @@ for e0,e1 in zip(y,pos):
             'radious':2./(2.*res+5)}]
     
 patches=[]
-for k in data:
-    
-    
-    
+for k in data:  
     for i ,c, in enumerate(k['colors']):
         lower=k['y'][i]
         upper=k['y'][i+1]
@@ -82,4 +103,6 @@ ax.set_xlim([1,3])
 ax.set_ylim([1,3])
 pylab.show()
 
-pp(data)    
+pp(data) 
+
+   

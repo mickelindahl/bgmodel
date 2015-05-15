@@ -13,7 +13,7 @@ others: openmpi, libncurses-dev, libreadline-dev, libopenmpi-dev, libgsl, gsl (g
 Recomended
 
 CLONE PROJECT
-Clone project to ~/git/
+Clone project to ~/git/ (preferable use SSH cloning)
 
 INSTALL NEST
 Download nest to ~/opt/NEST/dist/ (nest-2.2.2)

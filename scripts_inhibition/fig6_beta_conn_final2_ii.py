@@ -32,7 +32,7 @@ kwargs={'add_midpoint':True,
         'data_path':('/home/mikael/results/papers/inhibition/network/'
                      +'milner/simulate_beta_ZZZ_conn_effect_perturb_final2_ii/'),
         'midpoinst':1.0,
-        'from_diks':1,
+        'from_diks':0,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),
         'title':'Activation (beta)',
         'w':15/37.*72/2.54*17.6,

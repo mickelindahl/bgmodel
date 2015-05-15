@@ -85,7 +85,7 @@ def extract_data(d, nets, models, attrs, **kwargs):
             v_max=max(val.y[2:20])
             v=numpy.mean(val.y[2:20])
             args=[[keys, keys[0:-1]+['mean_coherence_max']],
-                  [v, v_max]]        
+                  [val.y, v_max]]        
             
         if keys[-1]=='firing_rate':
             val.y=val.y[100:] #remove transient artifacts at start of sim
@@ -200,6 +200,10 @@ def extract_data(d, nets, models, attrs, **kwargs):
     return out, attrs     
       
 def compute_mse(v1,v2):
+#     if v1<=0.:
+#     v_mse=numpy.NAN
+#     else:
+    
     v_mse=(v1-v2)/v1
     
     if isinstance(v_mse, numpy.ndarray):
@@ -270,7 +274,6 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 v1=misc.dict_recursive_get(d, keys1)
                 v2=misc.dict_recursive_get(d, keys2)               
 
-          
 
                 keys=[keys3, keys4]
                 values= [v1, v2]
@@ -283,7 +286,7 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 keys_l= [kwargs.get('key_no_pert',ref_keys), 
                          'Net_1', model, attr]
                 
-                if not misc.dict_haskey(d, keys_c ):
+                if not misc.dict_haskey(d, keys_c ) or kwargs.get('skip_mse'):
                     continue
                       
 #                 if model=='ST' and keys_c[-1]=='synchrony_index':
@@ -669,6 +672,8 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
         }
     
     for attr, d in dd.items():
+        if not attr in attrs:
+            continue
 #         print attr
         if flag=='raw':
 #             print d

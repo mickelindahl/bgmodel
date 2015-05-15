@@ -62,6 +62,10 @@ class Data_element_base(object):
             
             self.__dict__[key] = value
 
+        if not hasattr(self, 'xlabel'): self.xlabel='x'
+        if not hasattr(self, 'ylabel'): self.xlabel='y'
+
+
     def __repr__(self):
         return self.__class__.__name__
     
@@ -261,16 +265,40 @@ class Data_generic_base(object):
                             self.y+self.y_std, 
                             facecolor=color, alpha=0.5)  
         
-        ax.set_xlabel('x')
-        ax.set_ylabel('y') 
+        
+
+                    
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel) 
         ax.my_set_no_ticks(xticks=6, yticks=6)
         ax.legend()
         
-
-
 class Data_generic(Data_element_base, Data_generic_base):
     pass  
 
+
+
+class Data_scatter_base(object):
+    def scatter(self, ax, **k):
+        
+        id0=k.pop('id0',0)
+        if not isinstance(ax,my_axes.MyAxes):
+            ax=my_axes.convert(ax)
+        if id0:
+            y=[e+id0 for e in self.y]
+        else:
+            y=self.y
+        
+        ax.scatter(self.x, y, **k)
+        
+                    
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel) 
+        ax.my_set_no_ticks(xticks=6, yticks=6)
+
+        
+class Data_scatter(Data_element_base, Data_scatter_base):
+    pass  
 
 class Data_phase_diff_base(object):
     
@@ -535,27 +563,24 @@ class Data_fmin(Data_element_base, Data_fmin_base):
     pass
 
 class Data_IF_curve_base(object):
-    def plot(self, ax, x=[], part='last', **k):
-        if not ax:
-            ax=pylab.subplot(111) 
-        
-        if not x:
-            x=numpy.mean(self.curr,axis=1)
+    def plot(self, ax,  **k):
        
+        part=k.pop('part','last')
+        
         if part=='first':isi=self.first
         if part=='mean':isi=self.mean
         if part=='last':isi=self.last
           
-        std=numpy.std(isi,axis=1)
+#         std=numpy.std(isi,axis=1)
         
-        m=numpy.mean(isi,axis=1)
-        color=pylab.getp(ax.plot(x, m, marker='o', **k)[0], 'color')    
+#         m=numpy.mean(isi,axis=1)
+#         color=pylab.getp(ax.plot(self.x, m, marker='o', **k)[0], 'color')    
         
-        ax.fill_between(x, m-std, m+std, facecolor=color, alpha=0.5)  
-        ax.plot(x, isi , **{'color':color})    
+#         ax.fill_between(x, m-std, m+std, facecolor=color, alpha=0.5)  
+        ax.plot(self.x, isi , **k)    
         ax.set_xlabel('Current (pA)') 
         ax.set_ylabel('Rate (spike/s)') 
-        ax.legend()
+
     
 class Data_IF_curve(Data_element_base, Data_IF_curve_base):
     pass
@@ -2277,9 +2302,30 @@ class VmListMatrix(BaseListMatrix):
         
         return VmListMatrix(a)
 
+def CondunctanceListMatrix(BaseListMatrix):
+    def __init__(self, matrix, *args, **kwargs):
+        super( VmListMatrix, self ).__init__( matrix, *args,
+                                                     **kwargs)
+        self.allowed=kwargs.get('allowed',['get_voltage_traces',
+                                           ]) 
+    def merge(self, axis=0, *args, **kwargs):
 
-
-    
+        m=transpose_if_axis_1(axis, self.m)
+            
+        'merge along rows'
+        a=numpy.empty(shape=(1,m.shape[1]), dtype=object)
+        a[0,:]=deepcopy(m[0,:])
+            
+        for i in xrange(1, m.shape[0]):
+            for j in xrange(m.shape[1]):
+                call=getattr(a[0,j], 'merge')
+                call(m[i,j])
+        
+        a=transpose_if_axis_1(axis, a)
+        a=[list(aa) for aa in a]
+        
+        return VmListMatrix(a)
+        
 class SpikeListMatrix(BaseListMatrix):
     def __init__(self, matrix, *args, **kwargs):
         

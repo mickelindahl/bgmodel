@@ -11,7 +11,7 @@ from toolbox import directories as dr
 from simulate import (
                       get_args_list_inhibition,
                       get_kwargs_list_indv_nets,
-                      par_process_and_thread,
+
                       pert_add_inhibition) 
 from toolbox import my_socket
 
@@ -26,19 +26,20 @@ FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=0
 
 NUM_NETS=1
-ops=op.get()[0:2]
+ops=op.get()
 NUM_RUNS=len(ops) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
 
-JOB_ADMIN=config.Ja_milner if my_socket.determine_computer()=='milner' else config.Ja_else
-PROCESS_TYPE='milner' if my_socket.determine_computer()=='milner' else 'else'
-WRAPPER_PROCESS=config.Wp_milner if my_socket.determine_computer()=='milner' else config.Wp_else
+dc=my_socket.determine_computer
+CORES=40 if dc()=='milner' else 10
+JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
+WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
         'Builder':Builder,
                              
-        'cores_mpi':40*1,
-        'cores_shared_memory':4,
+        'cores':CORES,
         
         'file_name':FILE_NAME,
         'from_disk_0':FROM_DISK_0,
@@ -69,7 +70,6 @@ kwargs={
         
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
-        'process_type':PROCESS_TYPE,
                 
         'size':3000,
         
@@ -78,9 +78,6 @@ kwargs={
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
         }
 
-d_process_and_thread=par_process_and_thread(**kwargs)
-pp(d_process_and_thread)
-kwargs.update(d_process_and_thread)
 
 p_list = pert_add_inhibition(**kwargs)
 

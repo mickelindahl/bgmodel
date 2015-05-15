@@ -9,16 +9,20 @@ from toolbox import monkey_patch as mp
 mp.patch_for_milner()
 
 from simulate import (get_path_rate_runs,
-                      get_path_logs, get_args_list_oscillation,
+#                       get_path_logs, 
+                      get_args_list_oscillation,
                       get_kwargs_list_indv_nets,
-                      par_process_and_thread,
-                      pert_set_data_path_to_milner_on_supermicro, 
+#                       par_process_and_thread,
+#                       pert_set_data_path_to_milner_on_supermicro, 
                       pert_add_oscillations) 
 
-from toolbox.network import default_params
+# from toolbox.network import default_params
 from toolbox.network.manager import Builder_beta as Builder
 from toolbox.parallel_excecution import loop
+from toolbox import directories as dr
+from toolbox import my_socket
 
+from scripts_inhibition import config
 import numpy
 import sys
 import simulate_beta as module
@@ -43,17 +47,22 @@ STN_amp_mod=[3.]#range(1, 6, 2)
 num_runs=len(freqs)*len(STN_amp_mod)*len(op.get())
 num_sims=NUM_NETS*num_runs
 
+dc=my_socket.determine_computer
+CORES=40 if dc()=='milner' else 10
+JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
+WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
+
 kwargs={
         'amp_base':amp_base,
         
         'Builder':Builder,
         
-        'cores_milner':40*1,
-        'cores_superm':2,
+        'cores':CORES,
         
         'debug':False,
-        'do_runs':[15],#range(num_runs), #A run for each perturbation
-        'do_obj':True,
+        'do_runs':range(num_runs), #A run for each perturbation
+        'do_obj':False,
         
         'external_input_mod':['EI','EA'],
         
@@ -62,43 +71,41 @@ kwargs={
         'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
-        
         'i0':FROM_DISK_0,
         
+        'job_admin':JOB_ADMIN, #user defined class
         'job_name':'b_ZZZ41_slow',
         
         'l_hours':  ['00','01','00'],
         'l_minutes':['45','00','05'],
         'l_seconds':['00','00','00'],
 
-        'local_threads_milner':20,
-        'local_threads_superm':1,
+        'local_num_threads':LOCAL_NUM_THREADS,
         
         'module':module,
         
         'nets':['Net_0','Net_1'], #The nets for each run
         'no_oscillations_control':True,
         
-        'path_code':default_params.HOME_CODE,
         'path_rate_runs':path_rate_runs,
-        'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
-                                     FILE_NAME),
+        'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':op.get(),
-        
+                
         'sim_time':40000.0,
         'size':20000.0 ,
-        
         'STN_amp_mod':STN_amp_mod,
+        
+        'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
         }
 
-d_process_and_thread=par_process_and_thread(**kwargs)
-pp(d_process_and_thread)
-kwargs.update(d_process_and_thread)
+# d_process_and_thread=par_process_and_thread(**kwargs)
+# pp(d_process_and_thread)
+# kwargs.update(d_process_and_thread)
 
 
 p_list = pert_add_oscillations(**kwargs)
-p_list = pert_set_data_path_to_milner_on_supermicro(p_list,
-                                                  LOAD_MILNER_ON_SUPERMICRO)
+# p_list = pert_set_data_path_to_milner_on_supermicro(p_list,
+#                                                   LOAD_MILNER_ON_SUPERMICRO)
 
 for i, p in enumerate(p_list): 
     print i, p

@@ -195,8 +195,8 @@ class Builder_abstract(object):
         raise NotImplementedError     
     
     def get_network(self, name, par, **kwargs):
-        return Network(name, **{'verbose':kwargs.get('verbose',True), 
-                                'par':par})       
+        kwargs['par']=par
+        return Network(name, **kwargs)       
           
 class Builder_network_base(Builder_abstract):    
     

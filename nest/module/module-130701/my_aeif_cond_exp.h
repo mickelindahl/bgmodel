@@ -42,53 +42,37 @@
 
 /* BeginDocumentation
 Name: my_aeif_cond_exp - Conductance based exponential integrate-and-fire neuron model according to Brette and Gerstner (2005).
-
 Description:
 my_aeif_cond_exp is the adaptive exponential integrate and fire neuron according to Brette and Gerstner (2005).
-
 This implementation uses the embedded 4th order Runge-Kutta-Fehlberg solver with adaptive stepsize to integrate
 the differential equation.
-
 The membrane potential is given by the following differential equation:
 C dV/dt= -g_L(V-E_L)+g_L*Delta_T*exp((V-V_T)/Delta_T)-g_e(t)(V-E_e) -g_i(t)(V-E_i)-w +I_e
-
 and
-
 tau_w * dw/dt= a(V-E_L) -W
-
 if V_a < V: a = a_1
 else:       a = a_2
-
 If V > V_peak
 	if ( u < 0  )
 		V = min(V_reset + u*V_reset_slope1, V_reset_max_slope1);
 	else if ( u >= 0  )
 		V = min(V_reset + u*V_reset_slope2, V_reset_max_slope1);
-
 	u = u + a
-
-
 I = g_AMPA_1( V - AMPA_1_E_rev) + g_NMDA_1( V - NMDA_1_E_rev) + g_GABAA( V - GABAA_E_rev) + I_e
-
 with dopamine modulation
-
 If I_AMPA_1=g_AMPA_1( V - AMPA_1_E_rev)
 then I_AMPA_1=I_AMPA_1*(1-beta_I_AMPA_1*tata_dop).
 Same for NMDA_1 and GABA.
-
 Parameters: 
 The following parameters can be set in the status dictionary.
-
 Dynamic state variables:
   V_m        double - Membrane potential in mV
   w          double - Spike-adaptation current in pA.
-
 Reset adaptation parameters:
 V_reset_slope1          double - Slope of v below u=u_thr_slopes
 V_reset_slope2          double - Slope of v above u=u_thr_slopes
 V_reset_max_slope1      double - V max when u<u_thr_slopes
 V_reset_max_slope2      double - V max when u>=u_thr_slopes
-
 Membrane Parameters:
   C_m        double - Capacity of the membrane in pF
   t_ref      double - Duration of refractory period in ms. 
@@ -97,7 +81,6 @@ Membrane Parameters:
   E_L        double - Leak reversal potential in mV. 
   g_L        double - Leak conductance in nS.
   I_e        double - Constant external input current in pA.
-
 Spike adaptation parameters:
   V_a        double - Recovery variable voltage threshold
   a_1	       double - Subthreshold adaptation in nS. [-inf v_b]
@@ -106,37 +89,25 @@ Spike adaptation parameters:
   Delta_T    double - Slope factor in mV
   tau_w      double - Adaptation time constant in ms
   V_t        double - Spike initiation threshold in mV (V_th can also be used for compatibility).
-
-
-
 Synaptic parameters
   AMPA_1_E_rev         double - AMPA_1 reversal potential in mV.
   AMPA_1_Tau_decay     double - Exponential decay time of the AMPA_1 synapse in ms.
-
   NMDA_1_E_rev         double - NMDA_1 reversal potential in mV.
   NMDA_1_Tau_decay     double - Exponential decay time of the NMDA_1 synaptse in ms.
   NMDA_1_Sact          double - For voltage dependence of NMDA_1-synapse mV, see eq. above
   NMDA_1_Vact          double - For voltage dependence of NMDA_1-synapse mV, see eq. ab
-
   GABAA_1_E_rev      double - GABAA 1 reversal potential in mV.
   GABAA_1_Tau_decay  double - Exponential decay time of the GABAA 1 synaptse in ms.
-
   GABAA_2_E_rev      double - GABAA 2 reversal potential in mV.
   GABAA_2_Tau_decay  double - Exponential decay time of the GABAA 2 synaptse in ms.
-
 Integration parameters
   gsl_error_tol  double - This parameter controls the admissible error of the GSL integrator.
                           Reduce it if NEST complains about numerical instabilities.
-
 Author: Adapted from aeif_cond_alpha by Lyle Muller
-
 Sends: SpikeEvent
-
 Receives: SpikeEvent, CurrentEvent, DataLoggingRequest
-
 References: Brette R and Gerstner W (2005) Adaptive Exponential Integrate-and-Fire Model as 
             an Effective Description of Neuronal Activity. J Neurophysiol 94:3637-3642
-
 SeeAlso: iaf_cond_exp, aeif_cond_alpha
  */
 
@@ -427,7 +398,6 @@ public:
 
 	/**
 	 * Internal variables of the model.
-
 	 */
 	struct Variables_
 	{

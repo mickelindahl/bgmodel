@@ -308,7 +308,7 @@ def set_action_selection_marker( i, d0, d1, x2, y2, thr, marker,**k):
     axs=k.get('axs')
     
     
-    x, y, color, marker=selection_marker(d0, d1, x2, y2, thr, marker)
+    x, y, color, marker, nbr, m=selection_marker(d0, d1, x2, y2, thr, marker)
 #     for i,j in zip(x,y):
     axs[i].scatter(x, y, color=color, 
                     edgecolor=color,linewidth=0.1,
@@ -503,26 +503,32 @@ def gs_builder3(*args, **kwargs):
 
 def show_variability_several(d, attr, nets=['Net_00'],  **k):
     do_colorbar=k.get('do_colorbar',True)
-    model='SN'
-    print_statistics=k.get('print_statistics', True)
+    model=k.get('model','SN')
+#     print_statistics=k.get('print_statistics', True)
     res=k.get('resolution')
     titles=k.get('titles')
 
-
     axs=k.get('axs')
     fig=k.get('fig')
-            
-    for ax in axs[1:]: 
-        ax.my_remove_axis(xaxis=True, yaxis=True)    
     
+    for ax in axs:
+        ax.tick_params(direction='out',
+                       length=2*k.get('scale',1), 
+                       top=False, 
+                       right=False,
+                       pad=2*k.get('scale',1))    
+          
+#     for ax in axs[1:]: 
+#         ax.my_remove_axis(xaxis=True, yaxis=True)    
+#     
      
-    i=0
+#     i=0
 
     m=len(d.keys())
     
-    for net in nets:
-        key=net
-        i=int(key.split('_')[1])
+    for key in sorted(d.keys()):
+        
+        iAx=int(key.split('_')[1])
         obj0=d[key]['set_0'][model][attr]
         obj1=d[key]['set_1'][model][attr]
         
@@ -538,7 +544,7 @@ def show_variability_several(d, attr, nets=['Net_00'],  **k):
         stepx=(x[0,-1]-x[0,0])/res
         stepy=(y[-1,0]-y[0,0])/res
     
-        x2,y2=numpy.meshgrid(numpy.linspace(x[0,0]+stepx/2, 
+        X,Y=numpy.meshgrid(numpy.linspace(x[0,0]+stepx/2, 
                                             x[0,-1]-stepx/2, res),
                              numpy.linspace(y[0,0]+stepy/2, 
                                             y[-1,0]-stepy/2, res))     
@@ -548,13 +554,13 @@ def show_variability_several(d, attr, nets=['Net_00'],  **k):
         x_mean=numpy.mean(x_raw, axis=0)
         y_mean=numpy.mean(y_raw, axis=0)
         
-        matrix=numpy.ones([x_raw.shape[0]+1, len(x), len(y)])*-1
+        Z=numpy.ones([x_raw.shape[0]+1, res, res])*-1
         for m in ['d', 'n', '1', '2']:
             
             x_mean=numpy.reshape(x_mean, [res,res])
             y_mean=numpy.reshape(y_mean, [res,res])
-            x, y, col, mar, nbr, bol=selection_marker(x_mean, y_mean, x2, y2, thr, m)
-            matrix[0, bol==False]=nbr
+            x, y, col, mar, nbr, bol=selection_marker(x_mean, y_mean, X, Y, thr, m)
+            Z[0, bol==False]=float(nbr)
         
         index=1
         for trace0, trace1 in zip(x_raw, y_raw):
@@ -562,38 +568,84 @@ def show_variability_several(d, attr, nets=['Net_00'],  **k):
                 trace0=numpy.reshape(trace0, [res,res])
                 trace1=numpy.reshape(trace1, [res,res])
                 i, j, _,_,  nbr, bol=selection_marker(trace0, trace1, 
-                                              x2, y2, thr, m)
-                matrix[index,bol==False]=nbr
+                                              X, Y, thr, m)
+                Z[index,bol==False]=nbr
             index+=1
         
         
-        iAxis=0
-        for i in reversed(range(k.get('resolution'))):
-            for j in range(k.get('resolution')):
-                
-                
-                sizes=numpy.bincount( list(matrix[1:,i,j]), minlength=4)
-    
-                colors=['w', 'k', 'b', 'r']
-                labels=['-', '+', '1', '2']
-                explode = (0, 0, 0, 0) 
-                
-                if i==k.get('resolution')-1 and j==k.get('resolution')-1:
-                    patches, texts=axs[index].pie([1]*4, explode=explode, 
-                                              colors=colors, shadow=True,) 
-                    axs[iAxis].legend(patches, labels,
-                                 bbox_to_anchor=[9.,1.])
-                
-                if numpy.all(sizes[1:]==0):stop=1
-                elif numpy.all(sizes[2:]==0):stop=2
-                elif numpy.all(sizes[3:]==0):stop=3
-                else:stop=4
-                
-                patches, _=axs[index].pie(sizes[0:stop], explode=explode[0:stop], 
-                                            colors=colors[0:stop], shadow=False, )
-                index+=iAxis   
-    
+#         from misc_folder.test_patches import plot_pies
+        
+        kw={'edgecolor':'k',
+            'linewidth':0.5}
+        
+        Z=Z[1:,:,:]
+        
+        Z2=numpy.ones([4, res, res])*-1
+        for i in range(Z.shape[1]):
+            for j in range(Z.shape[2]):
+                s=numpy.bincount(list(Z[:, i, j]), minlength=4)
+                Z2[:,i,j]=numpy.cumsum(s/float(sum(s)))
+                print s/float(sum(s))
+        
+        patches=plot_pies(axs[iAx],X,Y,Z2,colors=['w', 'k', 'b', 'r'], 
+                  radious=2./(2.*res+5), **kw)
+
+        labels=['No selection', 'Dual selection', 'Action 1', 'Action 2']
+
+        axs[iAx].set_xlabel('Action 1')
+        axs[iAx].set_ylabel('Action 2')
+        axs[iAx].set_xlim([1,3])
+        axs[iAx].set_ylim([1,3])
+#         axs[iAx].set_xlim([x[0,0], x[0,-1]])
+#         axs[iAx].set_ylim([y[0,0], y[-1,0]])
+
+        if iAx==0:   
+            for c in ['w', 'k', 'b', 'r']:
+                w=Wedge([0,0], 0.01, 360*0, 360*1, facecolor=c)
+                patches.append(w)
+                axs[iAx].add_patch(w)   
+   
+            axs[iAx].legend(patches[-4:], labels, loc='center', bbox_to_anchor=[1.1, 1.4], ncol=2)
+                    
+        axs[iAx].text(0.5, k.get('pos_ax_titles',1.05) , titles[iAx],
+                    horizontalalignment='center', 
+                    transform=axs[iAx].transAxes,
+#                     fontsize=k.get('fontsize_ax_titles',7)
+                    ) 
+        for ax in axs:
+            ax.xaxis.labelpad = 10
+            ax.yaxis.labelpad = 10
     return fig
+
+from matplotlib.patches import Circle, Wedge, Polygon
+def plot_pies(ax, X, Y, Z, radious, colors, **kw):
+    '''
+    X,Y two dimensional grids [n,m]
+    Z three dimensional [n,m,l]
+    colors list with l colors
+    radoius of pie 
+    
+    '''
+    
+    patches=[]
+    for i in range(X.shape[0]):
+        for j in range(X.shape[1]):
+            x=X[i,j]
+            y=Y[i,j]
+            for k in range(len(Z[:,i,j])):
+                lower=0.0 if k==0 else Z[k-1,i,j]
+                upper=Z[k,i,j]
+                print lower, upper
+                c=colors[k]
+                if upper-lower==0:
+                    continue
+                w=Wedge([x,y], radious, 360*lower, 360*upper, 
+                        facecolor =c, **kw)
+                patches += [w] 
+    
+    for p in patches:
+        ax.add_patch(p)
+    return patches
 
 def show_variability(d, attr, net='Net_00',  **k):
     do_colorbar=k.get('do_colorbar',True)

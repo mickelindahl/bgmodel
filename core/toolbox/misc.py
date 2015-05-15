@@ -158,7 +158,12 @@ class Stopwatch():
     def __exit__(self, type, value, traceback):
         t=round(time.time()-self.time,)
         if self.relative_to:
-            t_rel=round(self.relative_to/t, 6)
+            if t:
+                t_rel=round(self.relative_to/t, 6)
+            else:
+                t_rel=t
+                
+                
             msg_out='... finnish {} {} real time factor {} sec '.format(self.msg, t_rel, t)
         else:
             msg_out='... finnish {} {} sec '.format(self.msg, t)

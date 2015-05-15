@@ -624,10 +624,12 @@ class Network(Network_base):
         with Stop_stdout(not self.verbose), Stopwatch('Postprocessing'):
             
             for signal_type in self.record:
+                
                 # Set data for data units for each data call
                 #print self.sim_time_progress
                 #print my_nest.GetStatus([12])[0]['events']['times']
 #                 print self.pops.keys()
+
                 d_signals=self.pops.get(signal_type)
                 
                 for name, signal in d_signals.items():
@@ -1537,18 +1539,18 @@ if __name__ == '__main__':
 
     d={
         TestUnittest:[
-                    'test_1_build',
-                    'test_2_connect',
-                    'test_3_run',
-                    'test_4_reset',
+#                     'test_1_build',
+#                     'test_2_connect',
+#                     'test_3_run',
+#                     'test_4_reset',
                     'test_5_simulation_loop', 
-                    'test_6_simulation_loop_x3_update_par_rep',
-                    'test_7_simulation_loop_x3_replace_pertubations',
-                    'test_90_IV_curve',   
-                    'test_90_IF_curve',
-                    'test_91_FF_curve', 
-                    'test_92_voltage_trace',
-                    'test_93_optimization',
+#                     'test_6_simulation_loop_x3_update_par_rep',
+#                     'test_7_simulation_loop_x3_replace_pertubations',
+#                     'test_90_IV_curve',   
+#                     'test_90_IF_curve',
+#                     'test_91_FF_curve', 
+#                     'test_92_voltage_trace',
+#                     'test_93_optimization',
                       ],
         TestUnittestExtend:[
                            ],

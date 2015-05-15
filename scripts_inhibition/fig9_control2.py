@@ -19,7 +19,7 @@ import pprint
 pp=pprint.pprint
 
 
-from_disk=1
+from_disk=0
 scale=1
 path=('/home/mikael/results/papers/inhibition/network/'
              +'milner/simulate_beta_ZZZ_control_slow_beta2/')
@@ -49,10 +49,6 @@ def create_name(file_name):
         print file_name.split('/')[-1][7:11]
         v=file_name.split('/')[-1][7:11]
         return v
-
-
-
-
 
 fig, axs=ps.get_figure2(n_rows=4,
                          n_cols=3,  

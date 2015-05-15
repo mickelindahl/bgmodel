@@ -24,7 +24,7 @@ import unittest
 from toolbox import data_to_disk 
 from toolbox import directories as dr
 from toolbox.parallelization import comm
-from toolbox.parallel_excecution import (do, Callback_sbatch, Mockup_class, 
+from toolbox.parallel_excecution import (do, Job_admin_sbatch, Mockup_class, 
                                          Wrapper_process_sbatch)
 class TestModuleFuncions(unittest.TestCase):
 
@@ -48,9 +48,9 @@ class TestModuleFuncions(unittest.TestCase):
     def create_obj(self, host):
         return Mockup_class(self.p_out_data(host)+'/data_out.pkl')
 
-    def create_callback_milner(self, callback, host):
+    def create_job_admin_milner(self, job_admin, host):
 #         path=self.dir+host
-        d={'callback':Callback_sbatch,
+        d={'job_admin':Job_admin_sbatch,
            'index':0,
            'num-mpi-task':2,
            'path_results':self.p_out_data(host),
@@ -62,7 +62,7 @@ class TestModuleFuncions(unittest.TestCase):
 #            'threads':20
            }
                  
-        cb=callback(**d)
+        cb=job_admin(**d)
         self.clear_paths(cb)
         return cb          
              
@@ -80,7 +80,7 @@ class TestModuleFuncions(unittest.TestCase):
 # #                 'threads':20
 #             }
         host='milner'
-        cb=self.create_callback_milner(Callback_sbatch, host)
+        cb=self.create_job_admin_milner(Job_admin_sbatch, host)
         obj=self.create_obj(host)
         cb.gen_job_script()
         
@@ -121,6 +121,9 @@ class TestModuleFuncions(unittest.TestCase):
         time.sleep(20)
 
         l=data_to_disk.pickle_load(self.p_out_data(host)+'/data_out.pkl')
+        print cb.p_subp_out
+        print cb.p_tee_out
+        print cb.p_sbatch_out
         self.assertListEqual(l, [1])
         self.assertTrue(os.path.isfile(cb.p_subp_out))
         self.assertTrue(os.path.isfile(cb.p_subp_err))
