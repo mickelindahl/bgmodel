@@ -5,6 +5,7 @@ files=os.listdir('.')
 
 home=/'home
 folder='/
+
 n_folders=int(sys.argv[1])
 
 for i in range(n_folders):

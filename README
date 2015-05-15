@@ -34,7 +34,7 @@ INSTALL MODULE
 Required packages: autoconf, automake
 
 link
-ln -s /home/mikael/git/bgmodel/nest/module/compile-module /home/mikael/opt/NEST/module/module-130701
+ln -s /home/mikael/git/bgmodel/nest/module/module-130701 /home/mikael/opt/NEST/module/module-130701
 ln -s /home/mikael/git/bgmodel/nest/module/compile-module.sh /home/mikael/opt/NEST/module/compile-module.sh
 
 run compile-module.sh with  module folder, nest version, nest installation directory, nest model source directory as parameters.
