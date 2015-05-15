@@ -3,11 +3,16 @@ Created on May 14, 2015
 
 @author: mikael
 '''
+
 from pyqtgraph.Qt import QtCore, QtGui
 from pyqtgraph.dockarea import DockArea, Dock   
 from pyqtgraph.parametertree import Parameter, ParameterTree
+from toolbox import data_to_disk
+from toolbox import directories as dr
 
+import datetime as dt
 import numpy
+import os
 import pyqtgraph as pg
 
 import pprint
@@ -19,16 +24,18 @@ pg.setConfigOption('foreground', 'k')
 class Base_model(object):
     def __init__(self, **kw):
         self.app=kw.pop('app')
+        self.data_label=''
+        self.date_time=dt.datetime.now().strftime('%Y_%m_%d-%H_%M')
         self.h=kw.pop('h', .1) #integration step size
         self.n_state_variables=kw.pop('n_state_variables', 2)
-        self.n_history=kw.pop('n_history', 1000)
+        self.n_history=kw.pop('n_history', 2000)
         self.kw=kw
         self.params=kw.get('params') #qt paramters, se tree parameter class
         self.update_time=kw.pop('update_time', 0)
         self.widgets=[]
         self.script_name=kw.pop('script_name',__file__.split('/')[-1][0:-3])
         self.start_stim=-10000.0
-        
+        self.scale_plot=10
         
         for key, value in kw.items():
             self.__dict__[key] = value
@@ -45,14 +52,12 @@ class Base_model(object):
         self.y[0]=-70
         self.dy=numpy.zeros(self.n_state_variables)
         
-        self.x_history=numpy.arange(0,self.n_history, 1.0)
-        self.y_history=numpy.random.rand( self.n_state_variables, self.n_history)
+        self.x_history=numpy.arange(0,self.n_history, self.scale_plot*self.h)
+        self.y_history=numpy.random.rand( self.n_state_variables, self.n_history/(self.scale_plot*self.h))
         self.y_history[0,:]=-70   
         
         # Parameters
         self.p = Parameter.create(name='params', type='group', children=self.params)
-        self.p.param('Stimulate', 'Start').sigActivated.connect(self.stimulate)
-#         self.p=Parameter(**self.params)
         self.p.sigTreeStateChanged.connect(self.change)
         pt = ParameterTree()
         pt.setParameters(self.p, showTop=False)
@@ -63,16 +68,23 @@ class Base_model(object):
         # Voltage time plot
         w=pg.PlotWidget()
         w.setWindowTitle('Voltage/time')
-        w.setRange(QtCore.QRectF(0, -90, 1000, 100)) 
-        w.setLabel('bottom', 'Index', units='B')
+        
+        w.setRange(QtCore.QRectF(0, -90, self.n_history, 100)) 
+        w.setLabel('bottom', 'Time', units='s')
         w.plotItem.layout.setContentsMargins(20, 20, 20, 20)
         
         ax=w.plotItem.getAxis('left')
-        l=[[ (0.0,'0'), (-30, -30), (-60, -60) ], ]
+        l=[[ (0.0,'0'), (-30, -30), (-60, -60), (-90, -90) ], ]
         ax.setTicks(l)
+        
+        w.plotItem.getAxis('bottom').setScale(0.001)
+        ax.setLabel('Voltage', units='V')
+        ax.setScale(0.001)
+#         ax.setWidth(w=2)
+        
 #         ax.setRange(500,1500)
         color=self.kw.get('curve_uv_color',(0,0,0))
-        pen=pg.mkPen(color, width=self.kw.get('curve_uv_width',2))
+        pen=pg.mkPen(color, width=self.kw.get('curve_uv_width',5))
         self.curve_vt = w.plot(pen=pen)
         self.curve_vt.setData(self.x_history, self.y_history[0,:])
         self.widgets.append(w)
@@ -83,9 +95,9 @@ class Base_model(object):
         self.timer.start(self.update_time)    
 #         self.timer.start(1000.)  
     
-        self._init_extra_widgets(*kw)        
+        self._init_extra(*kw)        
           
-    def _init_extra_widgets(self,*kw):
+    def _init_extra(self,*kw):
         pass
 
     def change(self, param, changes):
@@ -115,9 +127,24 @@ class Base_model(object):
     def draw(self):
         self.curve_vt.setData(self.x_history, self.y_history[0,:]) 
             
+            
     def f(self, x, y):
         return x*y #dummy function
     
+    
+    def get_params_as_dic(self):
+
+        d={}
+        for ch0 in self.p.children():
+            d[ch0.name()]={}
+            for ch1 in ch0.children():
+                if ch1.value() is None:
+                    continue
+                
+                d[ch0.name()].update({ch1.name():ch1.value()})
+        
+        return d
+     
     def params(self):
         raise NotImplementedError
     
@@ -129,22 +156,28 @@ class Base_model(object):
     
     def rk4(self):
         
-
-        k_1 = self.f(self.x, self.y)
-        k_2 = self.f(self.x+0.5*self.h, self.y+0.5*self.h*k_1)
-        k_3 = self.f(self.x+0.5*self.h, self.y+0.5*self.h*k_2)
-        k_4 = self.f(self.x+self.h, self.y+k_3*self.h)
+        f=self.f
+        k_1 = f(self.x, self.y)
+        k_2 = f(self.x+0.5*self.h, self.y+0.5*self.h*k_1)
+        k_3 = f(self.x+0.5*self.h, self.y+0.5*self.h*k_2)
+        k_4 = f(self.x+self.h, self.y+k_3*self.h)
     
         self.x=self.x+self.h
         self.y = self.y + (1/6.)*(k_1+2*k_2+2*k_3+k_4)*self.h;  #main equation
     
     def save(self):
-        d=get_params_as_dic()
-        path=self.path+'/'+self.script_name
+
+        d=self.get_params_as_dic()
+        
+        path=dr.HOME_DATA+'/'+self.script_name+'/'+self.date_time
+        
         if not os.path.isdir(path):
-            mkdir
+            data_to_disk.mkdir(path)
         
+        l=os.listdir(path)
+        n=len(l)
         
+        data_to_disk.pickle_save(d, path+'/data_'+str(n)+'_'+self.data_label)
         
     def stimulate(self):
         self.start_stim=self.x
@@ -154,7 +187,8 @@ class Base_model(object):
         rk4=self.rk4
         rk4()
 
-        if self.x-int(self.x)<self.h:
+#         print self.x/self.h %/self.scale_plot
+        if self.x/self.h %self.scale_plot<1:
 
             self.pre_history()
             self.update_history()
@@ -168,10 +202,10 @@ class Base_model(object):
             self.post_history()
         
     def update_history(self):
-        self.x_history[0:-1]=self.x_history[1:]
+#         self.x_history+=1.
         self.y_history[:,0:-1]=self.y_history[:,1:]
             
-        self.x_history[-1]=self.x
+#         self.x_history[-1]=self.x
         self.y_history[:,-1]=self.y.transpose()
 
     
@@ -202,43 +236,56 @@ def aeif_params(**kw):
           {'name': 'V_th', 'type': 'float', 'value': kw['V_th'], 'siPrefix': True, 'suffix': 'mV'},
         ]
         },
-        {'name': 'Stimulate', 'type': 'group', 'children': [
+        {'name': 'stimulate', 'type': 'group', 'children': [
         {'name': 'I_stim', 'type': 'float','value': 10.0, 'siPrefix': True, 'suffix': 'pA'},
         {'name': 'stim_time', 'type': 'float','value': 100.0, 'siPrefix': True, 'suffix': 'ms'},
-        {'name': 'Start', 'type': 'action'},
+        {'name': 'start', 'type': 'action'},
     ]},
-        {'name': 'Store  state', 'type': 'group', 'children': [
-        {'name': 'Path', 'type': 'text', 'value': '/home/mikael/results/interact'},
-        {'name': 'Save', 'type': 'action'},
+        {'name': 'store_state', 'type': 'group', 'children': [
+        {'name': 'save', 'type': 'action'},
+#          {'name': 'data_label', 'type': 'text', 'value': ''},
     ]},]
     return l
     
 class Aeif(Base_model):
-    def _init_extra_widgets(self,*kw):
+    def _init_extra(self,*kw):
+        
+        self.dyn_xticks=[[100*i,i*0.1] for i in range(0,22,4)]
+        
+          
+        self.p.param('store_state', 'save').sigActivated.connect(self.save)
+        self.p.param('stimulate', 'start').sigActivated.connect(self.stimulate)
         
         # Comet for recovery current vs time plot
         w=pg.PlotWidget()
+        w.plotItem.getAxis('bottom').setScale(0.001)
+        w.plotItem.getAxis('left').setLabel('Current', units='A')
+        w.plotItem.getAxis('left').setScale(0.000000000001)
+        
         w.setWindowTitle('Recovery current')
-        w.setRange(QtCore.QRectF(0, -200, 1000, 400)) 
-        w.setLabel('bottom', 'Index', units='B')
-        w.plotItem.layout.setContentsMargins(30, 30, 30, 30)
+        w.setRange(QtCore.QRectF(0, -200, self.n_history, 400)) 
+        w.setLabel('bottom', 'Time', units='s')
+        w.plotItem.layout.setContentsMargins(20, 20, 20, 20)
         
         color=self.kw.get('curve_uv_color',(0,0,0))
-        pen=pg.mkPen(color, width=self.kw.get('curve_uv_width',2))
+        pen=pg.mkPen(color, width=self.kw.get('curve_uv_width',5))
         self.curve_ut = w.plot(pen=pen)
         self.widgets.append(w) 
         
         
         # Comet for voltage recovery current plot
         w=pg.PlotWidget()
+        w.plotItem.getAxis('bottom').setScale(0.001)
+        w.plotItem.getAxis('left').setLabel('Recovery current u', units='A')
+        w.plotItem.getAxis('left').setScale(0.000000000001)
         w.setWindowTitle('Recovery current/voltage')
         w.setRange(QtCore.QRectF(-100, -200, 130, 400)) 
-        w.setLabel('bottom', 'Index', units='B')
-        w.plotItem.layout.setContentsMargins(30, 30, 30, 30)
+        w.setLabel('bottom', 'Voltage', units='V')
+        w.plotItem.layout.setContentsMargins(20, 20, 20, 20)
         self.widgets.append(w) 
                 
         color=self.kw.get('curve_uv_color',(0,0,0))
-        pen=pg.mkPen(color, width=self.kw.get('curve_uv_width',2) )
+        pen=pg.mkPen(color, width=self.kw.get('curve_uv_width',5) )
         self.curve_uv = w.plot(pen=pen)
         self.curve_uv_nullcline0 = w.plot(pen=pen)
         self.curve_uv_nullcline1 = w.plot(pen=pen)
@@ -248,12 +295,26 @@ class Aeif(Base_model):
         self.curve_uv_comet= w.plot(symbolBrush= brush, symbol='o', symbolSize=15.)
         
         self.draw()
-              
+            
+            
+    def update_dyn_ticks(self):
+#         print self.dyn_xticks
+        l1=[[l[0]-1,l[1]] if l[0]>0 else 
+            [self.dyn_xticks[-1][0]+400.-1 , self.dyn_xticks[-1][1] +0.4]
+            for l in self.dyn_xticks ]
+        self.dyn_xticks=sorted(l1, key=lambda x: x[0])
+
+    
     def draw(self):
         self.curve_vt.setData(self.x_history, self.y_history[0,:])
-        self.widgets[1].setRange(QtCore.QRectF(self.x-1000, -90, 1000, 100)) 
+        self.update_dyn_ticks()
+                
+        for i in range(1,3):
+            ax=self.widgets[i].plotItem.getAxis('bottom')
+            l=[self.dyn_xticks, ]
+            ax.setTicks(l)       
+
         self.curve_ut.setData(self.x_history, self.y_history[1,:])
-        self.widgets[2].setRange(QtCore.QRectF(self.x-1000,-200, 1000, 400)) 
         self.curve_uv.setData(self.y_history[0,-100:], self.y_history[1,-100:])
         
         v=numpy.linspace(-90,10,100)
@@ -314,7 +375,7 @@ class Window_aeif(Window_base):
         
         area = DockArea()
         self.win.setCentralWidget(area)
-        self.win.resize(1500,1200)
+        self.win.resize(1500,1400)
         self.win.setWindowTitle(self.title)
         
         docks=[]
@@ -338,14 +399,23 @@ class Window_aeif(Window_base):
         QtGui.QApplication.instance().exec_()
 
 def dummy_params():
-    d={'name': 'Dummy parameters', 
+    d=[{'name': 'Par 1', 
      'type': 'group', 
      'children': 
      [
       {'name': 'dummy1', 'type': 'float', 'value': 2.0},
       {'name': 'dummy2', 'type': 'float', 'value': 0.0},
     ]
-     }
+     },
+       {'name': 'Par 2', 
+     'type': 'group', 
+     'children': 
+     [
+      {'name': 'dummy3', 'type': 'float', 'value': 2.0},
+      {'name': 'dummy4', 'type': 'float', 'value': 0.0},
+    ]
+     },
+       ]
     return d
     
 def dummy_aeif():
@@ -407,7 +477,7 @@ class TestBaseModel(unittest.TestCase):
         
     def test_2_change(self):
         bm=Base_model(**self.kw)
-        p = Parameter(**dummy_params())
+        p = Parameter.create(params=dummy_params())
         p_children=p.children()
         bm.change(p, [[p_children[0], 'value', 2.0]])
     
@@ -421,7 +491,14 @@ class TestBaseModel(unittest.TestCase):
     def test_4_update(self):
         bm=Base_model(**self.kw)
         bm.update()
-
+        
+    def test_5_get_params_as_dic(self):
+        bm=Base_model(**self.kw)
+        d1=bm.get_params_as_dic()        
+        d2={'Par 1': {'dummy1': 2.0, 'dummy2': 0.0},
+            'Par 2': {'dummy3': 2.0, 'dummy4': 0.0}}
+        self.assertDictEqual(d1, d2)
+        
 class TestAeif(unittest.TestCase):
     def setUp(self):
         self.app=QtGui.QApplication([])
@@ -446,7 +523,7 @@ class TestAeif(unittest.TestCase):
         w.layout()
 #         bm.start()
         w.show()
-        
+
 class TestWindow(unittest.TestCase):     
     def setUp(self):
         self.app=QtGui.QApplication([])
@@ -469,12 +546,13 @@ if __name__ == '__main__':
 #                      'test_2_change',
 #                         'test_3_rk4',
 #                         'test_4_update',
+#                     'test_5_get_params_as_dic',
                      
                 ],
          TestAeif:[ 
-#                    'test_1_f' ,
+#                     'test_1_f' ,
 #                     'test_2_update',
-                    'test_3_with_window',
+                    'test_3_with_window', # must run by it self
                 ],     
         TestWindow:[
 #                      'test_1_layout_aeif',
