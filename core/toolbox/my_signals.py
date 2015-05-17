@@ -272,6 +272,26 @@ class Data_generic_base(object):
         ax.set_ylabel(self.ylabel) 
         ax.my_set_no_ticks(xticks=6, yticks=6)
         ax.legend()
+
+    def show_speed_point(self ,ax, **k):
+
+                
+        speed=numpy.diff(self.y)/numpy.diff(self.x)*k.get('unit_scale') 
+        speed_point=numpy.nonzero(self.x[0:-1]==k.get('at',81))[0][0]
+        
+        _xrange=self.x[-1]-self.x[0]
+        yrange=self.y[-1]-self.y[0]
+        
+        ax.text( 0.1,0.9, 
+                 str(round(speed[speed_point],2))+' '
+                 +k.get('speed_unit','Hz/pA'), backgroundcolor='w',
+                   transform=ax.transAxes, 
+                 
+                 **{ 'color' : 'k', 'ha':'left',  'va':'center' }) 
+        
+        ax.plot(self.x[speed_point], self.y[speed_point], 
+                color=k.get('color','b'), marker='.',
+                markersize=k.get('markersize',10))
         
 class Data_generic(Data_element_base, Data_generic_base):
     pass  
@@ -567,9 +587,9 @@ class Data_IF_curve_base(object):
        
         part=k.pop('part','last')
         
-        if part=='first':isi=self.first
-        if part=='mean':isi=self.mean
-        if part=='last':isi=self.last
+        if part=='first':rate=self.first
+        if part=='mean':rate=self.mean
+        if part=='last':rate=self.last
           
 #         std=numpy.std(isi,axis=1)
         
@@ -577,9 +597,32 @@ class Data_IF_curve_base(object):
 #         color=pylab.getp(ax.plot(self.x, m, marker='o', **k)[0], 'color')    
         
 #         ax.fill_between(x, m-std, m+std, facecolor=color, alpha=0.5)  
-        ax.plot(self.x, isi , **k)    
+        ax.plot(self.x, rate , **k)    
         ax.set_xlabel('Current (pA)') 
         ax.set_ylabel('Rate (spike/s)') 
+
+    def show_speed_point(self ,ax, **k):
+
+        part=k.pop('part','last')
+
+        if part=='first':rate=self.first
+        if part=='mean':rate=self.mean
+        if part=='last':rate=self.last
+        
+        speed=numpy.diff(rate)/numpy.diff(self.x) 
+        speed_point=numpy.nonzero(self.x[0:-1]==k.get('at_current',81))[0][0]
+        
+        xrange=self.x[-1]-self.x[0]
+        yrange=rate[-1]-rate[0]
+        
+        ax.text( self.x[speed_point]+xrange*0.04, 
+                 rate[speed_point]-yrange*0.1, 
+                 str(round(speed[speed_point],2))+' Hz/pA', backgroundcolor='w',
+#                  transform=ax.transAxes, 
+                 **{ 'color' : 'k', 'ha':'left',  'va':'center' }) 
+        ax.plot(self.x[speed_point], rate[speed_point], 
+                color=k.get('color','b'), marker='.',
+                markersize=k.get('markersize',10))
 
     
 class Data_IF_curve(Data_element_base, Data_IF_curve_base):

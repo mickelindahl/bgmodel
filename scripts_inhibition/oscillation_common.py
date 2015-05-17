@@ -282,48 +282,13 @@ def plot_letter(ax, name, c0, c1):
                 verticalalignment='center', 
                 color='w', 
                 transform=ax.transAxes,  
-#                 fontsize=24,
-                  
-#                     rotation=270
                 )
     
-#     ax.text(c0, c1, name, 
-#                 horizontalalignment='center', 
-#                 verticalalignment='center', 
-#                 color='w', 
-#                 fontsize=22,
-#                 transform=ax.transAxes)
-# #                     rotation=270
+                    
 
 def set_text_on_bars(axs, i, names, coords):
     for name, coord in zip(names, coords):
-        
-#         axs[i].scatter(coord[0], coord[1], color='w', edgecolor='k',
-#                        linewidth=0.5,
-#                    s=0.1, 
-# #                    transform=axs[i].transAxes,
-#                    marker=r'$'+name+'$')
         plot_letter(axs[i], name, coord[0],coord[1])
-#         
-#         axs[i].text(coord[0], coord[1], name, 
-#                     horizontalalignment='center', 
-#                     verticalalignment='center', 
-#                     color='k', 
-#                  transform=axs[i].transAxes,  
-#                     fontsize=22,
-#                       
-# #                     rotation=270
-#                     )
-#         
-#         axs[i].text(coord[0], coord[1], name, 
-#                     horizontalalignment='center', 
-#                     verticalalignment='center', 
-#                     color='w', 
-#                     fontsize=20,
-#                    transform=axs[i].transAxes,
-# #                     rotation=270
-#                     )
-#     
 
 def plot_spk_stats_STN(d, axs, i, **k):
     y_lim_scale=1.
@@ -1842,6 +1807,7 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
     d_plot_signals=setup.plot_signals()
 
     sd_figs = Storage_dic.load(file_name_figs)
+ 
     if numpy.all(numpy.array(from_disks) == 2):
         figs = []
         fig, axs=ps.get_figure(**d_plot_fr['fig_and_axes'])
