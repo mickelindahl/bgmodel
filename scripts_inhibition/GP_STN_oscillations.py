@@ -192,8 +192,8 @@ def simulate(from_disk=0,
              setup=Setup(50,20) ):
     
     setup=Setup(50,20) 
-    file_name = dr.HOME_DATA+'/'+script_name
-    file_name_figs = dr.HOME_DATA+'/fig/'+script_name
+    file_name = kw.get('file_name', dr.HOME_DATA+'/'+script_name)
+    file_name_figs = kw.get('file_name_figs', dr.HOME_DATA+'/fig/'+script_name)
     
     sd=get_storage_list([net], file_name, '')[0]
     
@@ -217,10 +217,11 @@ def simulate(from_disk=0,
     
     d = misc.dict_update(d, dd)
 
-    return d, file_name_figs, net
+    return d, file_name_figs
     
-def create_figs(d, file_name_figs, net, **kw):
+def create_figs(d, file_name_figs, **kw):
     
+    net=kw['net']
     fig, axs=get_fig_axs(scale=kw.get('scale',3))
     
     figs=[fig]
@@ -228,7 +229,7 @@ def create_figs(d, file_name_figs, net, **kw):
     ax=axs[0]
     d[net]['gi']['firing_rate'].plot(ax, **{'win':1.})
     d[net]['st']['firing_rate'].plot(ax, **{'win':1.})
-    ax.set_xlim(500.0,1500.0)
+    ax.set_xlim(1000.0,1500.0)
      
     kw={ 'all':True,
          'color':'b',
@@ -252,7 +253,6 @@ def main(*args, **kwargs):
     args=simulate(*args, **kwargs)
     create_figs(*args,**kwargs)
 
-    return d
 
 
 def run_simulation(from_disk=0, local_num_threads=10):
@@ -271,7 +271,7 @@ def run_simulation(from_disk=0, local_num_threads=10):
     delay=3.
     kw={    
         'gi_amp':1,
-        'gi_n':600,
+        'gi_n':300,
         
         'gi_st_delay':delay,
         'gi_gi_delay':1.,
@@ -283,7 +283,7 @@ def run_simulation(from_disk=0, local_num_threads=10):
         'sim_time':3500.0, 
         'st_gi_delay':delay,
         'st_amp':0,
-        'st_n':200,
+        'st_n':100,
         }
     
     args=simulate(from_disk=from_disk,
@@ -298,8 +298,8 @@ import unittest
 class TestGP_STN_0csillation(unittest.TestCase):     
     def setUp(self):
         
-        v=run_simulation(from_disk=2, local_num_threads=10)
-        d, file_name_figs, net=v
+        v=run_simulation(from_disk=0, local_num_threads=10)
+        d, file_name_figs=v
                 
         self.d=d
         self.file_name_figs=file_name_figs

@@ -919,7 +919,7 @@ def get_nullcline_aeif(**kw):
     Delta_T=kw.get('Delta_T')
     g_L=kw.get('g_L')
     E_L=kw.get('E_L')
-    V0=kw.get('V')
+    V0=numpy.array(kw.get('V'))
     V_a=kw.get('V_a')
     V_th=kw.get('V_th')
     

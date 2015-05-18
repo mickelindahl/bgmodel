@@ -22,9 +22,9 @@ from toolbox import data_to_disk
 from toolbox.data_to_disk import Storage_dic
 import os
 
-path=dr.HOME_DATA+'/'+__file__.split('/')[-1][0:-3]    
-if not os.path.isdir(path):
-    data_to_disk.mkdir(path)
+# path=dr.HOME_DATA+'/'+__file__.split('/')[-1][0:-3]    
+# if not os.path.isdir(path):
+#     data_to_disk.mkdir(path)
 par=default_params.Inhibition()
 
 
@@ -180,7 +180,7 @@ def simulate_rebound_spike(**kw):
 def simulate_ahp(**kw):
     
     n=len(kw.get('ahp_curr'))
-    I_vec=kw.get('ahp_curr')
+    I_vec=numpy.array(kw.get('ahp_curr'))
     
     simTime  = 3000.  # ms
     my_nest.ResetKernel({'local_num_threads':1})
@@ -211,8 +211,10 @@ def simulate_ahp(**kw):
     delays=[]
     for i in range(n):
 #         print signal.spiketrains[i+1.0].spike_times
-        delays.append(max(numpy.diff(signal.spiketrains[i+1.0].spike_times)));
-    
+        v=numpy.diff(signal.spiketrains[i+1.0].spike_times)
+        v=numpy.append(v, [0])
+        delays.append(max(v));
+
     dg=Data_generic(**{'x':I_vec, 'y':delays, 'xlabel':'Time (ms)', 'ylabel':'Voltage (mV)'})
     
     return {'ahp':dg}
@@ -220,7 +222,7 @@ def simulate_ahp(**kw):
 def simulate_irregular_firing(**kw):
     
     n=len(kw.get('irf_curr'))
-    I_vec=kw.get('irf_curr')
+    I_vec=numpy.array(kw.get('irf_curr'))
     
     simTime  = 2000.  # ms
     my_nest.ResetKernel({'local_num_threads':1})
@@ -284,8 +286,8 @@ def simulate(from_disk=0,
              setup=Setup(50,20),
             ):
     
-    file_name = dr.HOME_DATA+'/'+script_name
-    file_name_figs = dr.HOME_DATA+'/fig/'+script_name
+    file_name = kw.get('file_name', dr.HOME_DATA+'/'+script_name)
+    file_name_figs = kw.get('file_name_figs', dr.HOME_DATA+'/fig/'+script_name)
     
     sd=get_storage_list([net], file_name, '')[0]
     
@@ -312,10 +314,11 @@ def simulate(from_disk=0,
         
     d = misc.dict_update(d, dd)    
     
-    return d, file_name_figs, net
+    return d, file_name_figs
     
-def create_figs(d, file_name_figs, net, **kw):
+def create_figs(d, file_name_figs, **kw):
     
+    net=kw['net']
     fig, axs=get_fig_axs(scale=kw.get('scale',3))
     figs=[fig]
     
@@ -364,13 +367,13 @@ def create_figs(d, file_name_figs, net, **kw):
     
     for ax in axs: ax.my_set_no_ticks(xticks=3, yticks=4)
 
-    for i in [4,5,7,8]:
+    for i in [4,5,7,8, 11,12]:
         axs[i].my_remove_axis(xaxis=True)
         
-    for i in [4,6,7,9]:
+    for i in [4,6,7,9, 11, 13]:
         axs[i].set_ylabel('')
     
-    for i in range(4,10):
+    for i in range(4,10)+range(11,14):
         axs[i].set_yticks([-40, -80])    
     
     sd_figs = Storage_dic.load(file_name_figs)
@@ -382,7 +385,7 @@ def main(*args, **kwargs):
     args=simulate(*args, **kwargs)
     create_figs(*args,**kwargs)
 
-    return d
+
 
 def run_simulation(from_disk=0, local_num_threads=10):
     
