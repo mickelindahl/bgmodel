@@ -3,6 +3,8 @@ Created on Aug 12, 2013
 
 @author: lindahlm
 '''
+from toolbox import monkey_patch as mp
+mp.patch_for_milner()
 
 from toolbox.network.manager import Builder_striatum as Builder
 from toolbox.parallel_excecution import loop
@@ -17,7 +19,7 @@ from toolbox import my_socket
 
 import config
 import inhibition_striatum as module
-import oscillation_perturbations41_slow as op
+import oscillation_perturbations_new_beginning_slow7 as op
 import pprint
 pp=pprint.pprint
 
@@ -31,9 +33,9 @@ NUM_RUNS=len(ops) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 10
+CORES=40 if dc()=='milner' else 4
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
@@ -90,6 +92,6 @@ for obj in a_list:
 
 # for i, a in enumerate(args_list):
 #     print i, a
-loop(min(num_sim, 10),[num_sim, num_sim, NUM_RUNS], a_list, k_list, **{'config':config} )
+loop(min(num_sim, 12),[NUM_RUNS, NUM_RUNS, NUM_RUNS], a_list, k_list, **{'config':config} )
 
 

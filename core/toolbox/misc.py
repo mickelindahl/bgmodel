@@ -492,7 +492,7 @@ def _dict_recursive_get(dic, keys):
 
 
 def dict_iter(d):
-    stack = d.items()
+    stack = sorted(d.items(), key=lambda x:x[0])
     while stack:
         s=stack.pop()
         k=list(s[:-1])

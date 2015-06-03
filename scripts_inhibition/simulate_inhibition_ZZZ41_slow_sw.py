@@ -6,15 +6,16 @@ Created on Aug 12, 2013
 
 from toolbox.network.manager import Builder_striatum as Builder
 from toolbox.parallel_excecution import loop
-from toolbox.network import default_params
 
-from simulate import (get_path_logs, 
+from toolbox import directories as dr
+from simulate import (
                       get_args_list_inhibition,
                       get_kwargs_list_indv_nets,
-                      par_process_and_thread,
-                      pert_set_data_path_to_milner_on_supermicro, 
-                      pert_add_inhibition) 
 
+                      pert_add_inhibition) 
+from toolbox import my_socket
+
+import config
 import inhibition_striatum as module
 import oscillation_perturbations41_slow_sw as op
 import pprint
@@ -27,11 +28,16 @@ NUM_NETS=1
 NUM_RUNS=len(op.get()) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
 
+dc=my_socket.determine_computer
+CORES=40 if dc()=='milner' else 10
+JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
+WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
+
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*1,
-        'cores_superm':4,
+        'cores':CORES,
         
         'file_name':FILE_NAME,
         'from_disk':0,
@@ -42,6 +48,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
+        'job_admin':JOB_ADMIN, #user defined class
         'job_name':'inh_YYY',
         
         'l_hours':  ['00','00','00'],
@@ -49,8 +56,7 @@ kwargs={
         'l_seconds':['00','00','00'],
         
         'lower':1,
-        'local_threads_milner':20,
-        'local_threads_superm':1,
+        'local_num_threads':LOCAL_NUM_THREADS,
 
         
         'module':module,    
@@ -60,22 +66,19 @@ kwargs={
         'resolution':5,
         'repetitions':1,
         
-        'path_code':default_params.HOME_CODE,
-        'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
-                                     FILE_NAME),
+        'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':op.get(),
         
         'size':3000,
         
-        'upper':3}
+        'upper':3,
+        
+        'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
+        
+        }
 
-d_process_and_thread=par_process_and_thread(**kwargs)
-pp(d_process_and_thread)
-kwargs.update(d_process_and_thread)
 
 p_list = pert_add_inhibition(**kwargs)
-p_list = pert_set_data_path_to_milner_on_supermicro(p_list,
-                                                  LOAD_MILNER_ON_SUPERMICRO)
 
 for i, p in enumerate(p_list): print i, p
 

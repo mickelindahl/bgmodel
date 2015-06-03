@@ -17,7 +17,7 @@ from toolbox import my_socket
 
 import config
 import inhibition_striatum as module
-import oscillation_perturbations41_slow as op
+import oscillation_perturbations_new_beginning_slow6 as op
 import pprint
 pp=pprint.pprint
 

@@ -394,7 +394,7 @@ class Storage_dic(Base_dic):
         self.directory=val
     
     @classmethod
-    def load(cls, file_name, nets=None):
+    def load(cls, file_name, nets=None, **kw):
         '''It makes perfect sense that you should use foo=Foo.load(), 
         and not foo=Foo();foo.load(). for example, if Foo has some 
         variables that MUST be passed in to the init, you would need 
@@ -409,14 +409,14 @@ class Storage_dic(Base_dic):
 #             cls.directory=file_name+'/'   
             d= pickle_load(file_name)
 
-
             if nets:
                 for k in d.keys():
                     if k in nets:
                         continue
                     d.delete(k)
                     
-            d.force_update(file_name)
+            if kw.get('force_update',True):
+                d.force_update(file_name)
 
             return d
         else:
@@ -448,9 +448,16 @@ class Storage_dic(Base_dic):
             return Storage_dic(file_name)
                     
 #     @classmethod
-    def load_dic(self, *filt):
-              
-        d={}
+    def load_dic(self, *filt, **kw):
+        d={}  
+        if kw.get('keys_iterator'):
+            for keys in kw['keys_iterator']:
+                print keys
+                storage=misc.dict_recursive_get(self, keys)
+                val=storage.load_data()
+                d=misc.dict_recursive_add(d, keys, val)
+            return d
+      
         for keys, storage in misc.dict_iter(self):
             if filt==():
                 pass
@@ -458,11 +465,15 @@ class Storage_dic(Base_dic):
                 a=False
                 i=0
                 for key in keys:
-                    if key not in filt:
+                    if key not in filt and i not in kw.get('star', []):
                         a=True
                     i+=1
+                    
+                    if key=='mean_rates':
+                        pass
                     if i==len(keys):
                         break
+                    
                 if a:
                     continue
                        

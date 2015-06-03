@@ -41,10 +41,11 @@ def get_conn_matriciesexternal(net, models, attr):
     return d
 
 def get_file_name(script_name,  par=None):
-    if not par:
-        par=default_params.Inhibition()
-    path=par.get_path_data()
-    file_name = path + script_name
+#     if not par:
+#         par=default_params.Inhibition()
+#     path=par.get_path_data()
+    path=dr.HOME_DATA
+    file_name = path + '/'+script_name
 #     file_name = home + '/results/papers/inhibition/network/' + script_name
     return file_name
 
@@ -87,7 +88,7 @@ def get_args_list(*args, **kwargs):
                             pp.set_val(0.0) #set amplitude to zero
                         if 'p_amplitude_down' in pp.keys:
                             pp.set_val(0.0) #set amplitude to zero
-                            print pp
+#                             print pp
                 
                 
                 script_name='{}/script_{:0>4}_{}'.format(file_name, i, p.name)     
@@ -364,22 +365,6 @@ def get_kwargs_list(n_pert, kwargs):
     
     return kwargs_list
 
-
-     
-# def get_path_logs(from_milner_on_supermicro, file_name):
-# def get_path_logs(home_data, file_name):
-# #     _bool = my_socket.determine_host() == 'supermicro'
-# #     if from_milner_on_supermicro and _bool:
-# #         path_results = (default_params.HOME_DATA_BASE 
-# #                         + 'milner/' 
-# #                         + file_name 
-# #                         + '/')
-# #     else:
-#     path_results = (home_data, 
-#                         + file_name 
-#                         + '/')
-#     return path_results
-
 def get_path_nest(script_name, keys, par=None):
     if not par:
         par=default_params.Inhibition()
@@ -404,16 +389,6 @@ def get_threads_postprocessing(t_shared, t_mpi, shared):
         threads = t_mpi
     return threads
 
-# def get_type_of_run(shared=False): 
-#     if my_socket.determine_computer()=='milner':
-#         type_of_run='mpi_milner'
-#     else: 
-#         if not shared:
-#             type_of_run='mpi_supermicro'
-#         else:
-#             type_of_run='shared_memory'
-#     return type_of_run
-    
 def main_loop_conn(from_disk, attr, models, sets, nets, kwargs_dic, sd):
     d = {}
     from_disks = [from_disk] * len(nets.keys())
@@ -467,56 +442,6 @@ def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd_list, **kwargs
         d = misc.dict_update(d, dd)
     
     return from_disks, d
-
-
-# def par_process_and_thread(**kwargs):
-#     
-#     cores_milner=kwargs.get('cores_milner',40)
-#     cores_else=kwargs.get('cores_else',20)
-#     local_threads_milner=kwargs.get('local_threads_milner',10)
-#     local_threads_else=kwargs.get('local_threads_else',5)
-#     process_type=kwargs.get('process_type')
-#     
-#     # core have to be multiple of 40 for milner
-#     host = my_socket.determine_computer() 
-# 
-#     
-# #     if host in ['milner']:
-#     if process_type=='milner':
-#         local_threads=local_threads_milner
-#         
-#         d={
-#            'cores_hosting_OpenMP_threads':40/local_threads,
-#            'local_num_threads':local_threads, 
-#            'memory_per_node':int(819*local_threads),
-#            'num-mpi-task':cores_milner/local_threads,
-#            'num-of-nodes':cores_milner/40,
-#            'num-mpi-tasks-per-node':40/local_threads,
-#            'num-threads-per-mpi-process':local_threads,
-#            } 
-#         
-#     if process_type=='else': 
-# #     elif host in [ 'supermicro', 'mikaellaptop', 'thalamus' ]:
-#         local_threads=local_threads_else
-#         d={
-#            'num-mpi-task':cores_else/local_threads,
-#            'local_num_threads':local_threads, 
-#            'num-threads-per-mpi-process':local_threads,
-#            }
-#         
-#     return d
-
-
-# def iterator_go_nogo_ss(p_subsamp, p_sizes, STN_pulses):
-#     for ss, p_size in zip(p_subsamp, p_sizes): 
-#         for i, _l in enumerate(l):
-#             _l=deepcopy(_l)
-#             yield ss, p_size, i, _l
-#     
-#     for j, _ in enumerate(freqs):
-#         for STN_amp in STN_amp_mod:
-#             for i, _l in enumerate(l):
-#                 yield j, i, STN_amp, _l
 
 def pert_add_go_nogo_ss(**kwargs):
 
@@ -591,6 +516,7 @@ def iterator_oscillations(freqs, STN_amp_mod, l):
 def pert_add_oscillations(**kwargs):
     
     amp_base=kwargs.get('amp_base') 
+    amp_base_skip=kwargs.get('amp_base_skip', [])
     down_vec=kwargs.get('down_vec')    
     freqs=kwargs.get('freqs')
     freq_oscillation=kwargs.get('freq_oscillation')
@@ -604,6 +530,7 @@ def pert_add_oscillations(**kwargs):
     sim_time=kwargs.get('sim_time')
     size=kwargs.get('size')
     STN_amp_mod=kwargs.get('STN_amp_mod', [1.])
+    tuning_freq_amp_to=kwargs.get('tuning_freq_amp_to', 'M1')
     
     l=perturbation_list
     for i in range(len(l)):
@@ -615,7 +542,9 @@ def pert_add_oscillations(**kwargs):
                 'netw':{'size':size}}, 
             '=')
     
-    damp = process(path_rate_runs, **kwargs)
+    kw_process={'freqs':freqs,
+                'tuning_freq_amp_to':tuning_freq_amp_to}
+    damp = process(path_rate_runs, **kw_process)
     for key in sorted(damp.keys()):
         val = damp[key]
         print  key, numpy.round(val, 2)
@@ -623,62 +552,68 @@ def pert_add_oscillations(**kwargs):
     ll = []
     
     for j, i, STN_amp, _l in iterator_oscillations(freqs, STN_amp_mod, l):
-#     for j, _ in enumerate(freqs):
-#         for STN_amp in STN_amp_mod:
-#             for i, _l in enumerate(l):
-
-            amp = [numpy.round(damp[_l.name][j], 2), 
-                   amp_base[j]]
+        amp = [numpy.round(damp[_l.name][j], 2), 
+               amp_base[j]]
             
-            _l = deepcopy(_l)
-            dd = {}
-            for key in input_mod:
-                
-                if key in ['C1', 'C2', 'CF']:
-                    factor =1
-                elif key in ['CS']:
-                    factor=STN_amp
-                
-                if null_down:
-                    down=-1.
-                elif null_down_STN and key in ['CS']:
-                    down=-1
-                elif down_vec:
-                    down=down_vec[j]
-                else:
-                    down=-amp[0]*factor
-                
-                d = {'type':'oscillation2', 
-                     'params':{'p_amplitude_upp':amp[0]*factor, 
-                               'p_amplitude_down':down, 
-                               'p_amplitude0':amp[1], 
-                               'freq':freq_oscillation}}
-                    
-                dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
+        _l = deepcopy(_l)
+        dd = {}
+        for key in input_mod:
             
+            if key in ['C1', 'C2', 'CF']:
+                factor =1
+            elif key in ['CS']:
+                factor=STN_amp
             
-            if STN_amp!=1:
-                _l += pl(dd, '=', **{'name':'amp_{0}_{1}_stn_{2}'.format(amp[0], amp[1],
-                                                                         STN_amp)})
+            if null_down:
+                down=-1.
+            elif null_down_STN and key in ['CS']:
+                down=-1
             elif down_vec:
-                _l += pl(dd, '=', **{'name':'amp_{0}-{1}-{2}'.format(amp[0], 
-                                                                     down,
-                                                                     amp[1])})
-           
+                down=down_vec[j]
             else:
-                _l += pl(dd, '=', **{'name':'amp_{0}-{1}'.format(*amp)})
-           
-            if external_input_mod:
-
-                dd={}
-                for key in external_input_mod:
-                    dd = misc.dict_update(dd, {'node':{key:{'rate':amp[1]}}})
-                                               
-
-                _l +=pl(dd, '*', **{'name':'EIEA_{0}'.format(amp[1])})
+                down=-amp[0]*factor
             
+            if key not in amp_base_skip:
+                amp0=amp[1]
+            else: 
+                amp0=1.
+            
+            if amp0>1.0:
+                pass
+            
+#             print amp, amp0
+            
+            d = {'type':'oscillation2', 
+                 'params':{'p_amplitude_upp':amp[0]*factor, 
+                           'p_amplitude_down':down, 
+                           'p_amplitude0':amp0, 
+                           'freq':freq_oscillation}}
+                
+            dd = misc.dict_update(dd, {'netw':{'input':{key:d}}})
+        
+        
+        if STN_amp!=1:
+            _l += pl(dd, '=', **{'name':'amp_{0}_{1}_stn_{2}'.format(amp[0], amp[1],
+                                                                     STN_amp)})
+        elif down_vec:
+            _l += pl(dd, '=', **{'name':'amp_{0}_{1}_{2}'.format(amp[0], 
+                                                                 down,
+                                                                 amp[1])})
+       
+        else:
+            _l += pl(dd, '=', **{'name':'amp_{0}_{1}'.format(*[amp[0], amp[1]])})
+       
+        if external_input_mod:
 
-            ll.append(_l)
+            dd={}
+            for key in external_input_mod:
+                dd = misc.dict_update(dd, {'node':{key:{'rate':amp0}}})
+                                           
+
+            _l +=pl(dd, '*', **{'name':'EIEA_{0}'.format(amp0)})
+        
+
+        ll.append(_l)
     
     return ll
 

@@ -1591,7 +1591,8 @@ class Setup(object):
         return d
 
     
-    def plot_fr(self):
+    def plot_fr(self, **kw):
+        scale=kw.get('scale',1)
         d={'win':20.,
            't_start':0.0,
            't_stop':10000.0,
@@ -1599,9 +1600,12 @@ class Setup(object):
            
            'fig_and_axes':{'n_rows':8, 
                             'n_cols':1, 
-                            'w':800.0*0.55*2*0.3, 
-                            'h':600.0*0.55*2*0.3, 
-                            'fontsize':7,
+                            'w':800.0*0.55*2*0.3*scale, 
+                            'h':600.0*0.55*2*0.3*scale, 
+                            'fontsize':7*scale,
+                            'title_fontsize':7*scale,
+                            'font_size':7*scale,
+                            'text_fontsize':7*scale,
                             'frame_hight_y':0.8,
                             'frame_hight_x':0.78,
                             'linewidth':1.}}
@@ -1827,29 +1831,26 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
             else:
                 ax.my_remove_axis(xaxis=True)
                 ax.set_xlabel('')
-        y_mean=[]
-        
-        for net in ['Net_0', 'Net_1']:
-            st = d[net]['GA']['spike_statistic']
-            y_mean.append(st.rates['mean'])
-        axs[4].text(0.5,0.8,'C:{:.2f} Hz L:{:.2f} Hz'.format(*y_mean), 
-                    transform=axs[4].transAxes,
-                    verticalalignment='center', 
-                    horizontalalignment='center',
-#                     color='grey'
-                    )
 
-        y_mean=[]
-        for net in ['Net_0', 'Net_1']:
-            st = d[net]['ST']['spike_statistic']
-            y_mean.append(st.rates['mean'])
-        axs[5].text(0.5,0.8,'C:{:.2f} Hz L:{:.2f} Hz'.format(*y_mean), 
-                    transform=axs[5].transAxes,
-                    verticalalignment='center', 
-                    horizontalalignment='center',
-#                     color='grey'
-                    )
+
+
+        for iax, model in zip([0,1,2, 3,4,5,6, 7], ['M1','M2','FS','GI', 'GA', 'ST','SN','GP']):
+            y_mean=[]
+            for net in ['Net_0', 'Net_1']:
+                st = d[net][model]['spike_statistic']
+                y_mean.append(st.rates['mean'])
+            t=axs[iax].text(0.5,0.8,'C:{:.2f} Hz L:{:.2f} Hz'.format(*y_mean), 
+                        transform=axs[iax].transAxes,
+                        verticalalignment='center', 
+                        horizontalalignment='center',
+                        backgroundcolor='w',
+#                         alpha=0.5
+#                         fontsize=24
+    #                     color='grey'
+                        )
+            t.set_bbox(dict(color='w', alpha=0.5, edgecolor='w'))
         
+
 #         figs.append(show_hr(d, models))
 #         figs.append(show_psd(d, models=models))
 #         figs.append(show_coherence(d, models=models_coher, **d_plot_coherence))
@@ -1912,6 +1913,7 @@ def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory
             'perturbation_list':[op.get()[0]],
             'sim_time':sim_time,
             'size':size,
+            'tuning_freq_amp_to':'M2',
             }
     
     p=pert_add_oscillations(**kwargs)
@@ -1982,7 +1984,7 @@ class TetsOscillationRun(unittest.TestCase):
 class TestOcsillation(unittest.TestCase):     
     def setUp(self):
         
-        v=run_simulation(from_disk=1, 
+        v=run_simulation(from_disk=2, 
                          local_num_threads=12)
         d, file_name_figs, from_disks, models, models_coher, setup=v
         

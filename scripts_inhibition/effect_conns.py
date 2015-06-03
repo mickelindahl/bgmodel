@@ -29,8 +29,6 @@ def create_name(file_name):
     return file_name.split('-')[-1]
 
 
-
-
 def gather(path, nets, models, attrs, **kwargs): 
      
     fs=kwargs.get('file_names')
@@ -41,13 +39,18 @@ def gather(path, nets, models, attrs, **kwargs):
         fs=os.listdir(path)
         fs=[path+s for s in fs]
     
+    fs=sorted(fs)
     if not dic_keys:    
-        dic_keys=[name_maker(s) for s in fs]
-    
+        fs=[s for s in fs if name_maker(s) ]
+        dic_keys=[name_maker(s) for s in fs if name_maker(s) ]
+        
+        if len(fs) != len(set(dic_keys)):
+            print 'dic_keys do not contain unique names'
+        
     d={}
     i=0
     for name0, key in zip(fs, dic_keys):
-                
+        print i, key
         dd={}
         
         for net in nets:
@@ -64,6 +67,7 @@ def gather(path, nets, models, attrs, **kwargs):
             sd = Storage_dic.load(file_name)
             args=nets+models+attrs
             dd=misc.dict_update(dd, sd.load_dic(*args))
+        
 #         print key, dd.keys()
         if dd:  
             d = misc.dict_update(d, {key:dd})

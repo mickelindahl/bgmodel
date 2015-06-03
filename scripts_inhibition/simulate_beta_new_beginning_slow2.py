@@ -58,7 +58,7 @@ kwargs={
         
         'debug':False,
         'do_runs':range(num_runs), #A run for each perturbation
-        'do_obj':False,
+        'do_obj':True,
         
         'external_input_mod':['EI','EA'],
         

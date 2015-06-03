@@ -38,7 +38,7 @@ def gather(path, **kw):
              
     fs=os.listdir(path)
     d={}
-    for name in fs:
+    for name in sorted(fs):
         if name[-4:]!='.pkl':
             continue
         file_name=path+name[:-4]
@@ -50,7 +50,7 @@ def gather(path, **kw):
 #     ax=pylab.subplot(211)
     if d=={}:
         i=0
-        for name in fs:
+        for name in sorted(fs):
             if name[0:6]!='script':
                 continue
 #             i+=1
@@ -59,7 +59,7 @@ def gather(path, **kw):
             sd = Storage_dic.load(file_name)
             dd=sd.load_dic(*['Net_0', tuning_key,'mean_rate_slices', 'firing_rate'])
             print file_name
-            
+            pp(dd)
 #             ax.plot(dd['Net_0']['M1']['firing_rate'].y)
 #             ax.text(0.1,0.1,name, transform=ax.transAxes, fontsize=7)
             d = misc.dict_update(d, {name:dd['Net_0']})
