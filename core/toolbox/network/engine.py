@@ -420,6 +420,7 @@ class Network_base(object):
 #         print self.par.dic['node']['CS']['rate']
         
         d1=self.simulation_loop()
+        self.sim_time_progress=0
         d2=self.pops.get('target_rate')
         print d2
         e=[]

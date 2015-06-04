@@ -8,6 +8,7 @@ Created on Jan 23, 2014
 import numpy
 import scipy.optimize as opt
 import unittest
+import time  
 
 from toolbox.my_signals import Data_fmin
 from toolbox.misc import Stop_stdout, Stopwatch
@@ -92,10 +93,12 @@ class Fmin(object):
             
             self.print_last()
 #             self.print_summary()
-               
+     
     def fmin_error_fun(self, x, *arg):
         with Stop_stdout(not self.verbose):
+            t=time.time()
             e=self.get_error(x)
+            t=time.time()-t
             e=numpy.array(e)**2
             fopt=numpy.sqrt(numpy.sum(e))
     
@@ -103,7 +106,7 @@ class Fmin(object):
             self.data['fopt'].append(fopt)
             
             self.get_tol()     
-            self.print_last()
+            self.print_last(t=t)
         
         return fopt
     
@@ -143,16 +146,16 @@ class Fmin(object):
                    str(self.data['warnflag']))
         return s
           
-    def print_last(self):
-        s='{0:<40}{1:<10}{2:<10}{3:<10}'
+    def print_last(self, t=None):
+        s='{0:<10}{1:<30}{2:<10}{3:<10}{4:<10}'
         if len(self.xopt)==1:
             print ''
-            print s.format('xopt', 'xtol', 'fopt', 'ftol')
+            print s.format('time','xopt', 'xtol', 'fopt', 'ftol')
             
         ind=numpy.argsort(self.fopt)
         xopt=self.xopt[ind[0]]
         xopt=[round(x,1) for x in xopt]     
-        print s.format(str(xopt), str(self.xtol[-1])[0:6], 
+        print s.format(str(numpy.round(t,1))+' sec',str(xopt), str(self.xtol[-1])[0:6], 
                        str(self.fopt[ind[0]])[0:6], str(self.ftol[-1])[0:6])
         
     def print_summary(self):
