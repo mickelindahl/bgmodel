@@ -342,6 +342,36 @@ def get_striatum_inhibition_input(l, **k):
     intervals = get_intervals(rep, duration, d, sequence)
     return intervals, rep, amps0
 
+class Builder_GA_GI_ST_base(Builder_network_base):
+
+    def _variable(self):
+        
+        l=[]
+        l+=[pl({'node':{'C1':{'lesion': True },
+                        'C2':{'lesion': True },
+                        'CF':{'lesion': True },
+                        'M1':{'lesion': True },
+                        'M2':{'lesion': True  },
+                        'FS':{'lesion': True },
+                        'SN':{'lesion': True }}},
+                       '=',
+                       **{'name':'GA_GI_ST_net'})]      
+        return l
+    
+   
+    def get_parameters(self, per, **kwargs):
+        
+        return Inhibition(**{'perturbations':per})   
+
+    def _get_dopamine_levels(self):
+        return [self._dop(), self._no_dop()]    
+    
+class Builder_GA_GI_ST(Builder_GA_GI_ST_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
+
 class Builder_inhibition_striatum_base(Builder_network_base):
 
     def _variable(self):
@@ -407,11 +437,7 @@ class Builder_inhibition_striatum_base(Builder_network_base):
     
    
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Inhibition_striatum(**{'other':Inhibition(**d),
-                                      'perturbations':per})   
+        return Inhibition(**{'perturbations':per})   
 
     def _get_dopamine_levels(self):
         return [self._dop()]    

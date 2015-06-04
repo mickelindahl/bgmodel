@@ -475,7 +475,7 @@ class Conn(object):
             pre, post=driver_conn, pool_conn            
         
         pre_add=sparse.coo_matrix(reduce(fun_sum, pre))
-        post_add=sparse.coo_matrix(reduce(fun_sum, post)) 
+        post_add=sparse.coo_matrix(list(reduce(fun_sum, post))) 
         if self.pre==None:
             self.pre= pre_add 
         else:

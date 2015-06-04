@@ -1851,26 +1851,8 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
             t.set_bbox(dict(color='w', alpha=0.5, edgecolor='w'))
         
 
-#         figs.append(show_hr(d, models))
-#         figs.append(show_psd(d, models=models))
-#         figs.append(show_coherence(d, models=models_coher, **d_plot_coherence))
-#         figs.append(show_phase_diff(d, models=models_coher))
-        
-#         figs.append(show_summed(d, **d_plot_summed))
-
-#         pylab.show()
         figs.append(show_summed2(d, **d_plot_summed2))
         figs.append(show_summed_STN(d, **d_plot_summed_STN))
-#         axs=figs[-1].get_axes()
-# #         ps.shift('right', axs, 0.25, n_rows=len(axs), n_cols=1)
-#         axs[4].legend(axs[4].lines[0::2],['Control', 'Lesion'])
-#         axs[8].legend(axs[8].lines,['Control', 'Lesion'], loc='lower center')
-        
-#         for ax in axs[8:]:
-#             ax.my_set_no_ticks(xticks=6)
-# 
-#         for ax in axs[4:]:
-#             ax.my_set_no_ticks(yticks=3)
         
         figs.append(show_signals(d, **d_plot_signals))
         figs.append(show_isi(d, **{}))

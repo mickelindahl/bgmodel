@@ -454,9 +454,9 @@ class Perturbation_list(object):
             for key, val in misc.dict_iter(d):
                 yield key, val, op
    
-    def update_single(self, val):
-        key='.'.join(val.keys+[val.op])
-        self.dic[key]=val
+    def update_single(self, p):
+        key='.'.join(p.keys+[p.op])
+        self.dic[key]=p
         
         
     def update_list(self, val):
@@ -1035,29 +1035,35 @@ class Par_base_mixin(object):
                 'record_from':GetSimu('mm_params', 'record_from')}
         return mm_p
     
-    def build_setup_node_rand(self, model):
+    def build_setup_node_rand(self, model, **kw):
         ra = {}
-        ra['C_m'] = {'active':GetNetw('rand_nodes', 'C_m'), 
-                     'gaussian':{'my':GetNest(model, 'C_m'), 
-                                 'sigma':GetNest(model, 'C_m') * 0.2,
-                                 'cut':True, 
-                                 'cut_at':3},}
+       
+        includes=kw.get('include_rand',['C_m', 'I_e', 'V_th', 'V_m'])
+        if 'C_m' in includes:
+            ra['C_m'] = {'active':GetNetw('rand_nodes', 'C_m'), 
+                         'gaussian':{'my':GetNest(model, 'C_m'), 
+                                     'sigma':GetNest(model, 'C_m') * 0.2,
+                                     'cut':True, 
+                                     'cut_at':3},}
         
-        ra['I_e'] = {'active':GetNetw('rand_nodes', 'I_e'), 
-                     'gaussian':{'my':GetNest(model, 'I_e'), 
-                                 'sigma':GetNest(model, 'I_e') * 0.5,
-                                 'cut':True, 
-                                 'cut_at':3},}
+        if 'I_e' in includes:
+            ra['I_e'] = {'active':GetNetw('rand_nodes', 'I_e'), 
+                         'gaussian':{'my':GetNest(model, 'I_e'), 
+                                     'sigma':GetNest(model, 'I_e') * 0.5,
+                                     'cut':True, 
+                                     'cut_at':3},}
+            
+        if 'V_th' in includes:
+            ra['V_th'] = {'active':GetNetw('rand_nodes', 'V_th'), 
+                          'gaussian':{'my':GetNest(model, 'V_th'), 
+                          'sigma':GetNetw('V_th_sigma'), 
+                          'cut':True, 
+                          'cut_at':3.}}
         
-        ra['V_th'] = {'active':GetNetw('rand_nodes', 'V_th'), 
-                      'gaussian':{'my':GetNest(model, 'V_th'), 
-                      'sigma':GetNetw('V_th_sigma'), 
-                      'cut':True, 
-                      'cut_at':3.}}
-        
-        ra['V_m'] = {'active':GetNetw('rand_nodes', 'V_m'), 
-            'uniform':{'min':GetNest(model, 'V_th') - 20, 
-                'max':GetNest(model, 'V_th')}}
+        if 'V_m' in includes:
+            ra['V_m'] = {'active':GetNetw('rand_nodes', 'V_m'), 
+                         'uniform':{'min':GetNest(model, 'V_th') - 20, 
+                                    'max':GetNest(model, 'V_th')}}
         return ra
 
 
@@ -1177,7 +1183,7 @@ class Par_base_mixin(object):
         return d    
 
 
-    def _get_defaults_node_network(self, key):
+    def _get_defaults_node_network(self, key, **kw):
         d = {'class_population':'MyNetworkNode',
              'class_surface':'Surface', 
             'edge_wrap':True, 
@@ -1193,7 +1199,7 @@ class Par_base_mixin(object):
             'n_sets':1, 
             'nest_params':{'I_e':GetNode(key, 'I_vivo')}, 
             'rate_in_vitro':0.0, 
-            'rand':self.build_setup_node_rand(GetNode(key, 'model')), 
+            'rand':self.build_setup_node_rand(GetNode(key, 'model'), **kw), 
             'sd':{'active':True,
                   'params':self.build_setup_sd_params()}, 
             'sets':DepNode(key, 'calc_sets'), 
@@ -1365,7 +1371,7 @@ class Unittest_base(object):
                                      'x0':[3000.0]}
         
  
-        dic['netw']['rand_nodes']={'C_m':True, 'V_th':True, 'V_m':True, 'I_e':True}
+        dic['netw']['rand_nodes']={'C_m':True, 'V_th':True, 'V_m':True}
         dic['netw']['size']=10
         dic['netw']['sub_sampling']={net:1.0} 
         dic['netw']['tata_dop']=0.8
@@ -1395,7 +1401,7 @@ class Unittest_base(object):
      
         
 #         model=GetNode(net, 'model')
-        d2= self._get_defaults_node_network(net)
+        d2= self._get_defaults_node_network(net,  **{'include_rand':['C_m', 'V_th', 'V_m']})
         d2['n_sets']=3
         d2['model']=net+'_nest'
         d2['rate']=10.0
@@ -1490,7 +1496,7 @@ class Unittest_extend_base(object):
         
         #n2
         net='n2'
-        d= self._get_defaults_node_network(net)
+        d= self._get_defaults_node_network(net, **{'include_rand': ['C_m', 'V_th', 'V_m']})
         d['n_sets']=3
         d['model']=net+'_nest'
         d['rate']=30.0-GetNetw('n1_rate')
@@ -5628,35 +5634,35 @@ if __name__ == '__main__':
     
     
     d={
-        TestModuleFuncions:[
-                            'test_compute'
-                            ],
-           
-         TestPerturbations:[
-                            'test_sum'
-                            ],
-        TestCall:[
-                  'test_add',
-                  'test_addStr',
-                  'test_complicated_left',
-                  'test_complicated_right',
-                  'test_complicated_2',
-                  'test_complicated_3',
-                  'test_div',
-                  'test_mul',
-                  'test_sub',
-                   ],
-        TestCallSubClassesWithPar_base:[
-                                        'test_add',                      
-                                        'test_do_get',
-                                        'test_do_dep',
-                                        ],
+#         TestModuleFuncions:[
+#                             'test_compute'
+#                             ],
+#            
+#          TestPerturbations:[
+#                             'test_sum'
+#                             ],
+#         TestCall:[
+#                   'test_add',
+#                   'test_addStr',
+#                   'test_complicated_left',
+#                   'test_complicated_right',
+#                   'test_complicated_2',
+#                   'test_complicated_3',
+#                   'test_div',
+#                   'test_mul',
+#                   'test_sub',
+#                    ],
+#         TestCallSubClassesWithPar_base:[
+#                                         'test_add',                      
+#                                         'test_do_get',
+#                                         'test_do_dep',
+#                                         ],
         TestUnittest:([
-                    'test_dic_dep',
+#                     'test_dic_dep',
                       ]
                     +test_fun_par
                       ),
-#                         TestUnittestExtend,
+                        TestUnittestExtend:test_fun_par,
 #                         TestUnittestBcpnn,   
 #                         TestUnittestBcpnnDopa,   
 #                         TestUnittestStdp, 
@@ -5668,7 +5674,7 @@ if __name__ == '__main__':
 #                         TestSlowwave,
 #                         TestSlowwave2,
 #                         TestSlowwave2_EI_EA:test_fun_par,
-                        TestBeta:test_fun_par,
+#                         TestBeta:test_fun_par,
 #                         TestTestCompeteWithOscillations:test_fun_par,
 #                         TestBeta_EI_EA:test_fun_par,  
 #                         TestGo_NoGo_compete:test_fun_par,

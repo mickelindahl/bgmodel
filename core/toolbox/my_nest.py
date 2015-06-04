@@ -349,6 +349,8 @@ def collect_spikes_mpi(*args):
     return args
 
 def _delete_data(path, **kwargs):
+    if not os.path.isdir(path):
+        return
     for filename in sorted(os.listdir(path)):
         if filename.endswith(".gdf"):
             if kwargs.get('display', True):

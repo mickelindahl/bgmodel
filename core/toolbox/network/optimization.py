@@ -97,7 +97,7 @@ class Fmin(object):
         with Stop_stdout(not self.verbose):
             e=self.get_error(x)
             e=numpy.array(e)**2
-            fopt=numpy.sum(e)
+            fopt=numpy.sqrt(numpy.sum(e))
     
             self.data['xopt'].append(numpy.array(x))
             self.data['fopt'].append(fopt)
@@ -204,17 +204,17 @@ class TestFmin(unittest.TestCase):
         dic_rep={}
         dic_rep.update({'simu':{'sim_time':1000.0,
                                 'sim_stop':1000.0,
-                             'mm_params':{'to_file':False, 'to_memory':True},
-                             'sd_params':{'to_file':False, 'to_memory':True}},
-                             'netw':{'size':20.,
-                                     'optimization':opt}})
+                                'mm_params':{'to_file':False, 'to_memory':True},
+                                'sd_params':{'to_file':False, 'to_memory':True}},
+                                'netw':{'size':40.,
+                                        'optimization':opt}})
 #        p=Perturbation_list('n1_n4', [['node.n1.rate', 3000.0,'='],
 #                                      ['node.n4.rate', 2000.0,'=']])
         net_kwargs={'save_conn':False, 
-                'sub_folder':'unit_testing', 
-                'verbose':False,
-                 'par':Unittest_extend(**{'dic_rep':dic_rep,
-                                          'other':Unittest()})}
+                    'sub_folder':'unit_testing', 
+                    'verbose':False,
+                     'par':Unittest_extend(**{'dic_rep':dic_rep,
+                                              'other':Unittest()})}
         name='net1'
         self.Network=Unittest_net
         net=[self.Network(name, **net_kwargs)]

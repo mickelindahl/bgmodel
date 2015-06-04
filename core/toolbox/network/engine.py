@@ -219,6 +219,7 @@ class Network_base(object):
 
     def get_print_time(self):
         return self.par['simu']['print_time']
+    
     def get_path_data(self):
         return self.path_data
 
@@ -405,7 +406,7 @@ class Network_base(object):
             idx.append(i)
             vals.append(x0[i])
             x0[i]=0.
-#         print x0
+        
         l=self.get_perturbations_optimization(x0)
         
         for p in l:
@@ -414,17 +415,22 @@ class Network_base(object):
         if self.sim_time!=self.sim_stop:
             raise RuntimeError(('simulation time and simulation stop needs',
                                 ' to be equal'))
+            
+#         print self.par.dic['node']['EI']['rate']
+#         print self.par.dic['node']['CS']['rate']
         
         d1=self.simulation_loop()
         d2=self.pops.get('target_rate')
-        
+        print d2
         e=[]
         for model in self.fopt:
+            
             ss=d1[model]['spike_signal']
+            print model, ss.cmp('mean_rate', **{'t_start':self.get_start_rec()}).y
+            
             ss.set_target_rate(d2[model])
             e.append(ss.get_mean_rate_error(**{'t_start':self.get_start_rec()}))
-        
-#         print ss.get_mean_rate_error(**{'t_start':self.get_start_rec()})
+#             print ss.get_mean_rate_error(**{'t_start':self.get_start_rec()})
 #        print ss.get_mean_rate_error(**{'t_stop':self.get_start_rec()})
        
         for i, val in zip(idx, vals):
@@ -1483,7 +1489,7 @@ class TestSingle_unit(
                    ):
     pass
 
-class TestNetwork_dic(unittest.TestCase):
+class TestNetwork_list(unittest.TestCase):
     def setUp(self):
         self.x0=[3000.0, 3000.0]
         opt={'f':['n1', 'n2'],
@@ -1531,7 +1537,7 @@ class TestNetwork_dic(unittest.TestCase):
         nd.append( Network('net2', **self.network_kwargs)) 
         e2=nd.sim_optimization([3000., 3000., 3100., 3100.])
         
-        self.assertAlmostEquals(sum(e1),sum(e2[0:2]), delta=0.1)
+        self.assertAlmostEquals(sum(e1),sum(e2[0:2]), delta=3)
         self.assertFalse(sum(e1)==sum(e2))
 
        
@@ -1543,7 +1549,7 @@ if __name__ == '__main__':
 #                     'test_2_connect',
 #                     'test_3_run',
 #                     'test_4_reset',
-                    'test_5_simulation_loop', 
+#                     'test_5_simulation_loop', 
 #                     'test_6_simulation_loop_x3_update_par_rep',
 #                     'test_7_simulation_loop_x3_replace_pertubations',
 #                     'test_90_IV_curve',   
@@ -1560,7 +1566,7 @@ if __name__ == '__main__':
                          ],
        TestUnittestBcpnn:[],
        TestSingle_unit:[],
-       TestNetwork_dic:[],
+       TestNetwork_list:['test_sim_optimization'],
 
 
        }
