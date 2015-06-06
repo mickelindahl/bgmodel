@@ -259,7 +259,7 @@ def fitting(d0, d1):
             print d0[tp]['Net_1']['ylabels'][_id], d1[tp]['Net_1']['mean_rates'][:], numpy.round(d0[tp]['Net_1']['mean_rates'][_id,:],1)
          
         
-from_disk=1
+from_disk=2
 
 attrs=['spike_statistic']
 models=['GP', 'GI', 'GA', 'ST']

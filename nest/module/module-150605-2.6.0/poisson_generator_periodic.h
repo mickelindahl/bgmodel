@@ -1,5 +1,5 @@
 /*
- *  poisson_periodically.h
+ *  poisson_generator_periodic.h
  *
  *  This file is part of NEST.
  *
@@ -20,10 +20,10 @@
  *
  */
 
-#ifndef POISSON_PERIODICALLY_H
-#define POISSON_PERIODICALLY_H
+#ifndef POISSON_GENERATOR_PERIODIC_H
+#define POISSON_GENERATOR_PERIODIC_H
 /****************************************/
-/* class poisson_periodically              */
+/* class poisson_generator_periodic              */
 /*                  Vers. 1.0       hep */
 /*                  Implementation: hep */
 /****************************************/
@@ -41,23 +41,23 @@ using namespace std;
 
 namespace mynest
 {
-/*! Class poisson_periodically simulates a large population
+/*! Class poisson_generator_periodic simulates a large population
     of randomly (Poisson) firing neurons. It replaces the old
     neuron-intrinsic shot-noise generator
 */
 
 
 /*BeginDocumentation
-Name: poisson_periodically - simulate neuron firing with Poisson processes statistics.
+Name: poisson_generator_periodic - simulate neuron firing with Poisson processes statistics.
 Description:
-  The poisson_periodically simulates a neuron that is firing with Poisson statistics,
+  The poisson_generator_periodic simulates a neuron that is firing with Poisson statistics,
   i.e. exponentially distributed interspike intervals. It will generate a _unique_
   spike train for each of it's targets. If you do not want this behavior and need
   the same spike train for all targets, you have to use a parrot neuron inbetween
   the poisson generator and the targets.
 
 Parameters:
-   The following parameters appear in the element's status dictionary:
+   The folfirsting parameters appear in the element's status dictionary:
 
    rate     double - mean firing rate in Hz
    origin   double - Time origin for device timer in ms
@@ -67,7 +67,7 @@ Parameters:
 Sends: SpikeEvent
 
 Remarks:
-   A Poisson generator may, especially at high rates, emit more than one
+   A Poisson generator may, especially at second rates, emit more than one
    spike during a single time step. If this happens, the generator does
    not actually send out n spikes. Instead, it emits a single spike with
    n-fold synaptic weight for the sake of efficiency.
@@ -97,11 +97,11 @@ Remarks:
 
    http://ken.brainworks.uni-freiburg.de/cgi-bin/mailman/private/nest_developer/2011-January/002977.html
 
-SeeAlso: poisson_periodically_ps, Device, parrot_neuron
+SeeAlso: poisson_generator_periodic_ps, Device, parrot_neuron
 */
 
 
-  class poisson_periodically : public nest::Node
+  class poisson_generator_periodic : public nest::Node
   {
 
   public:
@@ -110,15 +110,16 @@ SeeAlso: poisson_periodically_ps, Device, parrot_neuron
      * The generator is threaded, so the RNG to use is determined
      * at run-time, depending on thread.
      */
-    poisson_periodically();
-    poisson_periodically(poisson_periodically const&);
+    poisson_generator_periodic();
+    poisson_generator_periodic(poisson_generator_periodic const&);
 
     bool has_proxies() const {return false;}
 
 
-    using Node::event_hook;
+    using nest::Node::event_hook;
 
-    nest::port check_connection(nest::Connection&, nest::port);
+//    nest::port check_connection(nest::Connection&, nest::port);
+	nest::port send_test_event(nest::Node&, nest::rport, nest::synindex, bool);
 
     void get_status(DictionaryDatum &) const;
     void set_status(const DictionaryDatum &) ;
@@ -138,10 +139,10 @@ SeeAlso: poisson_periodically_ps, Device, parrot_neuron
      * Store independent parameters of the model.
      */
     struct Parameters_ {
-      double_t rate_low_;   //!< process rate in Hz
-      double_t rate_high_;   //!< process rate in Hz
-      nest::long_t period_low_;   //!< process rate in Hz
-      nest::long_t period_high_;   //!< process rate in Hz
+      double_t rate_first_;   //!< process rate in Hz
+      double_t rate_second_;   //!< process rate in Hz
+      nest::double_t period_first_;   //!< process rate in Hz
+      nest::double_t period_second_;   //!< process rate in Hz
 
 
       Parameters_();  //!< Sets default parameter values
@@ -154,39 +155,56 @@ SeeAlso: poisson_periodically_ps, Device, parrot_neuron
 
     struct Variables_ {
       librandom::PoissonRandomDev poisson_dev_;  //!< Random deviate generator
-      nest::long_t period_;
+      nest::double_t period_;
     };
 
-
-
     // ------------------------------------------------------------
-
-    nest::StimulatingDevice<SpikeEvent> device_;
+    //OBS be careful, SpikeEvent net no have nest:: referens!! Other
+    // vice it will not be found
+    nest::StimulatingDevice<nest::SpikeEvent> device_;
     Parameters_ P_;
     Variables_  V_;
 
   };
 
-//  Commecnt out this and it works
+////  Commecnt out this and it works
+//  inline
+//  nest::port mynest::poisson_generator_periodic::check_connection(nest::Connection& c, nest::port receptor_type)
+//  {
+//    nest::DSSpikeEvent e;
+//    e.set_sender(*this);
+//    c.check_event(e);
+//    return c.get_target()->connect_sender(e, receptor_type);
+//  }
+
   inline
-  nest::port mynest::poisson_periodically::check_connection(nest::Connection& c, nest::port receptor_type)
+  nest::port poisson_generator_periodic::send_test_event(nest::Node& target, nest::rport receptor_type, nest::synindex syn_id, bool dummy_target)
   {
-    nest::DSSpikeEvent e;
-    e.set_sender(*this);
-    c.check_event(e);
-    return c.get_target()->connect_sender(e, receptor_type);
+	device_.enforce_single_syn_type(syn_id);
+
+	if ( dummy_target )
+	{
+      nest::DSSpikeEvent e;
+      e.set_sender(*this);
+      return target.handles_test_event(e, receptor_type);
+	}
+	else
+	{
+		nest::SpikeEvent e;
+      e.set_sender(*this);
+      return target.handles_test_event(e, receptor_type);
+	}
   }
 
-
   inline
-  void poisson_periodically::get_status(DictionaryDatum &d) const
+  void poisson_generator_periodic::get_status(DictionaryDatum &d) const
   {
     P_.get(d);
     device_.get_status(d);
   }
 
   inline
-  void poisson_periodically::set_status(const DictionaryDatum &d)
+  void poisson_generator_periodic::set_status(const DictionaryDatum &d)
   {
     Parameters_ ptmp = P_;  // temporary copy in case of errors
     ptmp.set(d);                       // throws if BadProperty

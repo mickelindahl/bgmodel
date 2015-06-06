@@ -422,12 +422,20 @@ class Network_base(object):
         d1=self.simulation_loop()
         self.sim_time_progress=0
         d2=self.pops.get('target_rate')
-        print d2
+#         print d2
         e=[]
+        
+        sss=''
+        for model in ['GA', 'GI', 'ST']:
+            ss=d1[model]['spike_signal']
+            rat=ss.cmp('mean_rate', **{'t_start':self.get_start_rec()}).y
+            sss+=model+' '+str(numpy.round(rat,1))+'('+str(d2[model])+')'+' '
+        print sss
+        
         for model in self.fopt:
             
             ss=d1[model]['spike_signal']
-            print model, ss.cmp('mean_rate', **{'t_start':self.get_start_rec()}).y
+#             print model, ss.cmp('mean_rate', **{'t_start':self.get_start_rec()}).y
             
             ss.set_target_rate(d2[model])
             e.append(ss.get_mean_rate_error(**{'t_start':self.get_start_rec()}))

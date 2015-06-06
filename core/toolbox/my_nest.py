@@ -19,6 +19,7 @@ import numpy.random as rand
 from nest import *
 import nest
 import nest.pynestkernel as _kernel        
+import os
 
 import time
 import toolbox.directories as dr
@@ -437,17 +438,19 @@ def GetConn(soruces, targets):
 
 def get_default_module_paths(home_module):
 
-    if nest.version()=='NEST 2.2.2':
-        if my_socket.determine_computer()=='milner':
-            s='nest-2.2.2-wo-music'
-        else:
-            s='nest-2.2.2'
-            
-    if nest.version()=='NEST 2.4.1':
-        s='nest-2.4.1'    
-    if nest.version()=='NEST 2.4.2':
-        s='nest-2.4.2'   
-          
+#     if nest.version()=='NEST 2.2.2':
+#         if my_socket.determine_computer()=='milner':
+#             s='nest-2.2.2-wo-music'
+#         else:
+#             s='nest-2.2.2'
+#     else:
+#         s='nest-'+nest.version()[-5:]
+#     if nest.version()=='NEST 2.4.1':
+#         s='nest-2.4.1'    
+#     if nest.version()=='NEST 2.4.2':
+#         s='nest-2.4.2'   
+#     if nest.version()=='NEST 2.4.2':
+#         s='nest-2.6.0'           
     path= (home_module+'/lib/nest/ml_module')
     sli_path =(home_module+'/share/ml_module/sli')
     
@@ -471,10 +474,10 @@ def install_module(path, sli_path, model_to_exist='my_aeif_cond_exp'):
         
         # Solves weird problem that I need to load it twice
         # only on my wheezy debian
-        try: 
-            nest.Install(path)#always fails in Nest 2.4.X
-        except:
-            nest.Install(path)#running twice fixes Nest 2.4.X
+#         try: 
+        nest.Install(path)#always fails in Nest 2.4.X
+#         except:
+#             nest.Install(path)#running twice fixes Nest 2.4.X
         print '...successful'
         
         

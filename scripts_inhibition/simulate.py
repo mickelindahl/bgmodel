@@ -65,7 +65,6 @@ def get_file_name_figs(script_name, par=None):
 
 def get_args_list(*args, **kwargs):
     
-    
     from_disk=kwargs.get('from_disk_0')
     builder=kwargs.get('Builder')
     do_obj=kwargs.get('do_obj') 
@@ -89,7 +88,6 @@ def get_args_list(*args, **kwargs):
                         if 'p_amplitude_down' in pp.keys:
                             pp.set_val(0.0) #set amplitude to zero
 #                             print pp
-                
                 
                 script_name='{}/script_{:0>4}_{}'.format(file_name, i, p.name)     
                 
@@ -119,22 +117,28 @@ def get_args_list_oscillation(p_list, **kwargs):
         args=[1000.0 / freq_oscillation, 
                local_num_threads,]
 
-        home=kwargs.get('home')
-        home_data=kwargs.get('home_data')
-        home_module=kwargs.get('home_module') 
-        
-        kwargs={
-                'home':home,
-                'home_data':home_data,
-                'home_module':home_module,
-                }
+        kwargs={}
         
         return args, kwargs
     
     args=[p_list, get_setup_args_and_kwargs]
     return get_args_list(*args, **kwargs)
     
+def get_args_list_oscillation_opt(p_list, **kwargs):
+    
 
+    def get_setup_args_and_kwargs(i, **kwargs):
+        freq_oscillation=kwargs.get('freq_oscillation')        
+        local_num_threads=kwargs.get('local_num_threads')
+        args=[1000.0 / freq_oscillation, 
+               local_num_threads,]
+
+        kw={'tp_name':kwargs.get('tp_names')[i]}
+        
+        return args, kw
+    
+    args=[p_list, get_setup_args_and_kwargs]
+    return get_args_list(*args, **kwargs)
 
 def get_args_list_inhibition(p_list, **kwargs):
     
@@ -517,6 +521,7 @@ def pert_add_oscillations(**kwargs):
     
     amp_base=kwargs.get('amp_base') 
     amp_base_skip=kwargs.get('amp_base_skip', [])
+    do_reset=kwargs.get('do_reset', True)
     down_vec=kwargs.get('down_vec')    
     freqs=kwargs.get('freqs')
     freq_oscillation=kwargs.get('freq_oscillation')
@@ -534,7 +539,8 @@ def pert_add_oscillations(**kwargs):
     
     l=perturbation_list
     for i in range(len(l)):
-        l[i] += pl({'simu':{'do_reset':True,
+        l[i] += pl({'simu':{
+                            'do_reset':do_reset,
                             'sd_params':{'to_file':True, 'to_memory':False},
                             'sim_time':sim_time, 
                             'sim_stop':sim_time,

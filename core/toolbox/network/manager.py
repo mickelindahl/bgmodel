@@ -342,7 +342,7 @@ def get_striatum_inhibition_input(l, **k):
     intervals = get_intervals(rep, duration, d, sequence)
     return intervals, rep, amps0
 
-class Builder_GA_GI_ST_base(Builder_network_base):
+class Builder_beta_GA_GI_ST_base(Builder_network_base):
 
     def _variable(self):
         
@@ -360,13 +360,46 @@ class Builder_GA_GI_ST_base(Builder_network_base):
     
    
     def get_parameters(self, per, **kwargs):
-        
-        return Inhibition(**{'perturbations':per})   
+    
+        return Beta(**{'other':Inhibition(),
+                       'perturbations':per})  
 
     def _get_dopamine_levels(self):
         return [self._dop(), self._no_dop()]    
     
-class Builder_GA_GI_ST(Builder_GA_GI_ST_base, 
+class Builder_beta_GA_GI_ST(Builder_beta_GA_GI_ST_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
+
+
+class Builder_slow_wave2_GA_GI_ST_base(Builder_network_base):
+
+    def _variable(self):
+        
+        l=[]
+        l+=[pl({'node':{'C1':{'lesion': True },
+                        'C2':{'lesion': True },
+                        'CF':{'lesion': True },
+                        'M1':{'lesion': True },
+                        'M2':{'lesion': True  },
+                        'FS':{'lesion': True },
+                        'SN':{'lesion': True }}},
+                       '=',
+                       **{'name':'GA_GI_ST_net'})]      
+        return l
+    
+   
+    def get_parameters(self, per, **kwargs):
+    
+        return Slow_wave2(**{'other':Inhibition(),
+                       'perturbations':per})  
+
+    def _get_dopamine_levels(self):
+        return [self._dop(), self._no_dop()]    
+    
+class Builder_slow_wave2_GA_GI_ST(Builder_slow_wave2_GA_GI_ST_base, 
                       Mixin_dopamine, 
                       Mixin_general_network, 
                       Mixin_reversal_potential_striatum):
@@ -569,10 +602,8 @@ class Builder_beta_base(Builder_abstract):
         return [self._low()]    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Beta(**{'other':Inhibition(**d),
+
+        return Beta(**{'other':Inhibition(),
                        'perturbations':per})
      
 class Builder_beta(Builder_beta_base, 
@@ -1487,6 +1518,7 @@ def add_perturbations(perturbations, nets):
     for key in sorted(nets.keys()):
 #         print nets[key].par
 #         perturbation_consistency(perturbations, nets[key].par)
+
         nets[key].par.update_perturbations(perturbations)
 
 def perturbation_consistency(pl, par):
