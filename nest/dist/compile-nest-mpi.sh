@@ -5,7 +5,7 @@
 # Also this directory have to be provided when compling the 
 # module.
 
-# OBS Strange error, sometimes need to delete instal folder by hand to make it work
+# OBS Strange error, sometimes need to delete install folder by hand to make it work
 
 #Start time watch
 START=$(date +%s)
@@ -15,11 +15,14 @@ echo $currDir
 #Get number of processors on the system
 noProcs=$(grep -c 'model name' /proc/cpuinfo) 
 
-#Build directory
-buildDir="$currDir/build-$1"
+#Source directory
+srcDir="$currDir/$1/"
 
 #Build directory
-installDir="$currDir/install-$1"
+buildDir="$currDir/build-$1/"
+
+#Build directory
+installDir="$currDir/install-$1/"
 
 #Log directory
 logDir="$currDir/log/"
@@ -64,10 +67,10 @@ echo "Press [Enter] key to continue..."
 read TMP
 
 # Need to explicilty say where to put nest with --prefix=$HOME/opt/nest
-../$1/configure --with-mpi --prefix=$installDir 2>&1 | tee "$LogDir$1-configure"
-make -j $noProcs2 >&1 | tee "$LogDir$1-make"
-make -j $noProcs install "$LogDir$1-install"
-#sudo make -j $noProcs installcheck
+$srcDir"configure" --with-mpi --prefix=$installDir 2>&1 | tee $logDir$1-configure
+make -j $noProcs 2>&1 | tee $logDir$1-make
+make -j $noProcs install 2>&1 | tee $logDir$1-install
+#make -j $noProcs installcheck 2>&1 | tee $logDir$1-installcheck
 
 #Stop time watch
 END=$(date +%s)

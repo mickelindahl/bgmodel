@@ -5,8 +5,8 @@ Created on Jun 4, 2015
 '''
 
 import oscillation_perturbations_new_beginning_slow4 as op
-     
-from simulate import (get_file_name, get_file_name_figs,
+    
+from simulate import (get_file_name, 
                       get_path_nest)
 from scripts_inhibition.oscillation_common import mallet2008
 
@@ -33,11 +33,8 @@ class Setup(object):
         else:
             s='lesion'
         
+        self.opt=k.get('opt')
         self.tp_name=k.get('tp_name')+'_'+s
-        #         self.sim_time=k.get('sim_time')
-#         self.sim_stop=k.get('sim_time')
-#         self.size=k.get('size') #only using TI, TA and ST for such a network
-        
         
     def builder(self):
         return {}
@@ -51,22 +48,20 @@ class Setup(object):
        
     def engine(self):
         d={'record':['spike_signal'],
-           'verbose':False}        
+           'verbose':True,
+            'display_opt':True,
+            'target_rates':{'GP':self.target_perturbations()[self.tp_name]['node']['GP']['rate']}}        
         return d
 
     def par(self):
         d={'simu':{
-#                    'local_num_threads':4,
                    'print_time':False,
-#                    'sim_time':self.sim_time,
-#                    'sim_stop':self.sim_stop,
                    'start_rec':1000.0
                    },
-#                    'mm_params':{'to_file':False, 'to_memory':False},
-#                    'sd_params':{'to_file':False, 'to_memory':True},
-           'netw':{
-#                    'size':self.size,
-                   'optimization':self.opt_setups()[self.tp_name]}}
+#            'netw':{'rand_nodes':{'C_m':True, 
+#                                  'V_th':True, 
+#                                  'V_m':True}}
+           }
         
         misc.dict_update(d,self.target_perturbations()[self.tp_name])
         return d
@@ -85,7 +80,7 @@ class Setup(object):
             d['TA']['slow_wave']['lesioned']['rate'], 
             d['STN']['slow_wave']['lesioned']['rate']]
         
-        d={'node':{'GI':{'rate':ll[0]},
+        d={'node':{'GP':{'rate':ll[0]},
                    'ST':{'rate':ll[1]}}}
         out['beta_control']=d
         
@@ -93,7 +88,8 @@ class Setup(object):
                    'GA':{'rate':ll[3]},
                    'ST':{'rate':ll[4]}}}
         out['beta_lesion']=d
-        d={'node':{'GI':{'rate':ll[5]},
+        
+        d={'node':{'GP':{'rate':ll[5]},
                    'ST':{'rate':ll[6]}}}
         out['sw_control']=d
         
@@ -105,34 +101,36 @@ class Setup(object):
 
     def opt_setups(self):
         out={}
-        d={'f':['GI', 'ST'],
+        d={'f':['GI'],
            'x':['node.EI.rate', 'node.CS.rate'],
-           'x0':[1700, 230]}
+           'x0':[1400]}
         out['beta_control']=d
         
-        d={'f':['GI', 'GA', 'ST'],
-           'x':['node.EI.rate','node.EA.rate', 'node.CS.rate'],
-           'x0':[1700, 200, 230]}
+        d={'f':['GI'],
+           'x':['node.EI.rate'],
+           'x0':[1500]}
+
+#         d={'f':['GI'],
+#            'x':['nest.M2_GI_gaba.weight'],
+#            'x0':[2./0.24 ]}
+
+#         d={'f':['GI'],
+#            'x':['nest.GI.beta_I_GABAA_1'],
+#            'x0':[-1.15 ]}
+        
         out['beta_lesion']=d
         
         d={'f':['GI', 'ST'],
            'x':['node.EI.rate', 'node.CS.rate'],
            'x0':[1000, 180]}
-        out['sv_control']=d
+        out['sw_control']=d
         
-        d={'f':['GI', 'GA','ST'],
-           'x':['node.EI.rate','node.EA.rate', 'node.CS.rate'],
-           'x0':[800, 100, 180]}
+        d={'f':['GI',],
+           'x':['node.EI.rate'],
+           'x0':[800]}
         out['sw_lesion']=d
         
-        return out  
-    
-#     def osc(self):
-#         d={'node':{'C1':{'rate':1.1},
-#                    'C2':{'rate':1.1},
-#                    'CF':{'rate':1.1}}}
-#         return d
-        
+        return out          
          
 def to_perturbation_list(d, name=''):
     return pl(d, '=', **{'name':name})
@@ -152,8 +150,7 @@ def main(*args, **kwargs):
      
     perturbation_list=kwargs.get('perturbation_list')#,op.get()[0])
     perturbation_list+=pl(setup.par(), '=', **{'name':setup.tp_name})
-#     perturbation_list+=pl(setup.osc(), '*')
-    
+   
     print perturbation_list
     
     for p in sorted(perturbation_list.list):
@@ -163,14 +160,14 @@ def main(*args, **kwargs):
     
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
-#     file_name_figs = get_file_name_figs(script_name,  nets[key].par)
     path_nest=get_path_nest(script_name, nets.keys(), nets[key].par)
     
     print nets.keys()
     
     for net in nets.values():
         net.set_path_nest(path_nest)
-    
+        net.set_opt(setup.opt[net.name])
+        
     # Adding nets no file name
     sd_list=get_storage_list(nets.keys(), file_name, info)
     
@@ -185,10 +182,10 @@ def main(*args, **kwargs):
                 'verbose':True,}
         
         f=Fmin('GA_GI_ST_opt', **kwargs)
-        h=f._fmin() 
+        h=f.fmin() 
         
         dd={setup.tp_name.split('_')[0]:{net:{'opt':h}}}
-        save(save(sd, dd))
+        save(sd, dd)
 
 class Main():    
     def __init__(self, **kwargs):

@@ -93,6 +93,7 @@ def get_args_list(*args, **kwargs):
                 
                 a, k=get_setup_args_and_kwargs(i, **kwargs)
                 
+                
                 k.update({'nets_to_run':nets})
                 
                 config = module.Setup(*a, **k)
@@ -102,12 +103,28 @@ def get_args_list(*args, **kwargs):
                                      'perturbation_list':p, 
                                      'script_name':script_name, 
                                      'setup':config})
-                if do_obj and (i in kwargs.get('do_runs')) and from_disk<=j:
+                if do_obj and (i in kwargs.get('do_runs')) and from_disk<=j and nets[0] in kwargs['nets_to_run']:
                     obj.do()
                     
                 args_list.append(obj)
     return args_list               
-                
+
+def get_args_list_opt_single(p_list, **kwargs):
+    
+
+    def get_setup_args_and_kwargs(i, **kwargs):
+        
+        kw={
+            'nets_to_run':kwargs['nets_to_run'],
+            'opt':kwargs.get('opt')[i],
+            'single_unit':kwargs.get('single_unit')[i],
+            'tp_name':kwargs.get('tp_names')[i],
+            }
+        
+        return [], kw
+    
+    args=[p_list, get_setup_args_and_kwargs]
+    return get_args_list(*args, **kwargs)               
 def get_args_list_oscillation(p_list, **kwargs):
     
 
@@ -116,8 +133,8 @@ def get_args_list_oscillation(p_list, **kwargs):
         local_num_threads=kwargs.get('local_num_threads')
         args=[1000.0 / freq_oscillation, 
                local_num_threads,]
-
-        kwargs={}
+        kw={
+            'nets_to_run':kwargs['nets_to_run']}
         
         return args, kwargs
     
@@ -133,7 +150,9 @@ def get_args_list_oscillation_opt(p_list, **kwargs):
         args=[1000.0 / freq_oscillation, 
                local_num_threads,]
 
-        kw={'tp_name':kwargs.get('tp_names')[i]}
+        kw={'nets_to_run':kwargs['nets_to_run'],
+            'tp_name':kwargs.get('tp_names')[i],
+            'opt':kwargs.get('opt')[i]}
         
         return args, kw
     
@@ -144,10 +163,7 @@ def get_args_list_inhibition(p_list, **kwargs):
     
 
     def get_setup_args_and_kwargs(_, **kwargs):
-        
-        home=kwargs.get('home')
-        home_data=kwargs.get('home_data')
-        home_module=kwargs.get('home_module') 
+
         local_num_threads=kwargs.get('local_num_threads')
         lower=kwargs.get(('lower'))
         res=kwargs.get('resolution')
@@ -156,9 +172,6 @@ def get_args_list_inhibition(p_list, **kwargs):
                 
         
         kwargs={
-                'home':home,
-                'home_data':home_data,
-                'home_module':home_module,
                 'local_num_threads':local_num_threads,
                 'resolution':res,
                 'repetition':rep,
@@ -515,6 +528,27 @@ def iterator_oscillations(freqs, STN_amp_mod, l):
             for i, _l in enumerate(l):
                 yield j, i, STN_amp, _l
 
+def pert_add_single(**kwargs):
+    
+
+    do_reset=kwargs.get('do_reset', True)
+    local_num_threads=kwargs.get('local_num_threads')
+    perturbation_list=kwargs.get('perturbation_list')
+    sim_time=kwargs.get('sim_time')
+    size=kwargs.get('size') 
+    l=perturbation_list
+    for i in range(len(l)):
+        l[i] += pl({'simu':{
+                            'do_reset':do_reset,
+                            'sd_params':{'to_file':True, 'to_memory':False},
+                            'sim_time':sim_time, 
+                            'sim_stop':sim_time,
+                            'stop_rec':sim_time,
+                            'local_num_threads':local_num_threads}, 
+                'netw':{'size':size}}, 
+            '=')
+        
+    return l
 
 
 def pert_add_oscillations(**kwargs):

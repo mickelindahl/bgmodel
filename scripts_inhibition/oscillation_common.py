@@ -1710,6 +1710,7 @@ def simulate(builder=Builder,
 # pp(nets['Net_0'].par['node']['EI']['spike_setup'])
 # pp(nets['Net_1'].par['node']['EA']['rate']
 #pp(nets['Net_0'].par['node']['EI']['rate'])
+    
 
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
@@ -1717,10 +1718,10 @@ def simulate(builder=Builder,
     path_nest=get_path_nest(script_name, nets.keys(), nets[key].par)
 
     print nets.keys()
-
+    pp(nets['Net_0'].par['nest']['GA_GA_gaba']['weight'])
     for net in nets.values():
         net.set_path_nest(path_nest)
-    
+    pp(nets['Net_0'].par['nest']['GA_GA_gaba']['weight'])
 #     sd = get_storage(file_name, info)
 
     # Adding nets no file name
@@ -1834,7 +1835,7 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 
 
 
-        for iax, model in zip([0,1,2, 3,4,5,6, 7], ['M1','M2','FS','GI', 'GA', 'ST','SN','GP']):
+        for iax, model in zip([0,1, 2, 3, 4, 5, 6, 7], ['M1','M2','FS','GI', 'GA', 'ST','SN','GP']):
             y_mean=[]
             for net in ['Net_0', 'Net_1']:
                 st = d[net][model]['spike_statistic']
@@ -1878,7 +1879,7 @@ def main(*args, **kwargs):
 def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory'):
     from toolbox.network.default_params import Perturbation_list as pl
     from simulate import  get_path_rate_runs, pert_add_oscillations
-    import oscillation_perturbations32_slow as op
+    from scripts_inhibition import oscillation_perturbations_new_beginning_slow_fitting_GI_GA_ST_beta_0 as op
 
     local_num_threads=12
     sim_time=10000.0
@@ -1891,14 +1892,14 @@ def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory
             'freqs':[1.5],
             'freq_oscillation':20.,
             'local_num_threads':local_num_threads,
-            'path_rate_runs':get_path_rate_runs('simulate_inhibition_ZZZ32_slow/'),
+            'path_rate_runs':get_path_rate_runs('simulate_inhibition_new_beginning_slow_fitting_GI_GA_ST_0/'),
             'perturbation_list':[op.get()[0]],
             'sim_time':sim_time,
             'size':size,
             'tuning_freq_amp_to':'M2',
             }
     
-    p=pert_add_oscillations(**kwargs)
+    p=pert_add_oscillations(**kwargs)[0]
         
     p_add=pl({'netw':{'size':size,
                   'sub_sampling':{'M1':sub_sampling,
@@ -1928,7 +1929,7 @@ class TetsOscillationRun(unittest.TestCase):
         pass
     
     def test_run(self):
-        v=run_simulation(from_disk=1,local_num_threads=12)
+        v=run_simulation(from_disk=0,local_num_threads=12)
         d, file_name_figs, from_disks, models, models_coher, setup=v        
 #         pp(d)
         dd={}

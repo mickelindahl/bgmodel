@@ -474,10 +474,10 @@ def install_module(path, sli_path, model_to_exist='my_aeif_cond_exp'):
         
         # Solves weird problem that I need to load it twice
         # only on my wheezy debian
-#         try: 
-        nest.Install(path)#always fails in Nest 2.4.X
-#         except:
-#             nest.Install(path)#running twice fixes Nest 2.4.X
+        try: 
+            nest.Install(path)#always fails in Nest 2.4.X
+        except:
+            nest.Install(path)#running twice fixes Nest 2.4.X
         print '...successful'
         
         

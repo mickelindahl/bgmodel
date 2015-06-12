@@ -214,14 +214,15 @@ class Mixin_vm(object):
 #         self.data=d    
    
     def plot_IV_curve(self, ax=None, sets=[], x=[], **k):
-        if not self.isrecorded('mean_voltage_parts'):
-            self.compute_set('mean_voltage_parts',*[],**{})          
+#         if not self.isrecorded('mean_voltage_parts'):
+#             self.compute_set('mean_voltage_parts',*[],**{})          
         if not ax:
             ax=pylab.subplot(111) 
-        
-        _x, y=self.get('mean_voltage_parts', attr_list=['x','y'])
-        if not len(x):
-            x=_x
+            
+        self.cmp('mean_voltage_parts').plot(**{'ax':ax})
+#         _x, y=self.get('mean_voltage_parts', attr_list=['x','y'])
+#         if not len(x):
+#             x=_x
 
         ax.plot(x, y, **k)
         ax.set_xlabel('Current (pA)') 
@@ -232,11 +233,12 @@ class Mixin_vm(object):
         
         if not ax:
             ax=pylab.subplot(111) 
-        x, y=self.get('voltage_trace', attr_list=['x','y'])
+        self.cmp('voltage_traces').plot(**{'ax':ax})
+#         x, y=self.get('voltage_trace', attr_list=['x','y'])
         #x, y=merge_runs(*[x, y]) 
         
-        for i,j in index:
-            ax.plot(x[i][j], y[i][j], **k)
+#         for i,j in index:
+#             ax.plot(x[i][j], y[i][j], **k)
         ax.set_xlabel('Time (ms)') 
         ax.set_ylabel('Membrane potential (mV)') 
 
@@ -944,8 +946,8 @@ class TestData_unit_relation(unittest.TestCase):
             
 if __name__ == '__main__':
     test_classes_to_run=[
-                        TestData_unit_spk,
-#                         TestData_unit_vm, 
+#                         TestData_unit_spk,
+                        TestData_unit_vm, 
                          #TestData_units_dic,
                          #TestDud_list,
 #                         TestData_unit_relation,

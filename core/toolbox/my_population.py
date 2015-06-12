@@ -721,7 +721,8 @@ class MyPoissonInput(MyGroup):
         
         df=my_nest.GetDefaults(model)
         if df['type_id'] in ['spike_generator','mip_generator',
-                             'poisson_generator','poisson_generator_dynamic' ]:
+                             'poisson_generator','poisson_generator_dynamic',
+                             'my_poisson_generator' ]:
             input_model=model
             type_model=df['type_id'] 
             kwargs['model']='parrot_neuron'
@@ -789,7 +790,8 @@ class MyPoissonInput(MyGroup):
             self.ids.append(new_ids)  
         
         # Poisson generator
-        if 'poisson_generator' == self.type_model:
+        elif self.type_model in ['my_poisson_generator',
+                                 'poisson_generator']:
 
             t_starts=times
             t_stops=list(times[1:])+list([t_stop])
@@ -808,7 +810,7 @@ class MyPoissonInput(MyGroup):
             target_nodes = numpy.array([[id_]*len(rates) for id_ in ids])      
             target_nodes = list(numpy.reshape(target_nodes, 
                                               len(rates)*len(ids), order='C'))    
-            
+#             pp(my_nest.GetStatus([2]))
             my_nest.Connect(source_nodes, target_nodes)         
             
             generators=[]
@@ -819,7 +821,7 @@ class MyPoissonInput(MyGroup):
             self.ids_generator[hash(tuple(idx))]=sorted(generators)
             self.local_ids=list(self.ids) # Nedd to put on locals also
         
-        if 'poisson_generator_dynamic'==self.type_model:
+        elif 'poisson_generator_dynamic'==self.type_model:
             source_nodes=my_nest.Create(self.type_model, 1, 
                                         {'timings':times,
                                          'rates':rates})*len(ids)
@@ -836,7 +838,10 @@ class MyPoissonInput(MyGroup):
 #             v=my_nest.GetStatus(ids, 'local')
 #             self.local_ids=[_id for _id in zip(ids,v) if  # Nedd to put on locals also
            
- 
+        else: 
+            msg= 'type_model '+ self.type_model + ' is not accounted for in set_spike_times'
+            raise ValueError(msg)
+        
     def update_spike_times(self,rates=[], times=[], t_stop=None, ids=None, seed=None, idx=None):
         if 'poisson_generator' == self.type_model:
 

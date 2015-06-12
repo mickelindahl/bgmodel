@@ -25,7 +25,7 @@ from toolbox.network.default_params import (Beta,
                                             Slow_wave,
                                             Slow_wave2)
 
-from toolbox.network.engine import Network, Network_base
+from toolbox.network.engine import Network, Network_base, Single_units_activity
 from toolbox import misc
 
 import pprint
@@ -341,6 +341,33 @@ def get_striatum_inhibition_input(l, **k):
     sequence = 2
     intervals = get_intervals(rep, duration, d, sequence)
     return intervals, rep, amps0
+
+class Builder_single_base(Builder_network_base):
+
+    def _variable(self):
+        
+        l=[]
+        l+=[pl({}, '=', **{'name':'single_net'})]      
+        return l
+    
+   
+    def get_parameters(self, per, **kwargs):
+        
+        return Single_unit(**{'other':Inhibition(),
+                              'perturbations':per})  
+
+    def _get_dopamine_levels(self):
+        return [self._dop(), self._no_dop()]    
+
+    def get_network(self, name, par, **kwargs):
+        kwargs['par']=par
+        return Single_units_activity(name, **kwargs) 
+    
+class Builder_single(Builder_single_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_network, 
+                      Mixin_reversal_potential_striatum):
+    pass
 
 class Builder_beta_GA_GI_ST_base(Builder_network_base):
 
@@ -1678,7 +1705,7 @@ def get_networks(Builder, k_builder={}, k_director={}, k_engine={}, k_default_pa
     info, nets = director.get_networks(k_director, k_engine, k_default_params)
     return info, nets, builder
 
-def get_storage(file_name, info, nets=None):
+def get_storage(file_name, nets=None):
 
 
     sd = Storage_dic.load(file_name, nets)
@@ -1686,7 +1713,7 @@ def get_storage(file_name, info, nets=None):
     
 #     sd.add_info(info)
     
-    sd.garbage_collect()
+#     sd.garbage_collect()
     return sd
 
 def get_storage_list(nets, path, info):        

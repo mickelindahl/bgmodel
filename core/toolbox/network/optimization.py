@@ -91,7 +91,7 @@ class Fmin(object):
             self.data['warnflag']=warnflag
             self.data['allvecs']=allvecs
             
-            self.print_last()
+            self.print_last(t=0)
 #             self.print_summary()
      
     def fmin_error_fun(self, x, *arg):
@@ -100,7 +100,7 @@ class Fmin(object):
             e=self.get_error(x)
             t=time.time()-t
             e=numpy.array(e)**2
-            fopt=numpy.sqrt(numpy.sum(e))
+            fopt=numpy.sqrt(numpy.mean(e))
     
             self.data['xopt'].append(numpy.array(x))
             self.data['fopt'].append(fopt)
@@ -154,7 +154,7 @@ class Fmin(object):
             
         ind=numpy.argsort(self.fopt)
         xopt=self.xopt[ind[0]]
-        xopt=[round(x,1) for x in xopt]     
+        xopt=[round(x,3) for x in xopt]     
         print s.format(str(numpy.round(t,1))+' sec',str(xopt), str(self.xtol[-1])[0:6], 
                        str(self.fopt[ind[0]])[0:6], str(self.ftol[-1])[0:6])
         

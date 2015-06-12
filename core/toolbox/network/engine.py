@@ -8,6 +8,7 @@ import os
 import pylab
 import unittest
 import sys
+import warnings
 import pprint
 pp=pprint.pprint
 
@@ -38,7 +39,7 @@ class Network_base(object):
         self.calibrated=False
         self.built=False
         self.connected=False
-        
+        self.display_opt=kwargs.get('display_opt',False)
         self.name=name
         self.surfs=None
 
@@ -61,6 +62,7 @@ class Network_base(object):
         self.sim_time_progress=0.0
                 
         self.stopwatch={}
+        self.target_rates=kwargs.get('target_rates',{})
         self.update_par_rep=kwargs.get('update_par_rep',[]) 
         
         self.verbose=kwargs.get('verbose', 'True')
@@ -256,7 +258,9 @@ class Network_base(object):
     def get_start_rec(self):
         return self.par.get_start_rec()
     
-    
+    def get_stop_rec(self):
+        return self.par.get_stop_rec()
+        
     def get_sim_stop(self):
         return self.par.get_sim_stop()
     
@@ -306,6 +310,9 @@ class Network_base(object):
         my_nest.SetKernelStatus({'print_time':self.get_print_time(),
                                  'data_path':self.path_nest, 
                                  'overwrite_files': True})    
+ 
+    def set_opt(self, val):
+        self.par.set_opt(val)
  
     def set_perturbation_list(self, val):
         self.par.set_perturbation_list(val)   
@@ -394,18 +401,23 @@ class Network_base(object):
 
     def sim_optimization(self, x0):
 
+        if self.get_stop_rec()!= self.sim_time:
+            warnings.warn('Stop_rev != sim_time, '
+                          +str(self.get_stop_rec())
+                          +', '+str(self.sim_time))
+
         if self.run_counter==0:
             self.init_optimization()
             
         idx=[]
         vals=[]
-        for i in range(len(x0)):
-            if x0[i]>=0:
-                continue
-            
-            idx.append(i)
-            vals.append(x0[i])
-            x0[i]=0.
+#         for i in range(len(x0)):
+#             if x0[i]>=0:
+#                 continue
+#             
+#             idx.append(i)
+#             vals.append(x0[i])
+#             x0[i]=0.
         
         l=self.get_perturbations_optimization(x0)
         
@@ -415,33 +427,67 @@ class Network_base(object):
         if self.sim_time!=self.sim_stop:
             raise RuntimeError(('simulation time and simulation stop needs',
                                 ' to be equal'))
-            
+
+    
 #         print self.par.dic['node']['EI']['rate']
 #         print self.par.dic['node']['CS']['rate']
-        
+#         print 'Weight', self.par['conn']['STp_GA_ampa']['weight']['params']
         d1=self.simulation_loop()
         self.sim_time_progress=0
         d2=self.pops.get('target_rate')
 #         print d2
         e=[]
-        
-        sss=''
-        for model in ['GA', 'GI', 'ST']:
-            ss=d1[model]['spike_signal']
-            rat=ss.cmp('mean_rate', **{'t_start':self.get_start_rec()}).y
-            sss+=model+' '+str(numpy.round(rat,1))+'('+str(d2[model])+')'+' '
-        print sss
-        
+#         
+#         sss=''
+#         for model in ['GA', 'GI', 'ST']:
+#             if not model in d1.keys():
+#                 continue
+#             ss=d1[model]['spike_signal']
+#             rat=ss.cmp('mean_rate', **{'t_start':self.get_start_rec(),
+#                                        't_stop':self.get_stop_rec()}).y
+#             sss+=model+' '+str(numpy.round(rat,1))+'('+str(d2[model])+')'+' '
+#         print sss
+
+
+        r_list=[]
+        tr_list=[]
         for model in self.fopt:
             
-            ss=d1[model]['spike_signal']
+            if model=='GP':
+                ss1=d1['GA']['spike_signal']
+                ss2=d1['GI']['spike_signal'] 
+                ss=ss2.merge(ss1)
+                d1.update({'GP':{'spike_signal':ss}})
+                tr=self.target_rates['GP']
+            else:
+                ss=d1[model]['spike_signal']
+                tr=d2[model]
+                
+            r=ss.cmp('mean_rate', **{'t_start':self.get_start_rec(),
+                                     't_stop':self.get_stop_rec()}).y
 #             print model, ss.cmp('mean_rate', **{'t_start':self.get_start_rec()}).y
+            print r, tr
+            r_list.append(r)
+            tr_list.append(tr)
             
-            ss.set_target_rate(d2[model])
-            e.append(ss.get_mean_rate_error(**{'t_start':self.get_start_rec()}))
+#             ss.set_target_rate(d2[model])
+            e.append(tr - r)
+#             e.append(ss.get_mean_rate_error(**{'t_start':self.get_start_rec()}))
 #             print ss.get_mean_rate_error(**{'t_start':self.get_start_rec()})
 #        print ss.get_mean_rate_error(**{'t_stop':self.get_start_rec()})
-       
+
+        if self.display_opt:
+            print 'x0:',list_to_string(x0,1)
+            print 'f:', list_to_string(r_list,1)
+            print 'tf', list_to_string(tr_list,1),
+            print 'e:', list_to_string(e,2)
+        s=''
+        for model in sorted(d1.keys()):
+            ss=d1[model]['spike_signal']
+            r=ss.cmp('mean_rate', **{'t_start':self.get_start_rec(),
+                                       't_stop':self.get_stop_rec()}).y
+            s+=model+':'+str(numpy.round(r))+', '
+        print s                    
         for i, val in zip(idx, vals):
             e[i]+=val
         
@@ -460,7 +506,11 @@ class Network_base(object):
     def update_dic_rep(self, dic_rep):
         self.par.update_dic_rep(dic_rep)
 
-        
+def list_to_string(l,n):
+    s=''
+    for e in l:
+        s+=str(numpy.round(e,n))+','
+    return s
 class Network_list(object):
     
     def __init__(self, network_list, **kwargs):
@@ -526,6 +576,7 @@ class Network_list(object):
         for net, x_slice in zip(self, self.x_slices):
             e+=net.sim_optimization(x[x_slice])
 #         self.run_counter+=1
+#         print e
         return e
         
 class Network(Network_base):
@@ -587,10 +638,11 @@ class Network(Network_base):
             data_to_disk.mkdir(self.path_nest)
 #         print 'After mkdir', comm.rank()
             
-        s='Simulating {} ms from {} ms (rec from {} ms): ...'
+        s='Simulating {} ms from {} ms (rec from {} to {} ms): ...'
         s=s.format(str(self.sim_time),
                    str(self.sim_time_progress), 
-                   str(self.get_start_rec()))
+                   str(self.get_start_rec()),
+                   str(self.get_stop_rec()))
 #         print 'After fromat', comm.rank()
         with Stop_stdout(not self.verbose), Stopwatch(s,  self.stopwatch):        
 #             print 'Before reset kernel', comm.rank()
@@ -599,6 +651,7 @@ class Network(Network_base):
 #             print 'After reset kernel', comm.rank()
     
 #             my_nest.MySimulate(self.sim_time)       
+            pp(my_nest.GetStatus([34]))
             my_nest.Simulate(self.sim_time, chunksize=20000.) 
             self.sim_time_progress+=self.sim_time
               
@@ -716,25 +769,25 @@ class Network(Network_base):
 #         pylab.show()
         return out            
 
-class Single_units_activity(Inhibition):    
+class Single_units_activity(Network):    
     
     def __init__(self,  name, *args, **kwargs):
         super( Single_units_activity, self ).__init__(name, *args, **kwargs)       
         # In order to be able to convert super class object to subclass object        
-        self.class_par=kwargs.get('par', Single_unit)
-        self.study_name=kwargs.get('study_name', 'M1')
-        self.input_models=kwargs.get('input_models', ['C1p', 'FSp', 'M1p', 
-                                                      'M2p','GAp'])
+#         self.class_par=kwargs.get('par', Single_unit)
+#         self.study_name=kwargs.get('study_name', 'M1')
+#         self.input_models=kwargs.get('input_models', ['C1p', 'FSp', 'M1p', 
+#                                                       'M2p','GAp'])
     
-    @property
-    def par(self):
-        if self._par==None:
-            kwargs={'network_node':self.study_name}
-            self._par=self.class_par( self.dic_rep, self.perturbation, 
-                                                 **kwargs)  
-        
-        self._par.per=self.perturbation
-        return self._par
+#     @property
+#     def par(self):
+#         if self._par==None:
+#             kwargs={'network_node':self.study_name}
+#             self._par=self.class_par( self.dic_rep, self.perturbation, 
+#                                                  **kwargs)  
+#         
+#         self._par.per=self.perturbation
+#         return self._par
 
 
 #    def FF_curve(self,  freq, tStim, model):
@@ -742,6 +795,9 @@ class Single_units_activity(Inhibition):
         
 
     def voltage_trace(self):
+        d1=self.simulation_loop()
+        d1['GA']['spike_signal'].cmp('mean_rate')
+        return d1['GA']['voltage_signal']
         pass
                 
          
