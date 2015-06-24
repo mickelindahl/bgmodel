@@ -49,8 +49,8 @@
 //#include "bcpnn_connection.h"
 //#include "bcpnn_connection_dopamine.h"
 //#include "iaf_cond_alpha_bias.h"
-//#include "izhik_cond_exp.h"
-//#include "my_aeif_cond_exp.h"
+#include "izhik_cond_exp.h"
+#include "my_aeif_cond_exp.h"
 //#include "my_aeif_cond_exp_2.h"
 #include "poisson_generator_periodic.h"
 #include "my_poisson_generator.h"
@@ -215,11 +215,11 @@ mynest::Ml_Module::~Ml_Module()
 
 //	nest::register_model<iaf_cond_alpha_bias>(nest::NestModule::get_network(),
 //                                                "iaf_cond_alpha_bias");
-//    nest::register_model<izhik_cond_exp>(nest::NestModule::get_network(),
-//                                                "izhik_cond_exp");
+    nest::register_model<izhik_cond_exp>(nest::NestModule::get_network(),
+                                                "izhik_cond_exp");
 
-//    nest::register_model<my_aeif_cond_exp>(nest::NestModule::get_network(),
-//                                                "my_aeif_cond_exp");
+    nest::register_model<my_aeif_cond_exp>(nest::NestModule::get_network(),
+                                                "my_aeif_cond_exp");
 //
 ////    nest::register_model<my_aeif_cond_exp_2>(nest::NestModule::get_network(),
 ////                                                "my_aeif_cond_exp_2");

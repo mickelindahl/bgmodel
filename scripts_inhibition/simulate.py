@@ -133,10 +133,9 @@ def get_args_list_oscillation(p_list, **kwargs):
         local_num_threads=kwargs.get('local_num_threads')
         args=[1000.0 / freq_oscillation, 
                local_num_threads,]
-        kw={
-            'nets_to_run':kwargs['nets_to_run']}
+        kw={}
         
-        return args, kwargs
+        return args, kw
     
     args=[p_list, get_setup_args_and_kwargs]
     return get_args_list(*args, **kwargs)

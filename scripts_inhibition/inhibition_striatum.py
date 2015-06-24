@@ -3,6 +3,7 @@ Created on Jun 27, 2013
 
 @author: lindahlm
 '''
+import pythonpath #must be imported first
 import numpy
 import os
 

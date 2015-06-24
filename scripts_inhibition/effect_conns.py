@@ -274,7 +274,7 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 
                 if not misc.dict_haskey(d, keys1 ):
                     continue
-
+                print run, model, attr
                 v1=misc.dict_recursive_get(d, keys1)
                 v2=misc.dict_recursive_get(d, keys2)               
 
@@ -1895,9 +1895,9 @@ def main(**kwargs):
 #     pp(kwargs)
     figs = create_figs(d, **kwargs)
 
-    pylab.show()
     save_figures(figs, script_name, dpi=200)
-        
+
+    pylab.show()        
     
 
 #     pp(d)

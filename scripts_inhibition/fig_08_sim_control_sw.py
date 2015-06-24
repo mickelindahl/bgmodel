@@ -8,6 +8,7 @@ Created on Aug 12, 2013
 from toolbox import monkey_patch as mp
 mp.patch_for_milner()
 
+from scripts_inhibition import config
 from simulate import (get_path_rate_runs,
                       get_args_list_oscillation,
                       get_kwargs_list_indv_nets,
@@ -15,32 +16,32 @@ from simulate import (get_path_rate_runs,
                       pert_add) 
 
 from toolbox import directories as dr
-from toolbox.network.manager import Builder_beta as Builder
+from toolbox.network.manager import Builder_slow_wave2 as Builder
 from toolbox.parallel_excecution import loop
 from toolbox import my_socket
 
-from scripts_inhibition import config
+
 import numpy
 import sys
 import simulate_beta as module
-import oscillation_perturbations_final as op
-import oscillation_perturbations_control_slow_beta_addon as op_control
+import fig_01_and_02_pert as op
+import fig_08_pert_control as op_control
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('simulate_inhibition_final/')
+path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[1.1] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[0.4] #numpy.arange(0.5, .8, 0.2)
+amp_base=[0.9] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[0.3] #numpy.arange(0.5, .8, 0.2)
 n=len(amp_base)
 m=len(freqs)
-ops=[op.get()[0]]
-STN_amp_mod=[3.]#range(1, 6, 2)
+ops=[op.get()[1]]
+STN_amp_mod=[1.]#range(1, 6, 2)
 
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
 freqs=list(freqs)*n
@@ -62,20 +63,20 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':range(50, num_runs), #A run for each perturbation
+        'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
         
         'external_input_mod':[],
         
         'file_name':FILE_NAME,
         'freqs':freqs,
-        'freq_oscillation':20.,
+        'freq_oscillation':1.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'b_csb_ii',
+        'job_name':'fig08_sw',
         
         'l_hours':  ['00','01','00'],
         'l_minutes':['45','00','05'],
@@ -87,7 +88,7 @@ kwargs={
         
         'nets':['Net_0','Net_1'], #The nets for each run
         'nets_to_run':['Net_0','Net_1'],
-        'no_oscillations_control':True,
+#         'no_oscillations_control':True,
         
         'op_pert_add':op_control.get(),
         
@@ -99,6 +100,8 @@ kwargs={
         'size':20000.0 ,
         
         'STN_amp_mod':STN_amp_mod,
+
+        'tuning_freq_amp_to':'M2',
 
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
         }
@@ -115,6 +118,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(30,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

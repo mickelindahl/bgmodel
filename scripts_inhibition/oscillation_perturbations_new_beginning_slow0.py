@@ -112,6 +112,7 @@ def get_solution():
     d={'conn': {'GA_GA_gaba':{'fan_in0': 5}, 
                 'GI_GA_gaba':{'fan_in0': 25 }}}
     
+    misc.dict_update(solution,d) 
     
     return solution
 

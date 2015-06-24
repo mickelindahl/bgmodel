@@ -19,7 +19,7 @@ from toolbox import my_socket
 
 import config
 import inhibition_striatum as module
-import oscillation_perturbations_new_beginning_slow7 as op
+import oscillation_perturbations_final as op
 import pprint
 pp=pprint.pprint
 
@@ -66,6 +66,7 @@ kwargs={
         
         'nets':['Net_{}'.format(i) for i in range(NUM_NETS)],
         'nets_to_run':['Net_{}'.format(i) for i in range(NUM_NETS)],
+        
         'resolution':5,
         'repetitions':1,
         

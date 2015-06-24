@@ -5,7 +5,7 @@ Created on Apr 6, 2015
 '''
 
 from scripts_inhibition import effect_conns
-from toolbox.network.manager import get_storage, save
+from toolbox.network.manager import get_storage
 from simulate import get_file_name, save_figures
 from toolbox import misc
 from matplotlib import ticker

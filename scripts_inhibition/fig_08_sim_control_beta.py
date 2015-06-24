@@ -23,12 +23,12 @@ from scripts_inhibition import config
 import numpy
 import sys
 import simulate_beta as module
-import oscillation_perturbations_final as op
-import oscillation_perturbations_control_slow_beta_addon as op_control
+import fig_01_and_02_pert as op
+import fig_08_pert_control as op_control
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('simulate_inhibition_final/')
+path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
@@ -62,7 +62,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':range(50, num_runs), #A run for each perturbation
+        'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
         
         'external_input_mod':[],
@@ -75,7 +75,7 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'b_csb_ii',
+        'job_name':'fig08_beta',
         
         'l_hours':  ['00','01','00'],
         'l_minutes':['45','00','05'],
@@ -100,6 +100,8 @@ kwargs={
         
         'STN_amp_mod':STN_amp_mod,
 
+        'tuning_freq_amp_to':'M2',
+
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
         }
 
@@ -115,6 +117,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(30,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

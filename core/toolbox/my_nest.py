@@ -32,7 +32,13 @@ pp=pprint.pprint
 
 kernal_time=None
 
-
+version=int(''.join(nest.version().split(' ')[1].split('.')))
+if version<260:
+    pushsli=_kernel.pushsli
+    runsli=_kernel.runsli
+else:
+    pushsli=nest.engine.push
+    runsli=nest.engine.run    
 
 def _Create_mpi(*args, **kwargs):
     with Barrier():
@@ -220,8 +226,13 @@ def _Connect(pre, post, *args, **kwargs):
 
 
 def fun_pre_post(s,d,m):
-    pushsli=_kernel.pushsli
-    runsli=_kernel.runsli
+#     version=int(''.join(nest.version().split(' ')[1].split('.')))
+#     if version<260:
+#         pushsli=_kernel.pushsli
+#         runsli=_kernel.runsli
+#     else:
+#         pushsli=_kernel.NESTEngine().push
+#         runsli=_kernel.NESTEngine().run    
 
     pushsli(s) #s
     pushsli(d) #d
@@ -230,8 +241,13 @@ def fun_pre_post(s,d,m):
     
 def fun_pre_post_params(*args):
     
-    pushsli=_kernel.pushsli
-    runsli=_kernel.runsli
+#     version=int(''.join(nest.version().split(' ')[1].split('.')))
+#     if version<260:
+#         pushsli=_kernel.pushsli
+#         runsli=_kernel.runsli
+#     else:
+#         pushsli=_kernel.NESTEngine().push
+#         runsli=_kernel.NESTEngine().run   
     
     pushsli(args[0]) #s
     pushsli(args[1]) #d
@@ -240,10 +256,9 @@ def fun_pre_post_params(*args):
     
 def fun_pre_post_weight_delay(*args):
 
-    pushsli=_kernel.pushsli
-    runsli=_kernel.runsli
+   
 
-    pushsli(args[0]) #s
+    pushsli(int(args[0])) #s
     pushsli(args[1]) #d
     pushsli(args[2]) #w
     pushsli(args[3]) #dl

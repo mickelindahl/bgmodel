@@ -589,6 +589,14 @@ private:
 //}
 
 inline
+nest::port mynest::izhik_cond_exp::send_test_event(nest::Node& target, nest::rport receptor_type, nest::synindex, bool)
+{
+  nest::SpikeEvent e;
+  e.set_sender(*this);
+  return target.handles_test_event(e, receptor_type);
+}
+
+inline
 nest::port mynest::izhik_cond_exp::handles_test_event(nest::SpikeEvent&, nest::rport receptor_type)
 {
   if ( receptor_type < MIN_SPIKE_RECEPTOR || receptor_type >= SUP_SPIKE_RECEPTOR )

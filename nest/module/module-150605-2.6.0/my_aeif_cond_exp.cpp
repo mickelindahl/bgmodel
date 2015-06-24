@@ -19,7 +19,7 @@
 
 #ifdef HAVE_GSL_1_11
 
-#include "universal_data_logger_impl.h"
+
 
 #include "exceptions.h"
 #include "network.h"
@@ -28,6 +28,7 @@
 #include "doubledatum.h"
 #include "dictutils.h"
 #include "numerics.h"
+#include "universal_data_logger_impl.h"
 #include <limits>
 
 #include <cmath>

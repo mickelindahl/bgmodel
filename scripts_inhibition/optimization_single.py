@@ -11,7 +11,7 @@ from toolbox.network.manager import (add_perturbations,
                                      save, load,)
 from simulate import (get_file_name,
                       get_path_nest)
-from scripts_inhibition.oscillation_common import mallet2008r
+from scripts_inhibition.oscillation_common import mallet2008
 from toolbox.network.manager import Builder_single as builder
 
 from toolbox.network.default_params import Perturbation_list as pl
@@ -192,12 +192,12 @@ def main(*args, **kwargs):
                 'call_get_error':'sim_optimization', 
                 'verbose':True,}
         
-        kwargs_fmin={'maxiter':40, 
-                     'maxfun':40,
+        kwargs_fmin={'maxiter':100, 
+                     'maxfun':100,
                      'full_output':1,
                      'retall':1,
-                     'xtol':1.0,
-                     'ftol':.01,
+                     'xtol':.0001,
+                     'ftol':.0001,
                      'disp':0}
         kwargs_fmin={}
         kwargs['kwargs_fmin']=kwargs_fmin

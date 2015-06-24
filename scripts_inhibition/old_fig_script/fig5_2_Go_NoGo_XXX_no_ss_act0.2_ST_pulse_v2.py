@@ -27,16 +27,14 @@ from copy import deepcopy
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
-proportion_connected=[0.1, 0.5, 1.]
-NUM_RUNS=len(proportion_connected)
 NUM_NETS=1
+NUM_RUNS=1
 num_sims=NUM_NETS*NUM_RUNS
 
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*4,
-        'cores_superm':16,
+        'cores':CORES,
         
         'debug':False,
         'do_runs':range(NUM_RUNS),
@@ -47,15 +45,15 @@ kwargs={
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
-        
-        'job_name':'fig5_scl_STp',
+                
+        'job_admin':JOB_ADMIN, #user defined class
+        'job_name':'fig5_0.2_STp',
 
-
+        'l_hours':['10','02','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
-        
-        'l_hours':  ['05','02','00'],
         'l_minutes':['00','00','05'],
-        'l_seconds':['00','00','00'],             
+        'l_seconds':['00','00','00'],   
+                  
         'labels':['D1,D2 puls=5',], 
         'laptime':1000.0,
         'local_threads_milner':40,
@@ -72,20 +70,24 @@ kwargs={
         'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
                                      FILE_NAME),
         'perturbation_list':[op.get()[5]],
-        'proportion_connected':proportion_connected, #related to toal number fo runs
+        'proportion_connected':[0.2]*1, #related to toal number fo runs
         
-        'p_pulses':[5]*NUM_NETS, #size of labels
-
-        'p_sizes':[1.]*NUM_RUNS,
-        'p_subsamp':[1.]*NUM_RUNS,
+        'p_pulses':[5],
+        'p_sizes':[
+                    1,
+                ],
+        'p_subsamp':[
+                     1., 
+                    ],
         'res':10,
-        'rep':40,
+        'rep':80,
 
-       'time_bin':100,
+        'time_bin':100,
+       
+        'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
+
         }
 
-d_process_and_thread=par_process_and_thread(**kwargs)
-kwargs.update(d_process_and_thread)
 
 p_list=pert_add_go_nogo_ss(**kwargs)
 
@@ -93,7 +95,5 @@ for i, p in enumerate(p_list): print i, p
 
 a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
-
-# loop(get_loop_index(5, [15,15,3]), a_list, k_list )
         
-loop(1, [NUM_NETS, NUM_NETS, 1], a_list, k_list )
+loop(1, [num_sims, num_sims, NUM_RUNS], a_list, k_list )

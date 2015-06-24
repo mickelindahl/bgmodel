@@ -19,7 +19,7 @@ from toolbox import my_socket
 
 import config
 import inhibition_striatum as module
-import oscillation_perturbations_new_beginning_slow7 as op
+import fig_01_and_02_pert as op
 import pprint
 pp=pprint.pprint
 
@@ -53,7 +53,7 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'inh_YYY',
+        'job_name':'fig1_2_inh',
         
         'l_hours':  ['00','00','00'],
         'l_minutes':['15','10','5'],
@@ -66,6 +66,7 @@ kwargs={
         
         'nets':['Net_{}'.format(i) for i in range(NUM_NETS)],
         'nets_to_run':['Net_{}'.format(i) for i in range(NUM_NETS)],
+        
         'resolution':5,
         'repetitions':1,
         

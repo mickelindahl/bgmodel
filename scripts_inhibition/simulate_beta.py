@@ -3,6 +3,7 @@ Created on Aug 12, 2013
 
 @author: lindahlm
 '''
+import pythonpath #must be imported first
 print 'before oscillation_common import'
 import oscillation_common
 print 'after oscillation_common import'
@@ -179,7 +180,7 @@ class Main():
         self.kwargs=kwargs
     
     def __repr__(self):
-        return self.kwargs['script_name']
+        return str(self.get_nets())+self.kwargs['script_name']
 
     
     def do(self):

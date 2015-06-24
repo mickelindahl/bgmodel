@@ -26,7 +26,7 @@ def create_name_beta(file_name):
 #         return False        
     amp=[1.0, 1.05, 1.1, 1.15, 1.2]
     s=[]
-    for i in [1, 7, 9, 11, 13]:
+    for i in [1, 5, 7, 9, 11, 13]:
         if i ==11:
             s.append(l[i].split('-')[0])
 #         elif i==13:
@@ -52,7 +52,7 @@ def create_name_sw(file_name):
         return False
     
     s=[]
-    for i in [1, 2, 8, 10, 12, 13]:
+    for i in [1, 2, 6, 8, 10, 12, 13]:
         if i ==12:
             s.append(l[i].split('-')[0])
         elif i ==13:
@@ -256,12 +256,18 @@ def fitting(d0, d1):
 #         print idx
 #         print e[idx]
         print tp
-        for _id in idx[:10]:
+        for _id in idx[:100]:
             print d0[tp]['Net_0']['ylabels'][_id], d1[tp]['Net_0']['mean_rates'][:], numpy.round(d0[tp]['Net_0']['mean_rates'][_id,:],1),e[_id]
             print d0[tp]['Net_1']['ylabels'][_id], d1[tp]['Net_1']['mean_rates'][:], numpy.round(d0[tp]['Net_1']['mean_rates'][_id,:],1)
          
-        
-from_disk=2
+
+# Use
+#beta_0285_1700.0_200.0_250.0_1.1 [  0.    0.   33.6  14.9] [ 13.3  38.3  33.2  13.3] 3.0463748648
+#beta_0285_1700.0_200.0_250.0_1.1 [ 19.3  14.3  14.8  31.1] [ 26.   15.1  17.4  30.3]
+#slow_wave_0408_800.0_100.0_170.0_0.9 [  0.    0.   25.8  12.6] [  8.4  31.6  26.8  11.2] 1.89809548373
+#slow_wave_0408_800.0_100.0_170.0_0.9 [ 11.5  24.4  20.6  20.5] [  7.3  24.5  20.9  19.8]
+
+from_disk=1
 
 attrs=['spike_statistic']
 models=['GP', 'GI', 'GA', 'ST']

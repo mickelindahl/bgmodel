@@ -1718,10 +1718,10 @@ def simulate(builder=Builder,
     path_nest=get_path_nest(script_name, nets.keys(), nets[key].par)
 
     print nets.keys()
-    pp(nets['Net_0'].par['nest']['GA_GA_gaba']['weight'])
+#     pp(nets['Net_0'].par['nest']['GA_GA_gaba']['weight'])
     for net in nets.values():
         net.set_path_nest(path_nest)
-    pp(nets['Net_0'].par['nest']['GA_GA_gaba']['weight'])
+#     pp(nets['Net_0'].par['nest']['GA_GA_gaba']['weight'])
 #     sd = get_storage(file_name, info)
 
     # Adding nets no file name
@@ -1771,7 +1771,7 @@ def simulate(builder=Builder,
             cmp_psd(d_pds, models, dd) 
             cmp_activity_hist(models, dd, **d_activity_hist )
             cmp_activity_hist_stat(models, dd, **{'average':False})          
-            
+            pp(dd)
             save(sd, dd)
             
         elif fd == 2:

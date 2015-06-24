@@ -46,6 +46,8 @@ ml_module_la_SOURCES=  ml_module.cpp      ml_module.h      \
 					   poisson_generator_dynamic.cpp   poisson_generator_dynamic.h	   \
 					   poisson_generator_periodic.cpp  poisson_generator_periodic.h   \
    					   my_poisson_generator.cpp        my_poisson_generator.h   \
+   					   izhik_cond_exp.cpp              izhik_cond_exp.h   		\
+   					   my_aeif_cond_exp.cpp            my_aeif_cond_exp.h     \
 					   pif_psc_alpha.cpp 			   pif_psc_alpha.h     \
 					   drop_odd_spike_connection.h
 

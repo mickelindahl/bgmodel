@@ -338,7 +338,6 @@ class Perturbation(object):
                                           v, 
                                           self.op)
       
-            
 class Perturbation_list(object):
                                                                                              
     def __init__(self, *args, **kwargs):
@@ -366,15 +365,15 @@ class Perturbation_list(object):
         
     def __str__(self):
         s=''
-        for p in sorted(self.list):
-            s+=str(p)+'\n'
+#         for p in sorted(self.list):
+#             s+=str(p)+'\n'
         return  self.name+':'+s
 
     def __repr__(self):
         
         s=''
-        for p in sorted(self.list):
-            s+=str(p)+'\n'
+#         for p in sorted(self.list):
+#             s+=str(p)+'\n'
         return  self.name+':'+s
     
     def __getitem__(self, val):
@@ -483,7 +482,7 @@ class Par_base(object):
         self._dic={}
         self._dic_con = {}
         self._dic_dep = {}
-        self._dic_rep = kwargs.get('dic_rep', {})
+        self._dic_rep = kwargs.get( 'dic_rep', {} )
         self._per = kwargs.get('perturbations', Perturbation_list())
         
         self.changed={'dic': True,

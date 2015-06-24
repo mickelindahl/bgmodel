@@ -4,7 +4,7 @@ Created on Aug 12, 2013
 @author: lindahlm
 '''
 
-
+import pythonpath #must be imported first
 import oscillation_common
 import os
 

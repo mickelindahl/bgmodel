@@ -53,7 +53,10 @@ def _patch_nest(target):
     target.Models = types.MethodType(Models, target)
     target.Install = types.MethodType(Install, target)
     target.GetDefaults = types.MethodType(GetDefaults, target)
-    target.pynestkernel = types.ClassType('pynestkernel',(),{})
+    
+    d={'pushsli':None,
+       'runsli':None}
+    target.pynestkernel = types.ClassType('pynestkernel',(),d)
     
 def patch_NeuroTools():
     _=__import__(PATCH_MODULE)

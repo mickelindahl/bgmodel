@@ -6,34 +6,42 @@ Created on Aug 12, 2013
 from toolbox import monkey_patch as mp
 mp.patch_for_milner()
 
-from simulate import (pert_add_go_nogo_ss, get_path_logs, 
+from scripts_inhibition import config
+from simulate import (pert_add_go_nogo_ss,
                       par_process_and_thread,
                       get_args_list_Go_NoGo_compete,
                       get_kwargs_list_indv_nets)
-from toolbox.network import default_params
+
 from toolbox.network.manager import Builder_Go_NoGo_with_lesion_FS as Builder
 from toolbox.parallel_excecution import get_loop_index, loop
+from toolbox import directories as dr
+from toolbox import my_socket
 
 import scripts_inhibition.Go_NoGo_compete as module
-
 import sys
-# from scripts inhibition import Go_NoGo_compete as module
-import oscillation_perturbations41_slow as op
+import fig_01_and_02_pert as op
 import pprint
 pp=pprint.pprint
 
 from copy import deepcopy
 
+path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+ops=[op.get()[0]]
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=5
 
+dc=my_socket.determine_computer
+CORES=40 if dc()=='milner' else 10
+JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
+WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
+
 kwargs={
         'Builder':Builder,
         
-        'cores_milner':40*4,
-        'cores_superm':40,
+        'cores':CORES,
         
         'debug':False,
         'do_runs':[0],
@@ -47,6 +55,7 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
+        'job_admin':JOB_ADMIN, #user defined class   
         'job_name':'fig5_a0.2',
 
         'l_hours':['10','02','00'],
@@ -66,13 +75,14 @@ kwargs={
         'module':module,
         
         'nets':['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4'],
+        'nets_to_run':['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4'],
         
         'other_scenario':True,
         
-        'path_code':default_params.HOME_CODE,
-        'path_results':get_path_logs(LOAD_MILNER_ON_SUPERMICRO, 
-                                     FILE_NAME),
-        'perturbation_list':[op.get()[5]],
+        'path_rate_runs':path_rate_runs,
+        'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
+        'perturbation_list':ops,
+        
         'proportion_connected':[0.2]*1, #related to toal number fo runs
         'p_sizes':[
                    1.
@@ -84,10 +94,10 @@ kwargs={
         'rep':80,
         
         'time_bin':100,
-        }
 
-d_process_and_thread=par_process_and_thread(**kwargs)
-kwargs.update(d_process_and_thread)
+        'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
+
+        }
 
 p_list=pert_add_go_nogo_ss(**kwargs)
 
