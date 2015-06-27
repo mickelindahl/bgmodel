@@ -831,9 +831,14 @@ def get_input_Go_NoGo(kwargs):
                 else:
                     f=1
                 
+                if inp in kwargs.get('amp_base_skip'):
+                    amp_base=kwargs.get('amp_base')
+                else:
+                    amp_base=0
+                
                 dtmp={'p_amplitude_upp':kwargs.get('freqs')*f,
                       'p_amplitude_down':-kwargs.get('freqs')*f,
-                      'p_amplitude0':kwargs.get('amp_base'),
+                      'p_amplitude0':amp_base,
                       'freq': kwargs.get('freq_oscillations'),
                       'period':'constant'}
             
@@ -1229,10 +1234,7 @@ class Builder_Go_NoGo_only_D1D2_nodop_FS(Builder_Go_NoGo_only_D1D2_nodop_FS_base
 class Builder_Go_NoGo_only_D1D2_nodop_FS_oscillations_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Compete_with_oscillations(**{'other':Inhibition(**d),
+        return Compete_with_oscillations(**{'other':Inhibition(),
                                             'perturbations':per})
 
 
@@ -1259,10 +1261,7 @@ class Builder_Go_NoGo_only_D1D2_nodop_FS_oscillations(
 class Builder_Go_NoGo_with_lesion_FS_ST_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Go_NoGo_compete(**{'other':Inhibition(**d),
+        return Go_NoGo_compete(**{'other':Inhibition(),
                                   'perturbations':per})
 
 

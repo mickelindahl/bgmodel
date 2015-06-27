@@ -37,12 +37,14 @@ def get_kwargs_builder(**k_in):
     
     # Parameers if oscillations is used
     amp_base=k_in.get('amp_base')
+    amp_base_skip=k_in.get('amp_base_skip')
     freqs=k_in.get('freqs')
     freq_oscillations=k_in.get('freq_oscillations')
 
     input_type=k_in.get('input_type','burst3')
     STN_amp_mod=k_in.get('STN_amp_mod') 
     d= {'amp_base':amp_base,
+        'amp_base_skip':amp_base_skip,
         'duration':duration,
         'freqs':freqs,
         'freq_oscillations':freq_oscillations,
@@ -962,6 +964,7 @@ class Setup(object):
 
     def __init__(self, **k):
         self.amp_base=k.get('amp_base')
+        self.amp_base_skip=k.get('amp_base_skip')
         self.duration=k.get('duration',[1000.,500.])
         self.freqs=k.get('freqs')
         self.freq_oscillations=k.get('freq_oscillations')
@@ -992,6 +995,7 @@ class Setup(object):
     def builder(self):
         d= {
             'amp_base':self.amp_base,
+            'amp_base_skip':self.amp_base_skip,
             'duration':self.duration,
             'freqs':self.freqs,
             'freq_oscillations':self.freq_oscillations,

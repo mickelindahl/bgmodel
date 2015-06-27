@@ -250,7 +250,8 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
     def get_setup_args_and_kwargs(i_p_list, **kwargs):
         duration=kwargs.get('duration')
         amp_base=kwargs.get('amp_base')
-        freqs=kwargs.get('freqs')
+        amp_base_skip=kwargs.get('amp_base_skip')
+#         freqs=kwargs.get('freqs')
         freq_oscillations=kwargs.get('freq_oscillations')  
         home=kwargs.get('home')
         home_data=kwargs.get('home_data')
@@ -276,7 +277,7 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
         time_bin=kwargs.get('time_bin')
         
         
-        damp = process(path_rate_runs, [freqs],**kwargs)
+        damp = process(path_rate_runs, **kwargs)
         for key in sorted(damp.keys()):
             val = damp[key]
             print  key, numpy.round(val, 2)
@@ -291,6 +292,7 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
             pc=props_conn
 
         kwargs={'amp_base':amp_base,
+                'amp_base_skip':amp_base_skip,
                 'duration':duration,
                 'freqs':freqs,
                 'freq_oscillations':freq_oscillations,

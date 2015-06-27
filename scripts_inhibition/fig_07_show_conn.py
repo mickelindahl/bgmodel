@@ -22,8 +22,7 @@ kw={
 def ignore_files(name):
     s=name.split('/')[-2].split('_')[-1]
 #     print s, s not in ['16']
-    return s in ['0.06275', '0.125', '0.25', '0.5', '0.75', # 0.75, 
-                 '1.33','2', '8', '10', '16']
+    return s in ['0.001', '0.01', '0.1','2', '4', '8', '10','16']
     
 
 kwargs={'add_midpoint':True,

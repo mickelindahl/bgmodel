@@ -881,6 +881,10 @@ class Test_signal_processing(unittest.TestCase):
         p+=[phases_diff(x, y, idx_filter=idx[90:], **kwargs_phase_diff).ravel()]
         p+=[phases_diff(x, y, idx_filter=idx[v[idx]>p_conf95[0]], **kwargs_phase_diff).ravel()]
         p+=[phases_diff(x, y, **kwargs_phase_diff).ravel()]
+        
+        x*=0.
+        y*=0.
+#         p+=[phases_diff(x, y, idx_filter=idx[0:10], **kwargs_phase_diff).ravel()]
         if 1:
             for x in p:
                 bins=numpy.linspace(-numpy.pi,numpy.pi, 100.0)

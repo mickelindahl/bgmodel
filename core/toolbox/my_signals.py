@@ -29,7 +29,7 @@ import scipy.stats
 import sys
 import unittest
 import subprocess
-
+import warnings
 from os.path import expanduser
 from toolbox import misc, my_axes
 from toolbox import signal_processing as sp
@@ -1194,7 +1194,7 @@ class MyVmList(VmList):
         
         new_VmList=super( MyVmList, self ).time_slice(t_start, t_stop)
         
-        import warnings
+
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         new_MyVmList=convert_super_to_sub_class(new_VmList, MyVmList)
         
@@ -1467,8 +1467,12 @@ class MySpikeList(SpikeList):
 
         sample_means=[]
         out=remove_silent_signals(signals1, signals2,sample_means, **kwargs)
-        signals1, signals2,i=out
-
+        
+        if not (len(out[0])==0 or len(out[1])==0):
+            signals1, signals2, i=out
+        else: 
+            warnings.warn('In my_signals.MySpikeList.Factory_phases_diff_with_cohere: one or both signals only contains zeros')
+            i=sample
         y=sp.phases_diff(signals1, signals2, **kwargs)
         vals=[]
         bins=[]
@@ -3067,49 +3071,63 @@ class TestSpikeListMatrix(unittest.TestCase):
     def test_2_calls_wrapped_class(self):
         other=SpikeListMatrix(self.spike_lists2)
         calls=[
-               ['firing_rate', [100], {'average':True,
-                                       'local_num_threads':2}],
-
-               ['get_firing_rate', [100],{'average':True}],
-               ['get_isi',[],{}],
-               ['get_mean_coherence', [],{'fs':256.0,
-                                          'NFFT':256,
-                                          'noverlap':int(256/2),
-                                          'other':other,
-                                          'sample':2.,
-                                      }],
-               ['get_mean_rate', [],{}],
-               ['get_mean_rate_parts',[],{}],
-               ['get_mean_rates',[],{}],
-               ['get_mean_rate_slices',[], {'intervals':[[i*500, i*500+100]
-                                                         for i in range(6)],
-                                            'repetitions':3}], 
-               ['get_psd', [], {'NFFT':256,
-                                'fs':1000.0}],
-               ['get_phase', [],{'lowcut':10,
-                              'highcut':20,
-                              'order':3,
-                              'fs':1000.0}],
-               ['get_phases', [],{'lowcut':10,
-                              'highcut':20,
-                              'order':3,
-                              'fs':1000.0}],
-               ['get_phase_diff',[],{'lowcut':10,
-                              'highcut':20,
-                              'order':3,
-                              'fs':1000.0,
-                              'bin_extent':10.,
-                              'kernel_type':'gaussian',
-                              'other':other,
-                              'params':{'std_ms':5.,
-                                        'fs': 1000.0},
+#                ['firing_rate', [100], {'average':True,
+#                                        'local_num_threads':2}],
+# 
+#                ['get_firing_rate', [100],{'average':True}],
+#                ['get_isi',[],{}],
+#                ['get_mean_coherence', [],{'fs':256.0,
+#                                           'NFFT':256,
+#                                           'noverlap':int(256/2),
+#                                           'other':other,
+#                                           'sample':2.,
+#                                       }],
+#                ['get_mean_rate', [],{}],
+#                ['get_mean_rate_parts',[],{}],
+#                ['get_mean_rates',[],{}],
+#                ['get_mean_rate_slices',[], {'intervals':[[i*500, i*500+100]
+#                                                          for i in range(6)],
+#                                             'repetitions':3}], 
+#                ['get_psd', [], {'NFFT':256,
+#                                 'fs':1000.0}],
+#                ['get_phase', [],{'lowcut':10,
+#                               'highcut':20,
+#                               'order':3,
+#                               'fs':1000.0}],
+#                ['get_phases', [],{'lowcut':10,
+#                               'highcut':20,
+#                               'order':3,
+#                               'fs':1000.0}],
+#                ['get_phase_diff',[],{'lowcut':10,
+#                               'highcut':20,
+#                               'order':3,
+#                               'fs':1000.0,
+#                               'bin_extent':10.,
+#                               'kernel_type':'gaussian',
+#                               'other':other,
+#                               'params':{'std_ms':5.,
+#                                         'fs': 1000.0},
+#                  }],
+               ['get_phases_diff_with_cohere',[],{'lowcut':10,
+                                                  'highcut':20,
+                                                  'order':3,
+                                                  'fs':1000.0,
+                                                  'bin_extent':10.,
+                                                  'kernel_type':'gaussian',
+                                                  'other':other,
+                                                  'params':{'std_ms':5.,
+                                                            'fs': 1000.0},
+                                                 'NFFT':256,
+                                                'noverlap':int(256/2),
+                                                'other':other,
+                                                'sample':2.,
                  }],
-               ['get_spike_stats', [],{}],
-               ['mean_rate', [], {'t_start':250, 't_stop':4000, 'local_num_threads':2}], 
-               ['mean_rates', [], {}], 
-               ['merge', [], {}],
-               ['my_raster', [], {}],
-               ['merge_matricies', [other],{}]
+#                ['get_spike_stats', [],{}],
+#                ['mean_rate', [], {'t_start':250, 't_stop':4000, 'local_num_threads':2}], 
+#                ['mean_rates', [], {}], 
+#                ['merge', [], {}],
+#                ['my_raster', [], {}],
+#                ['merge_matricies', [other],{}]
                ]
         
         slc=SpikeListMatrix(self.spike_lists)
