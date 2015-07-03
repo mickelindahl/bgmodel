@@ -6,6 +6,7 @@ Created on Aug 12, 2013
 from core import monkey_patch as mp
 mp.patch_for_milner()
 
+from scripts_inhibition import config
 from core.network.manager import Builder_striatum as Builder
 from core.parallel_excecution import loop
 from core import directories as dr
