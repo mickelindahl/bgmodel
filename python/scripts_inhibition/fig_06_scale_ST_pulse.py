@@ -46,7 +46,7 @@ kwargs={
         
         'debug':False,
         'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'], 
-        'do_runs':range(2,NUM_RUNS),
+        'do_runs':range(NUM_RUNS),
         'do_obj':False,
         'duration':[900.,100.0],
         

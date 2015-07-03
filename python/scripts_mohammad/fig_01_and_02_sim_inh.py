@@ -17,10 +17,11 @@ from scripts_inhibition.simulate import (
                       pert_add_inhibition) 
 from core import my_socket
 
-import config
-import fig_01_and_02_pert as op
-import scripts_inhibition.base_inhibition_striatum as module
-import pprint
+CORES=4
+JOB_ADMIN=config.Ja_else
+LOCAL_NUM_THREADS=4
+WRAPPER_PROCESS=config.Wp_else
+
 pp=pprint.pprint
 
 

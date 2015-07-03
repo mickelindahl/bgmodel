@@ -6,9 +6,10 @@ Created on Aug 12, 2013
 
 
 from core.network.default_params import Perturbation_list as pl
+from core import misc
+
 import numpy
 import pprint
-from core_old.toolbox import misc
 pp=pprint.pprint
 
 # from oscillation_perturbations8 import get_solution_final_beta2

@@ -62,6 +62,7 @@ kwargs={
         'debug':False,#173-86, 109-54, 45-22
         'do_runs':range(NUM_RUNS), #A run for each perturbation
         'do_obj':False,
+        'do_nets':['Net_0', 'Net_1'],
         
         'file_name':FILE_NAME,
         'freqs':freqs,

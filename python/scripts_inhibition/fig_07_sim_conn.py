@@ -60,7 +60,7 @@ kwargs={
         'debug':False,
         'do_runs':range( NUM_RUNS), #A run for each perturbation
         'do_obj':False,
-        'do_nets':['Net_1'],
+        'do_nets':['Net_0', 'Net_1'],
         
         'external_input_mod':[],
         
@@ -83,7 +83,7 @@ kwargs={
         'module':module,
         
         'nets':['Net_0','Net_1'], #The nets for each run
-        'nets_to_run':['Net_1'],#['Net_0','Net_1'],
+        'nets_to_run':['Net_0', 'Net_1'],#['Net_0','Net_1'],
         'no_oscillations_control':True,
                 
         'op_pert_add':op_add.get(),
