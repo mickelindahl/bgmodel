@@ -6,7 +6,6 @@ Created on Aug 12, 2013
 from core import monkey_patch as mp
 mp.patch_for_milner()
 
-from scripts_inhibition import config
 from core.network.manager import Builder_striatum as Builder
 from core.parallel_excecution import loop
 from core import directories as dr
@@ -18,11 +17,10 @@ from scripts_inhibition.simulate import (
                       pert_add_inhibition) 
 from core import my_socket
 
-CORES=4
-JOB_ADMIN=config.Ja_else
-LOCAL_NUM_THREADS=4
-WRAPPER_PROCESS=config.Wp_else
-
+import config
+import fig_01_and_02_pert as op
+import scripts_inhibition.base_inhibition_striatum as module
+import pprint
 pp=pprint.pprint
 
 
@@ -35,10 +33,11 @@ NUM_RUNS=len(ops) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 4
-JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
-WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
+CORES=4
+JOB_ADMIN=config.Ja_else
+LOCAL_NUM_THREADS=4
+WRAPPER_PROCESS=config.Wp_else
+
 
 kwargs={
         'Builder':Builder,

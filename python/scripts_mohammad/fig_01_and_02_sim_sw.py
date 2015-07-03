@@ -27,10 +27,10 @@ import fig_01_and_02_pert as op
 import pprint
 pp=pprint.pprint
 
-CORES=4
-JOB_ADMIN=config.Ja_else
-LOCAL_NUM_THREADS=4
-WRAPPER_PROCESS=config.Wp_else
+path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+FILE_NAME=__file__.split('/')[-1][0:-3]
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
+LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
@@ -46,10 +46,10 @@ num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 10
-JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
-WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
+CORES=4
+JOB_ADMIN=config.Ja_else
+LOCAL_NUM_THREADS=4
+WRAPPER_PROCESS=config.Wp_else
 
 kwargs={
         'amp_base':amp_base,
