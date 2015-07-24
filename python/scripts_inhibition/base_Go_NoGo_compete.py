@@ -10,7 +10,7 @@ import core.plot_settings as ps
 
 
 from os.path import expanduser
-from scripts_inhibition.simulate import (main_loop, show_fr, get_file_name, 
+from scripts_inhibition.base_simulate import (main_loop, show_fr, get_file_name, 
                       get_file_name_figs, get_path_nest)
 
 from core.data_to_disk import Storage_dic
@@ -518,7 +518,7 @@ def show_variability_several(d, attr, nets=['Net_00'],  **k):
                        length=2*k.get('scale',1), 
                        top=False, 
                        right=False,
-                       pad=2*k.get('scale',1))    
+                       pad=4*k.get('scale',1))    
           
 #     for ax in axs[1:]: 
 #         ax.my_remove_axis(xaxis=True, yaxis=True)    
@@ -607,7 +607,11 @@ def show_variability_several(d, attr, nets=['Net_00'],  **k):
                 patches.append(w)
                 axs[iAx].add_patch(w)   
    
-            axs[iAx].legend(patches[-4:], labels, loc='center', bbox_to_anchor=[1.1, 1.4], ncol=2)
+            axs[iAx].legend(patches[-4:], 
+                            labels,
+                            frameon=False, 
+                            loc='center', 
+                            bbox_to_anchor=[1.1, 1.4], ncol=2)
                     
         axs[iAx].text(0.5, k.get('pos_ax_titles',1.05) , titles[iAx],
                     horizontalalignment='center', 
@@ -1271,9 +1275,9 @@ import unittest
 class TestMethods(unittest.TestCase):     
     def setUp(self):
         from core.network.default_params import Perturbation_list as pl
-        from_disk=2
+        from_disk=1
         
-        import oscillation_perturbations4 as op
+        import oscillation_perturbations_new_beginning_slow0 as op
         
         rep, res=2, 3
         duration=[900.,100.0]
@@ -1283,16 +1287,16 @@ class TestMethods(unittest.TestCase):
         l_mean_rate_slices= ['mean_rate_slices']
 #         sim_time=rep*res*res*1500.0
       
-        local_num_threads=16
+        local_num_threads=4
         
         l=op.get()
-        max_size=4000
+        max_size=5000
         p=pl({'netw':{'size':int(p_size*max_size),
                       'sub_sampling':{'M1':ss,
                                       'M2':ss}},
               'simu':{'local_num_threads':local_num_threads}},
                   '=')
-        p+=l[4+3] #data2
+        p+=l[0] #data2
 #         p+=l[4] #data        
 #         p+=l[4+3] #data3
         

@@ -8,7 +8,7 @@ import numpy
 import os
 
 from os.path import expanduser
-from scripts_inhibition.simulate import (main_loop, show_fr, show_mr, 
+from scripts_inhibition.base_simulate import (main_loop, show_fr, show_mr, 
                       get_file_name, get_file_name_figs,
                       get_path_nest)
 from core import pylab
@@ -44,10 +44,10 @@ def get_kwargs_builder(**k_in):
 def get_kwargs_engine():
     return {'verbose':True}
 
-def get_networks(builder, k_builder, k_default_params):
+def get_networks(builder, k_builder, k_director, k_default_params):
     info, nets, builder=manager.get_networks(builder,
                                              get_kwargs_builder(**k_builder),
-                                             {}, #director
+                                             k_director, #director
                                              get_kwargs_engine(),
                                              k_default_params)
     
@@ -95,6 +95,9 @@ class Setup(object):
     
     def default_params(self):
         return {}
+    
+    def director(self):
+        return {'nets_to_run':self.nets_to_run}
     
     def firing_rate(self):
         d={'average':False, 
@@ -185,6 +188,7 @@ def simulate(builder,
     
     info, nets, intervals, amplitudes, rep = get_networks(builder,
                                                           setup.builder(),
+                                                          setup.director(),
                                                           setup.default_params())
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)

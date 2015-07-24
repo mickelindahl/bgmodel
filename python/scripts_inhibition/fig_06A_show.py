@@ -11,7 +11,7 @@ pp=pprint.pprint
 
 from scripts_inhibition import effect_conns
 from core import misc
-from scripts_inhibition.simulate import save_figures
+from scripts_inhibition.base_simulate import save_figures
 
 
 
@@ -199,7 +199,7 @@ for ax in axs:
         ax.tick_params(direction='out',
                        length=2,
                        width=0.5,
-                       pad=0.01,
+                       pad=2.,
                         top=False, right=False
                         )  
 

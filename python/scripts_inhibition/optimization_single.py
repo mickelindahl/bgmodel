@@ -9,7 +9,7 @@ from core.network.manager import (add_perturbations,
                                      get_storage_list, 
                                      get_networks,
                                      save, load,)
-from scripts_inhibition.simulate import (get_file_name,
+from scripts_inhibition.base_simulate import (get_file_name,
                       get_path_nest)
 
 from scripts_inhibition.base_oscillation import mallet2008

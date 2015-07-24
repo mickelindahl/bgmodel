@@ -7,8 +7,8 @@ Created on May 14, 2014
 import numpy
 import os
 from os.path import expanduser
-from scripts_inhibition.simulate import (main_loop,main_loop_conn, show_fr, show_mr, show_mr_diff,
-                      get_file_name, get_file_name_figs)
+from scripts_inhibition.base_simulate import (main_loop, show_fr, show_mr, show_mr_diff,
+                      get_file_name, get_file_name_figs, get_path_nest)
 
 from core import misc, pylab
 from core.data_to_disk import Storage_dic
@@ -231,6 +231,10 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
     file_name = get_file_name(script_name, nets[key].par)
     file_name_figs = get_file_name_figs(script_name,  nets[key].par)   
     
+    path_nest=get_path_nest(script_name, nets.keys(), nets[key].par)
+    for net in nets.values():
+        net.set_path_nest(path_nest)
+    
     kwargs_dic = {'firing_rate':d_firing_rate, 
                   'mean_rate_slices': {'intervals':intervals[1], 
                                        'repetition':rep, 
@@ -338,7 +342,7 @@ def create_figs(setup, file_name_figs, d, models):
     axs[0].my_remove_axis(xaxis=True, yaxis=False,
                           keep_ticks=False) 
     axs[2].my_remove_axis(xaxis=True, yaxis=False,
-                          keep_ticks=False)<
+                          keep_ticks=False)
     for i, ax in enumerate(axs):
         ax.set_ylabel('')
         ax.my_set_no_ticks(yticks=3, xticks=3)    
@@ -354,8 +358,7 @@ def create_figs(setup, file_name_figs, d, models):
             ax.set_ylim([0,20])
                         
     sd_figs.save_figs(figs, format='png', dpi=400)
-    sd_figs.save_figs(figs, format='svg')
-
+    sd_figs.save_figs(figs, format='svg', in_folder='svg')
 
 class Main():    
     def __init__(self, **kwargs):

@@ -11,7 +11,7 @@ pp=pprint.pprint
 
 from scripts_inhibition import effect_conns
 from core import misc
-from scripts_inhibition.simulate import save_figures
+from scripts_inhibition.base_simulate import save_figures
 from scripts_inhibition.base_Go_NoGo_compete import (show_heat_map, 
                              show_variability, 
                              show_variability_several, 

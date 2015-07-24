@@ -8,7 +8,7 @@ from core.network.manager import Builder_striatum as Builder
 from core.parallel_excecution import loop
 from core.network import default_params
 
-from scripts_inhibition.simulate import (get_path_logs, 
+from scripts_inhibition.base_simulate import (get_path_logs, 
                       get_args_list_inhibition,
                       get_kwargs_list_indv_nets,
                       par_process_and_thread,

@@ -16,7 +16,7 @@ from core.network.manager import Builder_beta as Builder
 from core.my_signals import Data_bar
 
 from matplotlib.font_manager import FontProperties
-from scripts_inhibition.simulate import (cmp_psd, show_fr, show_hr, show_psd,
+from scripts_inhibition.base_simulate import (cmp_psd, show_fr, show_hr, show_psd,
                       show_coherence, show_phase_diff,
                       get_file_name, get_file_name_figs,
                       get_path_nest)
@@ -1874,7 +1874,7 @@ def main(*args, **kwargs):
 
 def run_simulation(from_disk=0, local_num_threads=12, type_of_run='shared_memory'):
     from core.network.default_params import Perturbation_list as pl
-    from scripts_inhibition.simulate import  get_path_rate_runs, pert_add_oscillations
+    from scripts_inhibition.base_simulate import  get_path_rate_runs, pert_add_oscillations
     from scripts_inhibition import oscillation_perturbations_new_beginning_slow_fitting_GI_GA_ST_beta_0 as op
 
     local_num_threads=12

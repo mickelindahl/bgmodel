@@ -6,14 +6,13 @@ Created on Nov 13, 2014
 '''
 
 from scripts_inhibition import effect_conns
-from effect_conns import gs_builder_conn
 d=kw={'n_rows':8, 
         'n_cols':2, 
         'w':int(72/2.54*18), 
         'h':int(72/2.54*18)/3, 
         'fontsize':7,
         'title_fontsize':7,
-        'gs_builder':gs_builder_conn}
+        'gs_builder':effect_conns.gs_builder_conn}
 
 
 

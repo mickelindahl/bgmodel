@@ -5,7 +5,7 @@ Created on Aug 12, 2013
 '''
 from copy import deepcopy
 from inhibition_gather_results import process
-from scripts_inhibition.simulate import get_file_name
+from scripts_inhibition.base_simulate import get_file_name
 from core import misc
 from core.network.default_params import Perturbation_list as pl
 from core.network.manager import Builder_beta as Builder

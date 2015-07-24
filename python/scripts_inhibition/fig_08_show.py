@@ -6,7 +6,7 @@ Created on Apr 6, 2015
 
 from scripts_inhibition import effect_conns
 from core.network.manager import get_storage
-from scripts_inhibition.simulate import get_file_name, save_figures
+from scripts_inhibition.base_simulate import get_file_name, save_figures
 from core import misc
 from matplotlib import ticker
 
@@ -19,11 +19,11 @@ import pprint
 pp=pprint.pprint
 
 
-from_disk=0
-scale=2
+from_disk=1
+scale=1
 path=[
-#       ('/home/mikael/results/papers/inhibition/network/'
-#              +'milner/fig_08_sim_control_beta/'),
+    ('/home/mikael/results/papers/inhibition/network/'
+           +'milner/fig_08_sim_control_beta/'),
       ('/home/mikael/results/papers/inhibition/network/'
              +'milner/fig_08_sim_control_sw/')]
 
@@ -52,6 +52,34 @@ def create_name(file_name):
         print file_name.split('/')[-1][7:11]+file_name.split('/')[-2][18:]
         v=file_name.split('/')[-1][7:11]+file_name.split('/')[-2][18:]
         return v
+
+def conn_setup_beta():
+    d= {'key_no_pert':'0000',#control_sim',
+        'name_maker':create_name,
+        'add_midpoint':False,
+        'psd':{'NFFT':128, 
+               'fs':256., 
+               'noverlap':128/2},
+        'oi_min':15.,
+        'oi_max':25.,
+        'oi_upper':1000.,
+        'oi_fs':256,
+                   'keep':['data']}
+    return d
+
+def conn_setup_sw():
+    d= {'key_no_pert':'0000',#control_sim',
+        'name_maker':create_name,
+        'add_midpoint':False,
+        'psd':{'NFFT':128*4, 
+               'fs':256.*4, 
+               'noverlap':128*4/2},
+        'oi_min':.5,
+        'oi_max':1.5,
+        'oi_upper':1000.,
+        'oi_fs':256*4,
+                   'keep':['data']}
+    return d
 
 fig, axs=ps.get_figure2(n_rows=4,
                          n_cols=3,  
@@ -97,15 +125,16 @@ organize={'control':slice(0,1),
 
 
 import os
-list_names=[]
+list_names_tmp=[]
 for pa in path:
+    list_names_tmp.append([])
     for f in os.listdir(pa):
         if f.split('/')[-1] in ['params', 'jobbs','std']:
             continue
-        list_names.append(f.split('/')[-1].split('_')[1:])
+        list_names_tmp[-1].append(f.split('/')[-1].split('_')[1:])
 
-list_names=sorted(list_names, key=lambda x:x[0])
-
+list_names=sorted(list_names_tmp[0], key=lambda x:x[0])
+list_names_sw=sorted(list_names_tmp[1], key=lambda x:x[0])
 script_name=(__file__.split('/')[-1][0:-3] +'/data')
 file_name = get_file_name(script_name)
  
@@ -116,24 +145,13 @@ attr_add=['mse_rel_control_fr', 'mse_rel_control_mc',
  
 #     exclude+=['MS_MS', 'FS_MS', 'MS']
 sd = get_storage(file_name, '')
-d = effect_conns.get_data(models, 
-             nets, 
-             attrs, 
-             path, 
-             from_disk, 
-             attr_add, 
-             sd,
-             **{'key_no_pert':'0000',#control_sim',
-                'name_maker':create_name,
-                'add_midpoint':False,
-                'psd':{'NFFT':128, 
-                       'fs':256., 
-                       'noverlap':128/2},
-                'oi_min':15.,
-                'oi_max':25.,
-                'oi_upper':1000.,
-                'oi_fs':256,
-                           'keep':['data']})
+d = effect_conns.get_data(models, nets, attrs, path[0], 
+                          from_disk, attr_add, sd,
+                          **conn_setup_beta())
+sd = get_storage(file_name+'_sw', '')
+d_sw = effect_conns.get_data(models, nets, attrs, path[1], 
+                          from_disk, attr_add, sd,
+                          **conn_setup_sw())
 # pp(d.keys())
 for i, ln in enumerate(list_names):print i, ln[10:]
 # pp(list_names)
@@ -157,7 +175,53 @@ d['d_gradients_lesion']['oscillation_index']['labelsy']
 
 '''
 
+#########################################
+# MSMS
+#########################################
 
+ax=axs[7]
+# v=d['data']
+   
+l=[]
+for key in sorted(d_sw['data'].keys()):
+    v=d_sw['data'][key]['Net_1']['GP_GP']['mean_coherence']
+    l.append(v)
+ 
+l=l[organize['MSMS']]
+    
+ln=list_names_sw[organize['MSMS']]
+ln=[str(float(a[9])) for a in ln]
+ 
+colors=misc.make_N_colors('copper', len(l))
+   
+for i, trace in enumerate(l):
+    x=numpy.linspace(0,128,len(trace)) #half of sampleing frequency
+    ax.plot(x, trace, color=colors[i])
+ax.set_xlim([0,5])
+ax.set_ylim([0,1])  
+sm = pylab.cm.ScalarMappable(cmap='copper', 
+                            norm=pylab.normalize(vmin=0, vmax=len(ln)-1)
+                             )
+sm._A = []
+     
+box = ax.get_position()
+pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
+     0.01, box.height*0.8]
+axColor=pylab.axes(pos)
+cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
+ 
+cbar.ax.tick_params( length=1, )
+cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
+ 
+  
+ax.text(1.4,  0.5, r'Multiplier $g_{MSN \to MSN}$', 
+        transform=ax.transAxes, va='center', rotation=270) 
+ 
+ax.set_xlabel('Frequency (Hz)')
+ax.set_ylabel('Coherence')
+ax.my_set_no_ticks(xticks=4)
+ax.my_set_no_ticks(yticks=4)
+ax.set_title('Lesion')
 #########################################
 # TA to MS tau snapse figure
 #########################################
@@ -185,7 +249,7 @@ for s, c, coords in zip(['M1', 'M2'],
 #########################################
 # CS-STN delay effect on phase shift ST-TI #TA-TI 
 #########################################
-ax=axs[1]
+ax=axs[2]
  
 l=[]
 for key in sorted(d['data'].keys()):
@@ -223,12 +287,52 @@ ax.my_set_no_ticks(xticks=4)
 ax.my_set_no_ticks(yticks=4)
 ax.set_ylim([0,0.31])
  
+
+# CS-STN delay effect on phase shift ST-TI #TA-TI 
+#########################################
+ax=axs[3]
+ 
+l=[]
+for key in sorted(d['data'].keys()):
+    v=d['data'][key]['Net_1']['GI_ST']['phases_diff_with_cohere']
+    l.append(v)
+l=l[organize['CTXSTRdelay']]
+colors=misc.make_N_colors('copper', len(l))
+  
+for i, trace in enumerate(l):
+    x=numpy.linspace(-numpy.pi*3,numpy.pi*3,len(trace))
+    norm=sum(trace)*(x[-1]-x[0])/len(x)
+    ax.plot(x, trace/norm, color=colors[i])
+ax.set_xlim([-numpy.pi,numpy.pi])
+  
+ 
+sm = pylab.cm.ScalarMappable(cmap='copper', 
+                             norm=pylab.normalize(vmin=2.5, vmax=20))
+sm._A = []
+  
+box = ax.get_position()
+pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
+     0.01,  box.height*0.8]
+axColor=pylab.axes(pos)
+cbar=pylab.colorbar(sm, cax=axColor)
+tick_locator = ticker.MaxNLocator(nbins=4)
+cbar.locator = tick_locator
+cbar.update_ticks()
+cbar.ax.tick_params( length=1, )
+  
+ax.text(1.25, 0.5,  r'Delay CTX$\to$Striatum (ms)', 
+        transform=ax.transAxes,  va='center', rotation=270) 
+ax.set_xlabel(r'Angle (rad)')
+ax.set_ylabel('Norm. count ST-TI')
+ax.my_set_no_ticks(xticks=4)
+ax.my_set_no_ticks(yticks=4)
+ax.set_ylim([0,0.31])
  
 #########################################
 # fan in  str to GA 
 #########################################
  
-ax=axs[2]
+ax=axs[1]
    
 l=[]
 for key in sorted(d['data'].keys()):
@@ -274,7 +378,7 @@ ax.set_ylim([0,0.31])
 # fan in TI to str 
 #########################################
  
-ax=axs[3]
+ax=axs[4]
  
 l=[]
 for key in sorted(d['data'].keys()):
@@ -316,7 +420,7 @@ ax.set_ylim([0,0.31])
 # CTX-STN rate and g conductance GP-STN
 #########################################
 
-ax=axs[5]
+ax=axs[6]
 
 l=[]
 for key in sorted(d['data'].keys()):
@@ -391,7 +495,7 @@ ax.set_ylim([0,0.31])
 # fan in TI TA to TA 
 #########################################
 
-ax=axs[4]
+ax=axs[5]
 # v=d['data']
   
 l=[]
@@ -444,7 +548,6 @@ for ax in axs:
 save_figures([fig], script_name, dpi=400)
 
 pylab.show()
-
 
 
 

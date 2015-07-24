@@ -6,7 +6,7 @@ Created on Jun 4, 2015
 from core import monkey_patch as mp
 mp.patch_for_milner()
 
-from scripts_inhibition.simulate import (pert_add_single,
+from scripts_inhibition.base_simulate import (pert_add_single,
                       get_args_list_opt_single,
                       get_kwargs_list_indv_nets,
                       ) 

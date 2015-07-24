@@ -4,20 +4,20 @@ Created on Aug 12, 2013
 @author: lindahlm
 '''
 
-from MSN_cluster_compete import Setup
+from scripts_inhibition.base_MSN_cluster_compete import Setup
 from core.network.default_params import Perturbation_list as pl
 from core.network.manager import Builder_MSN_cluster_compete as Builder
 from core.parallel_excecution import loop
 from core.network import default_params
 
-from scripts_inhibition.simulate import (get_path_logs, 
+from scripts_inhibition.base_simulate import (get_path_logs, 
                       get_args_list_inhibition,
                       get_kwargs_list_indv_nets,
                       par_process_and_thread,
                       pert_set_data_path_to_milner_on_supermicro, 
                       pert_add_MSN_cluster_compete) 
 
-import MSN_cluster_compete as module
+from scripts_inhibition import base_MSN_cluster_compete as module
 import oscillation_perturbations4 as op
 import pprint
 pp=pprint.pprint

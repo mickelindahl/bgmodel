@@ -6,7 +6,7 @@ Created on Aug 12, 2013
 from core import monkey_patch as mp
 mp.patch_for_milner()
 
-from scripts_inhibition.simulate import (get_path_logs, 
+from scripts_inhibition.base_simulate import (get_path_logs, 
                       pert_add,
                       pert_add_go_nogo_ss, 
                       par_process_and_thread,

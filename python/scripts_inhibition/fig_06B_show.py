@@ -11,7 +11,7 @@ pp=pprint.pprint
 
 from scripts_inhibition import effect_conns
 from core import misc
-from scripts_inhibition.simulate import save_figures
+from scripts_inhibition.base_simulate import save_figures
 
 
 def gs_builder(*args, **kwargs):
@@ -151,7 +151,8 @@ axs[0].legend(['Dual selection','Selection', 'No selection'],
           columnspacing=0.3,
           bbox_to_anchor=(5.5, 2.),
           prop={'size':7*scale},
-          markerscale=2.5)
+          markerscale=2.5,
+          )
 
 
 
@@ -178,22 +179,31 @@ k={'axs':axs,
 
 show_variability_several(dd, 'mean_rate_slices', **k)
 
+for ax in axs:
+        ax.tick_params(direction='out',length=0.1,
+                       width=0.5, pad=0.01,
+                        top=False, right=False,
+                        left=False, bottom=False,
+                        )  
+
 for axs in axs_list:
     labels= ['{} %'.format(i) for i in [10,50,100]]
-    for i, s in zip(range(4,15,5),labels):
+    for i, s in zip([5, 11, 17],labels):
         axs[i].text( 0.5, -.3, s, 
                     transform=axs[i].transAxes,
                     horizontalalignment='center')
     
-    axs[9].text( 0.5, -0.65, 'Action pool activation', 
-                    transform=axs[9].transAxes,
+    axs[11].text( 0.5, -0.65, 'Action pool activation', 
+                    transform=axs[11].transAxes,
                     horizontalalignment='center')
     
     labels= ['Only D1',
-                 'D1 & D2',
-                 r'No MSN$\to$MSN',
-                 r'No FSN$\to$MSN',
-                 r'No $GPe_{TA}$$\to$MSN']
+             'D1 & D2',
+             r'No MSN$\to$MSN',
+             r'No FSN$\to$MSN',
+             r'No $GPe_{TA}$$\to$MSN',
+             r'Pulse STN']
+    
     for i, s in enumerate(labels):
         axs[i].text(k.get('cohere_ylabel_ypos', -0.1), 
                     0.5, 

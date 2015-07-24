@@ -8,7 +8,7 @@ Created on Aug 12, 2013
 from core import monkey_patch as mp
 mp.patch_for_milner()
 
-from scripts_inhibition.simulate import (get_path_rate_runs,
+from scripts_inhibition.base_simulate import (get_path_rate_runs,
                       get_args_list_oscillation,
                       get_kwargs_list_indv_nets,
                       pert_add_oscillations) 

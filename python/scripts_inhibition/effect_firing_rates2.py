@@ -12,9 +12,9 @@ pp=pprint.pprint
 
 from scripts_inhibition import effect_conns
 from core import misc
-from scripts_inhibition.simulate import save_figures
+from scripts_inhibition.base_simulate import save_figures
 from core.network.manager import get_storage, save
-from scripts_inhibition.simulate import get_file_name, save_figures
+from scripts_inhibition.base_simulate import get_file_name, save_figures
 from core.data_to_disk import Storage_dic
 
 def create_name_beta(file_name):

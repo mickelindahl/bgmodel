@@ -14,7 +14,7 @@ from core import misc
 from core.data_to_disk import Storage_dic
 from core.network.manager import get_storage, save
 from core.my_signals import Data_bar
-from scripts_inhibition.simulate import get_file_name, save_figures
+from scripts_inhibition.base_simulate import get_file_name, save_figures
 import pprint
 pp=pprint.pprint
 

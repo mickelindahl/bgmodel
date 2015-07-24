@@ -7,7 +7,7 @@ from core import monkey_patch as mp
 mp.patch_for_milner()
 
 from scripts_inhibition import config
-from scripts_inhibition.simulate import (pert_add_go_nogo_ss,
+from scripts_inhibition.base_simulate import (pert_add_go_nogo_ss,
                       get_path_rate_runs,
                       get_args_list_Go_NoGo_compete,
                       get_kwargs_list_indv_nets)

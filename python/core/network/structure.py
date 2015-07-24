@@ -560,7 +560,9 @@ class Conn(object):
         if 'constant' == x['type']:
             return numpy.ones(self.n)*x['params']
         if 'uniform' == x['type']:
-            return numpy.random.uniform(low=x['params']['min'], 
+#             low=min(x['params']['min'],1.0) # nest scheduler
+            low=x['params']['min']
+            return numpy.random.uniform(low=low, 
                                              high=x['params']['max'], 
                                              size=self.n)
         if 'learned' == x['type']:

@@ -8,6 +8,7 @@ import matplotlib.gridspec as gridspec
 import numpy
 import pylab
 import os
+import sys
 import core.plot_settings as ps
 
 from matplotlib import ticker
@@ -16,7 +17,7 @@ from core.my_signals import Data_bar
 from core import misc
 from core.data_to_disk import Storage_dic
 from core.network.manager import get_storage, save
-from scripts_inhibition.simulate import get_file_name, save_figures
+from scripts_inhibition.base_simulate import get_file_name, save_figures
 import pprint
 from copy import deepcopy
 
@@ -690,7 +691,15 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
             d[dk]=[]
             
             for key in d['labelsy']:
-                v=out[attr][key]
+                try:
+                    if not attr in out.keys():
+                        continue
+                    v=out[attr][key]
+                except Exception as e:
+                    print attr
+                    print out.keys()
+                    
+                    raise type(e)(e.message), None, sys.exc_info()[2]
                 d[dk].append(v[dk])
             d[dk]=numpy.array(d[dk])
             

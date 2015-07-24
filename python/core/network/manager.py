@@ -289,10 +289,7 @@ class Builder_MSN_cluster_compete_base(Builder_abstract):
         return [self._low()]    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return MSN_cluster_compete(**{'other':Inhibition(**d),
+        return MSN_cluster_compete(**{'other':Inhibition(),
                                       'perturbations':per})   
 
      
@@ -497,7 +494,8 @@ class Builder_inhibition_striatum_base(Builder_network_base):
     
    
     def get_parameters(self, per, **kwargs):
-        return Inhibition(**{'perturbations':per})   
+        return Inhibition_striatum(**{'other':Inhibition(),
+                                      'perturbations':per})    
 
     def _get_dopamine_levels(self):
         return [self._dop()]    
@@ -529,10 +527,7 @@ class Builder_striatum_base(Builder_network_base):
     
    
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Inhibition_striatum(**{'other':Inhibition(**d),
+        return Inhibition_striatum(**{'other':Inhibition(),
                                       'perturbations':per})   
 
     def _get_dopamine_levels(self):

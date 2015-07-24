@@ -7,7 +7,7 @@ from core import monkey_patch as mp
 mp.patch_for_milner()
 
 from scripts_inhibition import config
-from scripts_inhibition.simulate import (
+from scripts_inhibition.base_simulate import (
                       pert_add,
                       pert_add_go_nogo_ss, 
                       get_args_list_Go_NoGo_compete_oscillation,
@@ -41,7 +41,7 @@ l_op_dop=[5,6]
 op_pert_add=[pl(**{'name':'Control'})]
 
 opc=op_conn.get()
-op_pert_add=[opc[i] for i in l_op_conn]
+op_pert_add+=[opc[i] for i in l_op_conn]
 
 opn=op_nuc.get()
 op_pert_add+=[opn[i] for i in l_op_nuc]
@@ -78,10 +78,10 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':range(10),
+        'do_runs':range(5),#NUM_NETS),
         'do_obj':False,
 
-        'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'], 
+        'do_not_record':[],#['M1', 'M2', 'FS','GA','GI', 'ST'], 
         'file_name':FILE_NAME,
         'freqs':[freq], #need to be length  1
         'freq_oscillations':20.,
@@ -93,7 +93,7 @@ kwargs={
         'job_admin':JOB_ADMIN, #user defined clas
         'job_name':'fig7_rec',
 
-        'l_hours':['06','01','00'],
+        'l_hours':['08','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            
@@ -156,5 +156,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(5, [NUM_NETS,NUM_NETS,NUM_NETS], a_list, k_list )
+loop(10, [NUM_NETS,NUM_NETS,NUM_NETS], a_list, k_list )
         

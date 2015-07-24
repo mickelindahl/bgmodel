@@ -9,7 +9,7 @@ from core import monkey_patch as mp
 mp.patch_for_milner()
 
 from scripts_inhibition import config
-from scripts_inhibition.simulate import (get_path_rate_runs,
+from scripts_inhibition.base_simulate import (get_path_rate_runs,
                       get_args_list_oscillation,
                       get_kwargs_list_indv_nets,
                       pert_add_oscillations,
@@ -23,7 +23,7 @@ from core import my_socket
 
 import numpy
 import sys
-import scripts_inhibition.base_oscillation_beta as module
+import scripts_inhibition.base_oscillation_sw as module
 import fig_01_and_02_pert as op
 import fig_08_pert_control as op_control
 import pprint

@@ -6,7 +6,7 @@ Created on Jun 4, 2015
 
 import oscillation_perturbations_new_beginning_slow4 as op
     
-from scripts_inhibition.simulate import (get_file_name, 
+from scripts_inhibition.base_simulate import (get_file_name, 
                       get_path_nest)
 from scripts_inhibition.base_oscillation import mallet2008
 
