@@ -21,12 +21,12 @@ import sys
 import pprint
 pp=pprint.pprint
 
-ops=[op.get()[1]]
+ops=op.get() 
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 NUM_NETS=6
-NUM_RUNS=1 #A run for each perturbation
-num_sim=NUM_NETS*NUM_RUNS
+NUM_RUNS=2 #A run for each perturbation
+num_sims=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
 CORES=40 if dc()=='milner' else 6
@@ -88,6 +88,6 @@ for obj in a_list:
     print obj.kwargs['setup'].nets_to_run
 
 
-loop(6,[NUM_NETS,NUM_NETS,1], a_list, k_list )
+loop(6,[num_sims,num_sims,NUM_RUNS], a_list, k_list )
 
         

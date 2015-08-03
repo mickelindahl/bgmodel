@@ -20,23 +20,37 @@ from core import directories as dr
 from core import my_socket
 from core.network.default_params import Perturbation_list as pl
 
-import scripts_inhibition.base_Go_NoGo_compete as module
 import fig_01_and_02_pert as op
 import fig_07_pert_conn as op_conn
 import fig_07_pert_nuclei as op_nuc
 import fig_03_pert_dop as op_dop
-
+import scripts_inhibition.base_Go_NoGo_compete as module
 import sys
 import pprint
 pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
-ops=[op.get()[0]]
-
+ops=[op.get()[0]] # 0 is beta
 l_op_conn=[17, 51, 57, 107, 137, 161, 171, 177, 187, 201, 211, 217, 221]#12, 97, 108, 109, 127, 132 ]    
 l_op_nuc=[32, 16, 17, 33, 40, 49, 56, 57, 64]#16, 33, 49, 57, 64]
 l_op_dop=[5,6]
 
+'''
+Issuse wtih:
+2 (51)     GA_M2_pert_0.0    OOM
+5 (137)    GA_FS_pert_5      time
+7 (161)    ST_GA_pert_0.0    OOM
+8 (171)    ST_GA_pert_5      time
+10 (187)   GI_GA_pert_0.0    ?
+11 (201)   M2_GI_pert_0.0    OOM
+12 (211)   M2_GI_pert_5      OOM
+15 (16)    M1_pert_mod7      OOM
+18 (40)    M2_pert_mod7      Mem python
+19 (49)    GI_pert_mod0      OOM
+20 (56)    GI_pert_mod7      ?
+21 (57)    ST_pert_mod0      OOM
+22 (64)    ST_pert_mod7      ?
+'''
 
 op_pert_add=[pl(**{'name':'Control'})]
 
@@ -56,13 +70,13 @@ for i, o in enumerate(op_pert_add):
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
-NUM_NETS=len(op_pert_add)
+NUM_RUNS=len(op_pert_add)
 
 
 dc=my_socket.determine_computer
 CORES=40*4 if dc()=='milner' else 10
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
+LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 amp_base=1.1
@@ -78,10 +92,10 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':range(5),#NUM_NETS),
+        'do_runs':[2,5,7,8,10,11,12,15,18,19,20,21,22],#range(NUM_RUNS),#NUM_NETS),
         'do_obj':False,
 
-        'do_not_record':[],#['M1', 'M2', 'FS','GA','GI', 'ST'], 
+        'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'], 
         'file_name':FILE_NAME,
         'freqs':[freq], #need to be length  1
         'freq_oscillations':20.,
@@ -93,7 +107,7 @@ kwargs={
         'job_admin':JOB_ADMIN, #user defined clas
         'job_name':'fig7_rec',
 
-        'l_hours':['08','01','00'],
+        'l_hours':['12','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            
@@ -111,15 +125,12 @@ kwargs={
         'other_scenario':True,
                  
         'path_rate_runs':path_rate_runs,
-        'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',       'path_rate_runs':path_rate_runs,
+        'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',      
+        
         'perturbation_list':ops,
-        'proportion_connected':[0.2]*NUM_NETS, #related to toal number fo runs
-        'p_sizes':[
-                   1.
-                  ],
-        'p_subsamp':[
-                     1.
-                     ],
+        'proportion_connected':[0.2]*NUM_RUNS, #related to toal number fo runs
+        'p_sizes':[1. ],
+        'p_subsamp':[1. ],
         
         'STN_amp_mod':STN_amp_mod,
  
@@ -134,10 +145,10 @@ if my_socket.determine_computer()=='milner':
             'laptime':1007.0,
             'res':10,
             'rep':40,
-            'time_bin':100.,
+            'time_bin':10000.,
 
             }
-elif my_socket.determine_computer()=='supermicro':
+elif my_socket.determine_computer() in ['thalamus','supermicro']:
     kw_add={
             'duration':[357., 100.0],
             'laptime':457.,
@@ -156,5 +167,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(10, [NUM_NETS,NUM_NETS,NUM_NETS], a_list, k_list )
+loop(13, [NUM_RUNS,NUM_RUNS,NUM_RUNS], a_list, k_list )
         

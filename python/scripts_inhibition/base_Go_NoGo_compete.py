@@ -994,6 +994,7 @@ class Setup(object):
         self.res=k.get('resolution',2)
         self.rep=k.get('repetition',2)
         self.STN_amp_mod=k.get('STN_amp_mod')
+        self.threshold=k.get('threshold',14.)
         self.time_bin=k.get('time_bin',5)
  
     def builder(self):
@@ -1093,7 +1094,8 @@ class Setup(object):
            'titles':self.labels,
            'vlim_variance':vlim_variance,
            'vlim_CV':vlim_CV,
-           'vlim_rate':vlim_rate}
+           'vlim_rate':vlim_rate,
+           'threshold':self.threshold}
         
         return d
 

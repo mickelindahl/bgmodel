@@ -219,6 +219,7 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
         res=kwargs.get('res')
         rep=kwargs.get('rep')
         p_pulses=kwargs.get('p_pulses')
+        threshold=kwargs.get('threshold')
         time_bin=kwargs.get('time_bin')
 
         if type(props_conn)==list:
@@ -239,7 +240,8 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
                 'p_pulses':p_pulses,
                 'resolution':res,
                 'repetition':rep,
-                'time_bin':time_bin}
+                'time_bin':time_bin,
+                'threshold':threshold}
         return [], kwargs
     
     args=[p_list, get_setup_args_and_kwargs]
@@ -249,10 +251,11 @@ def get_args_list_Go_NoGo_compete(p_list, **kwargs):
 def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
     
     def get_setup_args_and_kwargs(i_p_list, **kwargs):
-        duration=kwargs.get('duration')
+
         amp_base=kwargs.get('amp_base')
         amp_base_skip=kwargs.get('amp_base_skip')
-#         freqs=kwargs.get('freqs')
+        duration=kwargs.get('duration')
+        freqs=kwargs.get('freqs')
         freq_oscillations=kwargs.get('freq_oscillations')  
         home=kwargs.get('home')
         home_data=kwargs.get('home_data')
@@ -274,18 +277,20 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
         props_conn=kwargs.get('proportion_connected', 1.)
         res=kwargs.get('res')
         rep=kwargs.get('rep')
-        STN_amp_mod=kwargs.get('STN_amp_mod')     
+        STN_amp_mod=kwargs.get('STN_amp_mod')
+        threshold=kwargs.get('threshold')     
         time_bin=kwargs.get('time_bin')
+        tuning_freq_amp_to=kwargs.get('tuning_freq_amp_to')
         
-        
-        damp = process(path_rate_runs, **kwargs)
+        kw_process={'freqs':freqs,
+                'tuning_freq_amp_to':tuning_freq_amp_to}
+        damp = process(path_rate_runs, **kw_process) #freq in kwargs
         for key in sorted(damp.keys()):
             val = damp[key]
             print  key, numpy.round(val, 2)
 
         freqs = numpy.round(damp[perturbation_list[0].name][0], 2) 
     
-        
         
         if type(props_conn)==list:
             pc=props_conn[i_p_list]
@@ -310,8 +315,10 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
                 'p_pulses':p_pulses,
                 'resolution':res,
                 'repetition':rep,
+                'STN_amp_mod':STN_amp_mod, 
+                'threshold':threshold,
                 'time_bin':time_bin,
-                'STN_amp_mod':STN_amp_mod, }
+                }
         return [], kwargs
     
     args=[p_list, get_setup_args_and_kwargs]

@@ -2970,7 +2970,7 @@ def setup_burst3_wo(dic_other, max_n_set_pre,  inps, dic={}):
 
     
     for inp in inps:
-        d={'type':'burst3_with_oscillations',
+        d={'type':'burst3_oscillations',
            'params':{
                      'repetitions':2},
                      }
@@ -3042,7 +3042,7 @@ class Compete_with_oscillations_base(object):
 #              'nest':{},
 #              'node':{}}
         
-        d={'type':'burst3_with_oscillations', 
+        d={'type':'burst3_oscillations', 
              'params':{
                        'p_amplitude_upp':0.1,
                        'p_amplitude_down':-0.1,
@@ -3055,7 +3055,7 @@ class Compete_with_oscillations_base(object):
         
         for key in ['C1', 'C2', 'CF', 'CS']: 
             dic['netw']['input'][key]['params'].update(d['params'])
-            dic['netw']['input'][key]['type']='burst3_with_oscillations'
+            dic['netw']['input'][key]['type']='burst3_oscillations'
               
 
 #             dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
@@ -4172,15 +4172,19 @@ def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
             idx=list(range(k,m, n_set_pre))
             idx0=list(range(k+m,n, n_set_pre))
            
-            r=d['rate']   
+#             r=d['rate']   
+            
             amp=d['amplitudes']   
+            
+            
+#             print 'Rate:',r, 'n:',n, 'rate',rate
             
             t=numpy.array(d['durations'])        
             times=numpy.array([[0]+list(numpy.cumsum(t)[0:-1])
                           +i*numpy.sum(t) for i in range(rep) ])
             times=list(times.ravel())
         
-            rates=list(r*numpy.array(amp))*rep
+            rates=list(rate*numpy.array(amp))*rep
             setup+=[{'rates':rates, 
                      'times':times, 
                      'idx':idx,
@@ -4189,7 +4193,7 @@ def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
             if  not idx0:
                 continue
             
-            rates0=list(r*numpy.ones(len(amp)))*rep
+            rates0=list(rate*numpy.ones(len(amp)))*rep
             setup+=[{'rates':rates0, 
                      'times':times, 
                      'idx':idx0,
@@ -4221,7 +4225,9 @@ def calc_spike_setup(n, params, rate ,start, stop, typ, testing=False):
             times=numpy.array([[0]+list(numpy.cumsum(t)[0:-1])
                           +i*numpy.sum(t) for i in range(rep) ])
             times=list(times.ravel())
-        
+            
+            print 'Rate:',rate, 'n:',n
+            
             # remove baseline from rates with -1
             rates=list(rate*(numpy.array(amp)-1))*rep
             setup+=[{'rates':rates, 

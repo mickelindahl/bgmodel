@@ -18,7 +18,7 @@ from scripts_inhibition.base_simulate import (
 from core import my_socket
 
 import config
-import fig_01_and_02_pert as op
+import test_fig_01_and_02_pert as op
 import scripts_inhibition.base_inhibition_striatum as module
 import pprint
 pp=pprint.pprint
@@ -93,6 +93,6 @@ for obj in a_list:
 
 # for i, a in enumerate(args_list):
 #     print i, a
-loop(min(1, 12),[NUM_RUNS, NUM_RUNS, NUM_RUNS], a_list, k_list, **{'config':config} )
+loop(1,[NUM_RUNS, NUM_RUNS, NUM_RUNS], a_list, k_list, **{'config':config} )
 
 

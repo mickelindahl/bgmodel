@@ -25,17 +25,17 @@ pp=pprint.pprint
 
 from copy import deepcopy
 
-ops=[op.get()[1]]
+ops=op.get()
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 NUM_NETS=10
-NUM_RUNS=1 #A run for each perturbation
-num_sim=NUM_NETS*NUM_RUNS
+NUM_RUNS=len(ops) #A run for each perturbation
+num_sims=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 6
+CORES=40 if dc()=='milner' else 2
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 5
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 2
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
@@ -44,10 +44,10 @@ kwargs={
         'cores':CORES,
         
         'file_name':FILE_NAME,
-        'from_disk':FROM_DISK_0,
+        'from_disk_0':FROM_DISK_0,
         
         'debug':False,
-        'do_runs':range(1), #A run for each perturbation
+        'do_runs':range(NUM_RUNS), #A run for each perturbation
         'do_obj':False,
         
         'i0':FROM_DISK_0,
@@ -90,7 +90,7 @@ for obj in a_list:
     print obj.kwargs['setup'].nets_to_run
 
 
-loop(10,[NUM_NETS,NUM_NETS,1], a_list, k_list )
+loop(2,[num_sims, num_sims,NUM_RUNS], a_list, k_list )
 
 # d_process_and_thread=par_process_and_thread(**kwargs)
 # pp(d_process_and_thread)

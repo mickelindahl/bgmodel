@@ -2,6 +2,20 @@
 Created on Apr 18, 2014
 
 @author: lindahlm
+
+Experiments are produced by builders. Each builder
+returns a list of perturbation_lists (from modul default_params). 
+Each perturbation list represents an experiment.
+
+The director uses the builder to produce networks. First it 
+retrieves the perturbations. It then produce a parameter object from
+a parameter class in module default_params with the perturbations as
+input. It finally takes the parameter object as input to a network
+class from engine module to create a network object.
+The network object can then be used to run the model. Thus 
+to produce a network the director "directs" all this using the 
+builder.
+ 
 '''
 import itertools
 import numpy
@@ -826,10 +840,10 @@ def get_input_Go_NoGo(kwargs):
                 else:
                     f=1
                 
-                if inp in kwargs.get('amp_base_skip'):
-                    amp_base=kwargs.get('amp_base')
-                else:
-                    amp_base=0
+#                 if inp in kwargs.get('amp_base_skip'):
+                amp_base=kwargs.get('amp_base')
+#                 else:
+#                     amp_base=0
                 
                 dtmp={'p_amplitude_upp':kwargs.get('freqs')*f,
                       'p_amplitude_down':-kwargs.get('freqs')*f,
@@ -842,9 +856,6 @@ def get_input_Go_NoGo(kwargs):
 
         l += [pl(d, '=', **{'name':'_'.join(inp_list)})]
             
-        
-        
-        
     sequence = 2
     intervals = get_intervals(rep, durations, d, sequence)
     dic={}
@@ -858,10 +869,7 @@ def get_input_Go_NoGo(kwargs):
 class Builder_Go_NoGo_compete_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Go_NoGo_compete(**{'other':Inhibition(**d),
+        return Go_NoGo_compete(**{'other':Inhibition(),
                                   'perturbations':per})
 
 
@@ -926,8 +934,6 @@ def add_lesions_Go_NoGo(l):
                 {'conn':{'GA_M1_gaba':{'lesion':True}, 
                          'GA_M2_gaba':{'lesion':True}}}]
     
-    
-    
     names = ['no-MS-MS', 
              'no-FS', 
              'no_GP']
@@ -958,8 +964,6 @@ def set_lesions_scenarios_GPe_Go_NoGo(l):
                {'conn':{'GA_M1_gaba':{'lesion':True},
                         'GA_M2_gaba':{'lesion':True}}}]
     
-    
-    
     names = ['no-GP_FS', 
              'no-GP_M1', 
              'no_GP_M2',
@@ -978,10 +982,7 @@ def set_lesions_scenarios_GPe_Go_NoGo(l):
 class Builder_Go_NoGo_with_lesion_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Go_NoGo_compete(**{'other':Inhibition(**d),
+        return Go_NoGo_compete(**{'other':Inhibition(),
                                   'perturbations':per})
 
 
@@ -1010,10 +1011,7 @@ class Builder_Go_NoGo_with_lesion(Builder_Go_NoGo_with_lesion_base,
 class Builder_Go_NoGo_with_nodop_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Go_NoGo_compete(**{'other':Inhibition(**d),
+        return Go_NoGo_compete(**{'other':Inhibition(),
                                   'perturbations':per})
 
 
@@ -1037,10 +1035,7 @@ class Builder_Go_NoGo_with_nodop(Builder_Go_NoGo_with_nodop_base,
 class Builder_Go_NoGo_with_nodop_FS_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Go_NoGo_compete(**{'other':Inhibition(**d),
+        return Go_NoGo_compete(**{'other':Inhibition(),
                                   'perturbations':per})
 
 
@@ -1067,10 +1062,7 @@ class Builder_Go_NoGo_with_nodop_FS(Builder_Go_NoGo_with_nodop_FS_base,
 class Builder_Go_NoGo_with_nodop_FS_oscillation_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Compete_with_oscillations(**{'other':Inhibition(**d),
+        return Compete_with_oscillations(**{'other':Inhibition(),
                                             'perturbations':per})
 
 
@@ -1097,10 +1089,7 @@ class Builder_Go_NoGo_with_nodop_FS_oscillation(Builder_Go_NoGo_with_nodop_FS_os
 class Builder_Go_NoGo_with_lesion_FS_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Go_NoGo_compete(**{'other':Inhibition(**d),
+        return Go_NoGo_compete(**{'other':Inhibition(),
                                   'perturbations':per})
 
 
@@ -1132,10 +1121,7 @@ class Builder_Go_NoGo_with_lesion_FS(Builder_Go_NoGo_with_lesion_FS_base,
 class Builder_Go_NoGo_with_lesion_FS_base_oscillation(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Compete_with_oscillations(**{'other':Inhibition(**d),
+        return Compete_with_oscillations(**{'other':Inhibition(),
                                             'perturbations':per})
 
 

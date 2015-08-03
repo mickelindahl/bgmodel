@@ -268,8 +268,8 @@ class Data_generic_base(object):
         
 
                     
-        ax.set_xlabel(self.xlabel)
-        ax.set_ylabel(self.ylabel) 
+        if hasattr(self,'xlabel'):ax.set_xlabel(self.xlabel)
+        if hasattr(self,'ylabel'):ax.set_ylabel(self.ylabel) 
         ax.my_set_no_ticks(xticks=6, yticks=6)
         ax.legend()
 

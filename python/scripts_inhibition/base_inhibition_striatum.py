@@ -281,7 +281,8 @@ def create_figs(file_name_figs, from_disks, d, models, setup):
                   labelspacing=0.2) 
     
     for i, ax in enumerate(axs[1:2]):
-        ax.legend().set_visible(False)
+        if ax.legend():
+            ax.legend().set_visible(False)
 #         ax.legend(bbox_to_anchor=(2.2, 1))
 #         ax.set_xlim([1,1.5])
         if i==1:

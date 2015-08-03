@@ -7,32 +7,33 @@ from core import monkey_patch as mp
 mp.patch_for_milner()
 
 from scripts_inhibition import config
-from scripts_inhibition.base_simulate import (pert_add_go_nogo_ss,
+from scripts_inhibition.base_simulate import (
+                      pert_add_go_nogo_ss, 
                       get_path_rate_runs, 
-                      get_args_list_Go_NoGo_compete,
+                      get_args_list_Go_NoGo_compete_oscillation,
                       get_kwargs_list_indv_nets)
 
-from core.network.manager import Builder_Go_NoGo_with_lesion_FS_ST_pulse as Builder
+from core.network.manager import Builder_Go_NoGo_with_lesion_FS_base_oscillation as Builder
 from core.parallel_excecution import get_loop_index, loop
 from core import directories as dr
 from core import my_socket
 
+import fig_01_and_02_pert as op
 import scripts_inhibition.base_Go_NoGo_compete as module
 import sys
-import fig_01_and_02_pert as op
 import pprint
 pp=pprint.pprint
 
 from copy import deepcopy
 
 path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
-ops=[op.get()[0]]
+ops=[op.get()[0]] #0 is beta
+
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=1
 NUM_RUNS=1
-num_sims=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
 CORES=40*4 if dc()=='milner' else 10
@@ -40,7 +41,13 @@ JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
+amp_base=1.1
+freq= 0.0
+STN_amp_mod=3.
+
 kwargs={
+        'amp_base':amp_base,
+        
         'Builder':Builder,
         
         'cores':CORES,
@@ -49,13 +56,15 @@ kwargs={
         'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'], 
         'do_runs':range(NUM_RUNS),
         'do_obj':False,
-        'duration':[900.,100.0],
         
         'file_name':FILE_NAME,
+        'freqs':[freq], #need to be length  1
+        'freq_oscillations':20.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
-                
+        'input_type':'burst3_oscillations',
+              
         'job_admin':JOB_ADMIN, #user defined class
         'job_name':'fig6_0.2_STp',
 
@@ -65,7 +74,6 @@ kwargs={
         'l_seconds':['00','00','00'],   
                   
         'labels':['D1,D2 puls=5',], 
-        'laptime':1000.0,
         
         'local_num_threads':LOCAL_NUM_THREADS,
                  
@@ -84,27 +92,41 @@ kwargs={
         'proportion_connected':[0.2]*1, #related to toal number fo runs
         
         'p_pulses':[5],
-        'p_sizes':[
-                    1,
-                ],
-        'p_subsamp':[
-                     1., 
-                    ],
-        'res':10,
-        'rep':80,
+        'p_sizes':[ 1, ],
+        'p_subsamp':[ 1., ],
 
-        'time_bin':100,
-       
+        'STN_amp_mod':STN_amp_mod,
+
+        'tuning_freq_amp_to':'M2',
+        
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
 
         }
 
+if my_socket.determine_computer()=='milner':
+    kw_add={
+            'duration':[907.,100.0],            
+            'laptime':1007.0,
+            'res':10,
+            'rep':80,
+            'time_bin':100.,
 
+            }
+elif my_socket.determine_computer() in ['thalamus','supermicro']:
+    kw_add={
+            'duration':[357., 100.0],
+            'laptime':457.,
+            'res':3, 
+            'rep':5,
+            'time_bin':1000./256,
+            }
+
+kwargs.update(kw_add)
 p_list=pert_add_go_nogo_ss(**kwargs)
 
 for i, p in enumerate(p_list): print i, p
 
-a_list=get_args_list_Go_NoGo_compete(p_list, **kwargs)
+a_list=get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
-        
-loop(1, [num_sims, num_sims, NUM_RUNS], a_list, k_list )
+
+loop(1, [NUM_NETS,NUM_NETS,NUM_NETS], a_list, k_list )
