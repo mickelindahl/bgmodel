@@ -17,7 +17,6 @@ import pprint
 
 pp=pprint.pprint
 
-
 def plot(file_name, figs, setup, flag,  **k):
     nets=['Net_0', 'Net_1']
     

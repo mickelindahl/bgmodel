@@ -6,7 +6,7 @@ Created on Aug 12, 2013
 
 from core.network.default_params import Perturbation_list as pl
 from core import misc
-from oscillation_perturbations_new_beginning_slow0 import get_solution
+from scripts_inhibition.base_perturbations import get_solution
 
 import numpy
 import pprint
@@ -40,9 +40,10 @@ def get():
     rEI=1700.0
     rEA=200.0
     rCS=250.0
+    rM2=740.0
     
     
-    for rES in [1800.0, 2300.0, 2800.0, 3200.0]:
+    for rES in [1800.0, 2300.0, 2800.0]:
         d={}
         misc.dict_update(d, solution['mul'])
         l+=[pl(d, '*', **{'name':''})]
@@ -51,10 +52,11 @@ def get():
         misc.dict_update(d, solution['equal']) 
         d['node']['EI']['rate']=rEI
         d['node']['EA']['rate']=rEA
+        d['node']['C2']['rate']=rM2
         
         misc.dict_update(d, {'node':{'CS':{'rate':rCS}}})
         misc.dict_update(d, {'node':{'ES':{'rate':rES}}})    
-        s='rEI_{0}_rEA_{1}_rCS_{2}_rES'.format( rEI, rEA, rCS, rES )
+        s='rEI_{0}_rEA_{1}_rCS_{2}_rES_{3}_rM2_{4}'.format( rEI, rEA, rCS, rES, rM2 )
         
         l[-1]+=pl(d, '=', **{'name':s})   
 

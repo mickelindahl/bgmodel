@@ -701,8 +701,8 @@ def _get_input_go_nogo_p0_and_p1(res, dur):
     v = numpy.linspace(1, 3, res)
     x, y = numpy.meshgrid(v, v)
     x, y = x.ravel(), y.ravel()
-    p0 = reduce(lambda x, y:x + y, [[1, p] for p in y])
-    p1 = reduce(lambda x, y:x + y, [[1, p] for p in x])
+    p0 = reduce(lambda x, y:x + y, [[1., p] for p in y])
+    p1 = reduce(lambda x, y:x + y, [[1., p] for p in x])
     durations = dur * res * res
     return durations, p0,  p1, x, y
 
@@ -1153,10 +1153,7 @@ class Builder_Go_NoGo_with_lesion_FS_oscillation(Builder_Go_NoGo_with_lesion_FS_
 class Builder_Go_NoGo_only_D1D2_FS_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        d={'home':kwargs.get('home'),
-           'home_data':kwargs.get('home_data'),
-           'home_module':kwargs.get('home_module')}
-        return Go_NoGo_compete(**{'other':Inhibition(**d),
+        return Go_NoGo_compete(**{'other':Inhibition(),
                                   'perturbations':per})
 
 
@@ -1274,7 +1271,7 @@ class Builder_Go_NoGo_with_lesion_FS_ST(Builder_Go_NoGo_with_lesion_FS_ST_base,
 class Builder_Go_NoGo_with_lesion_FS_ST_pulse_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):
-        return Go_NoGo_compete(**{'other':Inhibition(**kwargs),
+        return Go_NoGo_compete(**{'other':Inhibition(),
                                    'perturbations':per})
 
 
@@ -1298,7 +1295,33 @@ class Builder_Go_NoGo_with_lesion_FS_ST_pulse(Builder_Go_NoGo_with_lesion_FS_ST_
                                      Mixin_general_network, 
                                      Mixin_reversal_potential_striatum):
     pass
+class Builder_Go_NoGo_with_lesion_FS_ST_pulse_oscillation_base(Builder_network):    
 
+    def get_parameters(self, per, **kwargs):
+        return Compete_with_oscillations(**{'other':Inhibition(),
+                                            'perturbations':per})
+
+
+    def _get_dopamine_levels(self):
+        return [self._dop()]    
+    
+    def _variable(self):
+        
+        self.kwargs['input_lists']= [['C1', 'C2', 'CF', 'CS_pulse']]
+
+        ll=[]
+        for pulse in self.kwargs['p_pulses']: 
+            self.kwargs['p_pulse']=pulse
+            l, self.dic = get_input_Go_NoGo(self.kwargs)      
+            ll+=l
+        return ll    
+
+
+class Builder_Go_NoGo_with_lesion_FS_ST_pulse_oscillation(Builder_Go_NoGo_with_lesion_FS_ST_pulse_oscillation_base, 
+                                     Mixin_dopamine, 
+                                     Mixin_general_network, 
+                                     Mixin_reversal_potential_striatum):
+    pass
 class Builder_Go_NoGo_with_GP_scenarios_FS_base(Builder_network):    
 
     def get_parameters(self, per, **kwargs):

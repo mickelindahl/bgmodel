@@ -4,7 +4,7 @@ Created on Apr 6, 2015
 @author: mikael
 '''
 
-from scripts_inhibition import effect_conns
+from scripts_inhibition import base_effect_conns
 from core.network.manager import get_storage
 from scripts_inhibition.base_simulate import get_file_name, save_figures
 from core import misc
@@ -145,11 +145,11 @@ attr_add=['mse_rel_control_fr', 'mse_rel_control_mc',
  
 #     exclude+=['MS_MS', 'FS_MS', 'MS']
 sd = get_storage(file_name, '')
-d = effect_conns.get_data(models, nets, attrs, path[0], 
+d = base_effect_conns.get_data(models, nets, attrs, path[0], 
                           from_disk, attr_add, sd,
                           **conn_setup_beta())
 sd = get_storage(file_name+'_sw', '')
-d_sw = effect_conns.get_data(models, nets, attrs, path[1], 
+d_sw = base_effect_conns.get_data(models, nets, attrs, path[1], 
                           from_disk, attr_add, sd,
                           **conn_setup_sw())
 # pp(d.keys())

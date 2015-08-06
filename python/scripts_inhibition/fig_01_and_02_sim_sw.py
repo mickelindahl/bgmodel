@@ -20,6 +20,7 @@ from core import directories as dr
 from core import my_socket
 
 from scripts_inhibition import config
+import fig_defaults as fd
 import numpy
 import sys
 import scripts_inhibition.base_oscillation_sw as module
@@ -34,14 +35,14 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[0.9] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.2, 0.3, 0.4, 0.5] #numpy.arange(0.5, .8, 0.2)
-ops=[op.get()[1]]
+amp_base=[fd.amp_sw] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[ 0.4, 0.5, 0.6, 0.7] #numpy.arange(0.5, .8, 0.2)
+ops=[op.get()[fd.idx_sw]]
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
 freqs=list(freqs)*n
-STN_amp_mod=[1.]#range(1, 6, 2)
+STN_amp_mod=[fd.STN_amp_mod_sw]#range(1, 6, 2)
 num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 

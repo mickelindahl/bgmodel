@@ -5,7 +5,7 @@ Created on Nov 13, 2014
 
 '''
 
-from scripts_inhibition import effect_conns
+from scripts_inhibition import base_effect_conns
 
 scale=1
 kw={
@@ -16,7 +16,7 @@ kw={
         'linewidth':1,
         'fontsize':7*scale,
         'title_fontsize':7*scale,
-        'gs_builder':effect_conns.gs_builder_oi_si_simple}
+        'gs_builder':base_effect_conns.gs_builder_oi_si_simple}
 
 def ignore_files(name):
     s=name.split('/')[-2].split('_')[-1]
@@ -82,6 +82,6 @@ kwargs={'add_midpoint':True,
         'si_oi_index_fig':kw,
         'top_lables_fontsize':7,}
 
-obj=effect_conns.Main(**kwargs)
+obj=base_effect_conns.Main(**kwargs)
 obj.do()
 

@@ -20,10 +20,11 @@ from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
-import sys
-import scripts_inhibition.base_oscillation_beta as module
+import fig_defaults as fd
 import fig_01_and_02_pert as op
 import fig_03_pert_dop as op_dop
+import sys
+import scripts_inhibition.base_oscillation_beta as module
 import pprint
 pp=pprint.pprint
 
@@ -32,11 +33,11 @@ FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
-ops=[op.get()[0]]
-amp_base=[1.1] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[0.4] #numpy.arange(0.5, .8, 0.2)
+ops=[op.get()[fd.idx_beta]]
+amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[fd.freq_beta] #numpy.arange(0.5, .8, 0.2)
+STN_amp_mod=[fd.STN_amp_mod_beta]
 
-STN_amp_mod=[3.]
 NUM_RUNS=len(op_dop.get())
 NUM_NETS=2
 num_sims=NUM_NETS*NUM_RUNS
@@ -107,6 +108,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(10,[num_sims, num_sims, num_sims/2], a_list, k_list )
+loop(5,[num_sims, num_sims, num_sims/2], a_list, k_list )
 
         

@@ -21,11 +21,11 @@ from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
-
-import sys
-import scripts_inhibition.base_oscillation_beta as module
+import fig_defaults as fd
 import fig_01_and_02_pert as op
 import fig_07_pert_nuclei as op_neuclei
+import sys
+import scripts_inhibition.base_oscillation_beta as module
 import pprint
 pp=pprint.pprint
 
@@ -34,12 +34,11 @@ FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
+ops=[op.get()[fd.idx_beta]]
+amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[fd.freq_beta] #numpy.arange(0.5, .8, 0.2)
+STN_amp_mod=[fd.STN_amp_mod_beta]
 
-ops=[op.get()[0]]
-amp_base=[1.1] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[0.4] #numpy.arange(0.5, .8, 0.2)
-#Total number of runs 18*2*2+18
-STN_amp_mod=[3.]
 NUM_NETS=2
 NUM_RUNS=len(op_neuclei.get()) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
@@ -114,6 +113,6 @@ a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(30,[num_sim, num_sim, NUM_RUNS], a_list, k_list )
+loop(10,[num_sim, num_sim, NUM_RUNS], a_list, k_list )
 
         

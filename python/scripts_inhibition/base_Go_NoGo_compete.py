@@ -150,6 +150,15 @@ def show_bulk(d, models, attr, **k):
     colors=misc.make_N_colors('jet', max(len(labels), 1))
     
     fig, axs=ps.get_figure(n_rows=7, n_cols=1, w=1200.0, h=800.0, fontsize=10)    
+    res=k.pop('res')
+    i=0
+    xticks=[]
+    for j in range(res):
+        for k in range(res):
+            if j==k:
+                xticks.append(i)
+            i+=1
+                    
     
     for k, model in enumerate(models):        
         ax=axs[k]
@@ -172,7 +181,7 @@ def show_bulk(d, models, attr, **k):
         
         max_set=len(sets)
         ax.set_ylabel(model+' (spikes/s)')
-        
+        ax.set_xticks(xticks)
         #Get artists and labels for legend and chose which ones to display
         if k!=0:
             continue    
@@ -186,6 +195,7 @@ def show_bulk(d, models, attr, **k):
         for i in range(max_set):
             linetype_handles.append(pylab.Line2D((0,1),(0,0),
                                                  color='k', 
+    
                                                  linestyle=linestyle[i]))
             linetype_labels.append('Action '+str(i))
 
@@ -195,6 +205,7 @@ def show_bulk(d, models, attr, **k):
                    if i in display]+linetype_handles,
           [label for i,label in enumerate(_labels) 
                    if i in display]+linetype_labels, bbox_to_anchor=(1.22, 1.))
+        
         
     return fig       
                 
@@ -332,6 +343,7 @@ def show_rate_all(d, kw):
 def show_rate_D1_D2_SNR(d, d_plot_fr2):
         fig, axs=ps.get_figure2(**d_plot_fr2.get('fig_and_axes'))
 
+        pp(d)
         show_fr(d, ['M1', 'M2', 'SN'], axs, **d_plot_fr2)
         
         for i, s, c0, c1, rotation in [
@@ -1101,7 +1113,8 @@ class Setup(object):
 
         
     def plot_bulkt(self):
-        d={'labels':self.labels}
+        d={'labels':self.labels,
+           'res':self.res}
         return d
     
     def get_l_mean_rate_slices(self):
@@ -1217,7 +1230,7 @@ def create_figs(setup, file_name_figs, d, models):
   
     for name in l_mean_rate_slices:   
         figs.append(show_bulk(d, models, name, **d_plot_bulk))
-             
+#     pylab.show()         
     for i in range(len(d.keys())):
         
         if i!=1 and 1<len(d.keys()):
@@ -1277,9 +1290,9 @@ import unittest
 class TestMethods(unittest.TestCase):     
     def setUp(self):
         from core.network.default_params import Perturbation_list as pl
-        from_disk=1
+        from_disk=2
         
-        import oscillation_perturbations_new_beginning_slow0 as op
+        from scripts_inhibition import base_perturbations as op
         
         rep, res=2, 3
         duration=[900.,100.0]

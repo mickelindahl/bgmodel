@@ -20,6 +20,7 @@ from core import directories as dr
 from core import my_socket
 from core.network.default_params import Perturbation_list as pl
 
+import fig_defaults as fd
 import fig_01_and_02_pert as op
 import fig_07_pert_conn as op_conn
 import fig_07_pert_nuclei as op_nuc
@@ -30,7 +31,7 @@ import pprint
 pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
-ops=[op.get()[0]] # 0 is beta
+ops=[op.get()[fd.idx_beta]] # 0 is beta
 l_op_conn=[17, 51, 57, 107, 137, 161, 171, 177, 187, 201, 211, 217, 221]#12, 97, 108, 109, 127, 132 ]    
 l_op_nuc=[32, 16, 17, 33, 40, 49, 56, 57, 64]#16, 33, 49, 57, 64]
 l_op_dop=[5,6]
@@ -79,9 +80,9 @@ JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
-amp_base=1.1
-freq= 0.6 
-STN_amp_mod=3.
+amp_base=fd.amp_beta#1.1
+freq= fd.freq_beta#0.6 
+STN_amp_mod=fd.STN_amp_mod_beta#3.
 kwargs={
         
         'amp_base':amp_base,
@@ -92,7 +93,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':[2,5,7,8,10,11,12,15,18,19,20,21,22],#range(NUM_RUNS),#NUM_NETS),
+        'do_runs':range(NUM_RUNS),#[2,5,7,8,10,11,12,15,18,19,20,21,22],#range(NUM_RUNS),#NUM_NETS),
         'do_obj':False,
 
         'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'], 

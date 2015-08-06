@@ -1453,6 +1453,7 @@ def _plot_conn(**kwargs):
 #         Z.append(e)
 #     Z=numpy.array(Z)
 #     
+    print x1.shape,y1.shape, d[z_key][::-1,].shape
     im = ax.pcolor(x1, y1, d[z_key][::-1,], cmap=cmap)       
 #     im = ax.pcolor(x1, y1, Z[::-1,], cmap=cmap)       
 

@@ -21,11 +21,12 @@ from core.parallel_excecution import loop
 from core import my_socket
 
 
+import fig_defaults as fd
+import fig_01_and_02_pert as op
+import fig_08_pert_control as op_control
 import numpy
 import sys
 import scripts_inhibition.base_oscillation_sw as module
-import fig_01_and_02_pert as op
-import fig_08_pert_control as op_control
 import pprint
 pp=pprint.pprint
 
@@ -36,12 +37,12 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[0.9] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[0.3] #numpy.arange(0.5, .8, 0.2)
+amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[fd.freq_sw] #numpy.arange(0.5, .8, 0.2)
 n=len(amp_base)
 m=len(freqs)
-ops=[op.get()[1]]
-STN_amp_mod=[1.]#range(1, 6, 2)
+ops=[op.get()[fd.idx_sw]]
+STN_amp_mod=[fd.STN_amp_mod_sw]#range(1, 6, 2)
 
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
 freqs=list(freqs)*n
@@ -118,6 +119,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(30,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

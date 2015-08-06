@@ -29,9 +29,9 @@ NUM_RUNS=2 #A run for each perturbation
 num_sims=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 6
+CORES=40 if dc()=='milner' else 4
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 6
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={

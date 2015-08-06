@@ -33,9 +33,9 @@ NUM_RUNS=len(ops) #A run for each perturbation
 num_sims=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 2
+CORES=40 if dc()=='milner' else 4
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 2
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
@@ -90,7 +90,7 @@ for obj in a_list:
     print obj.kwargs['setup'].nets_to_run
 
 
-loop(2,[num_sims, num_sims,NUM_RUNS], a_list, k_list )
+loop(6,[num_sims, num_sims,NUM_RUNS], a_list, k_list )
 
 # d_process_and_thread=par_process_and_thread(**kwargs)
 # pp(d_process_and_thread)

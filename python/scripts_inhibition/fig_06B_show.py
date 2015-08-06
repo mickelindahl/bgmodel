@@ -9,7 +9,7 @@ import pylab
 import pprint
 pp=pprint.pprint
 
-from scripts_inhibition import effect_conns
+from scripts_inhibition import base_effect_conns
 from core import misc
 from scripts_inhibition.base_simulate import save_figures
 
@@ -34,12 +34,13 @@ def gs_builder(*args, **kwargs):
 attrs=['mean_rate_slices', 'set_0', 'set_1']
 models=['SN']
 paths=[]
+thr=5.0
 paths.append('/home/mikael/results/papers/inhibition/network/'
              +'milner/fig_06_scale_rest/')
 paths.append('/home/mikael/results/papers/inhibition/network/'
              +'milner/fig_06_scale_ST_pulse/')
 
-s1='script_000{0}_rEI_1700.0_rEA_200.0_rCS_250.0-ss-1.0/'
+s1='script_000{0}_rEI_1700.0_rEA_200.0_rCS_250.0_rES_3200.0-ss-1.0/'
 
 nets1=['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4']
 nets2=['Net_0']
@@ -57,7 +58,7 @@ pp(files)
 d={}
 for key, val in files.items():
     nets=val[1]
-    d_tmp=effect_conns.gather('', nets, models, attrs, 
+    d_tmp=base_effect_conns.gather('', nets, models, attrs, 
                               dic_keys=[key], 
                               file_names=[val[0]])
     misc.dict_update(d, d_tmp)
@@ -108,6 +109,7 @@ k={'axs':axs,
    'models':['SN'],
    'print_statistics':False,
    'resolution':10,
+   'threshold':thr,
    'titles':['']*5*5,
     'type_of_plot':'mean',
     'vlim_rate':[-100, 100], 
@@ -172,6 +174,7 @@ k={'axs':axs,
    'models':['SN'],
    'print_statistics':False,
    'resolution':10,
+   'threshold':thr,
    'titles':['']*5*5,
     'type_of_plot':'mean',
     'vlim_rate':[-100, 100], 

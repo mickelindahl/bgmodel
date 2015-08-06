@@ -25,6 +25,7 @@ import sys
 import scripts_inhibition.base_oscillation_beta as module
 import fig_01_and_02_pert as op
 import pprint
+import fig_defaults as fd
 pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
@@ -34,14 +35,14 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[1.1] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.1, 0.2, 0.3, 0.4] #numpy.arange(0.5, .8, 0.2)
-ops=[op.get()[0]]
+amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[ 0.2, 0.3, 0.4] #numpy.arange(0.5, .8, 0.2)
+ops=[op.get()[fd.idx_beta]]
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
 freqs=list(freqs)*n
-STN_amp_mod=[3.]#range(1, 6, 2)
+STN_amp_mod=[fd.STN_amp_mod_beta]#range(1, 6, 2)
 num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 

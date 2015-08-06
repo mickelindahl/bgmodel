@@ -293,6 +293,7 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
     
         
         if type(props_conn)==list:
+            print i_p_list
             pc=props_conn[i_p_list]
         else:
             pc=props_conn
@@ -760,6 +761,7 @@ def show_plot(axs, name, d, models=['M1','M2','FS', 'GA', 'GI','ST', 'SN'], **k)
             if 't_stop' in k.keys():
                 kk['t_stop']=k['t_stop']
             
+            print model
             if model in v.keys():
                 v[model][name].plot(ax=axs[i], **kk)
         j+=1    

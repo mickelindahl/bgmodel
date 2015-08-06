@@ -27,7 +27,7 @@ import pprint
 pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('test_fig_01_and_02_sim_inh/')
-ops=op.get()[2:4] #0 is beta
+ops=op.get()[0:3] #0 is beta
 
 
 FILE_NAME=__file__.split('/')[-1][0:-3]

@@ -6,7 +6,7 @@ Created on Aug 12, 2013
 
 from core.network.default_params import Perturbation_list as pl
 from core import misc
-from scripts_inhibition.oscillation_perturbations_new_beginning_slow0 import get_solution
+from scripts_inhibition.base_perturbations import get_solution
 
 import numpy
 import pprint

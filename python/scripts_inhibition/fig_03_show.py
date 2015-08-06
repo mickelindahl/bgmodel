@@ -5,14 +5,14 @@ Created on Nov 13, 2014
 
 '''
 
-from scripts_inhibition import effect_conns
+from scripts_inhibition import base_effect_conns
 d=kw={'n_rows':8, 
         'n_cols':2, 
         'w':int(72/2.54*18), 
         'h':int(72/2.54*18)/3, 
         'fontsize':7,
         'title_fontsize':7,
-        'gs_builder':effect_conns.gs_builder_conn}
+        'gs_builder':base_effect_conns.gs_builder_conn}
 
 
 
@@ -65,5 +65,5 @@ kwargs={'add_midpoint':False,
         'top_lables_fontsize':7,
 }
 
-obj=effect_conns.Main(**kwargs)
+obj=base_effect_conns.Main(**kwargs)
 obj.do()

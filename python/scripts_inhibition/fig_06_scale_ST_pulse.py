@@ -13,11 +13,12 @@ from scripts_inhibition.base_simulate import (
                       get_kwargs_list_indv_nets,
                       get_path_rate_runs)
 
-from core.network.manager import Builder_Go_NoGo_with_lesion_FS_base_oscillation as Builder
+from core.network.manager import Builder_Go_NoGo_with_lesion_FS_ST_pulse_oscillation as Builder
 from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
+import fig_defaults as fd
 import fig_01_and_02_pert as op
 import scripts_inhibition.base_Go_NoGo_compete as module
 import sys
@@ -25,7 +26,7 @@ import pprint
 pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
-ops=[op.get()[0]] #0 is beta
+ops=[op.get()[fd.idx_beta]] #0 is beta
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
@@ -41,9 +42,9 @@ JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
-amp_base=1.1
+amp_base=fd.amp_beta#1.1
 freq= 0.0
-STN_amp_mod=3.
+STN_amp_mod=fd.STN_amp_mod_beta#3.
 kwargs={
         'amp_base':amp_base,
         
@@ -96,6 +97,7 @@ kwargs={
         
         'STN_amp_mod':STN_amp_mod,
  
+        'threshold':14.,
         'tuning_freq_amp_to':'M2',
         
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
@@ -107,7 +109,7 @@ if my_socket.determine_computer()=='milner':
             'laptime':1007.0,
             'res':10,
             'rep':40,
-            'time_bin':100.,
+            'time_bin':1000.,
 
             }
 elif my_socket.determine_computer() in ['thalamus','supermicro']:
@@ -128,4 +130,4 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(3, [NUM_RUNS,NUM_RUNS,NUM_RUNS], a_list, k_list )
+loop(3, [num_sims,num_sims,NUM_RUNS], a_list, k_list )

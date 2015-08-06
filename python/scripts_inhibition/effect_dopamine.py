@@ -280,7 +280,7 @@ def plot_coher(d, labelsy, labelsx=[], title_name='Slow wave'):
 #                  'M1_SN':r'$MSN_{D1}$$\to$SNr ',
 #                  'ST_GP':r'STN$\to$GPe ',}
 
-    from effect_conns import nice_labels
+    from scripts_inhibition.base_effect_conns import nice_labels
     groupings=['Coherence','Phase relation']
 # 
 #     nice_labels2={'GA_GA':r'TA vs TA',
