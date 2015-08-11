@@ -75,7 +75,7 @@ NUM_RUNS=len(op_pert_add)
 
 
 dc=my_socket.determine_computer
-CORES=40*4 if dc()=='milner' else 10
+CORES=40*2 if dc()=='milner' else 10
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
@@ -108,7 +108,7 @@ kwargs={
         'job_admin':JOB_ADMIN, #user defined clas
         'job_name':'fig7_rec',
 
-        'l_hours':['12','01','00'],
+        'l_hours':['04','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            
@@ -168,5 +168,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(13, [NUM_RUNS,NUM_RUNS,NUM_RUNS], a_list, k_list )
+loop(12, [NUM_RUNS,NUM_RUNS,NUM_RUNS], a_list, k_list )
         

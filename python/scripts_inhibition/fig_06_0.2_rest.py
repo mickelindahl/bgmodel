@@ -55,7 +55,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_not_record':[], 
+        'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'],
         'do_runs':range(NUM_RUNS),
         'do_obj':False,
 
@@ -113,7 +113,7 @@ if my_socket.determine_computer()=='milner':
             'laptime':1007.0,
             'res':10,
             'rep':80,
-            'time_bin':100.,
+            'time_bin':500.,
 
             }
 elif my_socket.determine_computer() in ['thalamus','supermicro']:

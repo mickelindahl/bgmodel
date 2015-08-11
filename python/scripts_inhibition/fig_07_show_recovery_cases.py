@@ -10,7 +10,7 @@ import pylab
 import pprint
 pp=pprint.pprint
 
-from scripts_inhibition import effect_conns
+from scripts_inhibition import base_effect_conns
 from core import misc
 from scripts_inhibition.base_simulate import save_figures
 from scripts_inhibition.base_Go_NoGo_compete import show_heat_map
@@ -68,7 +68,7 @@ models=['M1', 'M2', 'SN']
 paths=[]
 
 paths.append('/home/mikael/results/papers/inhibition/network/'
-             +'milner/fig_07_recovery_cases/')
+             +'milner/fig_07_recovery_cases_7x7/')
 
 # paths.append('/home/mikael/results/papers/inhibition/network/'
 #              +'milner/fig6_Go_NoGo_XXX_nodop_FS/')
@@ -109,7 +109,7 @@ pp(files)
 d={}
 for key, val in files.items():
     nets=val[1]
-    d_tmp=effect_conns.gather('', nets, models, attrs, 
+    d_tmp=base_effect_conns.gather('', nets, models, attrs, 
                               dic_keys=[key], 
                               file_names=[val[0]])
     misc.dict_update(d, d_tmp)
