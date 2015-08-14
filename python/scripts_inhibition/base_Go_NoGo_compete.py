@@ -7,7 +7,7 @@ import matplotlib.gridspec as gridspec
 import numpy
 import pylab
 import core.plot_settings as ps
-
+import warnings
 
 from os.path import expanduser
 from scripts_inhibition.base_simulate import (main_loop, show_fr, get_file_name, 
@@ -623,7 +623,7 @@ def show_variability_several(d, attr, nets=['Net_00'],  **k):
                             labels,
                             frameon=False, 
                             loc='center', 
-                            bbox_to_anchor=[1.1, 1.4], ncol=2)
+                            bbox_to_anchor=k.get('bbox_to_anchor',[1.1, 1.4]), ncol=2)
                     
         axs[iAx].text(0.5, k.get('pos_ax_titles',1.05) , titles[iAx],
                     horizontalalignment='center', 
@@ -1236,9 +1236,11 @@ def create_figs(setup, file_name_figs, d, models):
         if i!=1 and 1<len(d.keys()):
             continue
         
-        figs.append(show_rate_D1_D2_SNR(d['Net_'+str(i)], d_plot_fr2))
-        figs.append(show_rate_all(d['Net_'+str(i)], d_plot_fr))
         
+        try:figs.append(show_rate_D1_D2_SNR(d['Net_'+str(i)], d_plot_fr2))
+        except: warnings.warn('failed rate plot')
+        try:figs.append(show_rate_all(d['Net_'+str(i)], d_plot_fr))
+        except: warnings.warn('failed rate plot')
 #         figs.append()
         
         

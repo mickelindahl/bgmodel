@@ -69,9 +69,9 @@ models=['M1', 'M2', 'SN']
 paths=[]
 
 paths.append('/home/mikael/results/papers/inhibition/network/'
-             +'milner/fig_06_0.2_rest/')
+             +'milner/fig_06_0.2_rest_7x7/')
 paths.append('/home/mikael/results/papers/inhibition/network/'
-             +'milner/fig_07_recovery_cases/')
+             +'milner/fig_07_recovery_cases_7x7/')
 # paths.append('/home/mikael/results/papers/inhibition/network/'
 #              +'milner/fig6_Go_NoGo_XXX_nodop_FS/')
 # 
@@ -96,10 +96,10 @@ for key, val in files.items():
     misc.dict_update(d, d_tmp)
 pp(d)
 
-builder=[['1.0', 'Net_1', 'Lesion'],
+builder=[['1.0', 'Net_1', 'Control'],
         ['Control', 'Net_0', 'Lesion'],
         ['CTX_M2', 'Net_0', r'$\beta_{CTX\to MSN_{D2}}*0$'],
-         ['MS_MS', 'Net_0', r'$\beta_{MSN\to MSN}*0$'],
+        ['MS_MS', 'Net_0', r'$\beta_{MSN\to MSN}*0$'],
          ['FS_M2_pert_5', 'Net_0', r'$w_{FSN\to MSN_{D2}} \uparrow$'],
          ['GA_FS_pert_5','Net_0', r'$w_{GPe_{TA}\to FSN} \uparrow$'],
          ['GA_M2_pert_0.0','Net_0', r'$w_{GPe_{TA}\to MSN_{D2}} \downarrow$'],
@@ -115,6 +115,7 @@ builder=[['1.0', 'Net_1', 'Lesion'],
          ['M2_M2_pert_5', 'Net_0', r'$w_{MSN_{D2} \to MSN_{D2}} \uparrow$'],
          ['M2_pert_mod0', 'Net_0', r'$r_{MSN_{D2}} \downarrow$'],  
          ['M2_pert_mod7', 'Net_0', r'$r_{MSN_{D2}} \uparrow$'],  
+
          ['SN_pert_mod0', 'Net_0', r'$r_{SNr} \downarrow$'],
          ['ST_GA_pert_0.0', 'Net_0', r'$w_{STN \to GPe_{TA}} \downarrow$'],
          ['ST_GA_pert_5', 'Net_0', r'$w_{STN \to GPe_{TA}} \uparrow$'],
@@ -176,7 +177,7 @@ for iFig in range(2):
        'fig':fig,
        'models':['SN'],
        'print_statistics':False,
-       'resolution':10,
+       'resolution':7,
        'titles':['']*len(builder),
        'fontsize_ax_titles':7*scale,
        'pos_ax_titles':1.08,

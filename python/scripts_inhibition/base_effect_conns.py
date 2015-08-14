@@ -9,6 +9,7 @@ import numpy
 import pylab
 import os
 import sys
+import warnings
 import core.plot_settings as ps
 
 from matplotlib import ticker
@@ -51,24 +52,36 @@ def gather(path, nets, models, attrs, **kwargs):
     d={}
     i=0
     for name0, key in zip(fs, dic_keys):
-        print i, key
+
         dd={}
+        
+        if key.split('/')[-1] in ['jobbs', 'params', 'std']:
+            continue
         
         for net in nets:
             name=name0+'/'+net+'.pkl'
-               
-            if not os.path.isfile(name):
-                print name
-                continue
+            
             if kwargs.get('ignore_files'):
                 if kwargs.get('ignore_files')(name):
-                    continue
+                    continue              
+            if not os.path.isfile(name):
+                warnings.warn('Data missing (no .pkl file) '+name)
+                continue
+
 #             slice(0,-4)
             file_name=name[:-4]
             sd = Storage_dic.load(file_name)
             args=nets+models+attrs
-            dd=misc.dict_update(dd, sd.load_dic(*args))
-        
+            
+            ddd=sd.load_dic(*args)
+#             pp(ddd)
+            if ddd=={}:
+                warnings.warn('Data missing '+name)
+            
+            dd=misc.dict_update(dd, ddd)
+        if dd:
+            print i, key
+#         pp(dd)
 #         print key, dd.keys()
         if dd:  
             d = misc.dict_update(d, {key:dd})
@@ -275,10 +288,22 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 
                 if not misc.dict_haskey(d, keys1 ):
                     continue
+                
                 print run, model, attr
-                v1=misc.dict_recursive_get(d, keys1)
-                v2=misc.dict_recursive_get(d, keys2)               
-
+                
+                try:
+                    v1=misc.dict_recursive_get(d, keys1)
+                except:
+                    print keys1
+                    pp(misc.dict_recursive_get(d, keys1[:3]))
+                    raise
+                try:
+                    v2=misc.dict_recursive_get(d, keys2)               
+                except:
+                    print keys2
+                    pp(misc.dict_recursive_get(d, keys2[:3]))
+                    raise
+                
 
                 keys=[keys3, keys4]
                 values= [v1, v2]

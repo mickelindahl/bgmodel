@@ -34,8 +34,8 @@ def gs_builder(*args, **kwargs):
 #     order=kwargs.get('order', 'col')
     
     gs = gridspec.GridSpec(n_rows, n_cols)
-    gs.update(wspace=kwargs.get('wspace', 0.8 ), 
-              hspace=kwargs.get('hspace', 0.8 ))
+    gs.update(wspace=kwargs.get('wspace', 1.2 ), 
+              hspace=kwargs.get('hspace', 0.65 ))
 
     iterator=[]
     for i in range(4):
@@ -83,8 +83,8 @@ def conn_setup_sw():
 
 fig, axs=ps.get_figure2(n_rows=4,
                          n_cols=3,  
-                         w=int(72/2.54*11.6*(1+1./2))*scale,
-                         h=int(72/2.54*11.6*(1+1./2))*scale,
+                         w=int(72/2.54*11.6*(1+1./2+0.2))*scale,
+                         h=int(0.85*72/2.54*11.6*(1+1./2))*scale,
 #                             w=k.get('w',500), 
 #                             h=k.get('h',900), 
                         linewidth=1,
@@ -190,7 +190,7 @@ for key in sorted(d_sw['data'].keys()):
 l=l[organize['MSMS']]
     
 ln=list_names_sw[organize['MSMS']]
-ln=[str(float(a[9])) for a in ln]
+ln=[str(float(a[13])) for a in ln]
  
 colors=misc.make_N_colors('copper', len(l))
    
@@ -234,7 +234,7 @@ v=d['d_raw_control']['oscillation_index']['y'][bol,organize['GAtau']]
   
 ax.plot(range(5,55,5),v.transpose())
 ax.set_xlim([0,60])
-ax.set_xlabel(r'$\tau_{GPe_{TA}\to striatum}$ (ms)')
+ax.set_xlabel(r'$\tau_{GPe_{TA}\to str}$ (ms)')
 ax.set_ylabel('Oscillation index')
 ax.my_set_no_ticks(xticks=4)
 ax.my_set_no_ticks(yticks=4)
@@ -279,7 +279,7 @@ cbar.locator = tick_locator
 cbar.update_ticks()
 cbar.ax.tick_params( length=1, )
   
-ax.text(1.25, 0.5,  r'Delay CTX$\to$STN (ms)', 
+ax.text(1.3, 0.5,  r'$t_{delay}^{CTX\to STN}$ (ms)', 
         transform=ax.transAxes,  va='center', rotation=270) 
 ax.set_xlabel(r'Angle (rad)')
 ax.set_ylabel('Norm. count ST-TI')
@@ -320,7 +320,7 @@ cbar.locator = tick_locator
 cbar.update_ticks()
 cbar.ax.tick_params( length=1, )
   
-ax.text(1.25, 0.5,  r'Delay CTX$\to$Striatum (ms)', 
+ax.text(1.3, 0.5,  r'$t_{delay}^{CTX\to str}$ (ms)', 
         transform=ax.transAxes,  va='center', rotation=270) 
 ax.set_xlabel(r'Angle (rad)')
 ax.set_ylabel('Norm. count ST-TI')
@@ -363,7 +363,7 @@ cbar.locator = tick_locator
 cbar.update_ticks()
 cbar.ax.tick_params( length=1, )
    
-ax.text(1.25, 0.5, r'Fan in MSN$\to$TA (#)', 
+ax.text(1.35, 0.5, r'$Fan_{in}^{MSN\to TA}$ (#)', 
         transform=ax.transAxes, va='center', rotation=270)
   
 ax.set_xlabel(r'Angle (rad)')
@@ -408,7 +408,7 @@ cbar.locator = tick_locator
 cbar.update_ticks()
 cbar.ax.tick_params( length=1, )
    
-ax.text(1.25, 0.5, r'Fan in TI$\to$STR (#)',
+ax.text(1.35, 0.5, r'$Fan_{in}^{TI\to str}$ (#)',
         transform=ax.transAxes, va='center',  rotation=270) 
 ax.set_xlabel(r'Angle (rad)')
 ax.set_ylabel('Norm. count TI-TA')
@@ -430,7 +430,7 @@ for key in sorted(d['data'].keys()):
 l=[l[0]]+l[organize['STGA']]
 
 ln=list_names[organize['STGA']]
-ln=[str(int(float(a[13])))+', ' +str(round(float(a[14]),2)) for a in ln]
+ln=[str(int(float(a[17])))+', ' +str(round(float(a[18]),2)) for a in ln]
 
 colors=misc.make_N_colors('copper', len(l))
   
@@ -454,7 +454,7 @@ cbar.ax.tick_params( length=1, )
 cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
 
  
-ax.text(1.4,  0.5, r'$r_{CTX\to STN}$, $g_{GPe\to STN}$', 
+ax.text(1.55,  0.5, r'$r_{CTX\to STN}$, $g_{GPe\to STN}$', 
         transform=ax.transAxes, va='center', rotation=270) 
 
 ax.set_xlabel(r'Angle (rad)')
@@ -506,7 +506,7 @@ for key in sorted(d['data'].keys()):
 l=[l[0]]+l[organize['GAGItoGA']]
 
 ln=list_names[organize['GAGItoGA']]
-ln=[str(int(float(a[11])))+','+str(int(float(a[13]))) for a in ln]
+ln=[str(int(float(a[15])))+','+str(int(float(a[17]))) for a in ln]
 
 colors=misc.make_N_colors('copper', len(l))
   
@@ -529,7 +529,7 @@ cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
 cbar.ax.tick_params( length=1, )
 cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
 
-ax.text(1.32,  0.5, r'Fan in $TA,TI\to TA$ (#)', 
+ax.text(1.35,  0.5, r'$Fan_{in}^{TA,TI\to TA}$ (#)', 
         transform=ax.transAxes, va='center', rotation=270) 
 
 ax.set_xlabel(r'Angle (rad)')

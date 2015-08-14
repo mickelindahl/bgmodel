@@ -59,7 +59,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':range( NUM_RUNS), #A run for each perturbation
+        'do_runs':[171],#range( NUM_RUNS), #A run for each perturbation
         'do_obj':False,
         'do_nets':['Net_0', 'Net_1'],
         
@@ -112,6 +112,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(20,[num_sims, num_sims, num_sims/2], a_list, k_list )
+loop(2,[num_sims, num_sims, num_sims/2], a_list, k_list )
 
         
