@@ -1,0 +1,44 @@
+
+              -- N E S T --
+
+  Copyright (C) 2004 The NEST Initiative
+  Version 2.3.svn Jan 24 2013 15:15:53
+
+This program is provided AS IS and comes with
+NO WARRANTY. See the file LICENSE for details.
+
+Problems or suggestions?
+  Website     : http://www.nest-initiative.org
+  Mailing list: nest_user@nest-initiative.org
+
+Type 'nest.help()' to find out more about NEST.
+#{ layer1s.log #}
+{'rows': 5, 'center': [0.0, 0.0], 'edge_wrap': False, 'depth': 1, 'extent': [1.0, 1.0], 'columns': 5}
+#{ end.log #}
+#{ layer1p.log #}
++-[0] root dim=[1 25]
+   |
+   +-[1] topology_layer_grid dim=[25]
+      |
+      +-[1]...[25] iaf_neuron
+      
+#{ end.log #}
+#{ layer6 #}
++-[0] root dim=[1 4]
+   |
+   +-[1] topology_layer_grid dim=[4]
+      |
+      +-[1]...[2] iaf_cond_alpha
+      +-[3]...[4] poisson_generator
+      
+#{ end #}
+#{ layer7 #}
++-[0] root dim=[1 26]
+   |
+   +-[1] topology_layer_grid dim=[26]
+      |
+      +-[1]...[20] iaf_cond_alpha
+      +-[21]...[22] poisson_generator
+      +-[23]...[26] noise_generator
+      
+#{ end #}

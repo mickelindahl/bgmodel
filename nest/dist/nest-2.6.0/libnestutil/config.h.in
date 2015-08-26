@@ -1,0 +1,220 @@
+/* libnestutil/config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* tics per ms in simulation */
+#undef CONFIG_TICS_PER_MS
+
+/* tics per step in simulation */
+#undef CONFIG_TICS_PER_STEP
+
+/* define if the compiler does not include *.h headers ISO conformant */
+#undef HAVE_ALPHA_CXX_STD_BUG
+
+/* define if the compiler ignores cmath makros */
+#undef HAVE_CMATH_MAKROS_IGNORED
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the `execv' function. */
+#undef HAVE_EXECV
+
+/* "Define if expm1() is available" */
+#undef HAVE_EXPM1
+
+/* Define to 1 if you have the `fork' function. */
+#undef HAVE_FORK
+
+/* Is the GNU Science Library available (ver. >= 1.0)? */
+#undef HAVE_GSL
+
+/* Is GSL Version >= 1.11? */
+#undef HAVE_GSL_1_11
+
+/* Is GSL Version >= 1.2? */
+#undef HAVE_GSL_1_2
+
+/* Do we have the inline macro in C? */
+#undef HAVE_INLINE
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* define for istream */
+#undef HAVE_ISTREAM
+
+/* Havel libltdl, can load dynamic modules */
+#undef HAVE_LIBLTDL
+
+/* libneurosim support enabled? */
+#undef HAVE_LIBNEUROSIM
+
+/* define if we have usable long long type. */
+#undef HAVE_LONG_LONG
+
+/* Define to 1 if you have the <mach/mach.h> header file. */
+#undef HAVE_MACH_MACH_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* MPI is available. */
+#undef HAVE_MPI
+
+/* MUSIC support enabled? */
+#undef HAVE_MUSIC
+
+/* define if M_E is defined */
+#undef HAVE_M_E
+
+/* define if M_PI is defined */
+#undef HAVE_M_PI
+
+/* define for ostream */
+#undef HAVE_OSTREAM
+
+/* Define to 1 if you have the `pclose' function. */
+#undef HAVE_PCLOSE
+
+/* Define to 1 if you have the `popen' function. */
+#undef HAVE_POPEN
+
+/* Use GNU libreadline */
+#undef HAVE_READLINE
+
+/* Define to 1 if you have the `setenv' function. */
+#undef HAVE_SETENV
+
+/* Define to 1 if you have the `sigaction' function. */
+#undef HAVE_SIGACTION
+
+/* define if the compiler ignores symbolic signal names in signal.h */
+#undef HAVE_SIGUSR_IGNORED
+
+/* define for sstream */
+#undef HAVE_SSTREAM
+
+/* define if the compiler fails on static template member declaration */
+#undef HAVE_STATIC_TEMPLATE_DECLARATION_FAILS
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* define for STL vector capacity base unity */
+#undef HAVE_STL_VECTOR_CAPACITY_BASE_UNITY
+
+/* define for STL vector capacity doubling strategy */
+#undef HAVE_STL_VECTOR_CAPACITY_DOUBLING
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Tics per millisecond specified? */
+#undef HAVE_TICS_PER_MS
+
+/* Tics per step specified? */
+#undef HAVE_TICS_PER_STEP
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Vampir support enabled? */
+#undef HAVE_VAMPIR
+
+/* define if the compiler fails with ICE */
+#undef HAVE_XLC_ICE_ON_USING
+
+/* Configuring for Blue Gene/L */
+#undef IS_BLUEGENE_L
+
+/* Configuring for Blue Gene/P */
+#undef IS_BLUEGENE_P
+
+/* Configuring for Blue Gene/Q */
+#undef IS_BLUEGENE_Q
+
+/* Configuring for K */
+#undef IS_K
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Use PS array construction semantics */
+#undef PS_ARRAYS
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Enable extensions on AIX 3, Interix.  */
+#ifndef _ALL_SOURCE
+# undef _ALL_SOURCE
+#endif
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# undef _GNU_SOURCE
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# undef _POSIX_PTHREAD_SEMANTICS
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# undef _TANDEM_SOURCE
+#endif
+/* Enable general extensions on Solaris.  */
+#ifndef __EXTENSIONS__
+# undef __EXTENSIONS__
+#endif
+
+
+/* Version number of package */
+#undef VERSION
+
+/* Define to 1 if on MINIX. */
+#undef _MINIX
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+#undef _POSIX_1_SOURCE
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+#undef _POSIX_SOURCE
+
+/* Define as `__inline' or `__inline__' if that's what the
+    C compiler calls it or to nothing if it is not supported. */
+#ifndef __cplusplus
+# undef inline
+#endif

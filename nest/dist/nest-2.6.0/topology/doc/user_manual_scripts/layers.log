@@ -1,0 +1,77 @@
+
+              -- N E S T --
+
+  Copyright (C) 2004 The NEST Initiative
+  Version 2.5.svn Dec 13 2014 10:35:56
+
+This program is provided AS IS and comes with
+NO WARRANTY. See the file LICENSE for details.
+
+Problems or suggestions?
+  Website     : http://www.nest-initiative.org
+  Mailing list: nest_user@nest-initiative.org
+
+Type 'nest.help()' to find out more about NEST.
+
+Dec 14 23:41:03 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+#{ layer1s.log #}
+{u'rows': 5, u'center': (0.0, 0.0), u'edge_wrap': False, u'depth': 1, u'extent': (1.0, 1.0), u'columns': 5}
+#{ end.log #}
+#{ layer1p.log #}
++-[0] root dim=[1 25]
+   |
+   +-[1] topology_layer_grid dim=[25]
+      |
+      +-[1]...[25] iaf_neuron
+      
+#{ end.log #}
+
+Dec 14 23:41:04 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+
+Dec 14 23:41:04 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+
+Dec 14 23:41:05 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+
+Dec 14 23:41:06 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+
+Dec 14 23:41:06 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+
+Dec 14 23:41:07 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+
+Dec 14 23:41:07 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+#{ layer6 #}
++-[0] root dim=[1 4]
+   |
+   +-[1] topology_layer_grid dim=[4]
+      |
+      +-[1]...[2] iaf_cond_alpha
+      +-[3]...[4] poisson_generator
+      
+#{ end #}
+
+Dec 14 23:41:07 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+#{ layer7 #}
++-[0] root dim=[1 26]
+   |
+   +-[1] topology_layer_grid dim=[26]
+      |
+      +-[1]...[20] iaf_cond_alpha
+      +-[21]...[22] poisson_generator
+      +-[23]...[26] noise_generator
+      
+#{ end #}
+
+Dec 14 23:41:07 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.
+
+Dec 14 23:41:07 Network::clear_models [Info]: 
+    Models will be cleared and parameters reset.

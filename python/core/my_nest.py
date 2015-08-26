@@ -33,7 +33,7 @@ pp=pprint.pprint
 kernal_time=None
 
 version=int(''.join(nest.version().split(' ')[1].split('.')))
-if version<260:
+if version<242:
     pushsli=_kernel.pushsli
     runsli=_kernel.runsli
 else:
