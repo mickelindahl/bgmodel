@@ -8,23 +8,22 @@ Created on Aug 12, 2013
 from core import monkey_patch as mp
 mp.patch_for_milner()
 
+from scripts_inhibition import config
 from scripts_inhibition.base_simulate import (get_path_rate_runs,
-                      get_args_list_oscillation,
-                      get_kwargs_list_indv_nets, 
-                      pert_add_oscillations) 
+                                          get_args_list_oscillation,
+                                          get_kwargs_list_indv_nets,
+                                          pert_add_oscillations) 
 
-# from core.network import default_params
-from core.network.manager import Builder_slow_wave2 as Builder
+from core.network.manager import Builder_beta as Builder
 from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
-from scripts_inhibition import config
-import fig_defaults as fd
+
 import numpy
 import sys
-import scripts_inhibition.base_oscillation_sw as module
-import fig_01_and_02_pert as op
+import scripts_inhibition.base_oscillation_beta as module
+from python.scripts_mohammad.old import fig_01_and_02_pert as op
 import pprint
 pp=pprint.pprint
 
@@ -35,22 +34,22 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[fd.amp_sw] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.4, 0.5, 0.6, 0.7] #numpy.arange(0.5, .8, 0.2)
-ops=[op.get()[fd.idx_sw]]
+amp_base=[1.1] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[ 0.1, 0.2, 0.3, 0.4] #numpy.arange(0.5, .8, 0.2)
+ops=[op.get()[0]]
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
 freqs=list(freqs)*n
-STN_amp_mod=[fd.STN_amp_mod_sw]#range(1, 6, 2)
+STN_amp_mod=[3.]#range(1, 6, 2)
 num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 10
-JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
-WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
+CORES=4
+JOB_ADMIN=config.Ja_else
+LOCAL_NUM_THREADS=4
+WRAPPER_PROCESS=config.Wp_else
 
 kwargs={
         'amp_base':amp_base,
@@ -64,20 +63,20 @@ kwargs={
         'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
         
-        'external_input_mod':[],
+        'external_input_mod':[],#['EI','EA'],
         
         'file_name':FILE_NAME,
         'freqs':freqs,
-        'freq_oscillation':1.,
+        'freq_oscillation':20.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig1_2_sw',
+        'job_name':'fig1_2_beta',
         
         'l_hours':  ['00','01','00'],
-        'l_minutes':['45','00','05'],
+        'l_minutes':['25','00','05'],
         'l_seconds':['00','00','00'],
 
         'local_num_threads':LOCAL_NUM_THREADS,
@@ -86,6 +85,7 @@ kwargs={
         
         'nets':['Net_0','Net_1'], #The nets for each run
         'nets_to_run':['Net_0','Net_1'],
+        'no_oscillations_control':True,
         
         'path_rate_runs':path_rate_runs,
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
@@ -99,6 +99,7 @@ kwargs={
         
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
         }
+
 
 p_list = pert_add_oscillations(**kwargs)
 

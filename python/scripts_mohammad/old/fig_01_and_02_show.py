@@ -7,7 +7,9 @@ Created on Apr 6, 2015
 from scripts_inhibition import base_oscillation_sw
 from scripts_inhibition import base_oscillation_beta
 from scripts_inhibition import base_oscillation
-from scripts_inhibition.base_simulate import save_figures
+                                simulate_slow_wave, 
+                                simulate_beta)
+from scripts_inhibition.simulate import save_figures
 from core import misc
 from core.network.manager import get_storage_list,load
 
@@ -16,6 +18,7 @@ import numpy
 import pprint
 
 pp=pprint.pprint
+
 
 def plot(file_name, figs, setup, flag,  **k):
     nets=['Net_0', 'Net_1']
@@ -79,7 +82,7 @@ def plot(file_name, figs, setup, flag,  **k):
     
 
     kw.update(k)
-    figs.append(base_oscillation.show_summed2(d, **kw))
+    figs.append(base_oscillation_common.show_summed2(d, **kw))
         
     kw=setup.plot_summed_STN()
     kw['alphas']=[1.,1.]
@@ -106,7 +109,7 @@ def plot(file_name, figs, setup, flag,  **k):
         
     kw['coherence_xcut']=[0,50]
     kw.update(k)
-    figs.append(base_oscillation.show_summed_STN(d, **kw))
+    figs.append(base_oscillation_common.show_summed_STN(d, **kw))
     
     return figs
 
@@ -115,14 +118,14 @@ figs=[]
 file_name=('/home/mikael/results/papers/inhibition/network/'
            +'milner/fig_01_and_02_sim_beta/'
            +'script_0003_rEI_1700.0_rEA_200.0_rCS_250.0-amp_0.14_1.1_stn_3.0')
-setup=base_oscillation_beta.Setup(20,1)
+setup=simulate_beta.Setup(20,1)
 plot(file_name, figs, setup, 'beta')
 
 
 file_name=('/home/mikael/results/papers/inhibition/network/'
            +'milner/fig_01_and_02_sim_sw/'
            +'script_0001_rEI_800.0_rEA_100.0_rCS_170.0-amp_0.1_0.9')
-setup=base_oscillation_sw.Setup(1000,1)
+setup=simulate_slow_wave.Setup(1000,1)
 plot(file_name, figs, setup, 'slow_wave', **{'xlim_cohere':[-0.1, 5.1],
                                              'coherence_xcut':[0, 5],
                                              'phases_diff_with_cohere_remove_peaks':True})

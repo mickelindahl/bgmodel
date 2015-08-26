@@ -40,8 +40,6 @@ def get():
     rEI=1700.0
     rEA=200.0
     rCS=250.0
-    rES=1800.0
-    rM2=740.0
     
     d={}
     misc.dict_update(d, solution['mul'])
@@ -51,19 +49,15 @@ def get():
     misc.dict_update(d, solution['equal']) 
     d['node']['EI']['rate']=rEI
     d['node']['EA']['rate']=rEA
-    d['node']['C2']['rate']=rM2
     
-    misc.dict_update(d, {'node':{'CS':{'rate':rCS}}}) 
-    misc.dict_update(d, {'node':{'ES':{'rate':rES}}}) 
-    s='rEI_{0}_rEA_{1}_rCS_{2}_rES_{3}_rM2_{4}'.format( rEI, rEA, rCS, rES, rM2 )
+    misc.dict_update(d, {'node':{'CS':{'rate':rCS}}})    
+    s='rEI_{0}_rEA_{1}_rCS_{2}'.format(rEI, rEA, rCS )
     
     l[-1]+=pl(d, '=', **{'name':s})   
 
     rEI=800.0
     rEA=100.0
     rCS=170.0
-    rES=1800.0
-    rM2=740.0
     
     d={}
     misc.dict_update(d, solution['mul'])
@@ -73,11 +67,9 @@ def get():
     misc.dict_update(d, solution['equal']) 
     d['node']['EI']['rate']=rEI
     d['node']['EA']['rate']=rEA
-    d['node']['C2']['rate']=rM2
     
     misc.dict_update(d, {'node':{'CS':{'rate':rCS}}}) 
-    misc.dict_update(d, {'node':{'ES':{'rate':rES}}}) 
-    s='rEI_{0}_rEA_{1}_rCS_{2}_rES_{3}_rM2_{4}'.format( rEI, rEA, rCS, rES, rM2 )
+    s='rEI_{0}_rEA_{1}_rCS_{2}'.format(rEI, rEA, rCS )
     l[-1]+=pl(d, '=', **{'name':s})   
 
     return l

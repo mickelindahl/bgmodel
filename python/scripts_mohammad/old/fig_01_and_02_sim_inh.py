@@ -18,7 +18,7 @@ from scripts_inhibition.base_simulate import (
 from core import my_socket
 
 import config
-import fig_01_and_02_pert as op
+from python.scripts_mohammad.old import fig_01_and_02_pert as op
 import scripts_inhibition.base_inhibition_striatum as module
 import pprint
 pp=pprint.pprint
@@ -33,10 +33,11 @@ NUM_RUNS=len(ops) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 4
-JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
-WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
+CORES=4
+JOB_ADMIN=config.Ja_else
+LOCAL_NUM_THREADS=4
+WRAPPER_PROCESS=config.Wp_else
+
 
 kwargs={
         'Builder':Builder,
@@ -93,6 +94,6 @@ for obj in a_list:
 
 # for i, a in enumerate(args_list):
 #     print i, a
-loop(min(1, 12),[NUM_RUNS, NUM_RUNS, NUM_RUNS], a_list, k_list, **{'config':config} )
+loop(min(num_sim, 12),[NUM_RUNS, NUM_RUNS, NUM_RUNS], a_list, k_list, **{'config':config} )
 
 
