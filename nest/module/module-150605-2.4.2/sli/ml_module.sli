@@ -25,8 +25,8 @@
 
 M_DEBUG (ml_module.sli) (Initializing SLI support for Ml_Module.) message
 
-/ml_module /SLI ($Revision: 7918 $) provide-component
-/ml_module /C++ (7165) require-component
+#/ml_module /SLI ($Revision: 7918 $) provide-component
+#/ml_module /C++ (7165) require-component
 
 /StepPatternConnect [ /arraytype /integertype /arraytype /integertype /literaltype ]
 {
