@@ -25,7 +25,7 @@ from multiprocessing import Pool, Process,  Queue, Array
 from os.path import expanduser
 from core import misc
 from core import my_socket
-from numpy.oldnumeric.random_array import randint
+
 
 
 class comm(object):
