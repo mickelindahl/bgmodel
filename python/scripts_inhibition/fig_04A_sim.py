@@ -44,7 +44,7 @@ kwargs={
         
         'debug':False,
         'do_runs':range(NUM_RUNS), #A run for each perturbation
-        'do_obj':False,
+        'do_obj':True,
         'do_nest':['Net_{}'.format(i) for i in range(NUM_NETS)],
         
         'i0':FROM_DISK_0,

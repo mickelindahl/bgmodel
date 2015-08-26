@@ -32,9 +32,9 @@ pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
 ops=[op.get()[fd.idx_beta]] # 0 is beta
-l_op_conn=[17, 51, 57, 107, 137, 161, 171, 177, 187, 201, 211, 217, 221]#12, 97, 108, 109, 127, 132 ]    
-l_op_nuc=[32, 16, 17, 33, 40, 49, 56, 57, 64]#16, 33, 49, 57, 64]
-l_op_dop=[5,6]
+# l_op_conn=[17, 51, 57, 107, 137, 161, 171, 177, 187, 201, 211, 217, 221]#12, 97, 108, 109, 127, 132 ]    
+# l_op_nuc=[32, 16, 17, 33, 40, 49, 56, 57, 64]#16, 33, 49, 57, 64]
+# l_op_dop=[5,6]
 
 '''
 Issuse wtih:
@@ -56,13 +56,13 @@ Issuse wtih:
 op_pert_add=[pl(**{'name':'Control'})]
 
 opc=op_conn.get()
-op_pert_add+=[opc[i] for i in l_op_conn]
+op_pert_add+=opc#[opc[i] for i in l_op_conn]
 
 opn=op_nuc.get()
-op_pert_add+=[opn[i] for i in l_op_nuc]
+op_pert_add+=opn#[opn[i] for i in l_op_nuc]
 
-opn=op_dop.get()
-op_pert_add+=[opn[i] for i in l_op_dop]
+opd=op_dop.get()
+op_pert_add+=opd#[opd[i] for i in l_op_dop]
 
 
 for i, o in enumerate(op_pert_add):
