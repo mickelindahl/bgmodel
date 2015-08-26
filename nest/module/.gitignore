@@ -1,4 +1,4 @@
-install*
-build*
-log*
-bootstrap*
+/install-module*
+/build-module*
+/log/
+/bootstrap-module*
