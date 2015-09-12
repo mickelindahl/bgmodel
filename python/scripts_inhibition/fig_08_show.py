@@ -218,7 +218,7 @@ ax.text(1.4,  0.5, r'Multiplier $g_{MSN \to MSN}$',
         transform=ax.transAxes, va='center', rotation=270) 
  
 ax.set_xlabel('Frequency (Hz)')
-ax.set_ylabel('Coherence')
+ax.set_ylabel('GPe-GPe Coherence')
 ax.my_set_no_ticks(xticks=4)
 ax.my_set_no_ticks(yticks=4)
 ax.set_title('Lesion')
