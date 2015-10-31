@@ -159,6 +159,7 @@ elif my_socket.determine_computer() in ['thalamus','supermicro']:
             'time_bin':1000/256.,
             }
 
+pp(kw_add)
 kwargs.update(kw_add)
 
 p_list=pert_add_go_nogo_ss(**kwargs)

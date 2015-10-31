@@ -68,7 +68,7 @@ for key, val in files.items():
     misc.dict_update(d, d_tmp)
 
 print d.keys()
-# pp(d)
+pp(d)
 
 from scripts_inhibition.base_Go_NoGo_compete import show_heat_map, show_variability_several
 

@@ -54,7 +54,8 @@ def gs_builder(*args, **kwargs):
                 [[slice(2,3), i] for i in range(0,2)]+
                 [[slice(4,5), i] for i in range(0,7)]+
                 [[slice(5,6), i] for i in range(0,7)]+
-                [[slice(6,7), i] for i in range(0,7)]
+                [[slice(6,7), i] for i in range(0,7)]+
+                [[slice(7,8), i] for i in range(0,7)]
 #                 [[slice(9,10), i] for i in range(0,7)]
 #                 [[slice(6,7), i] for i in range(0,7)]
 #                 [[slice(7,8), i] for i in range(0,4)]
@@ -70,6 +71,7 @@ paths=[]
 
 paths.append('/home/mikael/results/papers/inhibition/network/'
              +'milner/fig_06_0.2_rest_7x7/')
+
 paths.append('/home/mikael/results/papers/inhibition/network/'
              +'milner/fig_07_recovery_cases_7x7/')
 # paths.append('/home/mikael/results/papers/inhibition/network/'
@@ -98,20 +100,28 @@ pp(d)
 
 builder=[['1.0', 'Net_1', 'Control'],
         ['Control', 'Net_0', 'Lesion'],
+        
         ['CTX_M2', 'Net_0', r'$\beta_{CTX\to MSN_{D2}}*0$'],
         ['MS_MS', 'Net_0', r'$\beta_{MSN\to MSN}*0$'],
          ['FS_M2_pert_5', 'Net_0', r'$w_{FSN\to MSN_{D2}} \uparrow$'],
+         ['FS_pert_mod7', 'Net_0', r'$r_{FSN} \uparrow$'],
          ['GA_FS_pert_5','Net_0', r'$w_{GPe_{TA}\to FSN} \uparrow$'],
          ['GA_M2_pert_0.0','Net_0', r'$w_{GPe_{TA}\to MSN_{D2}} \downarrow$'],
          ['GA_M2_pert_5', 'Net_0', r'$w_{GPe_{TA}\to MSN_{D2}} \uparrow$'],
+         ['GA_pert_mod0', 'Net_0', r'$r_{GPe_{TA}} \downarrow$'],
          ['GA_pert_mod7', 'Net_0', r'$r_{GPe_{TA}} \uparrow$'],
+         ['GI_GA_pert_0.0', 'Net_0', r'$w_{GPe_{TI}\to GPe_{TA}} \downarrow$'],
          ['GI_GI_pert_0.0', 'Net_0', r'$w_{GPe_{TI}\to GPe_{TI}} \downarrow$'],
+         ['GI_GI_pert_5', 'Net_0', r'$w_{GPe_{TI}\to GPe_{TI}} \uparrow$'],
+         ['GI_SN_pert_5', 'Net_0', r'$w_{GPe_{TI}\to SNr} \uparrow$'],
          ['GI_ST_pert_5', 'Net_0', r'$w_{GPe_{TI}\to STN} \uparrow$'],
          ['GI_pert_mod0', 'Net_0', r'$r_{GPe_{TI}} \downarrow$'],
          ['GI_pert_mod7', 'Net_0', r'$r_{GPe_{TI}} \uparrow$'],
          ['M1_pert_mod7', 'Net_0', r'$r_{MSN_{D1}} \uparrow$'],
+         
          ['M2_GI_pert_0.0', 'Net_0', r'$w_{MSN_{D2} \to GPe_{TI}} \downarrow$'],
          ['M2_GI_pert_5','Net_0', r'$w_{MSN_{D2} \to GPe_{TI}} \uparrow$'],
+         ['M2_M2_pert_0.0', 'Net_0', r'$w_{MSN_{D2} \to MSN_{D2}} \downarrow$'],
          ['M2_M2_pert_5', 'Net_0', r'$w_{MSN_{D2} \to MSN_{D2}} \uparrow$'],
          ['M2_pert_mod0', 'Net_0', r'$r_{MSN_{D2}} \downarrow$'],  
          ['M2_pert_mod7', 'Net_0', r'$r_{MSN_{D2}} \uparrow$'],  
@@ -120,6 +130,7 @@ builder=[['1.0', 'Net_1', 'Control'],
          ['ST_GA_pert_0.0', 'Net_0', r'$w_{STN \to GPe_{TA}} \downarrow$'],
          ['ST_GA_pert_5', 'Net_0', r'$w_{STN \to GPe_{TA}} \uparrow$'],
          ['ST_GI_pert_0.0', 'Net_0', r'$w_{STN \to GPe_{TI}} \downarrow$'],
+         ['ST_GI_pert_5', 'Net_0', r'$w_{STN \to GPe_{TI}} \uparrow$'],
          ['ST_pert_mod0', 'Net_0', r'$r_{STN} \downarrow$'],
          ['ST_pert_mod7', 'Net_0', r'$r_{STN} \uparrow$']
 #          ['M2_pert_mod0', 'Net_0'],       
@@ -153,10 +164,10 @@ figs=[]
 fun_call=[show_heat_map, show_variability_several]
 
 for iFig in range(2):
-    fig, axs=ps.get_figure2(n_rows=8, 
+    fig, axs=ps.get_figure2(n_rows=9, 
                             n_cols=7,
                             w=72/2.54*17.6*scale,
-                            h=72/2.54*17.6*scale,  
+                            h=72/2.54*17.6*scale*1.2,  
                             fontsize=7*scale,
                             title_fontsize=7*scale,
                             gs_builder=gs_builder) 
@@ -230,7 +241,7 @@ for iFig in range(2):
                         transform=ax.transAxes) 
 #             ax.set_xticks([1,1.5, 2, 2.5])
         
-        if i==21:
+        if i==28:
             ax.text(0.5, -.35, 
                       'Cortical input action 1',
                         horizontalalignment='center', 
