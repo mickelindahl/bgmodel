@@ -52,9 +52,9 @@ def gs_builder(*args, **kwargs):
 #     
     iterator = ([[slice(1,2), i] for i in range(0,2)]+
                 [[slice(2,3), i] for i in range(0,2)]+
-                [[slice(4,5), i] for i in range(0,7)]+
-                [[slice(5,6), i] for i in range(0,7)]+
-                [[slice(6,7), i] for i in range(0,7)]
+                [[slice(4,5), i] for i in range(0,8)]+
+                [[slice(5,6), i] for i in range(0,8)]+
+                [[slice(6,7), i] for i in range(0,8)]
 #                 [[slice(9,10), i] for i in range(0,7)]
 #                 [[slice(6,7), i] for i in range(0,7)]
 #                 [[slice(7,8), i] for i in range(0,4)]
@@ -105,6 +105,7 @@ builder=[['1.0', 'Net_1', 'Lesion'],
          ['GA_M2_pert_0.0','Net_0', r'$w_{GPe_{TA}\to MSN_{D2}} \downarrow$'],
          ['GA_M2_pert_5', 'Net_0', r'$w_{GPe_{TA}\to MSN_{D2}} \uparrow$'],
          ['GA_pert_mod7', 'Net_0', r'$r_{GPe_{TA}} \uparrow$'],
+         ['GI_GA_pert_0.0', 'Net_0', r'$w_{GPe_{TI}\to GPe_{TA}} \downarrow$'],
          ['GI_GI_pert_0.0', 'Net_0', r'$w_{GPe_{TI}\to GPe_{TI}} \downarrow$'],
          ['GI_ST_pert_5', 'Net_0', r'$w_{GPe_{TI}\to STN} \uparrow$'],
          ['GI_pert_mod0', 'Net_0', r'$r_{GPe_{TI}} \downarrow$'],
@@ -153,7 +154,7 @@ fun_call=[show_heat_map, show_variability_several]
 
 for iFig in range(2):
     fig, axs=ps.get_figure2(n_rows=8, 
-                            n_cols=7,
+                            n_cols=8,
                             w=72/2.54*17.6*scale,
                             h=72/2.54*17.6*scale,  
                             fontsize=7*scale,

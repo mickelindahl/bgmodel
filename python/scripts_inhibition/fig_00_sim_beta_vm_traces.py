@@ -8,12 +8,10 @@ Created on Aug 12, 2013
 from core import monkey_patch as mp
 mp.patch_for_milner()
 
-
 from scripts_inhibition import config
 from scripts_inhibition.base_simulate import (get_path_rate_runs,
                       get_args_list_oscillation,
                       get_kwargs_list_indv_nets,
-                      pert_add,
                       pert_add_oscillations) 
 
 from core.network.manager import Builder_beta as Builder
@@ -21,29 +19,32 @@ from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
-import fig_defaults as fd
-import fig_01_and_02_pert as op
-import fig_07_pert_conn as op_add
+
+import numpy
 import sys
 import scripts_inhibition.base_oscillation_beta as module
+import fig_01_and_02_pert as op
 import pprint
-
+import fig_defaults as fd
 pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 1
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
-ops=[op.get()[fd.idx_beta]]
-amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[fd.freq_beta] #numpy.arange(0.5, .8, 0.2)
-STN_amp_mod=[fd.STN_amp_mod_beta]
-
-NUM_RUNS=len(op_add.get())
 NUM_NETS=2
-num_sims=NUM_NETS*NUM_RUNS
 
+amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[0.4] #numpy.arange(0.5, .8, 0.2)
+ops=[op.get()[fd.idx_beta]]
+n=len(amp_base)
+m=len(freqs)
+amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
+freqs=list(freqs)*n
+STN_amp_mod=[fd.STN_amp_mod_beta]#range(1, 6, 2)
+num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
+num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
 CORES=40 if dc()=='milner' else 10
@@ -60,12 +61,11 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':[167, 207, 221],#range( NUM_RUNS), #A run for each perturbation
+        'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
-        'do_nets':['Net_0', 'Net_1'],
         
-        'external_input_mod':[],
-        http://marketplace.eclipse.org/marketplace-client-intro?mpc_install=2566102
+        'external_input_mod':[],#['EI','EA'],
+        
         'file_name':FILE_NAME,
         'freqs':freqs,
         'freq_oscillation':20.,
@@ -73,46 +73,46 @@ kwargs={
         
         'i0':FROM_DISK_0,
         
-        'job_admin':JOB_ADMIN, #user defined class        
-        'job_name':'fig7_conn',
+        'job_admin':JOB_ADMIN, #user defined class
+        'job_name':'fig1_2_beta',
         
-        'l_hours':  ['00','00','00'],
-        'l_minutes':['45','45','5'],
+        'l_hours':  ['00','01','00'],
+        'l_minutes':['25','00','05'],
         'l_seconds':['00','00','00'],
 
         'local_num_threads':LOCAL_NUM_THREADS,
         
         'module':module,
         
-        'nets':['Net_0','Net_1'], #The nets for each run
-        'nets_to_run':['Net_0', 'Net_1'],#['Net_0','Net_1'],
+        'nets':['Net_0'], #The nets for each run
+        'nets_to_run':['Net_0'],
         'no_oscillations_control':True,
-                
-        'op_pert_add':op_add.get(),
-
+        
         'path_rate_runs':path_rate_runs,
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
-        
-        'sim_time':40000.0,
+                
+        'sim_time':20000.0,
         'size':20000.0 ,
-        
         'STN_amp_mod':STN_amp_mod,
-
+        
         'tuning_freq_amp_to':'M2',
         
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
-
         }
 
+
 p_list = pert_add_oscillations(**kwargs)
-p_list=pert_add(p_list, **kwargs)
-    
-for i, p in enumerate(p_list): print i, p
+
+for i, p in enumerate(p_list): 
+    print i, p
 
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(2,[num_sims, num_sims, num_sims/2], a_list, k_list )
+for i, obj in enumerate(a_list):
+    print i, obj.kwargs['from_disk']
+
+loop(num_sims,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

@@ -272,7 +272,7 @@ class MyNetworkNode(MyGroup):
             raise KeyError("{} signals not present".format(recordable)) 
         
     
-    def create_mm(self, name, d_add):
+    def create_mm(self, name, d_add, **kw):
         model=name+'_multimeter'
         if model not in my_nest.Models():
             my_nest.CopyModel('multimeter', model )
@@ -288,7 +288,11 @@ class MyNetworkNode(MyGroup):
         d=misc.dict_update(d, d_add) 
         if d['active']:
             _id=my_nest.Create(model, params=d['params'])
-            my_nest.DivergentConnect(_id, self.ids)
+            if 'slice' in kw.keys():
+                my_nest.DivergentConnect(_id, self.ids[kw['slice']])
+            else:
+                my_nest.DivergentConnect(_id, self.ids)
+            
             d.update({'id':_id, 'model':model})
         return d
     

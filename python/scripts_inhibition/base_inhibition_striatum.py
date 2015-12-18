@@ -150,7 +150,7 @@ class Setup(object):
                      r'Only FSN$\to$$MSN^{static}',
                      r'Only $GPe_{TA}$\to$MSN',
                      r'No inhibition'],
-                      'x_lim':[0.8,1.8],
+                      'x_lim':[0.8,1.5],
                       'y_lim':[0,30]}
         return d
         
@@ -164,8 +164,8 @@ class Setup(object):
            'fontsize':24,
            'relative':True,
            'relative_to':[5,0],
-           'x_lim':[0.8,1.8],
-           'y_lim':[0,1],
+           'x_lim':[0.8,1.5],
+           'y_lim':[0,1.1],
            'delete':[0,5],
            }
         return d

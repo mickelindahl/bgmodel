@@ -23,7 +23,7 @@ pp=pprint.pprint
 
 ops=op.get() 
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 2
 NUM_NETS=6
 NUM_RUNS=2 #A run for each perturbation
 num_sims=NUM_NETS*NUM_RUNS
@@ -42,9 +42,9 @@ kwargs={
         'file_name':FILE_NAME,
         'from_disk_0':FROM_DISK_0,
         
-        'debug':False,
+        'debug':True,
         'do_runs':range(NUM_RUNS), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
         'do_nest':['Net_{}'.format(i) for i in range(NUM_NETS)],
         
         'i0':FROM_DISK_0,
@@ -72,7 +72,7 @@ kwargs={
         
         'size':3000,
         
-        'upper':1.8,
+        'upper':1.5,
         
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
         }
