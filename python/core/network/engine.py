@@ -651,11 +651,32 @@ class Network(Network_base):
 #             print 'After reset kernel', comm.rank()
     
 #             my_nest.MySimulate(self.sim_time)       
-            pp(my_nest.GetStatus([34]))
+#             pp(my_nest.GetStatus([34]))
+
+            d={'active':True,
+               'record_from':['V_m'], 
+               'start':0.0, 
+               'stop':numpy.inf,
+               'interval':1.,
+               'to_file':False,
+               'to_memory':True}
+            models=['FS', 'GA', 'GI',  'M1', 'M2', 'SN', 'ST']
+            n=10
+            for model in ['FS', 'GA', 'GI',  'M1', 'M2', 'SN', 'ST']:
+                self.pops[model].mm=self.pops[model].create_mm('vm_traces_'+model,d,
+                                                               **{'slice':slice(0,n)})
+            
             my_nest.Simulate(self.sim_time, chunksize=20000.) 
             self.sim_time_progress+=self.sim_time
               
-       
+            filename=self.par['simu']['path_nest']
+            filename='/'.join(filename.split('/')[:-2])+'/vm_traces'
+            d={}
+            for model in models:
+                v=my_nest.GetStatus(self.pops[model].mm['id'])[0]['events']
+                d[model]=v
+            data_to_disk.pickle_save(d, filename)
+                
     def do_delete_nest_data(self): 
         with Stop_stdout(not self.verbose):
             my_nest.delete_data(self.path_nest)

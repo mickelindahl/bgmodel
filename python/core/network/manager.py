@@ -17,6 +17,7 @@ to produce a network the director "directs" all this using the
 builder.
  
 '''
+
 import itertools
 import numpy
 import os

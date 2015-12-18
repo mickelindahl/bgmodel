@@ -14,23 +14,23 @@ import mpi4py
 import pprint
 pp=pprint.pprint
 
-if nest.version()=='NEST 2.2.2':
-    s='nest-2.2.2'
-if nest.version()=='NEST 2.4.1':
-    s='nest-2.4.1'    
-if nest.version()=='NEST 2.4.2':
-    s='nest-2.4.2'   
-
-pp(nest.Models())
-
-HOME = expanduser("~")
-MODULE_PATH= (HOME+'/opt/NEST/module/'
-              +'install-module-130701-'+s+'/lib/nest/ml_module')
-MODULE_SLI_PATH= (HOME+'/opt/NEST/module/'
-                  +'install-module-130701-'+s+'/share/ml_module/sli')
-
-nest.sr('('+MODULE_SLI_PATH+') addpath')
-nest.Install(MODULE_PATH)
+# if nest.version()=='NEST 2.2.2':
+#     s='nest-2.2.2'
+# if nest.version()=='NEST 2.4.1':
+#     s='nest-2.4.1'    
+# if nest.version()=='NEST 2.4.2':
+#     s='nest-2.4.2'   
+# 
+# pp(nest.Models())
+# 
+# HOME = expanduser("~")
+# MODULE_PATH= (HOME+'/opt/NEST/module/'
+#               +'install-module-130701-'+s+'/lib/nest/ml_module')
+# MODULE_SLI_PATH= (HOME+'/opt/NEST/module/'
+#                   +'install-module-130701-'+s+'/share/ml_module/sli')
+# 
+# nest.sr('('+MODULE_SLI_PATH+') addpath')
+# nest.Install(MODULE_PATH)
 
 
 
