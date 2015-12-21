@@ -27,6 +27,7 @@ import fig_07_pert_conn as op_add
 import sys
 import scripts_inhibition.base_oscillation_beta as module
 import pprint
+
 pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
@@ -64,7 +65,6 @@ kwargs={
         'do_nets':['Net_0', 'Net_1'],
         
         'external_input_mod':[],
-        
         'file_name':FILE_NAME,
         'freqs':freqs,
         'freq_oscillation':20.,

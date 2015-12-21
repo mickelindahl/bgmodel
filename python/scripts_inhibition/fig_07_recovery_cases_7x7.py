@@ -34,7 +34,14 @@ path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
 ops=[op.get()[fd.idx_beta]] # 0 is beta
 l_op_conn=[17, 51, 57, 67, 107, 137, 161, 167, 171, 177, 181, 187, 201, 211, 217, 221, 227]#12, 97, 108, 109, 127, 132 ]    
 l_op_nuc=[ 8, 16, 17, 25, 32, 33, 40, 49, 56, 57, 64]#16, 33, 49, 57, 64]
-l_op_dop=[5,6]
+l_op_dop=[4, #CTX-M1
+          5, #CTX-M2"
+          6, #MS-MS
+          9, #FS-M2
+          10, #CTX-ST
+          12, #GP
+          14, #GP-GP
+          17] #M2-TI
 
 '''
 Issuse wtih:
@@ -93,7 +100,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':[11],#range(NUM_RUNS),#[2,5,7,8,10,11,12,15,18,19,20,21,22],#range(NUM_RUNS),#NUM_NETS),
+        'do_runs':range(NUM_RUNS),#[2,5,7,8,10,11,12,15,18,19,20,21,22],#range(NUM_RUNS),#NUM_NETS),
         'do_obj':False,
 
         'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'], 
