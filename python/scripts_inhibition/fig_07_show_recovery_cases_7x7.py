@@ -50,8 +50,8 @@ def gs_builder(*args, **kwargs):
 #                 [[i, 4] for i in range(1,6)]+
 #                 [[i, 5] for i in range(1,6)])
 #     
-    iterator = ([[slice(1,2), i] for i in range(0,2)]+
-                [[slice(2,3), i] for i in range(0,2)]+
+    iterator = ([[slice(1,2), i] for i in range(0,5)]+
+                [[slice(2,3), i] for i in range(0,5)]+
                 [[slice(4,5), i] for i in range(0,7)]+
                 [[slice(5,6), i] for i in range(0,7)]+
                 [[slice(6,7), i] for i in range(0,7)]+
@@ -101,8 +101,15 @@ pp(d)
 builder=[['1.0', 'Net_1', 'Control'],
         ['Control', 'Net_0', 'Lesion'],
         
-        ['CTX_M2', 'Net_0', r'$\beta_{CTX\to MSN_{D2}}*0$'],
-        ['MS_MS', 'Net_0', r'$\beta_{MSN\to MSN}*0$'],
+        ['CTX_M1',  'Net_0', r'$\beta^{CTX\to MSN_{D1}}_{I_{NMDA}}=0$'],
+        ['CTX_M2',  'Net_0', r'$\beta^{CTX\to MSN_{D2}}_{I_{AMPA}}=0$'],
+        ['CTX_STN', 'Net_0', r'$\beta^{CTX\to STN}_{I_{AMPA}}=0$'],
+        ['FS_M2', 'Net_0', r'$\beta^{FSN\to MSN_{D2}}_{N}=0$'],
+        ['GP', 'Net_0', r'$\beta^{GPe}_{E_{L}}=0$'],
+        ['GP_GP', 'Net_0', r'$\beta^{GPe\to GPe}_{I_{GABA}}=0$'],
+        ['M2_GI', 'Net_0', r'$\beta^{MSN_{D2}\to GPe}_{I_{GABA}}=0$'],
+        ['MS_MS', 'Net_0', r'$\beta^{MSN\to MSN}_{I_{GABA}}=\beta^{MSN\to MSN}_{N}=0$'],
+        
          ['FS_M2_pert_5', 'Net_0', r'$w_{FSN\to MSN_{D2}} \uparrow$'],
          ['FS_pert_mod7', 'Net_0', r'$r_{FSN} \uparrow$'],
          ['GA_FS_pert_5','Net_0', r'$w_{GPe_{TA}\to FSN} \uparrow$'],
@@ -276,6 +283,7 @@ for iFig in range(2):
         ax.my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
 
     figs.append(fig)
+
 save_figures(figs, 
              __file__.split('/')[-1][0:-3]+'/data',
              dpi=200)
