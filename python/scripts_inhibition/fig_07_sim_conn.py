@@ -65,7 +65,6 @@ kwargs={
         'do_nets':['Net_0', 'Net_1'],
         
         'external_input_mod':[],
-        http://marketplace.eclipse.org/marketplace-client-intro?mpc_install=2566102
         'file_name':FILE_NAME,
         'freqs':freqs,
         'freq_oscillation':20.,
