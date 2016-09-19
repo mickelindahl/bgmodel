@@ -107,7 +107,7 @@ class Setup(object):
         d={'average':False, 
            'local_num_threads':THREADS,
 #            'win':20.0,
-           'time_bin':1000./self.fs}
+           'time_bin': 1000./self.fs}
         return d
 
     

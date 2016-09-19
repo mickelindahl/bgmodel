@@ -104,7 +104,8 @@ def extract_data(d, nets, models, attrs, **kwargs):
             v=numpy.mean(val.y[2:20])
             args=[[keys, keys[0:-1]+['mean_coherence_max']],
                   [val.y, v_max]]        
-            
+
+
         if keys[-1]=='firing_rate':
             val.y=val.y[100:] #remove transient artifacts at start of sim
             std=numpy.std(val.y)

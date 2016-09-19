@@ -65,14 +65,16 @@ def butter_bandpass_filtfilt(data, lowcut, highcut, fs, order=5):
 def csd(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
     """
     The cross spectral density Pxy by Welches average periodogram
-    method.  The vectors x and y are divided into NFFT length
-    segments.  Each segment is detrended by function detrend and
+    method. The vectors x and y are divided into NFFT length
+    segments. Each segment is detrended by function detrend and
     windowed by function window.  noverlap gives the length of the
     overlap between segments.  The product of the direct FFTs of x and
     y are averaged over each segment to compute Pxy, with a scaling to
     correct for power loss due to windowing.  fs is the sampling
     frequency.
-    
+
+    (x-x_mean) for x in window 0,256
+
     Detrend (reomve) mean from traces avoids having high value at zero frequency.
     For two poisson process the the zero frequency of the spectrum will
     be the mean of the poisson process and the area under the spectrum

@@ -432,6 +432,7 @@ class Data_phases_diff_with_cohere_base(object):
         ax.set_ylabel('Count') 
         ax.my_set_no_ticks(xticks=10, yticks=6)
         ax.legend()       
+
 class Data_phases_diff_with_cohere(Data_element_base,
                                    Data_phases_diff_with_cohere_base):
     pass
