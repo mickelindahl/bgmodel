@@ -210,6 +210,7 @@ def run_data_base_dump(run, net, script_name, net_name, category, file_name, **k
         
     db_name=kwargs.get('database_name','inhibition')
     db_table=kwargs.get('database_name','simulations')
+    pp(ks['local_num_threads'])
     #need to supply not right picked up by nest
     lnt=kwargs.get('local_num_threads',ks['local_num_threads'])
     

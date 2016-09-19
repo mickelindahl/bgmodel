@@ -1592,6 +1592,8 @@ def update_kwargs_with_set_dic(k, s):
 def compute(d, models, attr, **kwargs_dic):
     dout={}
     for keys, val in misc.dict_iter(d):
+        
+        print 'Computing',keys
         if not  isinstance(val, Data_unit_base) and not isinstance(val, Data_units_relation):
             continue
         if keys[1] not in models:

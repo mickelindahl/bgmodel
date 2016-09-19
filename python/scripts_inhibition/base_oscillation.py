@@ -325,7 +325,8 @@ def plot_spk_stats_STN(d, axs, i, **k):
         'colors':k.get('spk_stats_colors',misc.make_N_colors('jet',2 )),
         'alphas':k.get('alphas',numpy.linspace(1,1./2,2)),
         'color_axis':k.get('spk_stats_color_axis',0),
-        'top_label':k.get('top_label',True)} 
+        'top_label':k.get('top_label',True),
+        'linewidth':k.get('linewidth',0.5)} 
  
 
     # *******
@@ -425,12 +426,14 @@ def plot_spk_stats(d, axs, i, **k):
         'colors':k.get('spk_stats_colors',misc.make_N_colors('jet',2 )),
         
         'color_axis':k.get('spk_stats_color_axis',0),
-        'top_label':k.get('top_label',True)} 
+        'top_label':k.get('top_label',True),
+        'linewidth':k.get('linewidth',0.5)} 
     
     Data_bar(**{'y':[[y_mean[0], y_mean[1]],
                      [Y[0][0],  Y[0][1]]],
                 'y_std':[[y_mean_SEM[0], y_mean_SEM[1]],
-                         [0.,  0.]]}).bar2(axs[i], **kw.copy())
+                         [0.,  0.]]
+                }).bar2(axs[i], **kw.copy())
           
     axs[i].set_ylabel('Rate (Hz)')
     axs[i].set_xticklabels(['Control', 'Lesion'])
@@ -451,7 +454,8 @@ def plot_spk_stats(d, axs, i, **k):
     Data_bar(**{'y':[[y_CV[0], y_CV[1]],
                      [Y[1][0], Y[1][1]]],
                 'y_std':[[y_CV_SEM[0], y_CV_SEM[1]],
-                         [0., 0.]]}).bar2(axs[i],
+                         [0., 0.]]
+                }).bar2(axs[i],
                                            **kw.copy())
     
 #     Data_bar(**{'y':y_CV}).bar(axs[i])
@@ -503,7 +507,8 @@ def plot_spk_stats(d, axs, i, **k):
         'alphas':k.get('alphas',numpy.linspace(1,1./2,2)),
         'hatchs':k.get('hatchs_ti_ti',['/', 'o']), 
         'color_axis':k.get('spk_stats_color_axis',0),
-        'top_label':k.get('top_label',True)} 
+        'top_label':k.get('top_label',True),
+        'linewidth':k.get('linewidth',0.5)} 
         
         
     # *****************
@@ -596,7 +601,8 @@ def plot_coherence(d, axs, i, **k):
             ch = v[model]['mean_coherence']
             ch.plot(ax, **{'color':colors[i_key],
                            'xcut':k.get('coherence_xcut',False),
-                           'p_conf95_linestyle':k.get('coherence_p_conf95_linestyle','-')})
+                           'p_conf95_linestyle':k.get('coherence_p_conf95_linestyle','-'),
+                           'dashes':k.get('dashes',(5,5))})
 
             
             
@@ -623,7 +629,8 @@ def plot_coherence_STN(d, axs, i, **k):
             ch = v[model]['mean_coherence']
             ch.plot(ax, **{'color':colors[i_key],
                            'xcut':k.get('coherence_xcut',False),
-                           'p_conf95_linestyle':k.get('coherence_p_conf95_linestyle','-')})
+                           'p_conf95_linestyle':k.get('coherence_p_conf95_linestyle','-'),
+                           'dashes':k.get('dashes',(5,5))})
 
             ssp=ch.success_sample_proportion
             sm=sorted(ch.sample_means, key=lambda x:x[1])
@@ -731,6 +738,7 @@ def show_summed_STN(d, **k):
         'font_size':7*scale,
         'text_fontsize':7*scale,
         'linewidth':k.get('linewidth',1)*scale,
+        'dashes': k.get('dashes',(5,5)),
         'gs_builder':gs_builder}
 #     kwargs_fig=kwargs.get('kwargs_fig', kw)
     
@@ -758,7 +766,11 @@ def show_summed_STN(d, **k):
     axs[1].my_remove_axis(xaxis=False, yaxis=False)            
     axs[2].my_remove_axis(xaxis=True, yaxis=True)
     axs[3].my_remove_axis(xaxis=False, yaxis=True)    
-
+    
+    axs[7].my_set_no_ticks(xticks=4)  
+    
+    
+    
     for i in range(4,7):
         axs[i].my_remove_axis(xaxis=True, yaxis=False,
                               keep_ticks=True)   
@@ -774,11 +786,15 @@ def show_summed_STN(d, **k):
     for i in range(4,12):
         axs[i].set_ylabel('')
         
+#     for i in range(4,8):
+#         upper= int(round(k.get('ylim_cohere',[0,1])[1]/2.*10))/10.0
+#         axs[i].set_yticks([0,upper])
+# #         axs[i].set_yticks([0.0, 0.5])
+    
     for i in range(4,8):
-        upper= int(round(k.get('ylim_cohere',[0,1])[1]/2.*10))/10.0
-        axs[i].set_yticks([0,upper])
-#         axs[i].set_yticks([0.0, 0.5])
-        
+        axs[i].set_yticks(k.get('xticks_coherence',[0.0, 0.5]))
+     
+    
     for i in range(8,12):
 
         v=0
@@ -1187,8 +1203,8 @@ def show_summed2(d, **k):
     for i in range(4,12):
         axs[i].set_ylabel('')
         
-#     for i in range(4,8):
-        axs[i].set_yticks([0.0, 0.5])
+    for i in range(4,8):
+        axs[i].set_yticks(k.get('xticks_coherence',[0.0, 0.5]))
         
     for i in range(8,12):
 
@@ -1200,7 +1216,9 @@ def show_summed2(d, **k):
         
         axs[i].set_yticks([0.0, round(v*1.1/2,1)])
         axs[i].my_set_no_ticks(xticks=4)  
-        
+    
+    
+    axs[7].my_set_no_ticks(xticks=4)     
     axs[4].text(-0.45, 
                 -1.1, 
                 'Coherence', 
@@ -1707,7 +1725,15 @@ def simulate(builder=Builder,
 # pp(nets['Net_1'].par['node']['EA']['rate']
 #pp(nets['Net_0'].par['node']['EI']['rate'])
     
-
+    for key in nets.keys():
+        for mn in ['C1', 'C2', 'CF', 'CS', 'EI', 'EA', 'ES']:
+            if len(nets[key].par['node'][mn]['spike_setup'][0]['rates'])>1:
+                r=(nets[key].par['node'][mn]['spike_setup'][0]['rates'][0]
+                   +nets[key].par['node'][mn]['spike_setup'][0]['rates'][1])/2
+            else:
+                r=nets[key].par['node'][mn]['spike_setup'][0]['rates']
+            print(key, mn, 'rate:',r, 'Hz')
+            
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
     file_name_figs = get_file_name_figs(script_name,  nets[key].par)

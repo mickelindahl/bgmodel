@@ -10,7 +10,7 @@ from core import misc
 import pprint
 pp=pprint.pprint
 
-def get():
+def get(index=[]):
     
     def get_perturbation_dics(val, hz_mod, i):
         d = {}
@@ -51,13 +51,16 @@ def get():
                               10, 20, 30, 40]]}
          
     
+    if index:
+        for key, val in mod.items():
+            mod[key]=[v for i,v in enumerate(val) if i in index]
     
     l=[]
-    
+    n=len(mod['M1'])
     l+=[pl(**{'name':'no_pert'})]
     
     for key, val in c.items():
-        for i in range(8):
+        for i in range(n):
             
             d=get_perturbation_dics(val, mod, i)
             l.append(pl(d.values()[0],'+', **{'name':(key

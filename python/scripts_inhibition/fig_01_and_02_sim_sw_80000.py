@@ -47,22 +47,22 @@ num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 10
+CORES=40*4 if dc()=='milner' else 10
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
+LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
         'amp_base':amp_base,
-        'amp_base_skip':['CS'],
+        'amp_base_skip':['CS'],s
         
         'Builder':Builder,
         
         'cores':CORES,
         
-        'debug':True,
+        'debug':False,
         'do_runs':range(num_runs), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
         
         'external_input_mod':[],
         
@@ -76,8 +76,8 @@ kwargs={
         'job_admin':JOB_ADMIN, #user defined class
         'job_name':'fig1_2_sw',
         
-        'l_hours':  ['00','01','00'],
-        'l_minutes':['45','00','05'],
+        'l_hours':  ['06','06','00'],
+        'l_minutes':['00','00','20'],
         'l_seconds':['00','00','00'],
 
         'local_num_threads':LOCAL_NUM_THREADS,
@@ -91,8 +91,8 @@ kwargs={
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
                 
-        'sim_time':40000.0,
-        'size':20000.0 ,
+        'sim_time':100000.0,
+        'size':80000.0 ,
         'STN_amp_mod':STN_amp_mod,
         
         'tuning_freq_amp_to':'M2',

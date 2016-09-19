@@ -11,8 +11,8 @@ scale=1
 kw={
          'n_rows':3,
          'n_cols':10,  
-         'w':int(72/2.54*17.6*0.66)*scale,
-         'h':int((72/2.54*9)/3*(1+1/2.))*scale,
+         'w':int(72/2.54*17.6*0.6)*scale,
+         'h':int((72/2.54*11.6)/1.6)*scale, 
         'linewidth':1,
         'fontsize':7*scale,
         'title_fontsize':7*scale,
@@ -25,9 +25,9 @@ def ignore_files(name):
     return s in ['0.001', '0.01', '0.1','2', '4', '8', '10','16']
     
 
-kwargs={'add_midpoint':True,
+kwargs={'add_midpoint':False,
         'data_path':('/home/mikael/results/papers/inhibition/network/'
-                     +'milner/fig_07_sim_conn/'),
+                     +'milner/fig_07_sim_conn_80000/'),
         'midpoinst':1.0,
         'from_diks':0,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),
@@ -57,7 +57,7 @@ kwargs={'add_midpoint':True,
         'exclude_no_pert':True,
         'key_no_pert':'no_pert',
         'si_oi_index_fig':kw,
-        'models0': ['GA','GI', 'ST', 'SN',
+        'models0': ['M1', 'M2','FS','GA','GI', 'ST', 'SN',
                     'GP_GP', 'GA_GA', 'GI_GA', 'GI_GI'],
         'psd':{'NFFT':128*2, 
                 'fs':256., 

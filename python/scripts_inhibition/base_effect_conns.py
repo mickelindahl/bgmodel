@@ -119,7 +119,7 @@ def extract_data(d, nets, models, attrs, **kwargs):
 #                 pylab.plot(val.y)
 #                 pylab.show()
             
-            if v>0.1:
+            if v>0.0001:
                 synchrony_index=(std**2)/v
             else:
                 synchrony_index=0.0
@@ -221,9 +221,11 @@ def compute_mse(v1,v2):
 #     if v1<=0.:
 #     v_mse=numpy.NAN
 #     else:
-    
+#     try:
     v_mse=(v1-v2)/v1
-    
+#     except:
+#         print 'Failed cmp v_mse for'
+#         v_mse=1.
     if isinstance(v_mse, numpy.ndarray):
         v_mse[numpy.isnan(v_mse)]=0
     elif numpy.isnan(v_mse):
@@ -454,7 +456,12 @@ def nice_labels(version=0):
                   'GI_GI':'TI vs TI', 
                   'GI_GA':'TI vs TA', 
                   'GA_GA':'TA vs TA'})
-    
+ 
+    if version==2:
+        d.update({'GA':'TA',
+                  'GI':'TI',
+                  'M1':r'$MSN_{D1}$',
+                  'M2':r'$MSN_{D2}$',})   
     return d
 
 # def nice_labels2():
@@ -573,7 +580,10 @@ def gs_builder_oi_si(*args, **kwargs):
     gs.update(wspace=kwargs.get('wspace', 0.1 ), 
               hspace=kwargs.get('hspace', 0.1 ))
 
-    iterator = [[slice(1,5), slice(0,2) ],
+
+
+    iterator = [[slice(1,2), slice(0,2) ],
+                [slice(2,5), slice(0,2) ],
                 [slice(1,5), slice(3,6) ],
                 [slice(5,9), slice(0,2) ],
                 [slice(5,9), slice(3,6) ]]
@@ -949,27 +959,36 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     
 
 
-    bol=[l=='no_pert' for l in d3['labelsx_meta']]
-    y=[
-        d1['y'][0, numpy.array(bol)][0][0],
-        d1['y'][1, numpy.array(bol)][0][0],
-        d1['y'][2, numpy.array(bol)][0][0],
-        d1['y'][3, numpy.array(bol)][0][0]] 
+    bol=[l=='no_pert' for l in d3['labelsx_meta']]    
+    y=[]    
+    for i, _ in enumerate(d0['labelsy']):
+        val=d1['y'][i, numpy.array(bol)][0][0]
+        y.append(val)
+#         y[1].append(d1['y'][i, numpy.array(bol)][0])
+#     y=[
+#         d1['y'][0, numpy.array(bol)][0][0],
+#         d1['y'][1, numpy.array(bol)][0][0],
+#         d1['y'][2, numpy.array(bol)][0][0],
+#         d1['y'][3, numpy.array(bol)][0][0]] 
     v=[]
     
-    
+
     bol=numpy.array([l not in ['no_pert'] 
                      for l in d1['labelsx_meta']])
-    for i in range(4):    
+    for i in range(len(d0['labelsy'])):    
         e=numpy.array(list(d1['y'][i,bol])).ravel()
         v.append(e/y[i])
+    
+    
+    labelsy=[nice_labels(2)[la] for la in d0['labelsy']]
     v=numpy.array(v)
     kw['ax']=ax
     kw['d']={'z':v,
             'labelsx_meta':[e for i, e in enumerate(d0['labelsx_meta']) 
                             if bol[i]],
             'labelsx':range(v.shape[1]),
-            'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+            'labelsy_meta':labelsy,
+#             'labelsy_meta':['TA', 'TI','SNr', 'STN'],
             'labelsy':range(len(v))}
     
     kw['images']=images
@@ -1011,16 +1030,24 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     
 
     bol=[l=='no_pert' for l in d3['labelsx_meta']]
-    y2=[
-        d3['y'][0, numpy.array(bol)][0][0],
-        d3['y'][1, numpy.array(bol)][0][0],
-        d3['y'][2, numpy.array(bol)][0][0],
-        d3['y'][3, numpy.array(bol)][0][0] ] 
+    y2=[]    
+#     for i, _ in enumerate(d0['labelsy']):
+#         
+#         y2.append(numpy.mean(d0['y'][i,:]))
+#     
+    for i, _ in enumerate(d0['labelsy']):
+        val=d3['y'][i, numpy.array(bol)][0][0]
+        y2.append(val)
+#     y2=[
+#         d3['y'][0, numpy.array(bol)][0][0],
+#         d3['y'][1, numpy.array(bol)][0][0],
+#         d3['y'][2, numpy.array(bol)][0][0],
+#         d3['y'][3, numpy.array(bol)][0][0] ] 
     v=[]
 
     bol=numpy.array([l not in ['no_pert'] 
                      for l in d1['labelsx_meta']] )
-    for i in range(4):    
+    for i in range(len(d0['labelsy'])):    
         e=numpy.array(list(d3['y'][i,bol])).ravel()
         
         
@@ -1030,13 +1057,15 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
         else:
             v.append(0.0)
     
+    
     v=numpy.array(v)
     kw['ax']=ax
     kw['d']={'z':v,
             'labelsx_meta':[e for i, e in 
                             enumerate(d2['labelsx_meta']) if bol[i]],
             'labelsx':range(v.shape[1]),
-            'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+            'labelsy_meta':labelsy,
+#             'labelsy_meta':['TA', 'TI','SNr', 'STN'],
             'labelsy':range(len(v))}
     _plot_conn(**kw)
 
@@ -1070,49 +1099,73 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     
 #     pylab.show()
     return fig
+
 def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
-    
+    linewidth=0.5
     fs=k.get('cohere_fig_fontsize',16)
     tfs=k.get('cohere_fig_title_fontsize',6)
     scale=k.get('scale', 1)
     fig, axs=ps.get_figure2(n_rows=13,
                              n_cols=6,  
                              w=int(72/2.54*11.6)*scale,
-                             h=int((72/2.54*11.6)/2)*scale,
-                             linewidth=1,
+                             h=int((72/2.54*11.6)/1.6)*scale,
+                             linewidth=linewidth,
                              fontsize=fs*scale,
                              title_fontsize=tfs*scale,
                              gs_builder=k.get('cohere_gs', gs_builder_oi_si)) 
     
-    
+#     pylab.show()
     for ax in axs:
         ax.tick_params(direction='in',
                        length=2, top=False, right=False)  
-    ax=axs[0]
     
-    bol=[l=='Normal' for l in d1['labelsx_meta']]
-    ax.set_xlim([-0.2,4.])
-    y=[[numpy.mean(d0['y'][0,:]),
-        numpy.mean(d0['y'][1,:]),
-        numpy.mean(d0['y'][2,:]),
-        numpy.mean(d0['y'][3,:])],
-       [d1['y'][0, numpy.array(bol)][0],
-        d1['y'][1, numpy.array(bol)][0],
-        d1['y'][2, numpy.array(bol)][0],
-        d1['y'][3, numpy.array(bol)][0]]]
+    
+    ax1=axs[0]
+    ax2=axs[1]
 
+    bol=[l=='Normal' for l in d1['labelsx_meta']]
+    ax1.set_xlim([-0.2,4.])
+    ax2.set_ylim([0,15]) 
     
-    Data_bar(**{'y':y}).bar2(ax,  **{'edgecolor':'k',
-                                     'top_lable_rotation':0,
-                                     'top_label_round_off':0,
-                                     'colors':['k','w'],
-                                     'alphas':[1,1],
-                                     'color_axis':1,
-                                     'top_label':False
-                                     })
+    ax1.set_ylim([40,55])
+    y=[[],[]]
+    for i, _ in enumerate(c):
+        y[0].append(numpy.mean(d0['y'][i,:]))
+        y[1].append(d1['y'][i, numpy.array(bol)][0])
+
+
+    for ax in [ax1,ax2]:
+        Data_bar(**{'y':y}).bar2(ax,  **{'edgecolor':'k',
+                                         'top_lable_rotation':0,
+                                         'top_label_round_off':0,
+                                         'colors':['k','w'],
+                                         'alphas':[1,1],
+                                         'color_axis':1,
+                                         'top_label':False,
+                                         'linewidth':linewidth, 
+                                         })
     
- 
-    ax=axs[2]
+#     pylab.show()
+    # hide the spines between ax and ax2
+    ax1.spines['bottom'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax1.xaxis.tick_top()
+    ax1.tick_params(labeltop='off')  # don't put tick labels at the top
+    ax2.xaxis.tick_bottom()
+        
+#     d = .015  # how big to make the diagonal lines in axes coordinates
+#     # arguments to pass plot, just so we don't keep repeating them
+#     kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+#     ax1.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
+#     ax1.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
+#     
+#     kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
+#     ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
+#     ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
+    
+    
+    
+    ax=axs[3]
     
     ax.text(0.02,  -.35, 'Black=Control',  transform=ax.transAxes,
                 va='center', rotation=0)  
@@ -1121,14 +1174,19 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     
     bol=[l=='Normal' for l in d3['labelsx_meta']]
 
-    y2=[[numpy.mean(d2['y'][0,:]),
-         numpy.mean(d2['y'][1,:]),
-         numpy.mean(d2['y'][2,:]),
-         numpy.mean(d2['y'][3,:])],
-       [d3['y'][0, numpy.array(bol)][0],
-        d3['y'][1, numpy.array(bol)][0],
-        d3['y'][2, numpy.array(bol)][0],
-        d3['y'][3, numpy.array(bol)][0]]]
+    y2=[[],[]]
+    for i, _ in enumerate(d0['labelsy']):
+        y2[0].append(numpy.mean(d2['y'][i,:]))
+        y2[1].append(d3['y'][i, numpy.array(bol)][0])
+        
+#     y2=[[numpy.mean(d2['y'][0,:]),
+#          numpy.mean(d2['y'][1,:]),
+#          numpy.mean(d2['y'][2,:]),
+#          numpy.mean(d2['y'][3,:])],
+#        [d3['y'][0, numpy.array(bol)][0],
+#         d3['y'][1, numpy.array(bol)][0],
+#         d3['y'][2, numpy.array(bol)][0],
+#         d3['y'][3, numpy.array(bol)][0]]]
 
     Data_bar(**{'y':y2}).bar2(ax,  **{'edgecolor':'k',
                                      'top_lable_rotation':0,
@@ -1136,18 +1194,24 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
                                      'colors':['k','w'],
                                      'alphas':[1,1],
                                      'color_axis':1,
-                                     'top_label':False})             
-    ax.set_xlim([-0.2,4.])
-    ax.set_xticklabels(['TA', 'TI','SNr', 'STN'])
+                                     'top_label':False,
+                                         'linewidth':linewidth, })             
     
+    labelsy=[nice_labels(2)[la] for la in d0['labelsy']]
+    ax.set_xlim([-0.2,len(labelsy)])
+    axs[0].set_xlim([-0.2,len(labelsy)])
+    axs[1].set_xlim([-0.2,len(labelsy)])
+    
+    ax.set_xticklabels(labelsy, rotation=70)
+#     ax.set_xticklabels(['TA', 'TI','SNr', 'STN']) 
     kw={}
     images=[]    
-    ax=axs[1]
+    ax=axs[2]
     
     bol=numpy.array([l not in ['Normal','all'] 
                      for l in d1['labelsx_meta']])
     v=[]
-    for i in range(4):        
+    for i in range(len(labelsy)):        
         v.append(d1['y'][i,bol]/y[1][i])
         
     kw['ax']=ax
@@ -1155,7 +1219,8 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
             'labelsx_meta':[e for i, e in enumerate(d0['labelsx_meta']) 
                             if bol[i]],
             'labelsx':range(len(d0['y'][0,bol])),
-            'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+#             'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+            'labelsy_meta':labelsy,
             'labelsy':range(len(v))}
     kw['images']=images
     kw['z_key']='z'
@@ -1193,20 +1258,21 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     cbar.ax.tick_params( length=1, ) 
 
     
-    ax=axs[3]
+    ax=axs[4]
     
     bol=numpy.array([l not in ['Normal','all'] 
                      for l in d1['labelsx_meta']])
 
     v=[]
-    for i in range(4):    
+    for i in range(len(labelsy)):    
         v.append(d3['y'][i,bol]/y2[1][i])
 
     kw['ax']=ax
     kw['d']={'z':numpy.array(v),
             'labelsx_meta':[e for i, e in enumerate(d2['labelsx_meta']) if bol[i]],
             'labelsx':range(len(d2['y'][0,bol])),
-            'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+#             'labelsy_meta':['TA', 'TI','SNr', 'STN'],
+            'labelsy_meta':labelsy,
             'labelsy':range(len(v))}
     _plot_conn(**kw)
     box = ax.get_position()
@@ -1232,13 +1298,14 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
 #     for image in images:
 #         image.set_clim([0,2])
 
-    for i in [0,1]:
+    for i in [1,2]:
         axs[i].my_remove_axis(xaxis=True, yaxis=False)
         axs[i].set_ylabel('Synchrony')
-    for i in [0,2]:
+    for i in [1,3]:
         axs[i].my_set_no_ticks(yticks=4)
-    
-    for i in [2,3]:
+    for i in [0]:
+        axs[i].my_set_no_ticks(yticks=1)    
+    for i in [3,4]:
         axs[i].set_ylabel('Oscillation')
 
     return fig

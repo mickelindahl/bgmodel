@@ -19,7 +19,7 @@ d=kw={'n_rows':8,
 kwargs={'add_midpoint':False,
 
         'data_path':('/home/mikael/results/papers/inhibition/network/'
-                     +'milner/fig_03_sim_dop/'),
+                     +'milner/fig_03_sim_dop_variation_9/'),
 
         'from_diks':0,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),
@@ -43,7 +43,7 @@ kwargs={'add_midpoint':False,
         'clim_raw': [[0,4], [0,90], [0,1]],
 #         'do_plots':['cohere', 'mse_index', 'si_oi_index'],
         'do_plots':['si_oi_index'],
-        'exclude':[ 'striatum', 'GP_ST_SN', 'GA_FS'],
+        'exclude':[ 'striatum', 'GP_ST_SN', 'GP_FS'],
         'fontsize_x':7,
         'fontsize_y':7,
         
