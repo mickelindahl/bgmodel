@@ -36,7 +36,7 @@ LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2
 
 amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.2, 0.3, 0.4] #numpy.arange(0.5, .8, 0.2)
+freqs=[ 0.2, 0.3, 0.4, 0.5] #numpy.arange(0.5, .8, 0.2)
 ops=[op.get()[fd.idx_beta]]
 n=len(amp_base)
 m=len(freqs)
@@ -61,8 +61,8 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':range(num_runs), #A run for each perturbation
-        'do_obj':True,
+        'do_runs':[3],#range(num_runs), #A run for each perturbation
+        'do_obj':False,
         
         'external_input_mod':[],#['EI','EA'],
         

@@ -39,14 +39,14 @@ def get_change_to(flag, E_rev='low'):
                                 }},
                }
 
-    #5 *
+    #5 * //not used (shoudl also be GA not GP
     if flag=='GP_FS':
         if E_rev=='low':
             d={'nest':{'FS_low':{'beta_I_GABAA_2':x,
                                  }},
                 }
 
-    #6 *
+    #6 * 
     if flag=='FS_M2':
         if E_rev=='low':
             d={
@@ -114,6 +114,8 @@ def get_change_to(flag, E_rev='low'):
     if flag=='FS':
         d={'nest':{'FS':{'beta_E_L':x,
                          }}}
+        
+
     
     return d
     
@@ -147,10 +149,10 @@ def get():
         
     l+=[pl(d,'*', **{'name':'no_ch_dop-all'})]
 
-    for s in ['M1', 'CTX_M1', 'CTX_M2', 'MS_MS', 'FS_FS', 
+    for s in [ 'CTX_M1', 'CTX_M2', 'MS_MS', 'FS_FS', 
               'GP_FS', 'FS_M2', 'CTX_ST', 'GP_ST', 'GP',
               'ST_GP', 'GP_GP', 'SN', 'M1_SN', 'M2_GI',
-              'FS']:
+              'FS','M1']:
         d={}
         for name in [s]:
             d=misc.dict_update(d, get_change_to(name))

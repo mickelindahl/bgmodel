@@ -50,12 +50,12 @@ def gs_builder(*args, **kwargs):
 #                 [[i, 4] for i in range(1,6)]+
 #                 [[i, 5] for i in range(1,6)])
 #     
-    iterator = ([[slice(1,2), i] for i in range(0,2)]+
-                [[slice(2,3), i] for i in range(0,2)]+
-                [[slice(4,5), i] for i in range(0,7)]+
-                [[slice(5,6), i] for i in range(0,7)]+
-                [[slice(6,7), i] for i in range(0,7)]+
-                [[slice(7,8), i] for i in range(0,7)]
+    iterator = ([[slice(1,2), i] for i in range(0,10)]+
+                [[slice(2,3), i] for i in range(0,7)]+
+                [[slice(4,5), i] for i in range(0,10)]+
+                [[slice(5,6), i] for i in range(0,10)]+
+                [[slice(6,7), i] for i in range(0,10)]+
+                [[slice(7,8), i] for i in range(0,10)]
 #                 [[slice(9,10), i] for i in range(0,7)]
 #                 [[slice(6,7), i] for i in range(0,7)]
 #                 [[slice(7,8), i] for i in range(0,4)]
@@ -101,8 +101,23 @@ pp(d)
 builder=[['1.0', 'Net_1', 'Control'],
         ['Control', 'Net_0', 'Lesion'],
         
-        ['CTX_M2', 'Net_0', r'$\beta_{CTX\to MSN_{D2}}*0$'],
-        ['MS_MS', 'Net_0', r'$\beta_{MSN\to MSN}*0$'],
+        ['CTX_M1',  'Net_0', r'$\beta^{CTX\to MSN_{D1}}_{I_{NMDA}}=0$'],
+        ['CTX_M2',  'Net_0', r'$\beta^{CTX\to MSN_{D2}}_{I_{AMPA}}=0$'],
+        ['CTX_ST', 'Net_0', r'$\beta^{CTX\to STN}_{I_{AMPA}}=0$'],
+        ['FS', 'Net_0',  r'$\beta^{FSN}_{E_{L}}=0$'],
+        ['FS_FS', 'Net_0', r'$\beta^{FSN\to FSN}_{N}=0$'],
+        ['FS_M2', 'Net_0', r'$\beta^{FSN\to MSN_{D2}}_{N}=0$'],
+        ['GP', 'Net_0', r'$\beta^{GPe}_{E_{L}}=0$'],
+#         ['GP_FS', 'Net_0', r'$\beta^{GPe_{TA}\to FSN}_{N}=0$'],
+        ['GP_GP', 'Net_0', r'$\beta^{GPe\to GPe}_{I_{GABA}}=0$'],
+        ['GP_ST', 'Net_0', r'$\beta^{GPe\to STN}_{I_{GABA}}=0$'],
+        ['M1', 'Net_0', r'$\beta^{MSN_{D1}}_{E_{L}}=0$'],
+        ['M1_SN','Net_0', r'$\beta^{MSN_{D1}\to SNr}_{I_{GABA}}=0$'],
+        ['M2_GI', 'Net_0', r'$\beta^{MSN_{D2}\to GPe}_{I_{GABA}}=0$'],
+        ['MS_MS', 'Net_0', r'$\beta^{MSN\to MSN}_{I_{GABA}/N}=0$'],
+        ['SN', 'Net_0', r'$\beta^{SNr}_{E_{L}}=0$'],
+        ['ST_GP', 'Net_0', r'$\beta^{STN\to GPe}_{I_{GABA}}=0$'],
+        
          ['FS_M2_pert_5', 'Net_0', r'$w_{FSN\to MSN_{D2}} \uparrow$'],
          ['FS_pert_mod7', 'Net_0', r'$r_{FSN} \uparrow$'],
          ['GA_FS_pert_5','Net_0', r'$w_{GPe_{TA}\to FSN} \uparrow$'],
@@ -165,9 +180,9 @@ fun_call=[show_heat_map, show_variability_several]
 
 for iFig in range(2):
     fig, axs=ps.get_figure2(n_rows=9, 
-                            n_cols=7,
+                            n_cols=10,
                             w=72/2.54*17.6*scale,
-                            h=72/2.54*17.6*scale*1.2,  
+                            h=72/2.54*17.6*scale*1.1,  
                             fontsize=7*scale,
                             title_fontsize=7*scale,
                             gs_builder=gs_builder) 
@@ -190,7 +205,7 @@ for iFig in range(2):
        'print_statistics':False,
        'resolution':7,
        'titles':['']*len(builder),
-       'fontsize_ax_titles':7*scale,
+       'fontsize_ax_titles':6*scale,
        'pos_ax_titles':1.08,
        'type_of_plot':'mean',
        'vlim_rate':[-100, 100], 
@@ -234,14 +249,14 @@ for iFig in range(2):
         ax.set_ylabel('')
         
         
-        if i==2:
-            ax.text(1.05, -.35, 
+        if i==2+5:
+            ax.text(0.5, -.35, 
                       'Cortical input action 1',
                         horizontalalignment='center', 
                         transform=ax.transAxes) 
 #             ax.set_xticks([1,1.5, 2, 2.5])
         
-        if i==28:
+        if i==28+6:
             ax.text(0.5, -.35, 
                       'Cortical input action 1',
                         horizontalalignment='center', 
@@ -253,8 +268,8 @@ for iFig in range(2):
                     horizontalalignment='center', transform=ax.transAxes,
                     rotation=90) 
 
-        if i==11:
-            ax.text(-.3, 0.5,'Cortical input action 2',
+        if i==11+6:
+            ax.text(-.3, -0.1,'Cortical input action 2',
                     horizontalalignment='center', va='center',transform=ax.transAxes,
                     rotation=90) 
         
@@ -276,6 +291,7 @@ for iFig in range(2):
         ax.my_remove_axis(xaxis=True, yaxis=True,keep_ticks=True)
 
     figs.append(fig)
+
 save_figures(figs, 
              __file__.split('/')[-1][0:-3]+'/data',
              dpi=200)

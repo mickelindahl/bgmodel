@@ -225,7 +225,8 @@ class Data_bar_base(object):
             
             else: 
 
-                H.append(ax.bar(ind+i*width,self.y[i,:], width, **k ))
+                H.append(ax.bar(ind+i*width,self.y[i,:], width,
+                                **k ))
             
         
         for j, h in enumerate(H):
@@ -677,7 +678,7 @@ class Data_mean_coherence_base(object):
         if list(x):
             self.x=x 
         p_conf95_linsstyle=k.pop('p_conf95_linestyle','-')
-        
+        dashes=k.pop('dashes',(5,5))
         xcut=k.pop('xcut',False)
         
         if xcut:
@@ -690,7 +691,8 @@ class Data_mean_coherence_base(object):
         
         if hasattr(self, 'p_conf95'):
             ax.plot(self.x, self.p_conf95, **{'color':'k',
-                                              'linestyle':p_conf95_linsstyle}) 
+                                              'linestyle':p_conf95_linsstyle,
+                                              'dashes':dashes}) 
            
         ax.set_xlabel('Frequency (Hz)') 
         ax.set_ylabel('Coherence') 
@@ -1474,6 +1476,7 @@ class MySpikeList(SpikeList):
         else: 
             warnings.warn('In my_signals.MySpikeList.Factory_phases_diff_with_cohere: one or both signals only contains zeros')
             i=sample
+            
         y=sp.phases_diff(signals1, signals2, **kwargs)
         vals=[]
         bins=[]
@@ -1539,8 +1542,15 @@ class MySpikeList(SpikeList):
         ids1,ids2,signals1,signals2=out
         
         sample_means=[]
-        out=remove_silent_signals(signals1, signals2,sample_means, **kwargs)
-        signals1, signals2,i=out
+        out=remove_silent_signals(signals1, signals2, sample_means, **kwargs)
+        
+        if not (len(out[0])==0 or len(out[1])==0):
+            signals1, signals2, i=out
+        else: 
+            warnings.warn('In my_signals.MySpikeList.Factory_mean_coherence: one or both signals only contains zeros')
+            i=len(signals1)
+        
+#         signals1, signals2,i=out
         
         x, y=sp.mean_coherence(signals1, signals2, **kwargs)
 
@@ -2701,6 +2711,10 @@ def remove_silent_signals(signals1, signals2,sample_means, **kwargs):
         tmp1.append(s1)
         tmp2.append(s2)
     signals1, signals2=tmp1, tmp2
+    
+    if signals1==[]:
+        warnings.warn('No spiking activity in signlas in remove silent signals')
+    
     return signals1, signals2,i
    
 def shuffle(*args, **kwargs):

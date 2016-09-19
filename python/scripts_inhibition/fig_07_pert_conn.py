@@ -10,7 +10,7 @@ from core import misc
 import pprint
 pp=pprint.pprint
 
-def get():
+def get(index=[]):
     
     def get_perturbation_dics(c, w_rel):
         d = {}
@@ -51,7 +51,10 @@ def get():
 #     mod=[0.06125, 0.125, 0.25, 0.5, 0.75, # 0.75, 
 #          1.33, 2, 4, 8, 16]
     mod=[0.0, 0.001, 0.01, 0.1, 2, 4, 5, 8, 10, 16]
-
+    
+    if index:
+        mod=[m for i,m in enumerate(mod) if i in index]
+        
     l=[]
     
     l+=[pl(**{'name':'no_pert'})]

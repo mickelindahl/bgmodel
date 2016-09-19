@@ -60,7 +60,7 @@ def plot(file_name, figs, setup, flag,  **k):
     kw=setup.plot_summed2()
     kw['alphas']=[1.,1.]
     kw['coherence_xcut']=[0,50]
-    kw['coherence_color']=['grey', 'k']
+    kw['coherence_color']=['k', 'peru']
     kw['coherence_p_conf95_linestyle']='--'
     kw['hatchs_ti_ti']=['','']
     kw['label_model']='Black=Model'
@@ -68,7 +68,7 @@ def plot(file_name, figs, setup, flag,  **k):
     kw['linewidth']=1.
     kw['set_text_on_bars']=False
     kw['top_label']=False
-    kw['phases_diff_with_cohere_colors']=['grey','k']
+    kw['phases_diff_with_cohere_colors']=['k','peru']
     kw['phases_diff_with_cohere_xcut']=[-numpy.pi*0.97, numpy.pi**0.97]
     kw['phases_diff_with_cohere_remove_peaks']=True
     kw['scale']=1
@@ -76,14 +76,20 @@ def plot(file_name, figs, setup, flag,  **k):
     kw['spk_stats_colors']=['k', 'w']
     kw['spk_stats_colors_ti_ta']=['k','w']
     kw['xlim_cohere']=[-1, 51]
-    
-
+    kw['dashes']=(2,2)
+    if flag=='slow_wave':
+        kw['ylim_cohere']=[0, 1.0]
+    elif flag=='beta':
+        kw['ylim_cohere']=[0, 0.8]
+        kw['xticks_coherence']=[0,0.4]
+        
+        
     kw.update(k)
     figs.append(base_oscillation.show_summed2(d, **kw))
         
     kw=setup.plot_summed_STN()
     kw['alphas']=[1.,1.]
-    kw['coherence_color']=['grey','k']
+    kw['coherence_color']=['k', 'peru']
     kw['coherence_p_conf95_linestyle']='--'
     kw['hatchs_ti_ti']=['','']
     kw['label_model']='Black=Model'
@@ -91,7 +97,7 @@ def plot(file_name, figs, setup, flag,  **k):
     kw['linewidth']=1.
     kw['phases_diff_with_cohere_xcut']=[-numpy.pi*0.97, numpy.pi**0.97]
     kw['phases_diff_with_cohere_remove_peaks']=True
-    kw['phases_diff_with_cohere_colors']=['grey','k']
+    kw['phases_diff_with_cohere_colors']=['k', 'peru']
     kw['scale']=1
     kw['set_text_on_bars']=False
     kw['spk_stats_colors']=['k', 'w']
@@ -99,10 +105,12 @@ def plot(file_name, figs, setup, flag,  **k):
     kw['spk_stats_color_axis']=1
     kw['top_label']=False    
     kw['xlim_cohere']=[-1, 51]
+    kw['dashes']=(2,2)
     if flag=='slow_wave':
         kw['ylim_cohere']=[0, 1.0]
     elif flag=='beta':
-        kw['ylim_cohere']=[0, 0.4]
+        kw['ylim_cohere']=[0, 0.2]
+        kw['xticks_coherence']=[0,0.1]
         
     kw['coherence_xcut']=[0,50]
     kw.update(k)
@@ -113,19 +121,23 @@ def plot(file_name, figs, setup, flag,  **k):
 
 figs=[]
 file_name=('/home/mikael/results/papers/inhibition/network/'
-           +'milner/fig_01_and_02_sim_beta/'
-           'script_0002_rEI_1700.0_rEA_200.0_rCS_250.0_rES_3200.0_rM2_740.0-amp_0.08_0.975_stn_3.0'
-           +'script_0003_rEI_1700.0_rEA_200.0_rCS_250.0-amp_0.14_1.1_stn_3.0')
+           +'milner/fig_01_and_02_sim_beta_80000/'
+           + 'script_0002_rEI_1700.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-amp_0.08_0.975_stn_3.0'
+#            +'script_0003_rEI_1700.0_rEA_200.0_rCS_250.0-amp_0.14_1.1_stn_3.0'
+           )
 setup=base_oscillation_beta.Setup(20,1)
-plot(file_name, figs, setup, 'beta')
+plot(file_name, figs, setup, 'beta', **{'linewidth':0.5})
 
 
 file_name=('/home/mikael/results/papers/inhibition/network/'
-           +'milner/fig_01_and_02_sim_sw/'
-           'script_0003_rEI_800.0_rEA_100.0_rCS_170.0_rES_1800.0_rM2_740.0-amp_0.17_0.85'
-           +'script_0001_rEI_800.0_rEA_100.0_rCS_170.0-amp_0.1_0.9')
+           +'milner/fig_01_and_02_sim_sw_80000/'
+           + 'script_0000_rEI_800.0_rEA_100.0_rCS_170.0_rES_1800.0_rM2_740.0-amp_0.08_0.85'
+#            +'script_0001_rEI_800.0_rEA_100.0_rCS_170.0-amp_0.1_0.9'
+           )
+
 setup=base_oscillation_sw.Setup(1000,1)
-plot(file_name, figs, setup, 'slow_wave', **{'xlim_cohere':[-0.1, 5.1],
+plot(file_name, figs, setup, 'slow_wave', **{'linewidth':0.5,
+                                             'xlim_cohere':[-0.1, 5.1],
                                              'coherence_xcut':[0, 5],
                                              'phases_diff_with_cohere_remove_peaks':True})
 

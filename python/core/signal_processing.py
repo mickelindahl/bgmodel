@@ -238,15 +238,15 @@ def coherences(signals1, signals2, **kwargs):
     
 
     args=zip(*args)
-#     try:
-    l=map_parallel(cohere, *args, **{'local_num_threads': kwargs.get('local_num_threads',1)})
+    try:
+        l=map_parallel(cohere, *args, **{'local_num_threads': kwargs.get('local_num_threads',1)})
 # 
-#     except Exception as e:
-#         s='\nTrying to do map_parallel in coherence'
-#         s+='\nSignal1: {}'.format(signals1)
-#         s+='\nSignal2: {}'.format(signals2)
-#         s+='\nkwargs: {}'.format(kwargs)
-#         raise type(e)(e.message + s), None, sys.exc_info()[2]
+    except Exception as e:
+        s='\nTrying to do map_parallel in coherence'
+        s+='\nSignal1: {}'.format(signals1)
+        s+='\nSignal2: {}'.format(signals2)
+        s+='\nkwargs: {}'.format(kwargs)
+        raise type(e)(e.message + s), None, sys.exc_info()[2]
         
 #     l=map(cohere, *args)
     try:

@@ -11,7 +11,7 @@ scale=1
 kw={
          'n_rows':3,
          'n_cols':15,  
-         'w':int(72/2.54*(11.6))*scale,
+         'w':int(72/2.54*(17.6)*0.33)*scale,
          'h':int((72/2.54*9)/3*(1+1/2.))*scale,
         'linewidth':1,
         'fontsize':7*scale,
@@ -22,7 +22,7 @@ def ignore_files(name):
     s=name.split('/')[-2].split('_')[-1]
 #     print s, s not in ['16']
 
-    return s in ['mod3'] #['mod1','mod2','mod3','mod4','mod5','mod6']
+    return s in ['mod1','mod2','mod3','mod4','mod5','mod6']
 
 
 kwargs={'add_midpoint':True,
