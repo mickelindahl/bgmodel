@@ -157,6 +157,7 @@ class Setup(object):
                  for v in [10]]
         
         d={'win':10.,
+           't_start':700.0,
            't_stop':1500.0,
            'by_sets':False,
            'labels':labels,
@@ -303,7 +304,7 @@ def create_figs(setup, file_name_figs, d, models):
         if i==0:
             ax.set_ylim([0,70])
         else: 
-            ax.set_ylim([0,50])
+            ax.set_ylim([0,70])
         ax.my_set_no_ticks(xticks=4)
     
     show_mr_diff(d, models, axs[2:4], **d_plot_mr_diff)
@@ -346,16 +347,22 @@ def create_figs(setup, file_name_figs, d, models):
     for i, ax in enumerate(axs):
         ax.set_ylabel('')
         ax.my_set_no_ticks(yticks=3, xticks=3)    
+        if i==0:
+#             ax.set_xticks([700, 1000, 1300])
+            ax.set_ylim([0,60])
+            ax.set_xlim([700,1600])
         if i==1:
-            ax.set_xticks([0, 500, 1000])
-            ax.set_ylim([0,40])
+            ax.set_xticks([700, 1000, 1300])
+            ax.set_xticklabels([0, 300, 600])
+            ax.set_ylim([0,50])
+            ax.set_xlim([700,1600])
         if i==2:
             ax.set_title('Difference')
 #             ax.set_yticks([0, 1000.0])
-            ax.set_ylim([0,25])
+            ax.set_ylim([0,30])
         if i==3:
 #             ax.set_yticks([0, 1000.0])
-            ax.set_ylim([0,20])
+            ax.set_ylim([0,25])
                         
     sd_figs.save_figs(figs, format='png', dpi=400)
     sd_figs.save_figs(figs, format='svg', in_folder='svg')

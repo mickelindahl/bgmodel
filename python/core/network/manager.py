@@ -245,7 +245,7 @@ class Builder_MSN_cluster_compete_base(Builder_abstract):
         n_sets=n_sets0*2
         rules=['all-all']*5+['set-not_set']*5
         
-        durations=[500., 500.]
+        durations=[500., 100.]
         amplitudes=[1.,1.75]
         rep=self.kwargs.get('repetition',5)
         
@@ -1484,6 +1484,16 @@ class Builder_single_rest(Builder_single_base,
                       Mixin_general_single):
     pass
 
+class Mixin_normal_dop(object): 
+      
+    def _get_dopamine_levels(self):
+        return [self._dop()]
+
+class Builder_single_rest_dop(Builder_single_base, 
+                      Mixin_dopamine, 
+                      Mixin_general_single,
+                      Mixin_normal_dop):
+    pass
 
 class Builder_single_GA_GI_base(Builder_single_base): 
       
@@ -1593,13 +1603,14 @@ def compute(d, models, attr, **kwargs_dic):
     dout={}
     for keys, val in misc.dict_iter(d):
         
-        print 'Computing',keys
+        
         if not  isinstance(val, Data_unit_base) and not isinstance(val, Data_units_relation):
             continue
         if keys[1] not in models:
             continue
         for a in attr:
             
+            print 'Computing', a, 'with', keys
             
             if a[-1].isdigit():
                 a_name=a[0:-2]

@@ -18,7 +18,7 @@ from core import my_socket
 
 import config
 import scripts_inhibition.base_inhibition_striatum as module
-import fig_01_and_02_pert as op
+import eNeuro_rev_TA_TI_FS_pert as op
 import pprint
 pp=pprint.pprint
 
@@ -27,7 +27,8 @@ FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=0
 
 NUM_NETS=1
-ops=op.get()
+ops=[val for val in op.get().values()]
+ops=ops[0]+ops[1]
 NUM_RUNS=len(ops) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
 
@@ -52,7 +53,7 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig1_2_inh',
+        'job_name':'eN_f1_2_inh',
         
         'l_hours':  ['00','00','00'],
         'l_minutes':['15','10','5'],
@@ -92,6 +93,6 @@ for obj in a_list:
 
 # for i, a in enumerate(args_list):
 #     print i, a
-loop(min(1, 12),[NUM_RUNS, NUM_RUNS, NUM_RUNS], a_list, k_list, **{'config':config} )
+loop(10, [NUM_RUNS, NUM_RUNS, NUM_RUNS], a_list, k_list, **{'config':config} )
 
 

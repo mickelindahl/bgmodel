@@ -11,18 +11,22 @@ import core.plot_settings as pl
 from single import (get_storages, optimize, run, run_XX, 
                     set_optimization_val, show)
 from core import pylab
-from core.network.manager import Builder_single_rest as Builder
+from core.network.manager import Builder_single_rest_dop as Builder
 
 import pprint
 pp=pprint.pprint
 
 
 NAMES=['$GPe_{+d}^{TI}$',
-       '$GPe_{-d}^{TI}$']
+#        '$GPe_{-d}^{TI}$'
+       ]
 
 def get_kwargs_builder(**k_in):
     k=single.get_kwargs_builder()
-    k.update({'inputs': ['GIp', 'GAp', 'EAp', 'STp', 'M2p'],
+    k.update({
+              'inputs': ['GIp', 'GAp', 
+                         'EAp', 
+                         'STp', 'M2p'],
               'rand_nodes':{'C_m':k_in.get('rand_nodes'), 
                             'V_th':k_in.get('rand_nodes'), 
                             'V_m':k_in.get('rand_nodes')},
@@ -48,36 +52,41 @@ def modify(dn):
     
 def main(rand_nodes=False, 
          script_name= __file__.split('/')[-1][0:-3], 
-         from_disk=0):   
+         from_disk=1):   
       
     k=get_kwargs_builder()
     
+    pp(k)
+    
     dinfo, dn = get_setup(**{'rand_nodes':rand_nodes})
 
-    dn=modify(dn)
+    pp(dn)
+
+#     dn=modify(dn)
     ds = get_storages(script_name, dn.keys(), dinfo)
 
     dstim={}
-    dstim ['IV']=map(float, range(-300,300,100)) #curr
+#     dstim ['IV']=map(float, range(-300,300,100)) #curr
     dstim ['IF']=map(float, range(0,500,100)) #curr
-    dstim ['FF']=map(float, range(0,1500,100)) #rate
+#     dstim ['FF']=map(float, range(0,1500,100)) #rate
   
     d={}
-    d.update(run_XX('IV', dn, [from_disk]*4, ds, dstim))
+#     d.update(run_XX('IV', dn, [from_disk]*4, ds, dstim))
     d.update(run_XX('IF', dn, [from_disk]*4, ds, dstim))
-    d.update(run_XX('FF', dn, [from_disk]*4, ds, dstim))   
-    d.update(optimize('opt_rate', dn, [from_disk]*1, ds, **{ 'x0':200.0}))   
-    set_optimization_val(d['opt_rate']['Net_0'], dn['hist']) 
-    d.update(run('hist', dn, [from_disk]*2, ds, 'mean_rates', 
-                 **{'t_start':k['start_rec']}))                 
+#     d.update(run_XX('FF', dn, [from_disk]*4, ds, dstim))   
+#     d.update(optimize('opt_rate', dn, [from_disk]*1, ds, **{ 'x0':200.0}))   
+#     set_optimization_val(d['opt_rate']['Net_0'], dn['hist']) 
+#     d.update(run('hist', dn, [from_disk]*2, ds, 'mean_rates', 
+#                  **{'t_start':k['start_rec']}))                 
 
     
     
     
     fig, axs=pl.get_figure(n_rows=2, n_cols=2, w=1000.0, h=800.0, fontsize=16) 
 
-    show(dstim, d, axs, NAMES)
-    ds['fig'].save_fig(fig)
+    show(dstim, d, axs, NAMES, **{'models':['IF']})
+#     ds['fig'].save_fig(fig)
+    ds['fig'].save_figs([fig], format='png', dpi=200)
     
     if not os.environ.get('DISPLAY'): pylab.show()   
 

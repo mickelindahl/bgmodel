@@ -16,7 +16,7 @@ from matplotlib import ticker
 from matplotlib.font_manager import FontProperties
 from core.my_signals import Data_bar
 from core import misc
-from core.data_to_disk import Storage_dic
+from core.data_to_disk import Storage_dic, text_save
 from core.network.manager import get_storage, save
 from scripts_inhibition.base_simulate import get_file_name, save_figures
 import pprint
@@ -1004,6 +1004,7 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     kw['nice_labels_y']=nice_labels(version=0)
     kw['cmap']='coolwarm'
     kw['color_line']='k'
+    kw['csv_path']=k.get('data_path')
     _plot_conn(**kw)
     
     box = ax.get_position()
@@ -1129,7 +1130,7 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     
     ax1.set_ylim([40,55])
     y=[[],[]]
-    for i, _ in enumerate(c):
+    for i, _ in enumerate(d0['labelsy']):
         y[0].append(numpy.mean(d0['y'][i,:]))
         y[1].append(d1['y'][i, numpy.array(bol)][0])
 
@@ -1235,6 +1236,7 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     kw['nice_labels_y']=nice_labels(version=0)
     kw['cmap']='coolwarm'
     kw['color_line']='k'
+    kw['csv_path']=k.get('data_path')+'syncrony.csv'
     _plot_conn(**kw)
     
     box = ax.get_position()
@@ -1268,6 +1270,7 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
         v.append(d3['y'][i,bol]/y2[1][i])
 
     kw['ax']=ax
+    kw['csv_path']=k.get('data_path')+'oscillation.csv'
     kw['d']={'z':numpy.array(v),
             'labelsx_meta':[e for i, e in enumerate(d2['labelsx_meta']) if bol[i]],
             'labelsx':range(len(d2['y'][0,bol])),
@@ -1461,6 +1464,7 @@ def _plot_bar(**kwargs):
      
 def _plot_conn(**kwargs):
     
+    csv_path= kwargs['csv_path']
     ax=kwargs.get('ax')
     d=kwargs.get('d')
     images=kwargs.get('images')
@@ -1546,6 +1550,18 @@ def _plot_conn(**kwargs):
 #     Z=numpy.array(Z)
 #     
     print x1.shape,y1.shape, d[z_key][::-1,].shape
+#     print len(labelsy_meta[::-1])
+#     print d[z_key][::-1,]
+    
+    
+    csv=';'.join(['nuclei']+labelsx_meta)+'\n'
+    for i, l1 in enumerate(d[z_key][::-1,]):
+#         print labelsy_meta[::-1][i],l1
+        csv+=';'.join([labelsy_meta[::-1][i]]+map(str,map(lambda x:round((x-1)*100,2),list(l1))))+'\n'
+    
+    print 'Saving csv to: ', csv_path
+    text_save(csv, csv_path)
+    
     im = ax.pcolor(x1, y1, d[z_key][::-1,], cmap=cmap)       
 #     im = ax.pcolor(x1, y1, Z[::-1,], cmap=cmap)       
 
@@ -1657,6 +1673,7 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
                 'nice_labels_y':nice_labels(version=1),
                 'cmap':cmap,
                 'color_line':color_line,
+                'csv_path':kwargs.get('data_path')
                 
                 }
         k.update(kwargs)

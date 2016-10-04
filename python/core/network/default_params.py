@@ -2128,10 +2128,15 @@ class InhibitionPar_base(object):
         dic['netw']['GP_rate']=30.
         dic['netw']['GP_fan_in_prop_GA']=1/17.
         dic['netw']['GA_prop']=0.2
-        dic['netw']['GI_prop']=0.8
+        dic['netw']['GI_prop']=0.72 # <= 0.9*0.8
+        dic['netw']['GF_prop']=0.08 # <= 0.1*0.8 10 % of TI cells project to striatum
+#         dic['netw']['GN_prop']=0.9
+        
         d={'type':'constant', 'params':{}}
         dic['netw']['input']={}
-        for key in ['C1', 'C2', 'CF', 'CS','EA', 'EI', 'ES']: 
+        for key in ['C1', 'C2', 'CF', 'CS','EA', 
+                    'EF', 
+                    'EI', 'ES']: 
             dic['netw']['input'][key]=deepcopy(d)        
         
         dic['netw']['n_actions']=1
@@ -2140,7 +2145,8 @@ class InhibitionPar_base(object):
                                  'M2':2791000*0.425,
                                  'FS':2791000* 0.02, # 2 % if MSN population
                                  'ST': 13560.,
-                                 'GI': 45960.*(1.-GetNetw('GA_prop')),
+                                 'GF': 45960.*GetNetw('GF_prop'),
+                                 'GI': 45960.*GetNetw('GI_prop'),
                                  'GA': 45960.*GetNetw('GA_prop'),
                                  'SN': 26320.}
         
@@ -2206,6 +2212,12 @@ class InhibitionPar_base(object):
         dic['nest']['GI_FS_gaba']['delay']    = 7.  # n.d. same as MSN to GPE Park 1982
         dic['nest']['GI_FS_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GI_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_2']
+
+        dic['nest']['GF_FS_gaba']={}
+        dic['nest']['GF_FS_gaba']['weight']   = 1.     # n.d. inbetween MSN and FSN GABAergic synapses
+        dic['nest']['GF_FS_gaba']['delay']    = 7.  # n.d. same as MSN to GPE Park 1982
+        dic['nest']['GF_FS_gaba']['type_id'] = 'static_synapse'
+        dic['nest']['GF_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']
           
         
         # CTX-MSN D1
@@ -2276,7 +2288,6 @@ class InhibitionPar_base(object):
         dic['nest']['GA_M2_gaba'] = deepcopy(dic['nest']['GA_M1_gaba'])
         dic['nest']['GA_M2_gaba']['weight']   = 1.*2/5  ## Glajch 2013
  
- 
         dic['nest']['GI_M1_gaba']={}
         dic['nest']['GI_M1_gaba']['weight']   = 1./5  # Glajch 2013
         dic['nest']['GI_M1_gaba']['delay']    = 1.7 
@@ -2285,6 +2296,15 @@ class InhibitionPar_base(object):
         
         dic['nest']['GI_M2_gaba'] = deepcopy(dic['nest']['GA_M1_gaba'])
         dic['nest']['GI_M2_gaba']['weight']   = 1.*2/5  ## Glajch 2013
+ 
+        dic['nest']['GF_M1_gaba']={}
+        dic['nest']['GF_M1_gaba']['weight']   = 1./5  # Glajch 2013
+        dic['nest']['GF_M1_gaba']['delay']    = 1.7 
+        dic['nest']['GF_M1_gaba']['type_id'] = 'static_synapse'
+        dic['nest']['GF_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']   
+         
+        dic['nest']['GF_M2_gaba'] = deepcopy(dic['nest']['GA_M1_gaba'])
+        dic['nest']['GF_M2_gaba']['weight']   = 1.*2/5  ## Glajch 2013
       
             
         # CTX-STN
@@ -2306,6 +2326,18 @@ class InhibitionPar_base(object):
         dic['nest']['GI_ST_gaba']['type_id'] = 'static_synapse' 
         dic['nest']['GI_ST_gaba']['receptor_type'] = self.rec['aeif'] [ 'GABAA_1' ]  
         
+    
+        dic['nest']['GF_ST_gaba'] = deepcopy(dic['nest']['GI_ST_gaba']) 
+  
+        
+        # STN-STN
+        dic['nest']['ST_ST_ampa']={}
+        dic['nest']['ST_ST_ampa']['weight']   = 0.0     # constrained by (Hanson & Dieter Jaeger 2002)
+        dic['nest']['ST_ST_ampa']['delay']    = 1.       # Ammari 2010
+        dic['nest']['ST_ST_ampa']['type_id'] = 'static_synapse' 
+        dic['nest']['ST_ST_ampa']['receptor_type'] = self.rec['aeif']['AMPA_1']         
+        
+        dic['nest']['ST_ST_ampa'] = deepcopy(dic['nest']['ST_ST_ampa']) 
         
         # EXT-GPe
         dic['nest']['EA_GA_ampa']={}
@@ -2315,6 +2347,7 @@ class InhibitionPar_base(object):
         dic['nest']['EA_GA_ampa']['receptor_type'] = self.rec['aeif']['AMPA_2']  
         
         dic['nest']['EI_GI_ampa'] = deepcopy(dic['nest']['EA_GA_ampa'])
+        dic['nest']['EF_GF_ampa'] = deepcopy(dic['nest']['EA_GA_ampa'])
     
         
         # GPe-GPe
@@ -2326,8 +2359,14 @@ class InhibitionPar_base(object):
         
         dic['nest']['GA_GI_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
         dic['nest']['GI_GA_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
-        dic['nest']['GI_GI_gaba'] = deepcopy(dic['nest']['GA_GA_gaba']) 
-    
+        dic['nest']['GI_GI_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
+   
+        dic['nest']['GF_GA_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
+        dic['nest']['GF_GI_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])  
+        dic['nest']['GF_GF_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
+        dic['nest']['GI_GF_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
+        dic['nest']['GA_GF_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
+#         
          
         # MSN D2-GPe I 
         dic['nest']['M2_GI_gaba']={}
@@ -2339,6 +2378,9 @@ class InhibitionPar_base(object):
         dic['nest']['M2_GI_gaba']['tau_psc'] = 6.    # (Shen et al. 2008)
         dic['nest']['M2_GI_gaba']['type_id'] = 'tsodyks_synapse' 
         dic['nest']['M2_GI_gaba']['receptor_type'] = self.rec['aeif']['GABAA_1']         
+     
+     
+        dic['nest']['M2_GF_gaba'] = deepcopy(dic['nest']['M2_GI_gaba'])  
      
 
         # MSN D2-GPe A 
@@ -2361,6 +2403,7 @@ class InhibitionPar_base(object):
         dic['nest']['ST_GA_ampa']['receptor_type'] = self.rec['aeif']['AMPA_1']         
         
         dic['nest']['ST_GI_ampa'] = deepcopy(dic['nest']['ST_GA_ampa']) 
+        dic['nest']['ST_GF_ampa'] = deepcopy(dic['nest']['ST_GA_ampa']) 
         
         
         # EXR-SNr
@@ -2395,7 +2438,7 @@ class InhibitionPar_base(object):
         dic['nest']['ST_SN_ampa']['receptor_type']= self.rec['aeif']['AMPA_1'] 
      
         
-        # GPe-SNr
+        # GPe TI-SNr
         dic['nest']['GI_SN_gaba']={}
         dic['nest']['GI_SN_gaba']['weight']   = 76./0.196  #0.152*76., (Connelly et al. 2010)
         dic['nest']['GI_SN_gaba']['delay']    = 3.  
@@ -2406,6 +2449,8 @@ class InhibitionPar_base(object):
         dic['nest']['GI_SN_gaba']['type_id'] = 'tsodyks_synapse'   
         dic['nest']['GI_SN_gaba']['receptor_type']= self.rec['aeif']['GABAA_2']          
     
+        dic['nest']['GF_SN_gaba'] = deepcopy(dic['nest']['GI_SN_gaba']) 
+                  
         # ============        
         # Input Models
         # ============ 
@@ -2443,7 +2488,11 @@ class InhibitionPar_base(object):
         dic['nest']['EI']={}
         dic['nest']['EI']['type_id']='poisson_generator' 
         dic['nest']['EI']['rate']=0.0
-    
+        
+        dic['nest']['EF']={}
+        dic['nest']['EF']['type_id']='poisson_generator' 
+        dic['nest']['EF']['rate']=0.0
+
         #EXT-SNr
         dic['nest']['ES']={}
         dic['nest']['ES']['type_id']='poisson_generator' 
@@ -2494,6 +2543,7 @@ class InhibitionPar_base(object):
         # From GPE
         dic['nest']['MS']['GABAA_3_Tau_decay'] = 12*5.          
         dic['nest']['MS']['GABAA_3_E_rev']     = -74. # n.d. set as for MSN and FSN
+        dic['nest']['MS']['beta_I_GABAA_3'] = 0.0#-0.625 #Dopamine leads to weakening of MSN synspase
         
         dic['nest']['MS']['tata_dop'] = DepNetw('calc_tata_dop')
         
@@ -2558,15 +2608,21 @@ class InhibitionPar_base(object):
         dic['nest']['FS']['GABAA_1_E_rev']    = -74.     # n.d.; set as for MSNs
         dic['nest']['FS']['GABAA_1_Tau_decay']= GetNest('FS_FS_gaba','tau_psc')
           
-        # From GPe
-        dic['nest']['FS']['GABAA_2_Tau_decay'] =  12.*5  
+        # From GPe TA
+        dic['nest']['FS']['GABAA_2_Tau_decay'] =  66 
         dic['nest']['FS']['GABAA_2_E_rev']    = -74.  # n.d. set as for MSNs
+          
+          
+        # From GPe TI (10 % TF)
+        dic['nest']['FS']['GABAA_3_Tau_decay'] =  17.  
+        dic['nest']['FS']['GABAA_3_E_rev']    = -74.  # n.d. set as for MSNs
           
         dic['nest']['FS']['beta_E_L'] = 0.078
         dic['nest']['FS']['tata_dop'] = DepNetw('calc_tata_dop')
         
         dic['nest']['FS']['beta_I_GABAA_1'] = -0.83 #0.8 # From FSN
         dic['nest']['FS']['beta_I_GABAA_2'] = 0.0#-0.83 #0.8 # From GPe A
+        dic['nest']['FS']['beta_I_GABAA_3'] = 0.0#-0.83 #0.8 # From GPe A
     
         
         dic['nest']['FS_low']  = deepcopy(dic['nest']['FS'])
@@ -2669,13 +2725,18 @@ class InhibitionPar_base(object):
         dic['nest']['GP']['tata_dop'] = DepNetw('calc_tata_dop')
         
         dic['nest']['GA']  = deepcopy(dic['nest']['GP'])
-#         dic['nest']['GA']['a_1']  = 0.5
+        
+#         dic['nest']['GA']['b'] = dic['nest']['GA']['b'] *1.5 # I-F relation
+#         dic['nest']['GA']['C_m']=dic['nest']['GA']['C_m']*1.5 
+# #         dic['nest']['GA']['a_1']  = 0.5
+#         dic['nest']['GA']['Delta_T'] = dic['nest']['GA']['Delta_T']*1.5 # 1.7*2      
         dic['nest']['GI']  = deepcopy(dic['nest']['GP'])
         
         #MSN D2-GPe
         dic['nest']['GI']['GABAA_1_E_rev']     = -65.  # (Rav-Acha et al. 2005)
         dic['nest']['GI']['GABAA_1_Tau_decay']=GetNest('M2_GI_gaba', 'tau_psc')     # (Shen et al. 2008)    
 
+        dic['nest']['GF']  = deepcopy(dic['nest']['GI'])
     
         # SNR
         # ===
@@ -2735,6 +2796,7 @@ class InhibitionPar_base(object):
                 'CS': { 'target':'ST', 'rate':200.0}, #160.},#295 
                 'EA': { 'target':'GA', 'rate':200.},
                 'EI': { 'target':'GI', 'rate':1100.0},#1130.},
+                'EF': { 'target':'GF', 'rate':1100.0},#1130.},
                 'ES': { 'target':'SN', 'rate':1800.}}#295 
         
         for key, val in inputs.items():         
@@ -2751,6 +2813,7 @@ class InhibitionPar_base(object):
                  'ST':{'model':'ST',     'I_vitro':6.0, 'I_vivo':6.0,  }, 
                  'GA':{'model':'GA',     'I_vitro':5.0, 'I_vivo':-3.6, }, #23, -8
                  'GI':{'model':'GI',     'I_vitro':5.0, 'I_vivo':4.5,  }, #51, 56
+                 'GF':{'model':'GF',     'I_vitro':5.0, 'I_vivo':4.5,  }, #51, 56
                  'SN':{'model':'SN',     'I_vitro':15.0,'I_vivo':19.2, }}
         
 
@@ -2764,6 +2827,8 @@ class InhibitionPar_base(object):
         network['GA'].update({'rate':5.0, 'rate_in_vitro':4.0})
         network['GI'].update({'rate':(GP_tr-GA_prop*GA_tr)/(1-GA_prop),
                               'rate_in_vitro':15.0})
+        network['GF'].update({'rate':(GP_tr-GA_prop*GA_tr)/(1-GA_prop),
+                              'rate_in_vitro':15.0})
         network['SN'].update({'rate':30., 'rate_in_vitro':15.0})
         
                  
@@ -2776,6 +2841,7 @@ class InhibitionPar_base(object):
         d={ 'M1':{'n_sets':GetNetw('n_actions')},
              'M2':{'n_sets':GetNetw('n_actions')},
              'GI':{'n_sets':GetNetw('n_actions')},
+             'GF':{'n_sets':GetNetw('n_actions')},
              'SN':{'n_sets':GetNetw('n_actions')}}
         network=misc.dict_update(network, d)     
 
@@ -2797,6 +2863,7 @@ class InhibitionPar_base(object):
                'CS_ST_nmda':{},
                'EA_GA_ampa':{},
                'EI_GI_ampa':{},
+               'EF_GF_ampa':{},
                'ES_SN_ampa':{}}
         
         for k in conns.keys():
@@ -2819,14 +2886,23 @@ class InhibitionPar_base(object):
         FS_M2=int(round(60*0.18))
         
         GA_XX=GP_fi*GA_pfi
-        GI_XX=GP_fi*(1-GA_pfi)
+        GI_GX=GP_fi*(1-GA_pfi)*GetNetw('GI_prop')/(1-GetNetw('GA_prop'))
+        GF_GX=GP_fi*(1-GA_pfi)*GetNetw('GF_prop')/(1-GetNetw('GA_prop'))    
+    
+    
+        GI_ST=30*GetNetw('GI_prop')/(1-GetNetw('GA_prop'))
+        GF_ST=30*GetNetw('GF_prop')/(1-GetNetw('GA_prop'))
+
+        GI_SN=32*GetNetw('GI_prop')/(1-GetNetw('GA_prop'))
+        GF_SN=32*GetNetw('GF_prop')/(1-GetNetw('GA_prop'))
         
         M1_SN=500*1/GetNetw('sub_sampling', 'M1')
-        M2_GI=500*1/GetNetw('sub_sampling', 'M2')
-        M2_GA=M2_GI*0.1
+        M2_GX=500*1/GetNetw('sub_sampling', 'M2')
+        
         d={'M1_SN_gaba':{'fan_in0': M1_SN, 'rule':'set-set' },
-           'M2_GI_gaba':{'fan_in0': M2_GI, 'rule':'set-set' },
-           'M2_GA_gaba':{'fan_in0': M2_GA, 'rule':'all-all'},
+           'M2_GF_gaba':{'fan_in0': M2_GX, 'rule':'set-set' },
+           'M2_GI_gaba':{'fan_in0': M2_GX, 'rule':'set-set' },
+           'M2_GA_gaba':{'fan_in0': M2_GX, 'rule':'all-all'},
                    
            'M1_M1_gaba':{'fan_in0': M1_M1, 'rule':'all-all' },
            'M1_M2_gaba':{'fan_in0': M1_M2, 'rule':'all-all' },                     
@@ -2838,23 +2914,38 @@ class InhibitionPar_base(object):
            'FS_FS_gaba':{'fan_in0': 9, 'rule':'all-all' },
          
            'ST_GA_ampa':{'fan_in0': 30, 'rule':'all-all' },
+           'ST_GF_ampa':{'fan_in0': 30, 'rule':'all-all' },
            'ST_GI_ampa':{'fan_in0': 30, 'rule':'all-all' },
            'ST_SN_ampa':{'fan_in0': 30, 'rule':'all-all' },
+           'ST_ST_ampa':{'fan_in0': 10, 'rule':'all-all' },
           
            'GA_FS_gaba':{'fan_in0': 10, 'rule':'all-all' },
            'GA_M1_gaba':{'fan_in0': 10, 'rule':'all-all' },
            'GA_M2_gaba':{'fan_in0': 10, 'rule':'all-all' },
            'GA_GA_gaba':{'fan_in0': GA_XX,'rule':'all-all' }, 
            'GA_GI_gaba':{'fan_in0': GA_XX,'rule':'all-all' },
+           'GA_GF_gaba':{'fan_in0': GA_XX,'rule':'all-all' },
 
            'GI_FS_gaba':{'fan_in0': 10, 'rule':'all-all' },
            'GI_M1_gaba':{'fan_in0': 10, 'rule':'all-all' },
            'GI_M2_gaba':{'fan_in0': 10, 'rule':'all-all' },
-           'GI_GI_gaba':{'fan_in0': GI_XX,'rule':'all-all' },
-           'GI_GA_gaba':{'fan_in0': GI_XX,'rule':'all-all' },
-            
-           'GI_ST_gaba':{'fan_in0': 30, 'rule':'all-all' },
-           'GI_SN_gaba':{'fan_in0': 32, 'rule':'all-all' }}  
+           'GI_GA_gaba':{'fan_in0': GI_GX,'rule':'all-all' },
+           'GI_GI_gaba':{'fan_in0': GI_GX,'rule':'all-all' },
+           'GI_ST_gaba':{'fan_in0': GI_ST, 'rule':'all-all' },
+           'GI_SN_gaba':{'fan_in0': GI_SN, 'rule':'all-all' },
+           'GI_GF_gaba':{'fan_in0': GI_GX,'rule':'all-all' },
+           
+            'GF_FS_gaba':{'fan_in0': 10, 'rule':'all-all' },
+            'GF_M1_gaba':{'fan_in0': 10, 'rule':'all-all' },
+            'GF_M2_gaba':{'fan_in0': 10, 'rule':'all-all' },
+            'GF_GA_gaba':{'fan_in0': GF_GX,'rule':'all-all' },
+            'GF_GI_gaba':{'fan_in0': GF_GX,'rule':'all-all' }, 
+            'GF_ST_gaba':{'fan_in0': GF_ST,'rule':'all-all' },
+            'GF_SN_gaba':{'fan_in0': GF_SN, 'rule':'all-all' },
+            'GF_GF_gaba':{'fan_in0': GF_GX,'rule':'all-all' },  
+           
+           
+           }  
         
         conns.update(d)
 #         pp(d)
@@ -2891,8 +2982,11 @@ class InhibitionPar_base(object):
                 d['mask']=[-e, e]   
         
             #Default they are leasioned
-            if k in ['M2_GA_gaba', 'GI_FS_gaba', 
-                     'GI_M1_gaba', 'GI_M2_gaba']:
+            if k in [
+                     'M2_GA_gaba', 
+                     'GI_FS_gaba', 'GI_M1_gaba', 'GI_M2_gaba', 
+                     'GF_FS_gaba', 'GF_M1_gaba', 'GF_M2_gaba'
+                     ]:
                 d['lesion']=True
             conns[k]=misc.dict_update(d,conns[k])
             
@@ -3240,6 +3334,7 @@ class Beta_base(object):
 
 class Beta(Par_base, Beta_base, Par_base_mixin): 
     pass 
+
 class Beta_EI_EA_base(object):
     def _get_par_constant(self):
         dic_other=self.other.get_par_constant()

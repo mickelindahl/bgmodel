@@ -227,6 +227,17 @@ def plot_mallet2008():
     i += 1 
     
     return fig, axs
+
+def add_GI(d):
+    for key in d.keys():
+        if not 'GF' in d[key].keys():
+            continue
+        s1=d[key]['GF']['spike_signal']
+        s2=d[key]['GI']['spike_signal']
+        s3=s1.merge(s2)
+        d[key]['GI']={'spike_signal':s3}
+        
+
 def add_GPe(d):
     for key in d.keys():
         if not 'GA' in d[key].keys():
@@ -901,6 +912,7 @@ def show_summed_STN(d, **k):
 
     
     return fig
+
 def gs_builder(*args, **kwargs):
     import matplotlib.gridspec as gridspec
     n_rows=kwargs.get('n_rows',2)
@@ -1612,10 +1624,10 @@ class Setup(object):
            't_stop':10000.0,
            'labels':['Control', 'Lesion'],
            
-           'fig_and_axes':{'n_rows':8, 
+           'fig_and_axes':{'n_rows':9, 
                             'n_cols':1, 
                             'w':800.0*0.55*2*0.3*scale, 
-                            'h':600.0*0.55*2*0.3*scale, 
+                            'h':700.0*0.55*2*0.3*scale, 
                             'fontsize':7*scale,
                             'title_fontsize':7*scale,
                             'font_size':7*scale,
@@ -1706,9 +1718,11 @@ def simulate(builder=Builder,
                   'spike_statistic':{'t_start':k['start_rec'] + 1000.}}
     
         
-    models = ['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN', 'GP']
+    models = ['M1', 'M2', 'FS', 'GI', 'GF', 'GA', 'ST', 'SN', 'GP']
     models_coher = ['GI_GA', 'GI_GI', 'GA_GA', 'GA_ST', 'GI_ST', 'GP_GP',
-                     'ST_ST', 'GP_ST',]
+                     'ST_ST', 'GP_ST',
+                     'GI_M1', 'GI_M2', 'GA_M1', 'GA_M2',
+                     'GF_M1', 'GF_M2', 'GI_FS', 'GA_FS', 'GF_FS']
     
     info, nets, _ = get_networks(builder, 
                                  setup.builder(), 
@@ -1725,14 +1739,19 @@ def simulate(builder=Builder,
 # pp(nets['Net_1'].par['node']['EA']['rate']
 #pp(nets['Net_0'].par['node']['EI']['rate'])
     
+    
     for key in nets.keys():
-        for mn in ['C1', 'C2', 'CF', 'CS', 'EI', 'EA', 'ES']:
+        for mn in ['C1', 'C2', 'CF', 'CS', 
+                   'EF', 
+                   'EI', 
+                   'EA', 'ES']:
             if len(nets[key].par['node'][mn]['spike_setup'][0]['rates'])>1:
                 r=(nets[key].par['node'][mn]['spike_setup'][0]['rates'][0]
                    +nets[key].par['node'][mn]['spike_setup'][0]['rates'][1])/2
             else:
                 r=nets[key].par['node'][mn]['spike_setup'][0]['rates']
-            print(key, mn, 'rate:',r, 'Hz')
+            print(key, mn, 'rate:',r, 'Hz', 
+                  'oscillation',nets[key].par['node'][mn]['spike_setup'][0]['rates'][0:2])
             
     key=nets.keys()[0]
     file_name = get_file_name(script_name, nets[key].par)
@@ -1771,8 +1790,8 @@ def simulate(builder=Builder,
                                 nets.keys()[0], 'oscillation',
                                 file_name,
                                 **kw)
-            
-            add_GPe(dd)
+            add_GI(dd) #!!!!
+            add_GPe(dd) #!!!!
             save(sd, dd)
 
         elif fd == 1:
@@ -1857,7 +1876,8 @@ def create_figs(file_name_figs, from_disks, d, models, models_coher, setup):
 
 
 
-        for iax, model in zip([0,1, 2, 3, 4, 5, 6, 7], ['M1','M2','FS','GI', 'GA', 'ST','SN','GP']):
+        # add mean firing rate to rate plot
+        for iax, model in zip([0,1, 2, 3, 4, 5, 6, 7, 8], ['M1','M2','FS','GI', 'GF', 'GA', 'ST','SN','GP']):
             y_mean=[]
             for net in ['Net_0', 'Net_1']:
                 st = d[net][model]['spike_statistic']

@@ -47,7 +47,7 @@ num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
-CORES=40*4 if dc()=='milner' else 10
+CORES=40*6 if dc()=='milner' else 10
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
@@ -61,7 +61,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':[3], #range(num_runs), #A run for each perturbation
+        'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
         
         'external_input_mod':[],#['EI','EA'],
@@ -113,6 +113,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(num_sims,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(1,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

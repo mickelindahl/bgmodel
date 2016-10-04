@@ -179,7 +179,7 @@ class Storage_dic2(Base_dic):
      
     def _save_fig(self, fig, extension='', format='svg'):
         
-        with misc.Stopwatch('Saving figure...'):
+        with misc.Stopwatch('Saving figure at {0}...'.format(self.file_name)):
             fig.savefig( self.file_name +extension+'.'+format, 
                          format = format) 
     
@@ -362,7 +362,7 @@ class Storage_dic(Base_dic):
      
     def _save_fig(self, fig, extension='', format='svg'):
         
-        with misc.Stopwatch('Saving figure...'):
+        with misc.Stopwatch('Saving figure at {0}...'.format(self.file_name)):
             fig.savefig( self.file_name +extension+'.'+format, 
                          format = format) 
     
@@ -377,7 +377,7 @@ class Storage_dic(Base_dic):
         if not os.path.isdir(path):
             mkdir(path)
         
-        with misc.Stopwatch('Saving figures...'):
+        with misc.Stopwatch('Saving figure at {0}...'.format(path)):
             for i, fig in enumerate(figs):
                 if not dpi:
                     fig.savefig( path+name +extension+'_'+str(i)+'.'+format, 

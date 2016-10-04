@@ -462,6 +462,7 @@ def main_loop(from_disk, attr, models, sets, nets, kwargs_dic, sd_list, **kwargs
             save(sd, dd)
         
         elif fd == 2:
+            print 'Loading data'
             filt =([net.get_name()] + sets + models + attr 
                    + kwargs.get('attrs_load',[]))
             dd = load(sd, *filt)
@@ -571,6 +572,7 @@ def pert_add_oscillations(**kwargs):
     freq_oscillation=kwargs.get('freq_oscillation')
     external_input_mod=kwargs.get('external_input_mod',[]) 
     input_mod=kwargs.get('input_mod',['C1', 'C2', 'CF', 'CS'])
+    no_mod=kwargs.get('no_mod',[])
     local_num_threads=kwargs.get('local_num_threads')
     null_down=kwargs.get('null_down', False)
     null_down_STN=kwargs.get('null_down_stn', False)
@@ -631,10 +633,14 @@ def pert_add_oscillations(**kwargs):
             if amp0>1.0:
                 pass
             
+            upp=amp[0]
+            
 #             print amp, amp0
             
+            if (key in no_mod): upp, down = 0., 0.
+            
             d = {'type':'oscillation2', 
-                 'params':{'p_amplitude_upp':amp[0]*factor, 
+                 'params':{'p_amplitude_upp':upp*factor, 
                            'p_amplitude_down':down, 
                            'p_amplitude0':amp0, 
                            'freq':freq_oscillation}}
@@ -643,15 +649,15 @@ def pert_add_oscillations(**kwargs):
         
         
         if STN_amp!=1:
-            _l += pl(dd, '=', **{'name':'amp_{0}_{1}_stn_{2}'.format(amp[0], amp[1],
+            _l += pl(dd, '=', **{'name':'amp_{0}_{1}_stn_{2}'.format(upp, amp[1],
                                                                      STN_amp)})
         elif down_vec:
-            _l += pl(dd, '=', **{'name':'amp_{0}_{1}_{2}'.format(amp[0], 
+            _l += pl(dd, '=', **{'name':'amp_{0}_{1}_{2}'.format(upp, 
                                                                  down,
                                                                  amp[1])})
        
         else:
-            _l += pl(dd, '=', **{'name':'amp_{0}_{1}'.format(*[amp[0], amp[1]])})
+            _l += pl(dd, '=', **{'name':'amp_{0}_{1}'.format(*[upp, amp[1]])})
        
         if external_input_mod:
 

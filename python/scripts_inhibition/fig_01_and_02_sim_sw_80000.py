@@ -54,7 +54,7 @@ WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
         'amp_base':amp_base,
-        'amp_base_skip':['CS'],s
+        'amp_base_skip':['CS'],
         
         'Builder':Builder,
         

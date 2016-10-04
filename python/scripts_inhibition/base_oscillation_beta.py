@@ -123,7 +123,7 @@ class Setup(object):
            't_stop':6000.0,
            'labels':['Control', 'Lesion'],
            
-           'fig_and_axes':{'n_rows':8, 
+           'fig_and_axes':{'n_rows':9, 
                             'n_cols':1, 
                             'w':800.0*0.55*2*0.3, 
                             'h':600.0*0.55*2*0.3, 

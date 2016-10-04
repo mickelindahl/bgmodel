@@ -23,12 +23,12 @@ from core import my_socket
 import numpy
 import sys
 import scripts_inhibition.base_oscillation_beta as module
-import fig_01_and_02_pert as op
+import eNeuro_rev_fig_01_and_02_pert as op
 import pprint
 import fig_defaults as fd
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_rev_fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
@@ -36,8 +36,8 @@ LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2
 
 amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.5 ] #[ 0.2, 0.3, 0.4, 0.5] #numpy.arange(0.5, .8, 0.2)
-ops=[op.get()[fd.idx_beta]]
+freqs=[ 0.5 ] #numpy.arange(0.5, .8, 0.2)
+ops=op.get()['beta']
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
@@ -47,7 +47,7 @@ num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
-CORES=40*4 if dc()=='milner' else 10
+CORES=40 if dc()=='milner' else 10
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
@@ -74,7 +74,7 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig1_2_beta',
+        'job_name':'eN_f1_2_beta',
         
         'l_hours':  ['01','01','00'],
         'l_minutes':['00','00','05'],
@@ -84,6 +84,8 @@ kwargs={
         
         'module':module,
         
+        
+        'no_mod':['C1', 'C2', 'CF'],
         'nets':['Net_0','Net_1'], #The nets for each run
         'nets_to_run':['Net_0','Net_1'],
         'no_oscillations_control':True,
@@ -113,6 +115,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(num_sims,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(5,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

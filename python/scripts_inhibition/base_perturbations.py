@@ -57,7 +57,9 @@ def get_solution():
     # 12 Hz TA firing rate are created.  
     d={'nest':{'ST_GA_ampa':{'weight':0.25},
                'GA_GA_gaba':{'weight':0.25},
-               'GI_GA_gaba':{'weight':0.25}}}
+               'GI_GA_gaba':{'weight':0.25},
+               'GF_GA_gaba':{'weight':0.25},
+               }}
     misc.dict_update(solution, {'mul':d})    
     
     d={'node':{'EA':{'rate':200.0}}}
@@ -71,7 +73,10 @@ def get_solution():
            
     # Set such that GPe TI fires in accordance with slow wave sleep
     # in dopamine depleted rats.
-    d={'node':{'EI':{'rate':1400.0}}} # Increase with 340, to get close to 24 Hz sw dopamine depleted rats TI
+    d={'node':{
+               'EI':{'rate':1400.0}, # Increase with 340, to get close to 24 Hz sw dopamine depleted rats TI
+               'EF':{'rate':1400.0}, # Increase with 340, to get close to 24 Hz sw dopamine depleted rats TI
+               }}
     misc.dict_update(solution,{'equal':d})           
     
     # Decrease weight since tau decay is 5 times stronger
@@ -104,13 +109,20 @@ def get_solution():
     misc.dict_update(solution,{'equal':{'nest':{'C2_M2_nmda':{'delay':y}}}})            
     misc.dict_update(solution,{'equal':{'nest':{'CF_FS_ampa':{'delay':y}}}})     
     
+    
     # Dopamine effect on MS-GI
-    d={'equal':{'nest':{'GI':{'beta_I_GABAA_1': f_beta_rm(2)}}}}
+    d={'equal':{'nest':{
+                        'GI':{'beta_I_GABAA_1': f_beta_rm(2)},
+                        'GF':{'beta_I_GABAA_1': f_beta_rm(2)},
+                        }}}
     misc.dict_update(solution,d)
     
     # GI predominently connect to to GA 
-    d={'conn': {'GA_GA_gaba':{'fan_in0': 5}, 
-                'GI_GA_gaba':{'fan_in0': 25 }}}
+#     d={'equal':{'conn': {
+#                         'GA_GA_gaba':{'fan_in0': 5}, 
+#                         'GI_GA_gaba':{'fan_in0': round(25*0.9) },
+#                         'GF_GA_gaba':{'fan_in0': 25-round(25*0.9) },
+#                         }}]
     
     misc.dict_update(solution,d) 
     

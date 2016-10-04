@@ -32,10 +32,16 @@ def STN_ampa_gaba_input_magnitude():
     
     return l
 
-def get():
+def get(flag='perturbations'):
     
     l=[]
+    ld=[]
     solution=get_solution()
+#     
+#     for s in solution:
+#         print s
+
+#     pp(solution)
 
     rEI=1700.0
     rEA=200.0
@@ -44,11 +50,14 @@ def get():
     rM2=740.0
     
     d={}
+    ld.append({'mul':d})
     misc.dict_update(d, solution['mul'])
     l+=[pl(d, '*', **{'name':''})]
       
     d={}
+    ld[-1].update({'equal':d})
     misc.dict_update(d, solution['equal']) 
+    d['node']['EF']['rate']=rEI 
     d['node']['EI']['rate']=rEI
     d['node']['EA']['rate']=rEA
     d['node']['C2']['rate']=rM2
@@ -58,6 +67,7 @@ def get():
     s='rEI_{0}_rEA_{1}_rCS_{2}_rES_{3}_rM2_{4}'.format( rEI, rEA, rCS, rES, rM2 )
     
     l[-1]+=pl(d, '=', **{'name':s})   
+
 
     rEI=800.0
     rEA=100.0
@@ -68,9 +78,12 @@ def get():
     d={}
     misc.dict_update(d, solution['mul'])
     l+=[pl(d, '*', **{'name':''})]
+    ld.append({'mul':d})
+      
       
     d={}
     misc.dict_update(d, solution['equal']) 
+    d['node']['EF']['rate']=rEI 
     d['node']['EI']['rate']=rEI
     d['node']['EA']['rate']=rEA
     d['node']['C2']['rate']=rM2
@@ -79,9 +92,12 @@ def get():
     misc.dict_update(d, {'node':{'ES':{'rate':rES}}}) 
     s='rEI_{0}_rEA_{1}_rCS_{2}_rES_{3}_rM2_{4}'.format( rEI, rEA, rCS, rES, rM2 )
     l[-1]+=pl(d, '=', **{'name':s})   
+    ld[-1].update({'equal':d})
+    
 
-    return l
+    if flag=='perturbations': return l
+    if flag=='dictionary': return ld
 
-l=get()
-for i, p in enumerate(l):
-    print i, p
+# l=get()
+# for i, p in enumerate(l):
+#     print i, p

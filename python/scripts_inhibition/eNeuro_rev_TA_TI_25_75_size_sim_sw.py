@@ -8,46 +8,46 @@ Created on Aug 12, 2013
 from core import monkey_patch as mp
 mp.patch_for_milner()
 
-from scripts_inhibition import config
 from scripts_inhibition.base_simulate import (get_path_rate_runs,
                       get_args_list_oscillation,
-                      get_kwargs_list_indv_nets,
+                      get_kwargs_list_indv_nets, 
                       pert_add_oscillations) 
 
-from core.network.manager import Builder_beta as Builder
+# from core.network import default_params
+from core.network.manager import Builder_slow_wave2 as Builder
 from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
-
+from scripts_inhibition import config
+import fig_defaults as fd
 import numpy
 import sys
-import scripts_inhibition.base_oscillation_beta as module
-import fig_01_and_02_pert as op
+import scripts_inhibition.base_oscillation_sw as module
+import eNeuro_rev_TA_TI_25_75_size_pert as op
 import pprint
-import fig_defaults as fd
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_rev_TA_TI_25_75_size_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.5 ] #[ 0.2, 0.3, 0.4, 0.5] #numpy.arange(0.5, .8, 0.2)
-ops=[op.get()[fd.idx_beta]]
+amp_base=[fd.amp_sw] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[ 0.5] #numpy.arange(0.5, .8, 0.2)
+ops=op.get()['sw']
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
 freqs=list(freqs)*n
-STN_amp_mod=[fd.STN_amp_mod_beta]#range(1, 6, 2)
+STN_amp_mod=[fd.STN_amp_mod_sw]#range(1, 6, 2)
 num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
-CORES=40*4 if dc()=='milner' else 10
+CORES=40 if dc()=='milner' else 10
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
@@ -64,20 +64,20 @@ kwargs={
         'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
         
-        'external_input_mod':[],#['EI','EA'],
+        'external_input_mod':[],
         
         'file_name':FILE_NAME,
         'freqs':freqs,
-        'freq_oscillation':20.,
+        'freq_oscillation':1.,
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig1_2_beta',
+        'job_name':'fig1_2_sw',
         
-        'l_hours':  ['01','01','00'],
-        'l_minutes':['00','00','05'],
+        'l_hours':  ['00','01','00'],
+        'l_minutes':['45','00','05'],
         'l_seconds':['00','00','00'],
 
         'local_num_threads':LOCAL_NUM_THREADS,
@@ -86,7 +86,6 @@ kwargs={
         
         'nets':['Net_0','Net_1'], #The nets for each run
         'nets_to_run':['Net_0','Net_1'],
-        'no_oscillations_control':True,
         
         'path_rate_runs':path_rate_runs,
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
@@ -100,7 +99,6 @@ kwargs={
         
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
         }
-
 
 p_list = pert_add_oscillations(**kwargs)
 
