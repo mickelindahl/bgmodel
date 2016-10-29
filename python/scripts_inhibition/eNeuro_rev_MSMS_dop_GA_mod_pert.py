@@ -40,6 +40,8 @@ def get():
             d=misc.dict_update(p['mul'], d) 
             l[i]+=[pl(d, '*', **{'name':''})]
              
+             
+             
             # Dopamine effect on GA-MS
             d={'nest':{
                         'M1_low':{'beta_I_GABAA_2': f_beta_rm(x),
@@ -64,7 +66,7 @@ def get():
          
             d=misc.dict_update(p['equal'], d) 
      
-            s='MSMS_{0}_dop_{1}'.format(x,  labels[i] )
+            s='GAf_{0}_dop_{1}'.format(f,  labels[i] )
              
             l[i][-1]+=pl(d, '=', **{'name':s})   
             

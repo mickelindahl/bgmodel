@@ -36,7 +36,7 @@ LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2
 
 amp_base=[fd.amp_sw] #numpy.arange(1.05, 1.2, 0.05)
-freqs = numpy.arange(0.5, 3.5, 0.5)
+freqs = [0.5] # numpy.arange(0.5, 3.5, 0.5)
 ops=op.get()['sw']
 n=len(amp_base)
 m=len(freqs)
@@ -72,8 +72,8 @@ kwargs={
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
-        'no_mod':['C1', 'CF', 'CS'],
-        
+        'input_mod':['C1', 'CF', 'CS', 'C2'], #C2 last to get  freq file script name
+
         'job_admin':JOB_ADMIN, #user defined class
         'job_name':'TATIFS_sw',
         

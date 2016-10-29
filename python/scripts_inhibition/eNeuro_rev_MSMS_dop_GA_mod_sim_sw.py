@@ -35,8 +35,8 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[fd.amp_sw] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.5 ] #numpy.arange(0.5, .8, 0.2)
+amp_base=numpy.arange(fd.amp_sw, 1.05, 0.05) #[fd.amp_beta] #
+freqs=numpy.arange(0.5, .8, 0.1)
 ops=op.get()['sw']
 n=len(amp_base)
 m=len(freqs)
@@ -60,9 +60,9 @@ kwargs={
         
         'cores':CORES,
         
-        'debug':True,
+        'debug':False,
         'do_runs':range(num_runs), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
         
         'external_input_mod':[],
         
@@ -74,7 +74,7 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig1_2_sw',
+        'job_name':'eN_GAr_sw',
         
         'l_hours':  ['02','01','00'],
         'l_minutes':['00','00','05'],
@@ -111,6 +111,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(num_sims,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

@@ -467,8 +467,11 @@ class Data_firing_rate_base(object):
             y=self.y
             bins=kwargs.get('bins', 14)
             p=kwargs.get('period', 100.0)
-            y_mean, y_std, x = get_activity_historgram(y, bins, p)
-            d = {'y':y_mean, 'y_std':y_std, 'x':x}
+            y_mean, y_std, x, y_raw = get_activity_historgram(y, bins, p)
+            d = {'y':y_mean, 
+                 'y_std':y_std, 
+                 'x':x, 
+                 'y_raw':y_raw}
         else:
             
             y=self.y_raw
@@ -566,7 +569,7 @@ def get_activity_historgram(y, bins, p):
     y_std = scipy.stats.nanstd(y, axis=1)
     x = numpy.linspace(0, p, bins)
 
-    return y_mean, y_std, x
+    return y_mean, y_std, x, y
 
 
 class Data_fmin_base(object):

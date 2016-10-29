@@ -107,7 +107,9 @@ models=['M1', 'M2', 'FS', 'GA', 'GF', 'GI', 'GP', 'ST','SN',
 
 nets=['Net_0', 'Net_1']
 attrs=[
+#        'spike_signal',
         'firing_rate', 
+#         'mean_rate',
 #         'mean_coherence', 
        'phases_diff_with_cohere',
 #         'psd'
@@ -187,8 +189,28 @@ for key in sorted(d['data'].keys()):
     if not 'Net_0' in d['data'][key].keys():
         continue
     
-    v=d['data'][key]['Net_0']['GI_FS']['phases_diff_with_cohere']
+    fr=d['data'][key]['Net_0']['FS']['firing_rates']
+    fr.x=fr.x[64:]
+    fr.y=fr.y[64:]
+    
+    ah=fr.get_activity_histogram(**{'period':256,'bins':32})
+    ah.plot(pylab.subplot(121))
+    
+    fr=d['data'][key]['Net_0']['GI']['firing_rates']
+    fr.x=fr.x[64:]
+    fr.y=fr.y[64:]
+    
+    ah=fr.get_activity_histogram(**{'period':256,'bins':32})
+    ah.plot(pylab.subplot(122))
+    
+    pylab.show()
+    v=ah.x
+    
+
+#     v=d['data'][key]['Net_0']['GI_FS']['phases_diff_with_cohere']
+
     l.append(v)
+    
 l=l[organize['TATIFS']]
 pp(l)
 colors=misc.make_N_colors('copper', len(l))
@@ -202,6 +224,7 @@ for i, trace in enumerate(l):
     x=numpy.linspace(-numpy.pi*3,numpy.pi*3,len(trace))
     norm=sum(trace)*(x[-1]-x[0])/len(x)
     ax.plot(x, trace/norm, color=colors[i])
+
 ax.set_xlim([-numpy.pi,numpy.pi])
   
  

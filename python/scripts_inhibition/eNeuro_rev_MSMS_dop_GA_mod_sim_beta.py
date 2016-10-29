@@ -36,7 +36,7 @@ LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2
 
 amp_base=numpy.arange(fd.amp_beta, 1.2, 0.05) #[fd.amp_beta] #
-freqs=[ 0.5 ] #numpy.arange(0.5, .8, 0.2)
+freqs=numpy.arange(0.5, .8, 0.1)
 ops=op.get()['beta']
 n=len(amp_base)
 m=len(freqs)
@@ -74,10 +74,10 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'eN_TAMSd',
+        'job_name':'eN_GAr_beta',
         
         'l_hours':  ['01','01','00'],
-        'l_minutes':['00','00','05'],
+        'l_minutes':['30','00','05'],
         'l_seconds':['00','00','00'],
 
         'local_num_threads':LOCAL_NUM_THREADS,

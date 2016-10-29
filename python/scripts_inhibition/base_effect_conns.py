@@ -14,7 +14,7 @@ import core.plot_settings as ps
 
 from matplotlib import ticker
 from matplotlib.font_manager import FontProperties
-from core.my_signals import Data_bar
+from core.my_signals import Data_bar, Data_firing_rate
 from core import misc
 from core.data_to_disk import Storage_dic, text_save
 from core.network.manager import get_storage, save
@@ -106,7 +106,10 @@ def extract_data(d, nets, models, attrs, **kwargs):
                   [val.y, v_max]]        
             
         if keys[-1]=='firing_rate':
+            y0=val.y
+            x0=val.x
             val.y=val.y[100:] #remove transient artifacts at start of sim
+            val.x=val.x[100:]
             std=numpy.std(val.y)
             v=numpy.mean(val.y)
             
@@ -181,10 +184,11 @@ def extract_data(d, nets, models, attrs, **kwargs):
 
             args=[[keys, keys[0:-1]+['synchrony_index'],
                    keys[0:-1]+['oscillation_index'],
-                  keys[0:-1]+['psd2']],
+                  keys[0:-1]+['psd2'],
+                  keys[0:-1]+['firing_rates']],
                   [v, synchrony_index,
                    oscillation_index,
-                   psd]]
+                   psd, Data_firing_rate(**{'x':x0,'y': y0})]]
         
         if keys[-1]=='psd':
             psd=val
@@ -267,7 +271,7 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                     s,t,_,x=run_key_list
                     x=float(x)
                     name=s+'_'+t
-                elif len(run_key_list)==3:
+                elif run_key_list:
                     name,_,mod=run_key_list
 #                     print mod
                     if not mod.isdigit() and not mod[0:3]=='mod':
@@ -282,7 +286,8 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 elif len(run_key_list)==1:
                     name=run_key_list[0]
                     x=0
-#                 print name 
+                    
+                print run_key_list 
                 keys1=[run, 'Net_0', model, attr]
                 keys2=[run, 'Net_1', model, attr]
                 keys3=['control',name, model, attr]

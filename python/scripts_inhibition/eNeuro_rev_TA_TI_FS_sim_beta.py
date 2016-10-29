@@ -36,7 +36,7 @@ LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2
 
 amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
-freqs=numpy.arange(0.5, 3.5, 0.5) #[ 0.5 ] #numpy.arange(0.5, .8, 0.2)
+freqs=[0.5] #numpy.arange(0.5, 3.5, 0.5) #[ 0.5 ] #numpy.arange(0.5, .8, 0.2)
 ops=op.get()['beta']
 n=len(amp_base)
 m=len(freqs)
@@ -72,7 +72,6 @@ kwargs={
         'from_disk_0':FROM_DISK_0,
         
         'i0':FROM_DISK_0,
-        'no_mod':['C1', 'CF', 'CS'],
         
         'job_admin':JOB_ADMIN, #user defined class
         'job_name':'TATIFS_beta',
