@@ -23,12 +23,12 @@ from core import my_socket
 import numpy
 import sys
 import scripts_inhibition.base_oscillation_beta as module
-import fig_01_and_02_pert as op
+import eNeuro_fig_01_and_02_pert as op
 import pprint
 import fig_defaults as fd
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
@@ -36,8 +36,9 @@ LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2
 
 amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.5 ] #[ 0.2, 0.3, 0.4, 0.5] #numpy.arange(0.5, .8, 0.2)
+freqs=[ fd.freq_beta]  #[ 0.2, 0.3, 0.4, 0.5] #numpy.arange(0.5, .8, 0.2)
 ops=[op.get()[fd.idx_beta]]
+#ops=op.get()['beta']
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
@@ -74,7 +75,7 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig1_2_beta',
+        'job_name':'eNf1_2_beta',
         
         'l_hours':  ['01','01','00'],
         'l_minutes':['00','00','05'],
@@ -92,7 +93,7 @@ kwargs={
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
                 
-        'sim_time':40000.0,
+        'sim_time':10000.0,
         'size':20000.0 ,
         'STN_amp_mod':STN_amp_mod,
         

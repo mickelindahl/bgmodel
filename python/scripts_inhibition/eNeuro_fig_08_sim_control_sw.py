@@ -22,15 +22,15 @@ from core import my_socket
 
 
 import fig_defaults as fd
-import fig_01_and_02_pert as op
-import fig_08_pert_control as op_control
+import eNeuro_fig_01_and_02_pert as op
+import eNeuro_fig_08_pert_control as op_control
 import numpy
 import sys
 import scripts_inhibition.base_oscillation_sw as module
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
@@ -77,7 +77,7 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig08_sw',
+        'job_name':'eNf08_sw',
         
         'l_hours':  ['00','01','00'],
         'l_minutes':['45','00','05'],

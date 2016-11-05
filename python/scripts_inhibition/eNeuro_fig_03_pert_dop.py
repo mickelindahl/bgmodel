@@ -112,11 +112,25 @@ def get_change_to(flag, E_rev='low'):
 
     #16 *
     if flag=='FS':
-        d={'nest':{'FS':{'beta_E_L':x,
+        d={'nest':{'FS_low':{'beta_E_L':x,
                          }}}
         
 
-    
+    #17 *
+    if flag=='GA_MS':
+        d={'nest':{'M1_low':{'beta_I_GABAA_3':x},
+                   'M2_low':{'beta_I_GABAA_3':x}}}
+
+
+    #18 *
+    if flag=='GA_FS':
+        d={'nest':{'FS_low':{'beta_I_GABAA_2':x}}}
+
+
+    #19 *
+    if flag=='GI_FS':
+        d={'nest':{'FS_low':{'beta_I_GABAA_3':x}}}    
+        
     return d
     
 def get():
@@ -125,7 +139,8 @@ def get():
     
     d={}
     for name in ['M1', 'CTX_M1', 'CTX_M2', 'MS_MS', 'FS_FS', 
-                 'GP_FS', 'FS_M2', 'M2_GI', 'FS']:
+                 'GP_FS', 'FS_M2', 'M2_GI', 'FS', 
+                 'GA_MS', 'GA_FS', 'GI_FS']:
 
         d=misc.dict_update(d, get_change_to(name))
         
@@ -143,7 +158,8 @@ def get():
     for name in ['M1', 'CTX_M1', 'CTX_M2', 'MS_MS', 'FS_FS', 
                  'GP_FS', 'FS_M2', 'CTX_ST', 'GP_ST', 'GP',
                  'ST_GP', 'GP_GP', 'SN', 'M1_SN',
-                     'M2_GI', 'FS']:
+                     'M2_GI', 'FS', 
+                 'GA_MS', 'GA_FS', 'GI_FS']:
         d=misc.dict_update(d, get_change_to(name))
         pp(d)
         
@@ -152,7 +168,8 @@ def get():
     for s in [ 'CTX_M1', 'CTX_M2', 'MS_MS', 'FS_FS', 
               'GP_FS', 'FS_M2', 'CTX_ST', 'GP_ST', 'GP',
               'ST_GP', 'GP_GP', 'SN', 'M1_SN', 'M2_GI',
-              'FS','M1']:
+              'FS','M1', 
+              'GA_MS', 'GA_FS', 'GI_FS']:
         d={}
         for name in [s]:
             d=misc.dict_update(d, get_change_to(name))

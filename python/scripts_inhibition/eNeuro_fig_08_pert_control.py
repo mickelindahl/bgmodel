@@ -46,7 +46,7 @@ def get():
     l[-1]+=pl(d, '=', **{'name':'control_sim'}) 
     
     # Decreasing delay TA-striatum increases oscillations in MSN and FSN
-    for y in [12]+ list(numpy.arange(5,55,5)):
+    for y in [12]+ list(numpy.arange(5,105,10)):
 
         d={}
         misc.dict_update(d, solution['mul'])
@@ -57,13 +57,13 @@ def get():
         
         ratio=12./y
         
-        dd={'nest':{'GA_M1_gaba':{'weight':0.8*ratio}, 
-                   'GA_M2_gaba':{'weight':0.8*ratio}}}
+        dd={'nest':{'GA_M1_gaba':{'weight':0.2*ratio}, 
+                    'GA_M2_gaba':{'weight':0.4*ratio}}}
         misc.dict_update(d,dd)            
          
         # Decreasing from 2 leads to ...
         # Increasing from 2 leads to ... 
-        dd={'nest':{'GA_FS_gaba':{'weight':2.*ratio}}}
+        dd={'nest':{'GA_FS_gaba':{'weight':.4*ratio}}}
         misc.dict_update(d,dd)           
         
         # Just assumed to be 12 ms    

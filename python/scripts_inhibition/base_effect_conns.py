@@ -188,7 +188,9 @@ def extract_data(d, nets, models, attrs, **kwargs):
                   keys[0:-1]+['firing_rates']],
                   [v, synchrony_index,
                    oscillation_index,
-                   psd, Data_firing_rate(**{'x':x0,'y': y0})]]
+                   psd, 
+#                    Data_firing_rate(**{'x':x0,'y': y0})
+                   ]]
         
         if keys[-1]=='psd':
             psd=val
@@ -271,7 +273,8 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                     s,t,_,x=run_key_list
                     x=float(x)
                     name=s+'_'+t
-                elif run_key_list:
+                elif len(run_key_list)==3:
+		    #pp(run_key_list)	
                     name,_,mod=run_key_list
 #                     print mod
                     if not mod.isdigit() and not mod[0:3]=='mod':
@@ -307,8 +310,10 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 try:
                     v2=misc.dict_recursive_get(d, keys2)               
                 except:
-                    print keys2
+                    print str(keys2) + 'Missing!!!!'
+#                    continue
                     pp(misc.dict_recursive_get(d, keys2[:3]))
+                    
                     raise
                 
 
@@ -650,6 +655,9 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
     if flag=='gradient':
         data_keys=['z']
     
+
+    #pp(d)
+    #raise
     for k in kwargs.get('key_sort', sorted)(d.keys()):
         if k in exclude:
             continue        
@@ -963,10 +971,14 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     ax=axs[0]
     
 
-
+    pp(d3)
     bol=[l=='no_pert' for l in d3['labelsx_meta']]    
     y=[]    
     for i, _ in enumerate(d0['labelsy']):
+
+	pp(d1['y'])
+	pp(i)
+	pp(bol)
         val=d1['y'][i, numpy.array(bol)][0][0]
         y.append(val)
 #         y[1].append(d1['y'][i, numpy.array(bol)][0])
@@ -1009,7 +1021,7 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     kw['nice_labels_y']=nice_labels(version=0)
     kw['cmap']='coolwarm'
     kw['color_line']='k'
-    kw['csv_path']=k.get('data_path')
+    kw['csv_path']=k.get('data_path')+'syncrony.csv'
     _plot_conn(**kw)
     
     box = ax.get_position()
@@ -1066,6 +1078,7 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     
     v=numpy.array(v)
     kw['ax']=ax
+    kw['csv_path']=k.get('data_path')+'oscillation.csv'
     kw['d']={'z':v,
             'labelsx_meta':[e for i, e in 
                             enumerate(d2['labelsx_meta']) if bol[i]],
@@ -2021,7 +2034,7 @@ def main(**kwargs):
 
     save_figures(figs, script_name, dpi=200)
 
-    pylab.show()        
+#    pylab.show()        
     
 
 #     pp(d)

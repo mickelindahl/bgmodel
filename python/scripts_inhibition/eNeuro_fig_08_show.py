@@ -454,7 +454,7 @@ cbar.ax.tick_params( length=1, )
 cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
 
  
-ax.text(1.55,  0.5, r'$r_{CTX\to STN}$, $g_{GPe\to STN}$', 
+ax.text(1.55,  0.5, r'$v^{CTX\to STN}$, $g_{gaba}^{GPe_{TI}\to STN}$', 
         transform=ax.transAxes, va='center', rotation=270) 
 
 ax.set_xlabel(r'Angle (rad)')
@@ -529,7 +529,7 @@ cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
 cbar.ax.tick_params( length=1, )
 cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
 
-ax.text(1.35,  0.5, r'$Fan_{in}^{TA,TI\to TA}$ (#)', 
+ax.text(1.35,  0.5, r'$Fan_{in}^{[TA,TI]\to TA}$ (#)', 
         transform=ax.transAxes, va='center', rotation=270) 
 
 ax.set_xlabel(r'Angle (rad)')

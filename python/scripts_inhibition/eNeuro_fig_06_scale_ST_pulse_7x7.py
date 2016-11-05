@@ -19,13 +19,13 @@ from core import directories as dr
 from core import my_socket
 
 import fig_defaults as fd
-import fig_01_and_02_pert as op
+import eNeuro_fig_01_and_02_pert as op
 import scripts_inhibition.base_Go_NoGo_compete as module
 import sys
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
 ops=[op.get()[fd.idx_beta]] #0 is beta
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
@@ -136,5 +136,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(8, [num_sims, num_sims, NUM_RUNS], a_list, k_list )
+loop(4, [num_sims, num_sims, NUM_RUNS], a_list, k_list )
         

@@ -711,6 +711,8 @@ def _text_save(data, fileName):
     try:
         f=open(fileName, 'wb') #open in binary mode
     except:
+        import sys
+        print "Unexpected error:", sys.exc_info()[0], fileName
         parts=fileName.split('/')
         os.mkdir('/'.join(parts[0:-1]))    
         f=open(fileName, 'wb') 

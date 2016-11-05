@@ -19,7 +19,7 @@ from core import my_socket
 
 import config
 import scripts_inhibition.base_MSN_cluster_compete as module
-import fig_01_and_02_pert as op
+import eNeuro_fig_01_and_02_pert as op
 import pprint
 import sys
 pp=pprint.pprint
@@ -91,6 +91,6 @@ for obj in a_list:
     print obj.kwargs['setup'].nets_to_run
 
 
-loop(10, [num_sims, num_sims,NUM_RUNS], a_list, k_list )
+loop(5, [num_sims, num_sims,NUM_RUNS], a_list, k_list )
 
       

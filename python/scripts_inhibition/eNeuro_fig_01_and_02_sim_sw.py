@@ -24,11 +24,11 @@ import fig_defaults as fd
 import numpy
 import sys
 import scripts_inhibition.base_oscillation_sw as module
-import fig_01_and_02_pert as op
+import eNeuro_fig_01_and_02_pert as op
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
@@ -36,7 +36,8 @@ LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2
 
 amp_base=[fd.amp_sw] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.4, 0.5, 0.6, 0.7] #numpy.arange(0.5, .8, 0.2)
+freqs=[ fd.freq_sw ] #numpy.arange(0.5, .8, 0.2)
+#ops=op.get()['sw']
 ops=[op.get()[fd.idx_sw]]
 n=len(amp_base)
 m=len(freqs)
@@ -47,7 +48,7 @@ num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 10
+CORES=40*4 if dc()=='milner' else 10
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
@@ -60,9 +61,9 @@ kwargs={
         
         'cores':CORES,
         
-        'debug':True,
+        'debug':False,
         'do_runs':range(num_runs), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
         
         'external_input_mod':[],
         
@@ -74,7 +75,7 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig1_2_sw',
+        'job_name':'eNf1_2_sw',
         
         'l_hours':  ['00','01','00'],
         'l_minutes':['45','00','05'],

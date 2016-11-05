@@ -20,7 +20,7 @@ from core import my_socket
 
 
 import fig_defaults as fd
-import fig_01_and_02_pert as op
+import eNeuro_fig_01_and_02_pert as op
 import scripts_inhibition.base_Go_NoGo_compete as module
 import sys
 import pprint
@@ -28,7 +28,7 @@ pp=pprint.pprint
 
 from copy import deepcopy
 
-path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
 ops=[op.get()[fd.idx_beta]] #0 is beta
 
 FILE_NAME=__file__.split('/')[-1][0:-3]

@@ -21,14 +21,14 @@ from core import directories as dr
 from core import my_socket
 
 import fig_defaults as fd
-import fig_01_and_02_pert as op
-import fig_03_pert_dop as op_dop
+import eNeuro_fig_01_and_02_pert as op
+import eNeuro_fig_03_pert_dop as op_dop
 import sys
 import scripts_inhibition.base_oscillation_beta as module
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
@@ -70,9 +70,9 @@ kwargs={
         'i0':FROM_DISK_0,
  
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig3',
+        'job_name':'eNf3',
         
-        'l_hours':  ['02','04','00'],
+        'l_hours':  ['01','02','00'],
         'l_minutes':['00','00','20'],
         'l_seconds':['00','00','00'],
 
@@ -90,7 +90,7 @@ kwargs={
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
         
-        'sim_time':100000.0,
+        'sim_time':40000.0,
         'size':20000.0 ,
         
         'STN_amp_mod':STN_amp_mod,
@@ -108,6 +108,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(15,[num_sims, num_sims, num_sims/2], a_list, k_list )
+loop(num_sims,[num_sims, num_sims, num_sims/2], a_list, k_list )
 
         

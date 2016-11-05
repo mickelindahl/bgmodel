@@ -2132,6 +2132,9 @@ class InhibitionPar_base(object):
         dic['netw']['GF_prop']=0.08 # <= 0.1*0.8 10 % of TI cells project to striatum
 #         dic['netw']['GN_prop']=0.9
         
+        dic['netw']['MS_prop']=0.475
+        dic['netw']['FS_prop']=0.02
+        
         d={'type':'constant', 'params':{}}
         dic['netw']['input']={}
         for key in ['C1', 'C2', 'CF', 'CS','EA', 
@@ -2141,9 +2144,9 @@ class InhibitionPar_base(object):
         
         dic['netw']['n_actions']=1
            
-        dic['netw']['n_nuclei']={'M1':2791000*0.425,
-                                 'M2':2791000*0.425,
-                                 'FS':2791000* 0.02, # 2 % if MSN population
+        dic['netw']['n_nuclei']={'M1':2791000*GetNetw('MS_prop'),
+                                 'M2':2791000*GetNetw('MS_prop'),
+                                 'FS':2791000*GetNetw('FS_prop'), # 2 % if MSN population
                                  'ST': 13560.,
                                  'GF': 45960.*GetNetw('GF_prop'),
                                  'GI': 45960.*GetNetw('GI_prop'),

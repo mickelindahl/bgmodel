@@ -160,14 +160,40 @@ def get_solution_eNeuro_rev():
                'GF_GA_gaba':{'weight':0.25},
                }}
     misc.dict_update(solution, {'mul':d})    
-    
+
+    # EA rate	    
     d={'node':{'EA':{'rate':200.0}}}
-    misc.dict_update(solution,{'equal':d})              
+    misc.dict_update(solution,{'equal':d})
+    
+
+    
+    
+    # Lower GA IF curve.
+    d={'nest':{'GA':{
+                      'b':1.5,
+                      'C_m':1.5,
+                      'Delta_T':1.5
+                      }}}
+    misc.dict_update(solution,{'mul':d}) 
+    
+    # CF rate 
+    d={'node':{'CF':{'rate':950.0}}}
+    misc.dict_update(solution,{'equal':d})  
+    
+    
+    d={'netw':{
+               'GA_prop':0.25,
+               'GI_prop':0.675, #<=0.9*0.75
+               'GF_prop':0.075,     
+               }}
+    misc.dict_update(solution,{'equal':d})  
+    
     
     # C1 and C2 have been set such that MSN D1 and MSN D2 fires at 
     # low firing rates (0.1-0,2 Hz). 
     d={'node':{'C1':{'rate':560.0},
-               'C2':{'rate':700.}}}
+               'C2':{'rate':700.}
+               }}
     misc.dict_update(solution,{'equal':d})              
            
     # Set such that GPe TI fires in accordance with slow wave sleep
@@ -179,20 +205,48 @@ def get_solution_eNeuro_rev():
     misc.dict_update(solution,{'equal':d})           
     
     # Decrease weight since tau decay is 5 times stronger
-    d={'nest':{'GA_M1_gaba':{'weight':0.8/5}, 
-               'GA_M2_gaba':{'weight':0.8/5}}}
+    d={'nest':{'GA_M1_gaba':{'weight':0.02}, 
+               'GA_M2_gaba':{'weight':0.04}}}
     misc.dict_update(solution,{'equal':d})            
      
-    # Decrease weight since tau decay is 5 times stronger
-    d={'nest':{'GA_FS_gaba':{'weight':2./5}}}
-    misc.dict_update(solution,{'equal':d})           
-    
-    # Just assumed to be 12*5 ms    
-    d={'nest':{'M1_low':{'GABAA_3_Tau_decay':12.*5},  
-               'M2_low':{'GABAA_3_Tau_decay':12.*5},
-               'FS_low':{'GABAA_2_Tau_decay':12.*5},     
+    # GF connects stronger to GA. This accounts for Gage 2010 data.
+    d={'nest':{'GA_FS_gaba':{'weight':0.4},
+               'GF_FS_gaba':{'weight':0.6}}}
+    misc.dict_update(solution,{'mul':d})    
+       
+
+    # Long time constant from TA    
+    d={'nest':{'M1_low':{'GABAA_3_Tau_decay':87.},  
+               'M2_low':{'GABAA_3_Tau_decay':76.},
+               'FS_low':{'GABAA_2_Tau_decay':66.},     
                }}
     misc.dict_update(solution,{'equal':d})           
+
+    # Dopamine effect on TA and TI to striatum
+    d={'nest':{
+               'M1_low':{'beta_I_GABAA_3': f_beta_rm(2.6),
+                         'beta_I_GABAA_2': f_beta_rm(0.25)},
+               'M2_low':{'beta_I_GABAA_3': f_beta_rm(2.5),
+                         'beta_I_GABAA_2': f_beta_rm(0.25)},
+               'FS_low':{'beta_I_GABAA_2': f_beta_rm(1.6)},
+              },
+        'conn':{'M1_M1_gaba':{'beta_fan_in': f_beta_rm(0.25)},
+                'M1_M2_gaba':{'beta_fan_in': f_beta_rm(0.25)},
+                'M2_M1_gaba':{'beta_fan_in': f_beta_rm(0.25)},
+                'M2_M2_gaba':{'beta_fan_in': f_beta_rm(0.25)}
+               }}    
+    misc.dict_update(solution,{'equal':d})
+    
+    
+
+
+    # Weight TA M1/M2 1/2 
+   # d={'nest':{
+   #             'GA_M1_gaba':{'weight':0.01},
+   #             'GA_M2_gaba':{'weight':0.01*2},
+   #            }}
+
+    misc.dict_update(solution,{'equal':d})
 
     #Dopamine such that STN increase above 50-100 %    
     x=2.5
@@ -216,6 +270,12 @@ def get_solution_eNeuro_rev():
                         }}}
     misc.dict_update(solution,d)
     
+
+    # Activate GF to FS connection
+    d={ 'conn':{'GF_FS_gaba':{'lesion':False}}}
+
+    misc.dict_update(solution,{'equal':d})
+
     # GI predominently connect to to GA 
 #     d={'equal':{'conn': {
 #                         'GA_GA_gaba':{'fan_in0': 5}, 
