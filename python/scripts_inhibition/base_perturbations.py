@@ -205,14 +205,14 @@ def get_solution_eNeuro_rev():
     misc.dict_update(solution,{'equal':d})           
     
     # Decrease weight since tau decay is 5 times stronger
-    d={'nest':{'GA_M1_gaba':{'weight':0.02}, 
-               'GA_M2_gaba':{'weight':0.04}}}
+    d={'nest':{'GA_M1_gaba':{'weight':0.04}, 
+               'GA_M2_gaba':{'weight':0.08}}}
     misc.dict_update(solution,{'equal':d})            
      
     # GF connects stronger to GA. This accounts for Gage 2010 data.
-    d={'nest':{'GA_FS_gaba':{'weight':0.4},
-               'GF_FS_gaba':{'weight':0.6}}}
-    misc.dict_update(solution,{'mul':d})    
+#     d={'nest':{'GA_FS_gaba':{'weight':0.4},
+#                'GF_FS_gaba':{'weight':0.6}}}
+#     misc.dict_update(solution,{'mul':d})    
        
 
     # Long time constant from TA    
@@ -225,9 +225,9 @@ def get_solution_eNeuro_rev():
     # Dopamine effect on TA and TI to striatum
     d={'nest':{
                'M1_low':{'beta_I_GABAA_3': f_beta_rm(2.6),
-                         'beta_I_GABAA_2': f_beta_rm(0.25)},
+                         'beta_I_GABAA_2': f_beta_rm(0.5)},
                'M2_low':{'beta_I_GABAA_3': f_beta_rm(2.5),
-                         'beta_I_GABAA_2': f_beta_rm(0.25)},
+                         'beta_I_GABAA_2': f_beta_rm(0.5)},
                'FS_low':{'beta_I_GABAA_2': f_beta_rm(1.6)},
               },
         'conn':{'M1_M1_gaba':{'beta_fan_in': f_beta_rm(0.25)},

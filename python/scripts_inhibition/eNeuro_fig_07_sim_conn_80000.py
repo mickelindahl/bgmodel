@@ -21,7 +21,7 @@ from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
-import fig_defaults as fd
+import eNeuro_fig_defaults as fd
 import eNeuro_fig_01_and_02_pert as op
 import eNeuro_fig_07_pert_conn as op_add
 import sys

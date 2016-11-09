@@ -21,7 +21,7 @@ from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
-import fig_defaults as fd
+import eNeuro_fig_defaults as fd
 import eNeuro_fig_01_and_02_pert as op
 import eNeuro_fig_07_pert_nuclei as op_neuclei
 import sys
@@ -40,7 +40,7 @@ freqs=[fd.freq_beta] #numpy.arange(0.5, .8, 0.2)
 STN_amp_mod=[fd.STN_amp_mod_beta]
 
 NUM_NETS=2
-NUM_RUNS=len(op_neuclei.get()) #A run for each perturbation
+NUM_RUNS=len(op_neuclei.get([0,7])) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
@@ -87,7 +87,7 @@ kwargs={
         'nets_to_run':['Net_0','Net_1'],
         'no_oscillations_control':True,
         
-        'op_pert_add':op_neuclei.get(),
+        'op_pert_add':op_neuclei.get([0,7]),
         
         'path_rate_runs':path_rate_runs,
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
@@ -113,6 +113,6 @@ a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(10,[num_sim, num_sim, NUM_RUNS], a_list, k_list )
+loop(num_sim,[num_sim, num_sim, NUM_RUNS], a_list, k_list )
 
         

@@ -23,9 +23,9 @@ from_disk=1
 scale=1
 path=[
     ('/home/mikael/results/papers/inhibition/network/'
-           +'milner/fig_08_sim_control_beta/'),
+           +'milner/eNeuro_fig_08_sim_control_beta/'),
       ('/home/mikael/results/papers/inhibition/network/'
-             +'milner/fig_08_sim_control_sw/')]
+             +'milner/eNeuro_fig_08_sim_control_sw/')]
 
 
 def gs_builder(*args, **kwargs):

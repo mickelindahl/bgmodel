@@ -45,7 +45,7 @@ def get(flag='perturbations'):
 
     fEA=3.
     fEI=0.9 #*1.6 working solution 
-    fCF=1.2
+    fCF=.85
 
     rEI=1700.0*fEI
     rEA=200.0*fEA

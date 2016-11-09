@@ -25,10 +25,10 @@ import sys
 import scripts_inhibition.base_oscillation_beta as module
 import eNeuro_fig_01_and_02_pert as op
 import pprint
-import fig_defaults as fd
+import eNeuro_fig_defaults as fd
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('eNeruo_fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False

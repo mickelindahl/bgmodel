@@ -19,7 +19,7 @@ d=kw={'n_rows':8,
 kwargs={'add_midpoint':False,
 
         'data_path':('/home/mikael/results/papers/inhibition/network/'
-                     +'milner/fig_03_sim_dop/'), # csv is saved here
+                     +'milner/eNeuro_fig_03_sim_dop/'), # csv is saved here
 
         'from_diks':0,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),

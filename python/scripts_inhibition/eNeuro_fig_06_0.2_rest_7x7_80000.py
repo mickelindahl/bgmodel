@@ -19,7 +19,7 @@ from core import directories as dr
 from core import my_socket
 from core.network.default_params import Perturbation_list as pl
 
-import fig_defaults as fd
+import eNeuro_fig_defaults as fd
 import eNeuro_fig_01_and_02_pert as op
 import scripts_inhibition.base_Go_NoGo_compete as module
 import sys

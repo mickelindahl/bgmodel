@@ -22,7 +22,7 @@ def ignore_files(name):
     s=name.split('/')[-2].split('_')[-1]
 #     print s, s not in ['16']
 
-    return s in ['mod1','mod2','mod3','mod4','mod5','mod6']
+    return s in []
 
 
 kwargs={'add_midpoint':True,

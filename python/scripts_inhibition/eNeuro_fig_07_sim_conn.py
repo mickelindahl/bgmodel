@@ -21,7 +21,7 @@ from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
-import fig_defaults as fd
+import eNeuro_fig_defaults as fd
 import eNeuro_fig_01_and_02_pert as op
 import eNeuro_fig_07_pert_conn as op_add
 import sys
@@ -40,7 +40,7 @@ amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
 freqs=[fd.freq_beta] #numpy.arange(0.5, .8, 0.2)
 STN_amp_mod=[fd.STN_amp_mod_beta]
 
-NUM_RUNS=len(op_add.get())
+NUM_RUNS=len(op_add.get([0,6]))
 NUM_NETS=2
 num_sims=NUM_NETS*NUM_RUNS
 
@@ -72,10 +72,10 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class        
-        'job_name':'fig7_conn',
+        'job_name':'eNf7_conn',
         
-        'l_hours':  ['00','00','00'],
-        'l_minutes':['45','45','5'],
+        'l_hours':  ['01','02','00'],
+        'l_minutes':['00','00','5'],
         'l_seconds':['00','00','00'],
 
         'local_num_threads':LOCAL_NUM_THREADS,
@@ -86,7 +86,7 @@ kwargs={
         'nets_to_run':['Net_0', 'Net_1'],#['Net_0','Net_1'],
         'no_oscillations_control':True,
                 
-        'op_pert_add':op_add.get(),
+        'op_pert_add':op_add.get([0,6]),
 
         'path_rate_runs':path_rate_runs,
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',

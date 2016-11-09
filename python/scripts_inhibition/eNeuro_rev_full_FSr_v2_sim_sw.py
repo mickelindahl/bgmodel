@@ -35,8 +35,8 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[fd.amp_sw, fd.amp_sw+0.025] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.7 ] #numpy.arange(0.5, .8, 0.2)
+amp_base=[fd.amp_sw-0.01, fd.amp_sw, fd.amp_sw+0.02, fd.amp_sw+0.03, fd.amp_sw+0.04] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[ 0.5 ] #numpy.arange(0.5, .8, 0.2)
 ops=op.get()['sw']
 n=len(amp_base)
 m=len(freqs)

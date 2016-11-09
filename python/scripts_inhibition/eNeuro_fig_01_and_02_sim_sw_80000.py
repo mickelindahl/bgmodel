@@ -20,7 +20,7 @@ from core import directories as dr
 from core import my_socket
 
 from scripts_inhibition import config
-import fig_defaults as fd
+import eNeuro_fig_defaults as fd
 import numpy
 import sys
 import scripts_inhibition.base_oscillation_sw as module

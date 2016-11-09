@@ -113,6 +113,6 @@ a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
 
-loop(10,[num_sim, num_sim, NUM_RUNS], a_list, k_list )
+loop(num_sim,[num_sim, num_sim, NUM_RUNS], a_list, k_list )
 
         

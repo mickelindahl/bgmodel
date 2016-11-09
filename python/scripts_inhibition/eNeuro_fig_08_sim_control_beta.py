@@ -119,6 +119,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(num_sims,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

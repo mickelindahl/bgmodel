@@ -2205,23 +2205,39 @@ class InhibitionPar_base(object):
         
         # GPE-FSN
         dic['nest']['GA_FS_gaba']={}
-        dic['nest']['GA_FS_gaba']['weight']   = 1./5     # n.d. inbetween MSN and FSN GABAergic synapses
+        dic['nest']['GA_FS_gaba']['weight']   = 2./0.29*(17./66.)    # n.d. inbetween MSN and FSN GABAergic synapses
         dic['nest']['GA_FS_gaba']['delay']    = 7.  # n.d. same as MSN to GPE Park 1982
-        dic['nest']['GA_FS_gaba']['type_id'] = 'static_synapse'
+        dic['nest']['GA_FS_gaba']['type_id'] = 'tsodyks_synapse'
         dic['nest']['GA_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_2']
+
+        dic['nest']['GA_FS_gaba']['U']       = 0.29
+        dic['nest']['GA_FS_gaba']['tau_fac'] = 53.   
+        dic['nest']['GA_FS_gaba']['tau_rec'] = 902.   
+        dic['nest']['GA_FS_gaba']['tau_psc'] = 66.  
+
 
         dic['nest']['GI_FS_gaba']={}
         dic['nest']['GI_FS_gaba']['weight']   = 1./5     # n.d. inbetween MSN and FSN GABAergic synapses
         dic['nest']['GI_FS_gaba']['delay']    = 7.  # n.d. same as MSN to GPE Park 1982
         dic['nest']['GI_FS_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GI_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_2']
+        
+
 
         dic['nest']['GF_FS_gaba']={}
-        dic['nest']['GF_FS_gaba']['weight']   = 1.     # n.d. inbetween MSN and FSN GABAergic synapses
+        dic['nest']['GF_FS_gaba']['weight']   = 2./0.29     # n.d. inbetween MSN and FSN GABAergic synapses
         dic['nest']['GF_FS_gaba']['delay']    = 7.  # n.d. same as MSN to GPE Park 1982
-        dic['nest']['GF_FS_gaba']['type_id'] = 'static_synapse'
+        dic['nest']['GF_FS_gaba']['type_id'] = 'tsodyks_synapse'
         dic['nest']['GF_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']
-          
+        
+        
+        dic['nest']['GF_FS_gaba']['U']       = 0.29
+        dic['nest']['GF_FS_gaba']['tau_fac'] = 53.   
+        dic['nest']['GF_FS_gaba']['tau_rec'] = 902.   
+        dic['nest']['GF_FS_gaba']['tau_psc'] = 17.     #   Gittis 2010 have    
+        
+
+        
         
         # CTX-MSN D1
         dic['nest']['C1_M1_ampa']={}

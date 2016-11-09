@@ -64,7 +64,7 @@ kwargs={'add_midpoint':False,
         'title_flipped':True,
         'top_lables_fontsize':7,
         
-        'compute_performance_name_and_x':lambda x: [x[0],1]
+#         'compute_performance_name_and_x':lambda x: [x[0],1]
         
         
 }

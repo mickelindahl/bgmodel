@@ -20,7 +20,7 @@ from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
 
-import fig_defaults as fd
+import eNeuro_fig_defaults as fd
 import eNeuro_fig_01_and_02_pert as op
 import eNeuro_fig_03_pert_dop as op_dop
 import sys
@@ -72,7 +72,7 @@ kwargs={
         'job_admin':JOB_ADMIN, #user defined class
         'job_name':'fig3',
         
-        'l_hours':  ['5','5','00'],
+        'l_hours':  ['05','05','00'],
         'l_minutes':['00','00','20'],
         'l_seconds':['00','00','00'],
 
