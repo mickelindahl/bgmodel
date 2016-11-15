@@ -19,7 +19,7 @@ import pprint
 pp=pprint.pprint
 
 
-from_disk=1
+from_disk=0
 scale=1
 path=[
     ('/home/mikael/results/papers/inhibition/network/'

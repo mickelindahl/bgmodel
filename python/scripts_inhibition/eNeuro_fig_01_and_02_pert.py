@@ -48,9 +48,9 @@ def get(flag='perturbations'):
     fCF=.85
 
     rEI=1700.0*fEI
-    rEA=200.0*fEA
+    rEA=200.0 #*fEA
     rCS=250.0
-    rES=2000.0
+    rES=1800.0
     rM2=740.0 
     rCF=950.0*fCF	
     
@@ -76,7 +76,7 @@ def get(flag='perturbations'):
 
 
     rEI=800.0*fEI
-    rEA=100.0*fEA
+    rEA=100.0 #*fEA
     rCS=170.0
     rES=1800.0
     rM2=740.0

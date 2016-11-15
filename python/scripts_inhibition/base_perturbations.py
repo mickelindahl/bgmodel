@@ -154,7 +154,7 @@ def get_solution_eNeuro_rev():
     # perturbed to determine each relative influence to TA firing rate. 
     # From this data then combinations fo changes that should results in
     # 12 Hz TA firing rate are created.  
-    d={'nest':{'ST_GA_ampa':{'weight':0.25},
+    d={'nest':{'ST_GA_ampa':{'weight':0.3},
                'GA_GA_gaba':{'weight':0.25},
                'GI_GA_gaba':{'weight':0.25},
                'GF_GA_gaba':{'weight':0.25},
@@ -225,9 +225,9 @@ def get_solution_eNeuro_rev():
     # Dopamine effect on TA and TI to striatum
     d={'nest':{
                'M1_low':{'beta_I_GABAA_3': f_beta_rm(2.6),
-                         'beta_I_GABAA_2': f_beta_rm(0.5)},
+                         'beta_I_GABAA_2': f_beta_rm(0.25)},
                'M2_low':{'beta_I_GABAA_3': f_beta_rm(2.5),
-                         'beta_I_GABAA_2': f_beta_rm(0.5)},
+                         'beta_I_GABAA_2': f_beta_rm(0.25)},
                'FS_low':{'beta_I_GABAA_2': f_beta_rm(1.6)},
               },
         'conn':{'M1_M1_gaba':{'beta_fan_in': f_beta_rm(0.25)},
@@ -238,8 +238,6 @@ def get_solution_eNeuro_rev():
     misc.dict_update(solution,{'equal':d})
     
     
-
-
     # Weight TA M1/M2 1/2 
    # d={'nest':{
    #             'GA_M1_gaba':{'weight':0.01},
@@ -262,6 +260,19 @@ def get_solution_eNeuro_rev():
     misc.dict_update(solution,{'equal':{'nest':{'C2_M2_nmda':{'delay':y}}}})            
     misc.dict_update(solution,{'equal':{'nest':{'CF_FS_ampa':{'delay':y}}}})     
     
+
+    # Set delay GP->STN 1 ms and STN->GP 2 ms as Jaeger 2011. Might need say something
+    # that this is not rat data. With this the coherence in STN goes up. Total delay from cortex
+    # to STN via striatum is 2.5+7+1 = 10.5.
+    d={'nest':{'GI_ST_gaba':{'delay':1.},
+               'GF_ST_gaba':{'delay':1.},
+               
+               'ST_GI_ampa':{'delay':2.},
+               'ST_GF_ampa':{'delay':2.},
+               'ST_GA_ampa':{'delay':2.} }
+       }
+                 
+    misc.dict_update(solution,{'equal':d})
     
     # Dopamine effect on MS-GI
     d={'equal':{'nest':{

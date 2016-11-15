@@ -33,7 +33,7 @@ kwargs={'add_midpoint':False,
 
 #         'add_midpoint':False,
         'data_path':('/home/mikael/results/papers/inhibition/network/'
-                     +'milner/fig_07_sim_nuclei_80000/'),
+                     +'milner/eNeuro_fig_07_sim_nuclei_80000/'),
 #         'ax_4x1':True,               s
         'from_diks':0,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),

@@ -35,14 +35,14 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.5 ] #[ 0.2, 0.3, 0.4, 0.5] #numpy.arange(0.5, .8, 0.2)
+amp_base=[0.95, 0.975, fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
+freqs=[0.4, 0.5 ] #[ 0.2, 0.3, 0.4, 0.5] #numpy.arange(0.5, .8, 0.2)
 ops=[op.get()[fd.idx_beta]]
 n=len(amp_base)
 m=len(freqs)
 amp_base=list(numpy.array([m*[v] for v in amp_base]).ravel()) 
 freqs=list(freqs)*n
-STN_amp_mod=[fd.STN_amp_mod_beta]#range(1, 6, 2)
+STN_amp_mod=[fd.STN_amp_mod_beta, 4, 5]#range(1, 6, 2)
 num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
@@ -74,7 +74,7 @@ kwargs={
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig1_2_beta',
+        'job_name':'eNf1_2_beta',
         
         'l_hours':  ['01','01','00'],
         'l_minutes':['00','00','05'],

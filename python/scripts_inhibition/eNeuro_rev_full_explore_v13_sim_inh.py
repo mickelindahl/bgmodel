@@ -18,7 +18,7 @@ from core import my_socket
 
 import config
 import scripts_inhibition.base_inhibition_striatum as module
-import eNeuro_rev_full_explore_v9_pert as op
+import eNeuro_rev_full_explore_v13_pert as op
 import pprint
 pp=pprint.pprint
 

@@ -317,8 +317,8 @@ def plot_spk_stats_STN(d, axs, i, **k):
             y_CV.append(st.cv_isi['mean'])
             y_CV_SEM.append(st.cv_isi['SEM'])
     
-    print y_mean
-    print y_mean_SEM      
+#     print y_mean
+#     print y_mean_SEM      
     
     dm=mallet2008()
     
@@ -410,8 +410,8 @@ def plot_spk_stats(d, axs, i, **k):
             y_CV.append(st.cv_isi['mean'])
             y_CV_SEM.append(st.cv_isi['SEM'])
     
-    print y_mean
-    print y_mean_SEM      
+#     print y_mean
+#     print y_mean_SEM      
     
     dm=mallet2008()
     
@@ -646,10 +646,10 @@ def plot_coherence_STN(d, axs, i, **k):
             ssp=ch.success_sample_proportion
             sm=sorted(ch.sample_means, key=lambda x:x[1])
             sm=sorted(sm, key=lambda x:x[0])
-            print
-            print model, ch.sample, ssp
-            for iE, e in enumerate(sm):
-                print iE, str(e[0])[0:3],str(e[1])[0:3]
+#             print
+#             print model, ch.sample, ssp
+#             for iE, e in enumerate(sm):
+#                 print iE, str(e[0])[0:3],str(e[1])[0:3]
             
             
             ax.set_xlim(k.get('xlim_cohere',[0,2]))
@@ -1721,8 +1721,9 @@ def simulate(builder=Builder,
     models = ['M1', 'M2', 'FS', 'GI', 'GF', 'GA', 'ST', 'SN', 'GP']
     models_coher = ['GI_GA', 'GI_GI', 'GA_GA', 'GA_ST', 'GI_ST', 'GP_GP',
                      'ST_ST', 'GP_ST',
-                     'GI_M1', 'GI_M2', 'GA_M1', 'GA_M2',
-                     'GF_M1', 'GF_M2', 'GI_FS', 'GA_FS', 'GF_FS']
+#                      'GI_M1', 'GI_M2', 'GA_M1', 'GA_M2',
+#                      'GF_M1', 'GF_M2', 'GI_FS', 'GA_FS', 'GF_FS'
+                     ]
     
     info, nets, _ = get_networks(builder, 
                                  setup.builder(), 

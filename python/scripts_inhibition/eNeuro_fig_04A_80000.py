@@ -57,7 +57,7 @@ kwargs={
         'job_admin':JOB_ADMIN, #user defined class
         'job_name':'fig_04A',
         
-        'l_hours':  ['02','02','00'],
+        'l_hours':  ['10','02','00'],
         'l_minutes':['00','00','5'],
         'l_seconds':['00','00','00'],
         

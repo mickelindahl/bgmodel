@@ -27,7 +27,7 @@ def ignore_files(name):
 
 kwargs={'add_midpoint':False,
         'data_path':('/home/mikael/results/papers/inhibition/network/'
-                     +'milner/fig_07_sim_conn_80000/'),
+                     +'milner/eNeuro_fig_07_sim_conn_80000/'),
         'midpoinst':1.0,
         'from_diks':0,
         'script_name':(__file__.split('/')[-1][0:-3]+'/data'),

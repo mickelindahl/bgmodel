@@ -18,7 +18,7 @@ from core import my_socket
 
 import config
 import scripts_inhibition.base_inhibition_striatum as module
-import eNeuro_rev_full_explore_v9_pert as op
+import eNeuro_rev_full_explore_v12_pert as op
 import pprint
 pp=pprint.pprint
 
@@ -46,9 +46,9 @@ kwargs={
         'file_name':FILE_NAME,
         'from_disk_0':FROM_DISK_0,
         
-        'debug':True,
+        'debug':False,
         'do_runs':range(NUM_RUNS), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
                  
         'i0':FROM_DISK_0,
         

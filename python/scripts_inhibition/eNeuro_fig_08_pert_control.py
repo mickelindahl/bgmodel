@@ -185,7 +185,7 @@ def get():
         l[-1]+=pl(d, '=', **{'name':'MSMS_'+str(y)})    
         
     # Phase synch in GP and ST effected by delay from cortex to STR
-    for y in numpy.arange(2.5, 21., 2.5):
+    for y in numpy.arange(20., 1.5, -2.5):
 
             d={}
             misc.dict_update(d, solution['mul'])       

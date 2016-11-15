@@ -59,7 +59,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,#173-86, 109-54, 45-22
-        'do_runs':range(NUM_RUNS), #A run for each perturbation
+        'do_runs': range(12, NUM_RUNS), #A run for each perturbation
         'do_obj':False,
         'do_nets':['Net_0', 'Net_1'],
         
@@ -75,7 +75,7 @@ kwargs={
         'job_admin':JOB_ADMIN, #user defined class
         'job_name':'fig7_nuc',
         
-        'l_hours':  ['02','02','00'],
+        'l_hours':  ['04','02','00'],
         'l_minutes':['00','00','20'],
         'l_seconds':['00','00','00'],
 

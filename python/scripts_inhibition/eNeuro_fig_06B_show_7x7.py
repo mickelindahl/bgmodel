@@ -36,11 +36,12 @@ models=['SN']
 paths=[]
 thr=14.0
 paths.append('/home/mikael/results/papers/inhibition/network/'
-             +'milner/fig_06_scale_rest_7x7/')
+             +'milner/eNeuro_fig_06_scale_rest_7x7/')
 paths.append('/home/mikael/results/papers/inhibition/network/'
-             +'milner/fig_06_scale_ST_pulse_7x7/')
+             +'milner/eNeuro_fig_06_scale_ST_pulse_7x7/')
 
-s1='script_000{0}_rEI_1700.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-ss-1.0/'
+s1='script_000{0}_rEI_1530.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-ss-1.0/'
+# s1='script_000{0}_rEI_1700.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-ss-1.0/'
 
 nets1=['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4']
 nets2=['Net_0']
