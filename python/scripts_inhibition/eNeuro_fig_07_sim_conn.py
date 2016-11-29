@@ -111,6 +111,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(2,[num_sims, num_sims, num_sims/2], a_list, k_list )
+loop(num_sims,[num_sims, num_sims, num_sims/2], a_list, k_list )
 
         

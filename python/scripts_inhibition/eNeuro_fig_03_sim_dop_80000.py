@@ -57,7 +57,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':[1,3,4]+range(6, NUM_RUNS), #A run for each perturbation
+        'do_runs':range(NUM_RUNS), #A run for each perturbation
         'do_obj':False,
         
         'external_input_mod':[],

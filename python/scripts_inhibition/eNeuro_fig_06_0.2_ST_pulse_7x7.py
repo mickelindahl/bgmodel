@@ -34,7 +34,7 @@ ops=[op.get()[fd.idx_beta]] #0 is beta
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
-NUM_NETS=1
+NUM_NETS=2
 NUM_RUNS=1
 
 dc=my_socket.determine_computer
@@ -75,15 +75,17 @@ kwargs={
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],   
                   
-        'labels':['D1,D2 puls=5',], 
+        'labels':['D1,D2 puls=5',
+                  'TA lesioned (D1,D2 puls=5)'
+                  ], 
         
         'local_num_threads':LOCAL_NUM_THREADS,
                  
         'max_size':20000,
         'module':module,
         
-        'nets':['Net_0'],
-        'nets_to_run':['Net_0'],
+        'nets':['Net_0','Net_1'],
+        'nets_to_run':['Net_0', 'Net_1'],
                 
         'other_scenario':True,
         
@@ -132,4 +134,4 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(1, [NUM_NETS,NUM_NETS,NUM_NETS], a_list, k_list )
+loop(NUM_NETS, [NUM_NETS,NUM_NETS,NUM_NETS], a_list, k_list )

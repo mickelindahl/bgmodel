@@ -21,6 +21,7 @@ from core.network.manager import get_storage, save
 from scripts_inhibition.base_simulate import get_file_name, save_figures
 import pprint
 from copy import deepcopy
+from cmath import isnan
 
 pp=pprint.pprint
 
@@ -181,7 +182,10 @@ def extract_data(d, nets, models, attrs, **kwargs):
             bol=(psd.x>0)*(psd.x<oi_upper)
             integral2=sum(psd.y[bol])
             oscillation_index=integral1/integral2
-
+            
+            if (isnan(oscillation_index)):
+                oscillation_index=0
+                
             args=[[keys, keys[0:-1]+['synchrony_index'],
                    keys[0:-1]+['oscillation_index'],
                   keys[0:-1]+['psd2'],
@@ -227,11 +231,12 @@ def compute_mse(v1,v2):
 #     if v1<=0.:
 #     v_mse=numpy.NAN
 #     else:
-#     try:
-    v_mse=(v1-v2)/v1
-#     except:
-#         print 'Failed cmp v_mse for'
-#         v_mse=1.
+    try:
+#     v1+=0.0000000001
+        v_mse=(v1-v2)/v1
+    except:
+        print 'Failed cmp v_mse for'
+        v_mse=1.
     if isinstance(v_mse, numpy.ndarray):
         v_mse[numpy.isnan(v_mse)]=0
     elif numpy.isnan(v_mse):
@@ -441,13 +446,16 @@ def nice_labels(version=0):
        'ST':r'STN',
        'FS_M1':r'FSN$\to$$MSN_{D1}$',
        'FS_M2':r'FSN$\to$$MSN_{D2}$',
+       'GI_FS':r'$GPe_{TA}$$\to$FSN',
        'GA_FS':r'$GPe_{TA}$$\to$FSN',
        'GA_M1':r'$GPe_{TA}$$\to$$MSN_{D1}$',
        'GA_M2':r'$GPe_{TA}$$\to$$MSN_{D2}$',
+       'GA_MS':r'$GPe_{TA}$$\to$$MSN_{D2}$',
+       'GP_FS':r'$GPe_{TA}$$\to$FSN',
        'GP_ST':r'GPe$\to$STN',
        'GA_ST':r'$GPe_{TA}$$\to$STN',
        'GI_ST':r'$GPe_{TI}$$\to$STN',
-       'GP_FS':r'$GPe_{TA}$$\to$FSN',
+       'GP_FS':r'$GPe$$\to$FSN',
        'GP_GP':r'GPe$\to$GPe',
        'GA_GA':r'$GPe_{TA}$$\to$$GPe_{TA}$',
        'GA_GI':r'$GPe_{TA}$$\to$$GPe_{TI}$',
@@ -468,7 +476,24 @@ def nice_labels(version=0):
                   'GA_GA':'TA vs TA'})
  
     if version==2:
-        d.update({'GA':'TA',
+        d.update({
+                  'M2_GI':r'$MSN_{D2}$$\to$TI',
+                  'GA_MS':r'TA$\to$$MSN_{D2}$',
+                  'GA_FS':r'TA$\to$FSN',
+                  'GI_FS':r'TI$\to$FSN',
+                  'GA_M1':r'TA$\to$$MSN_{D1}$',
+                  'GA_M2':r'TA$\to$$MSN_{D2}$',
+                  'GA_MS':r'TA$\to$$MSN_{D2}$',
+                    'GA_GA':r'TA$\to$TA',
+                   'GA_GI':r'TA$\to$TI',
+                   'GI_GA':r'TI$\to$TA',
+                   'GI_GI':r'TI$\to$TI',
+                   'GI_SN':r'TI$\to$SNr',
+                'ST_GI':r'STN$\to$TI',
+                'ST_GA':r'STN$\to$TA',
+                'GI_ST':r'TI$\to$STN',
+    
+                  'GA':'TA',
                   'GI':'TI',
                   'M1':r'$MSN_{D1}$',
                   'M2':r'$MSN_{D2}$',})   
@@ -489,11 +514,11 @@ def gs_builder_conn(*args, **kwargs):
               hspace=kwargs.get('hspace', 0.1 ))
 
     iterator = [[slice(0,1),slice(0,1)],
-                [slice(1,4),slice(0,1)],
-                [slice(4,6),slice(0,1)],
+                [slice(1,6),slice(0,1)],
+                [slice(6,10),slice(0,1)],
                 [slice(0,1),slice(1,2)],
-                [slice(1,4),slice(1,2)],
-                [slice(4,6),slice(1,2)]]
+                [slice(1,6),slice(1,2)],
+                [slice(6,10),slice(1,2)]]
     
     return iterator, gs, 
 
@@ -594,9 +619,9 @@ def gs_builder_oi_si(*args, **kwargs):
 
     iterator = [[slice(1,2), slice(0,2) ],
                 [slice(2,5), slice(0,2) ],
-                [slice(1,5), slice(3,6) ],
+                [slice(1,5), slice(3,7) ],
                 [slice(5,9), slice(0,2) ],
-                [slice(5,9), slice(3,6) ]]
+                [slice(5,9), slice(3,7) ]]
     
     return iterator, gs, 
 
@@ -975,10 +1000,10 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     bol=[l=='no_pert' for l in d3['labelsx_meta']]    
     y=[]    
     for i, _ in enumerate(d0['labelsy']):
-
-	pp(d1['y'])
-	pp(i)
-	pp(bol)
+         
+        pp(d1['y'])
+        pp(i)
+        pp(bol)
         val=d1['y'][i, numpy.array(bol)][0][0]
         y.append(val)
 #         y[1].append(d1['y'][i, numpy.array(bol)][0])
@@ -1017,7 +1042,7 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     kw['horizontal_lines']=False
     kw['fontsize_x']=k.get('fontsize_x',24)
     kw['fontsize_y']=k.get('fontsize_y',24)
-    kw['nice_labels_x']=nice_labels(version=0)
+    kw['nice_labels_x']=nice_labels(version=2)
     kw['nice_labels_y']=nice_labels(version=0)
     kw['cmap']='coolwarm'
     kw['color_line']='k'
@@ -1125,7 +1150,7 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     tfs=k.get('cohere_fig_title_fontsize',6)
     scale=k.get('scale', 1)
     fig, axs=ps.get_figure2(n_rows=13,
-                             n_cols=6,  
+                             n_cols=7,  
                              w=int(72/2.54*11.6)*scale,
                              h=int((72/2.54*11.6)/1.6)*scale,
                              linewidth=linewidth,
@@ -1144,9 +1169,9 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
 
     bol=[l=='Normal' for l in d1['labelsx_meta']]
     ax1.set_xlim([-0.2,4.])
-    ax2.set_ylim([0,15]) 
+    ax2.set_ylim([0,20]) 
     
-    ax1.set_ylim([40,55])
+    ax1.set_ylim([40,60])
     y=[[],[]]
     for i, _ in enumerate(d0['labelsy']):
         y[0].append(numpy.mean(d0['y'][i,:]))
@@ -1250,7 +1275,7 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     kw['vertical_lines']=False
     kw['fontsize_x']=k.get('fontsize_x',24)*scale
     kw['fontsize_y']=k.get('fontsize_y',24)*scale
-    kw['nice_labels_x']=nice_labels(version=0)
+    kw['nice_labels_x']=nice_labels(version=2)
     kw['nice_labels_y']=nice_labels(version=0)
     kw['cmap']='coolwarm'
     kw['color_line']='k'

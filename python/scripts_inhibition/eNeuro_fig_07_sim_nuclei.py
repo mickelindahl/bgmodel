@@ -40,7 +40,7 @@ freqs=[fd.freq_beta] #numpy.arange(0.5, .8, 0.2)
 STN_amp_mod=[fd.STN_amp_mod_beta]
 
 NUM_NETS=2
-NUM_RUNS=len(op_neuclei.get([0,7])) #A run for each perturbation
+NUM_RUNS=len(op_neuclei.get()) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
@@ -87,7 +87,7 @@ kwargs={
         'nets_to_run':['Net_0','Net_1'],
         'no_oscillations_control':True,
         
-        'op_pert_add':op_neuclei.get([0,7]),
+        'op_pert_add':op_neuclei.get(),
         
         'path_rate_runs':path_rate_runs,
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',

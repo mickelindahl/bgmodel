@@ -6,7 +6,7 @@ Created on Nov 13, 2014
 '''
 
 from scripts_inhibition import base_effect_conns
-d=kw={'n_rows':8, 
+d=kw={'n_rows':10, 
         'n_cols':2, 
         'w':int(72/2.54*18), 
         'h':int(72/2.54*18)/2.5, 
@@ -43,7 +43,7 @@ kwargs={'add_midpoint':False,
         'clim_raw': [[0,4], [0,90], [0,1]],
 #         'do_plots':['cohere', 'mse_index', 'si_oi_index'],
         'do_plots':['si_oi_index'],
-        'exclude':[ 'striatum', 'GP_ST_SN', 'GA_FS'],
+        'exclude':[ 'striatum', 'GP_ST_SN', 'GP_FS'],
         'fontsize_x':7,
         'fontsize_y':7,
         

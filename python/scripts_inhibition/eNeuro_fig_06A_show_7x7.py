@@ -49,11 +49,14 @@ paths.append('/home/mikael/results/papers/inhibition/network/'
 paths.append('/home/mikael/results/papers/inhibition/network/'
              +'milner/eNeuro_fig_06_0.2_ST_pulse_7x7/')
 
-s1='script_000{0}_rEI_1530.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-ss-1.0/'
+# s1='script_0000_rEI_1430.0_rEA_300.0_rCS_250.0_rES_2000.0_rM2_740.0-ss-1.0'
+# s1='script_0000_rEI_1430.0_rEA_300.0_rCS_250.0_rES_2000.0_rM2_740.0-ss-1.0'
+s1='script_0000_rEI_1430.0_rEA_300.0_rCS_250.0_rES_2000.0_rM2_740.0-ss-1.0'
+# s1='script_000{0}_rEI_1530.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-ss-1.0/'
 # s1='script_000{0}_rEI_1700.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-ss-1.0/'
 
-nets1=['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4']
-nets2=['Net_0']
+nets1=['Net_0', 'Net_1', 'Net_2', 'Net_3']
+nets2=['Net_0', 'Net_1']
 files={
        '20':[paths[0]+s1.format(0), nets1],
        '20-ST':[paths[1]+s1.format(0), nets2],
@@ -114,7 +117,7 @@ k={'axs':axs,
              'D1 & D2',
              r'No MSN$\to$MSN',
              r'No FSN$\to$MSN',
-             r'No $GPe_{TA}$$\to$MSN',
+             r'No $TA$$\to$MSN',
              r'Pulse STN'],
     'type_of_plot':'mean',
     'vlim_rate':[-100, 100]}
@@ -188,8 +191,8 @@ k={'axs':axs,
              'D1 & D2',
              r'No MSN$\to$MSN',
              r'No FSN$\to$MSN',
-             r'No $GPe_{TA}$$\to$MSN',
-             r'Pulse STN'],
+             r'STN $\uparrow$', 
+             r'STN $\uparrow$ no TA$\to$MSN'],
     'type_of_plot':'mean',
     'vlim_rate':[-100, 100]}
 

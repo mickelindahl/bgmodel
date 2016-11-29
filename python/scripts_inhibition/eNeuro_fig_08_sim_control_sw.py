@@ -21,7 +21,7 @@ from core.parallel_excecution import loop
 from core import my_socket
 
 
-import fig_defaults as fd
+import eNeuro_fig_defaults as fd
 import eNeuro_fig_01_and_02_pert as op
 import eNeuro_fig_08_pert_control as op_control
 import numpy
@@ -37,7 +37,7 @@ LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
-amp_base=[fd.amp_beta] #numpy.arange(1.05, 1.2, 0.05)
+amp_base=[fd.amp_sw] #numpy.arange(1.05, 1.2, 0.05)
 freqs=[fd.freq_sw] #numpy.arange(0.5, .8, 0.2)
 n=len(amp_base)
 m=len(freqs)
@@ -119,6 +119,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(20,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(num_sims,[num_sims,num_sims,num_sims/2], a_list, k_list )
 
         

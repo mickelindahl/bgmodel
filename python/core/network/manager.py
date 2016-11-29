@@ -952,7 +952,9 @@ def add_lesions_Go_NoGo(l):
 def set_lesions_scenarios_GPe_Go_NoGo(l):
 
 
-    lesions = [{'conn':{'GA_FS_gaba':{'lesion':True}}},
+    lesions = [{'conn':{'GA_M1_gaba':{'lesion':True},
+                        'GA_M2_gaba':{'lesion':True}}},
+               {'conn':{'GA_FS_gaba':{'lesion':True}}},
                {'conn':{'GA_M1_gaba':{'lesion':True}}},
                {'conn':{'GA_M2_gaba':{'lesion':True}}},
                
@@ -962,15 +964,15 @@ def set_lesions_scenarios_GPe_Go_NoGo(l):
                {'conn':{'GA_FS_gaba':{'lesion':True},
                         'GA_M2_gaba':{'lesion':True}}},
                
-               {'conn':{'GA_M1_gaba':{'lesion':True},
-                        'GA_M2_gaba':{'lesion':True}}}]
+               ]
     
-    names = ['no-GP_FS', 
+    names = [
+             'no_GP_MS',
+             'no-GP_FS', 
              'no-GP_M1', 
              'no_GP_M2',
              'no_GP_FS-M1',
-             'no_GP_FS_M2',
-             'no_GP_M1_M2']
+             'no_GP_FS_M2']
     
     for lesion, name in zip(lesions, names):
         l += [deepcopy(l[0])]
@@ -978,7 +980,7 @@ def set_lesions_scenarios_GPe_Go_NoGo(l):
             '=', **
             {'name':name})
     
-    return l[-6:]
+    return l
 
 class Builder_Go_NoGo_with_lesion_base(Builder_network):    
 
@@ -1313,7 +1315,11 @@ class Builder_Go_NoGo_with_lesion_FS_ST_pulse_oscillation_base(Builder_network):
         ll=[]
         for pulse in self.kwargs['p_pulses']: 
             self.kwargs['p_pulse']=pulse
-            l, self.dic = get_input_Go_NoGo(self.kwargs)      
+            l, self.dic = get_input_Go_NoGo(self.kwargs)
+            
+            
+            l = set_lesions_scenarios_GPe_Go_NoGo(l) 
+                  
             ll+=l
         return ll    
 

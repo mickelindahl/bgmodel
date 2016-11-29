@@ -75,12 +75,12 @@ def plot(file_name, figs, setup, flag,  **k):
     kw['spk_stats_color_axis']=1
     kw['spk_stats_colors']=['k', 'w']
     kw['spk_stats_colors_ti_ta']=['k','w']
-    kw['xlim_cohere']=[-1, 51]
+    kw['xlim_cohere']=[-2, 52]
     kw['dashes']=(2,2)
     if flag=='slow_wave':
-        kw['ylim_cohere']=[0, 1.0]
+        kw['ylim_cohere']=[-0.2, 1.0]
     elif flag=='beta':
-        kw['ylim_cohere']=[0, 0.8]
+        kw['ylim_cohere']=[-0.16, 0.8]
         kw['xticks_coherence']=[0,0.4]
         
         
@@ -104,12 +104,12 @@ def plot(file_name, figs, setup, flag,  **k):
     kw['spk_stats_colors_ti_ta']=['k','w']
     kw['spk_stats_color_axis']=1
     kw['top_label']=False    
-    kw['xlim_cohere']=[-1, 51]
+    kw['xlim_cohere']=[-2, 52]
     kw['dashes']=(2,2)
     if flag=='slow_wave':
-        kw['ylim_cohere']=[0, 1.0]
+        kw['ylim_cohere']=[-0.2, 1.0]
     elif flag=='beta':
-        kw['ylim_cohere']=[0, 0.2]
+        kw['ylim_cohere']=[-0.06, 0.2]
         kw['xticks_coherence']=[0,0.1]
         
     kw['coherence_xcut']=[0,50]
@@ -121,8 +121,10 @@ def plot(file_name, figs, setup, flag,  **k):
 
 figs=[]
 file_name=('/home/mikael/results/papers/inhibition/network/'
-           +'milner/fig_01_and_02_sim_beta_80000/'
-           + 'script_0002_rEI_1700.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-amp_0.08_0.975_stn_3.0'
+           +'milner/eNeuro_fig_01_and_02_sim_beta_80000/'
+           +'script_0000_rEI_1430.0_rEA_300.0_rCS_250.0_rES_1800.0_rM2_740.0-amp_0.09_0.975_stn_3.0'
+#            +'script_0000_rEI_1530.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-amp_0.06_0.975_stn_3.0'
+#            + 'script_0002_rEI_1700.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-amp_0.08_0.975_stn_3.0'
 #            +'script_0003_rEI_1700.0_rEA_200.0_rCS_250.0-amp_0.14_1.1_stn_3.0'
            )
 setup=base_oscillation_beta.Setup(20,1)
@@ -130,8 +132,10 @@ plot(file_name, figs, setup, 'beta', **{'linewidth':0.5})
 
 
 file_name=('/home/mikael/results/papers/inhibition/network/'
-           +'milner/fig_01_and_02_sim_sw_80000/'
-           + 'script_0000_rEI_800.0_rEA_100.0_rCS_170.0_rES_1800.0_rM2_740.0-amp_0.08_0.85'
+           +'milner/eNeuro_fig_01_and_02_sim_sw_80000/'
+           +'script_0000_rEI_620.0_rEA_200.0_rCS_170.0_rES_1800.0_rM2_740.0-amp_0.08_0.8'
+#            +'script_0000_rEI_720.0_rEA_100.0_rCS_170.0_rES_1800.0_rM2_740.0-amp_0.06_0.8'
+#            + 'script_0000_rEI_800.0_rEA_100.0_rCS_170.0_rES_1800.0_rM2_740.0-amp_0.08_0.85'
 #            +'script_0001_rEI_800.0_rEA_100.0_rCS_170.0-amp_0.1_0.9'
            )
 

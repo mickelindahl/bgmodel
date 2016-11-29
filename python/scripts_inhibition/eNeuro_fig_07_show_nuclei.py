@@ -22,7 +22,8 @@ def ignore_files(name):
     s=name.split('/')[-2].split('_')[-1]
 #     print s, s not in ['16']
 
-    return s in []
+    return s in ['mod1','mod2','mod3','mod4','mod5','mod6']
+#     return s in []
 
 def name_and_x(x):
 
@@ -30,7 +31,8 @@ def name_and_x(x):
     print 'x:', x	
     return [x[-1],1]
 
-kwargs={'add_midpoint':True,
+kwargs={
+        'add_midpoint':False,
         'midpoint':3.5,
 #         'data_path':('/home/mikael/results/papers/inhibition/network/'
 #                      +'milner/simulate_beta_ZZZ_dop_effect_perturb2/'),

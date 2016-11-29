@@ -19,7 +19,7 @@ import pprint
 pp=pprint.pprint
 
 
-from_disk=0
+from_disk=1
 scale=1
 path=[
     ('/home/mikael/results/papers/inhibition/network/'
@@ -181,47 +181,93 @@ d['d_gradients_lesion']['oscillation_index']['labelsy']
 
 ax=axs[7]
 # v=d['data']
-   
-l=[]
-for key in sorted(d_sw['data'].keys()):
-    v=d_sw['data'][key]['Net_1']['GP_GP']['mean_coherence']
-    l.append(v)
- 
-l=l[organize['MSMS']]
-    
-ln=list_names_sw[organize['MSMS']]
-ln=[str(float(a[13])) for a in ln]
- 
-colors=misc.make_N_colors('copper', len(l))
-   
-for i, trace in enumerate(l):
-    x=numpy.linspace(0,128,len(trace)) #half of sampleing frequency
-    ax.plot(x, trace, color=colors[i])
-ax.set_xlim([0,5])
-ax.set_ylim([0,1])  
-sm = pylab.cm.ScalarMappable(cmap='copper', 
-                            norm=pylab.normalize(vmin=0, vmax=len(ln)-1)
-                             )
-sm._A = []
-     
-box = ax.get_position()
-pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
-     0.01, box.height*0.8]
-axColor=pylab.axes(pos)
-cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
- 
-cbar.ax.tick_params( length=1, )
-cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
- 
-  
-ax.text(1.4,  0.5, r'Multiplier $g_{MSN \to MSN}$', 
-        transform=ax.transAxes, va='center', rotation=270) 
- 
-ax.set_xlabel('Frequency (Hz)')
-ax.set_ylabel('GPe-GPe Coherence')
-ax.my_set_no_ticks(xticks=4)
-ax.my_set_no_ticks(yticks=4)
-ax.set_title('Lesion')
+#      
+# l=[]
+# for key in sorted(d_sw['data'].keys()):
+#     v=d_sw['data'][key]['Net_1']['GI_GI']['mean_coherence']
+#     l.append(v)
+#    
+# l=l[organize['MSMS']]
+#       
+# ln=list_names_sw[organize['MSMS']]
+# ln=[str(float(a[13])) for a in ln]
+#    
+# colors=misc.make_N_colors('copper', len(l))
+#      
+# for i, trace in enumerate(l):
+#     x=numpy.linspace(0,128,len(trace)) #half of sampleing frequency
+#     ax.plot(x, trace, color=colors[i])
+# ax.set_xlim([0,5])
+# ax.set_ylim([0,1])  
+# sm = pylab.cm.ScalarMappable(cmap='copper', 
+#                             norm=pylab.normalize(vmin=0, vmax=len(ln)-1)
+#                              )
+# sm._A = []
+#        
+# box = ax.get_position()
+# pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
+#      0.01, box.height*0.8]
+# axColor=pylab.axes(pos)
+# cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
+#    
+# cbar.ax.tick_params( length=1, )
+# cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
+#    
+#     
+# ax.text(1.4,  0.5, r'Multiplier $g_{MSN \to MSN}$', 
+#         transform=ax.transAxes, va='center', rotation=270) 
+#    
+# ax.set_xlabel('Frequency (Hz)')
+# ax.set_ylabel('GPe-GPe Coherence')
+# ax.my_set_no_ticks(xticks=4)
+# ax.my_set_no_ticks(yticks=4)
+# ax.set_title('Lesion')
+
+# ax=axs[7]
+# # v=d['data']
+#     
+# l=[]
+# for key in sorted(d['data'].keys()):
+#     v=d['data'][key]['Net_0']['M2']['psd2'].y
+#     x=  d['data'][key]['Net_0']['M2']['psd2'].x  
+#     l.append(v)
+#   
+# l=l[organize['GAtau']]
+#      
+# ln=list_names_sw[organize['GAtau']]
+# # ln=[str(float(a[13])) for a in ln]
+#   
+# colors=misc.make_N_colors('copper', len(l))
+#     
+# for i, trace in enumerate(l):
+# #     x=numpy.linspace(0,128,len(trace)) #half of sampleing frequency
+#     ax.plot(x, trace, color=colors[i])
+# # ax.set_xlim([0,5])
+# # ax.set_ylim([0,1])  
+# sm = pylab.cm.ScalarMappable(cmap='copper', 
+#                             norm=pylab.normalize(vmin=0, vmax=len(ln)-1)
+#                              )
+# sm._A = []
+#       
+# box = ax.get_position()
+# pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
+#      0.01, box.height*0.8]
+# axColor=pylab.axes(pos)
+# cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
+#   
+# cbar.ax.tick_params( length=1, )
+# cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
+#   
+#    
+# ax.text(1.4,  0.5, r'Multiplier $g_{MSN \to MSN}$', 
+#         transform=ax.transAxes, va='center', rotation=270) 
+#   
+# ax.set_xlabel('Frequency (Hz)')
+# ax.set_ylabel('GPe-GPe Coherence')
+# ax.my_set_no_ticks(xticks=4)
+# ax.my_set_no_ticks(yticks=4)
+# ax.set_title('Lesion')
+
 #########################################
 # TA to MS tau snapse figure
 #########################################
@@ -232,9 +278,9 @@ bol= numpy.array([l in ['M1', 'M2'] for l in dd])
 v=d['d_raw_control']['oscillation_index']['y'][bol,organize['GAtau']]
   
   
-ax.plot(range(5,55,5),v.transpose())
-ax.set_xlim([0,60])
-ax.set_xlabel(r'$\tau_{GPe_{TA}\to str}$ (ms)')
+ax.plot(range(5,105,10),v.transpose())
+ax.set_xlim([0,115])
+ax.set_xlabel(r'$percent of \tau_{GPe_{TA}\to str}$')
 ax.set_ylabel('Oscillation index')
 ax.my_set_no_ticks(xticks=4)
 ax.my_set_no_ticks(yticks=4)
@@ -249,13 +295,61 @@ for s, c, coords in zip(['M1', 'M2'],
 #########################################
 # CS-STN delay effect on phase shift ST-TI #TA-TI 
 #########################################
+# ax=axs[2]
+#  
+# l=[]
+# for key in sorted(d['data'].keys()):
+#     v=d['data'][key]['Net_1']['GI_ST']['phases_diff_with_cohere']
+#     l.append(v)
+# l=l[organize['CSdelay']]
+# colors=misc.make_N_colors('copper', len(l))
+#   
+# for i, trace in enumerate(l):
+#     x=numpy.linspace(-numpy.pi*3,numpy.pi*3,len(trace))
+#     norm=sum(trace)*(x[-1]-x[0])/len(x)
+#     ax.plot(x, trace/norm, color=colors[i])
+# ax.set_xlim([-numpy.pi,numpy.pi])
+#   
+#  
+# sm = pylab.cm.ScalarMappable(cmap='copper', 
+#                              norm=pylab.normalize(vmin=2.5, vmax=20))
+# sm._A = []
+#   
+# box = ax.get_position()
+# pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
+#      0.01,  box.height*0.8]
+# axColor=pylab.axes(pos)
+# cbar=pylab.colorbar(sm, cax=axColor)
+# tick_locator = ticker.MaxNLocator(nbins=4)
+# cbar.locator = tick_locator
+# cbar.update_ticks()
+# cbar.ax.tick_params( length=1, )
+#   
+# ax.text(1.3, 0.5,  r'$t_{delay}^{CTX\to STN}$ (ms)', 
+#         transform=ax.transAxes,  va='center', rotation=270) 
+# ax.set_xlabel(r'Angle (rad)')
+# ax.set_ylabel('Norm. count ST-TI')
+# ax.my_set_no_ticks(xticks=4)
+# ax.my_set_no_ticks(yticks=4)
+# ax.set_ylim([0,0.31])
+ 
+
+# CT-STR delay effect on phase shift ST-TI #TA-TI 
+#########################################
 ax=axs[2]
  
 l=[]
 for key in sorted(d['data'].keys()):
     v=d['data'][key]['Net_1']['GI_ST']['phases_diff_with_cohere']
     l.append(v)
-l=l[organize['CSdelay']]
+l=l[organize['CTXSTRdelay']][::-1]
+
+ln0=list_names[organize['CTXSTRdelay']][::-1]
+ln=[str(int(float(a[-1]))) for a in ln0]
+
+# ln0=list_names[organize['CSdelay']][1::2]
+# ln+=['2.5, ' + str(int(float(a[-1]))) for a in ln0]
+
 colors=misc.make_N_colors('copper', len(l))
   
 for i, trace in enumerate(l):
@@ -266,27 +360,31 @@ ax.set_xlim([-numpy.pi,numpy.pi])
   
  
 sm = pylab.cm.ScalarMappable(cmap='copper', 
-                             norm=pylab.normalize(vmin=2.5, vmax=20))
+                             norm=pylab.normalize(vmin=0, vmax=len(ln)-1))
 sm._A = []
-  
+    
 box = ax.get_position()
 pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
-     0.01,  box.height*0.8]
+     0.01, box.height*0.8]
 axColor=pylab.axes(pos)
-cbar=pylab.colorbar(sm, cax=axColor)
-tick_locator = ticker.MaxNLocator(nbins=4)
-cbar.locator = tick_locator
-cbar.update_ticks()
+cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
+
 cbar.ax.tick_params( length=1, )
-  
-ax.text(1.3, 0.5,  r'$t_{delay}^{CTX\to STN}$ (ms)', 
-        transform=ax.transAxes,  va='center', rotation=270) 
+cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
+
+# cbar.ax.set_yticklabels(ln, fontsize=5*scale)    
+# ax.text(1.3, 0.5,  r'$t_{delay}^{CTX\to str}$ (ms)', 
+#         transform=ax.transAxes,  va='center', rotation=270) 
+
+ax.text(1.2,  0.5, r'$t_{delay}^{CTX\to str}$', 
+        transform=ax.transAxes, va='center', rotation=270) 
+
+
 ax.set_xlabel(r'Angle (rad)')
 ax.set_ylabel('Norm. count ST-TI')
 ax.my_set_no_ticks(xticks=4)
 ax.my_set_no_ticks(yticks=4)
 ax.set_ylim([0,0.31])
- 
 
 # CS-STN delay effect on phase shift ST-TI #TA-TI 
 #########################################
@@ -296,7 +394,14 @@ l=[]
 for key in sorted(d['data'].keys()):
     v=d['data'][key]['Net_1']['GI_ST']['phases_diff_with_cohere']
     l.append(v)
-l=l[organize['CTXSTRdelay']]
+l=l[organize['CSdelay']][::1]
+
+# ln0=list_names[organize['CTXSTRdelay']][::2]
+# ln=[str(int(float(a[-1])))+', 2.5' for a in ln0]
+
+ln0=list_names[organize['CSdelay']][::1]
+ln=[str(int(float(a[-1]))) for a in ln0]
+
 colors=misc.make_N_colors('copper', len(l))
   
 for i, trace in enumerate(l):
@@ -307,21 +412,26 @@ ax.set_xlim([-numpy.pi,numpy.pi])
   
  
 sm = pylab.cm.ScalarMappable(cmap='copper', 
-                             norm=pylab.normalize(vmin=2.5, vmax=20))
+                             norm=pylab.normalize(vmin=0, vmax=len(ln)-1))
 sm._A = []
-  
+    
 box = ax.get_position()
 pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
-     0.01,  box.height*0.8]
+     0.01, box.height*0.8]
 axColor=pylab.axes(pos)
-cbar=pylab.colorbar(sm, cax=axColor)
-tick_locator = ticker.MaxNLocator(nbins=4)
-cbar.locator = tick_locator
-cbar.update_ticks()
+cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
+
 cbar.ax.tick_params( length=1, )
-  
-ax.text(1.3, 0.5,  r'$t_{delay}^{CTX\to str}$ (ms)', 
-        transform=ax.transAxes,  va='center', rotation=270) 
+cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
+
+# cbar.ax.set_yticklabels(ln, fontsize=5*scale)    
+# ax.text(1.3, 0.5,  r'$t_{delay}^{CTX\to str}$ (ms)', 
+#         transform=ax.transAxes,  va='center', rotation=270) 
+
+ax.text(1.2,  0.5, r'$t_{delay}^{CTX\to STN}$', 
+        transform=ax.transAxes, va='center', rotation=270) 
+
+
 ax.set_xlabel(r'Angle (rad)')
 ax.set_ylabel('Norm. count ST-TI')
 ax.my_set_no_ticks(xticks=4)
@@ -361,9 +471,12 @@ cbar=pylab.colorbar(sm, cax=axColor)
 tick_locator = ticker.MaxNLocator(nbins=4)
 cbar.locator = tick_locator
 cbar.update_ticks()
+
 cbar.ax.tick_params( length=1, )
+cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
+
    
-ax.text(1.35, 0.5, r'$Fan_{in}^{MSN\to TA}$ (#)', 
+ax.text(1.25, 0.5, r'$Fan_{in}^{MSN\to TA}$ (#)', 
         transform=ax.transAxes, va='center', rotation=270)
   
 ax.set_xlabel(r'Angle (rad)')
@@ -378,49 +491,48 @@ ax.set_ylim([0,0.31])
 # fan in TI to str 
 #########################################
  
-ax=axs[4]
- 
-l=[]
-for key in sorted(d['data'].keys()):
-    v=d['data'][key]['Net_1']['GI_GA']['phases_diff_with_cohere']
-    l.append(v)
-l=[l[0]]+l[organize['GIM2fan']]
- 
-colors=misc.make_N_colors('copper', len(l))
-   
-for i, trace in enumerate(l):
-    x=numpy.linspace(-numpy.pi*3,numpy.pi*3,len(trace))
-    norm=sum(trace)*(x[-1]-x[0])/len(x)
-    ax.plot(x, trace/norm, color=colors[i])
-ax.set_xlim([-numpy.pi,numpy.pi])
-   
-sm = pylab.cm.ScalarMappable(cmap='copper', 
-                             norm=pylab.normalize(vmin=0, vmax=5))
-sm._A = []
-   
-box = ax.get_position()
-pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
-     0.01, box.height*0.8]
-axColor=pylab.axes(pos)
-cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(l)))
-tick_locator = ticker.MaxNLocator(nbins=4)
-cbar.locator = tick_locator
-cbar.update_ticks()
-cbar.ax.tick_params( length=1, )
-   
-ax.text(1.35, 0.5, r'$Fan_{in}^{TI\to str}$ (#)',
-        transform=ax.transAxes, va='center',  rotation=270) 
-ax.set_xlabel(r'Angle (rad)')
-ax.set_ylabel('Norm. count TI-TA')
-ax.my_set_no_ticks(xticks=4)
-ax.my_set_no_ticks(yticks=4)
-ax.set_ylim([0,0.31])
+# ax=axs[4]
+#  
+# l=[]
+# for key in sorted(d['data'].keys()):
+#     v=d['data'][key]['Net_1']['GI_GA']['phases_diff_with_cohere']
+#     l.append(v)
+# l=[l[0]]+l[organize['GIM2fan']]
+#  
+# colors=misc.make_N_colors('copper', len(l))
+#    
+# for i, trace in enumerate(l):
+#     x=numpy.linspace(-numpy.pi*3,numpy.pi*3,len(trace))
+#     norm=sum(trace)*(x[-1]-x[0])/len(x)
+#     ax.plot(x, trace/norm, color=colors[i])
+# ax.set_xlim([-numpy.pi,numpy.pi])
+#    
+# sm = pylab.cm.ScalarMappable(cmap='copper', 
+#                              norm=pylab.normalize(vmin=0, vmax=5))
+# sm._A = []
+#    
+# box = ax.get_position()
+# pos=[box.x0+1.03*box.width, box.y0+box.height*0.1,
+#      0.01, box.height*0.8]
+# axColor=pylab.axes(pos)
+# cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
+# 
+# cbar.ax.tick_params( length=1, )
+# cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
+#    
+# ax.text(1.35, 0.5, r'$Fan_{in}^{TI\to str}$ (#)',
+#         transform=ax.transAxes, va='center',  rotation=270) 
+# ax.set_xlabel(r'Angle (rad)')
+# ax.set_ylabel('Norm. count TI-TA')
+# ax.my_set_no_ticks(xticks=4)
+# ax.my_set_no_ticks(yticks=4)
+# ax.set_ylim([0,0.31])
 
 #########################################
 # CTX-STN rate and g conductance GP-STN
 #########################################
 
-ax=axs[6]
+ax=axs[4]
 
 l=[]
 for key in sorted(d['data'].keys()):
@@ -454,7 +566,7 @@ cbar.ax.tick_params( length=1, )
 cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
 
  
-ax.text(1.55,  0.5, r'$v^{CTX\to STN}$, $g_{gaba}^{GPe_{TI}\to STN}$', 
+ax.text(1.45,  0.5, r'$v^{CTX\to STN}$, $g_{gaba}^{GPe_{TI}\to STN}$', 
         transform=ax.transAxes, va='center', rotation=270) 
 
 ax.set_xlabel(r'Angle (rad)')
@@ -529,7 +641,7 @@ cbar=pylab.colorbar(sm, cax=axColor, ticks=range(len(ln)))
 cbar.ax.tick_params( length=1, )
 cbar.ax.set_yticklabels(ln, fontsize=5*scale)  
 
-ax.text(1.35,  0.5, r'$Fan_{in}^{[TA,TI]\to TA}$ (#)', 
+ax.text(1.3,  0.5, r'$Fan_{in}^{[TA,TI]\to TA}$ (#)', 
         transform=ax.transAxes, va='center', rotation=270) 
 
 ax.set_xlabel(r'Angle (rad)')

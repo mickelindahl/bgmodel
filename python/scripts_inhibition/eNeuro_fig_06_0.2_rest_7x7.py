@@ -56,7 +56,7 @@ kwargs={
         
         'debug':False,
         'do_not_record':[], 
-        'do_runs':range(NUM_RUNS),
+        'do_runs':range(1),#NUM_RUNS),
         'do_obj':False,
 
         'file_name':FILE_NAME,

@@ -1139,7 +1139,8 @@ def simulate(builder, from_disk, perturbation_list, script_name, setup):
                                                             setup.default_params())
 
     add_perturbations(perturbation_list, nets)
-    
+    for p in sorted(perturbation_list.list):
+        print p
     
     print nets.keys()
     key=nets.keys()[0]

@@ -39,12 +39,12 @@ paths.append('/home/mikael/results/papers/inhibition/network/'
              +'milner/eNeuro_fig_06_scale_rest_7x7/')
 paths.append('/home/mikael/results/papers/inhibition/network/'
              +'milner/eNeuro_fig_06_scale_ST_pulse_7x7/')
-
-s1='script_000{0}_rEI_1530.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-ss-1.0/'
+s1='script_000{0}_rEI_1430.0_rEA_300.0_rCS_250.0_rES_2000.0_rM2_740.0-ss-1.0'
+# s1='script_000{0}_rEI_1530.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-ss-1.0/'
 # s1='script_000{0}_rEI_1700.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-ss-1.0/'
 
-nets1=['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4']
-nets2=['Net_0']
+nets1=['Net_0', 'Net_1', 'Net_2', 'Net_3']
+nets2=['Net_0', 'Net_1']
 files={
         '10':[paths[0]+s1.format(0), nets1],
         '10-ST':[paths[1]+s1.format(0), nets2],
@@ -205,8 +205,8 @@ for axs in axs_list:
              'D1 & D2',
              r'No MSN$\to$MSN',
              r'No FSN$\to$MSN',
-             r'No $GPe_{TA}$$\to$MSN',
-             r'Pulse STN']
+             r'STN $\uparrow$',
+             r'STN $\uparrow$ no TA$\to$MSN',]
     
     for i, s in enumerate(labels):
         axs[i].text(k.get('cohere_ylabel_ypos', -0.1), 

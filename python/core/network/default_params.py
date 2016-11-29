@@ -2744,6 +2744,7 @@ class InhibitionPar_base(object):
         dic['nest']['GP']['tata_dop'] = DepNetw('calc_tata_dop')
         
         dic['nest']['GA']  = deepcopy(dic['nest']['GP'])
+
         
 #         dic['nest']['GA']['b'] = dic['nest']['GA']['b'] *1.5 # I-F relation
 #         dic['nest']['GA']['C_m']=dic['nest']['GA']['C_m']*1.5 
@@ -2830,9 +2831,9 @@ class InhibitionPar_base(object):
                  'M2':{'model':'M2_low', 'I_vitro':0.0, 'I_vivo':0.0, },
                  'FS':{'model':'FS_low', 'I_vitro':0.0, 'I_vivo':0.0, },
                  'ST':{'model':'ST',     'I_vitro':6.0, 'I_vivo':6.0,  }, 
-                 'GA':{'model':'GA',     'I_vitro':5.0, 'I_vivo':-3.6, }, #23, -8
-                 'GI':{'model':'GI',     'I_vitro':5.0, 'I_vivo':4.5,  }, #51, 56
-                 'GF':{'model':'GF',     'I_vitro':5.0, 'I_vivo':4.5,  }, #51, 56
+                 'GA':{'model':'GA',     'I_vitro':1.0, 'I_vivo':-3.6, }, #8 Hz, -8
+                 'GI':{'model':'GI',     'I_vitro':12.0, 'I_vivo':4.5,  }, #18 Hz, 56
+                 'GF':{'model':'GF',     'I_vitro':12.0, 'I_vivo':4.5,  }, #51, 56
                  'SN':{'model':'SN',     'I_vitro':15.0,'I_vivo':19.2, }}
         
 
@@ -2904,9 +2905,9 @@ class InhibitionPar_base(object):
         FS_M1=int(round(60*0.27))
         FS_M2=int(round(60*0.18))
         
-        GA_XX=GP_fi*GA_pfi
-        GI_GX=GP_fi*(1-GA_pfi)*GetNetw('GI_prop')/(1-GetNetw('GA_prop'))
-        GF_GX=GP_fi*(1-GA_pfi)*GetNetw('GF_prop')/(1-GetNetw('GA_prop'))    
+        GA_XX=5. #GP_fi*GA_pfi
+        GI_GX=22 #25*GetNetw('GI_prop')/(1-GetNetw('GA_prop')) #GP_fi*(1-GA_pfi)*GetNetw('GI_prop')/(1-GetNetw('GA_prop'))
+        GF_GX=3 #25-GI_GX #GP_fi*(1-GA_pfi)*GetNetw('GF_prop')/(1-GetNetw('GA_prop'))    
     
     
         GI_ST=30*GetNetw('GI_prop')/(1-GetNetw('GA_prop'))

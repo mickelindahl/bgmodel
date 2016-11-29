@@ -10,9 +10,9 @@ mp.patch_for_milner()
 
 from scripts_inhibition import config
 from scripts_inhibition.base_simulate import (get_path_rate_runs,
-                      get_args_list_oscillation,
-                      get_kwargs_list_indv_nets,
-                      pert_add_oscillations) 
+                                              get_args_list_oscillation,
+                                              get_kwargs_list_indv_nets,
+                                              pert_add_oscillations) 
 
 from core.network.manager import Builder_beta as Builder
 from core.parallel_excecution import loop
@@ -23,21 +23,21 @@ from core import my_socket
 import numpy
 import sys
 import scripts_inhibition.base_oscillation_beta as module
-import eNeuro_rev_full_explore_v14_pert as op
+import eNeuro_rev_full_explore_v15_pert as op
 import pprint
 import eNeuro_fig_defaults as fd
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('eNeuro_rev_full_explore_v14_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_rev_full_explore_v15_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 2
 LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2
 
 # fd.amp_beta=0.975
 amp_base=[ 0.975 ] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ 0.4 ] #numpy.arange(0.5, .8, 0.2)
+freqs=[ 0.5 ] #numpy.arange(0.5, .8, 0.2)
 ops=op.get()['beta']
 n=len(amp_base)
 m=len(freqs)
@@ -65,7 +65,7 @@ kwargs={
         'do_runs':range(num_runs), #A run for each perturbation
         'do_obj':False,
         
-        'external_input_mod':[],#['EI','EA'],
+        'external_input_mod':[2],#['EI','EA'],
         
         'file_name':FILE_NAME,
         'freqs':freqs,

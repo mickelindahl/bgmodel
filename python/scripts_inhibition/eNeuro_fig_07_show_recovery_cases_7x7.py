@@ -51,7 +51,7 @@ def gs_builder(*args, **kwargs):
 #                 [[i, 5] for i in range(1,6)])
 #     
     iterator = ([[slice(1,2), i] for i in range(0,10)]+
-                [[slice(2,3), i] for i in range(0,7)]+
+                [[slice(2,3), i] for i in range(0,10)]+
                 [[slice(4,5), i] for i in range(0,10)]+
                 [[slice(5,6), i] for i in range(0,10)]+
                 [[slice(6,7), i] for i in range(0,10)]+
@@ -70,10 +70,10 @@ models=['M1', 'M2', 'SN']
 paths=[]
 
 paths.append('/home/mikael/results/papers/inhibition/network/'
-             +'milner/fig_06_0.2_rest_7x7/')
+             +'milner/eNeuro_fig_06_0.2_rest_7x7/')
 
 paths.append('/home/mikael/results/papers/inhibition/network/'
-             +'milner/fig_07_recovery_cases_7x7/')
+             +'milner/eNeuro_fig_07_recovery_cases_7x7/')
 # paths.append('/home/mikael/results/papers/inhibition/network/'
 #              +'milner/fig6_Go_NoGo_XXX_nodop_FS/')
 # 
@@ -107,6 +107,9 @@ builder=[['1.0', 'Net_1', 'Control'],
         ['FS', 'Net_0',  r'$\beta^{FSN}_{E_{L}}=0$'],
         ['FS_FS', 'Net_0', r'$\beta^{FSN\to FSN}_{N}=0$'],
         ['FS_M2', 'Net_0', r'$\beta^{FSN\to MSN_{D2}}_{N}=0$'],
+        ['GA_FS', 'Net_0', r'$\beta^{TA\to FSN}_{I_{GABA}}=0$'],
+        ['GA_MS', 'Net_0', r'$\beta^{TA\to MSN}_{I_{GABA}}=0$'],
+        ['GI_FS', 'Net_0', r'$\beta^{TI\to FSN}_{I_{GABA}}=0$'],
         ['GP', 'Net_0', r'$\beta^{GPe}_{E_{L}}=0$'],
 #         ['GP_FS', 'Net_0', r'$\beta^{GPe_{TA}\to FSN}_{N}=0$'],
         ['GP_GP', 'Net_0', r'$\beta^{GPe\to GPe}_{I_{GABA}}=0$'],
@@ -118,38 +121,42 @@ builder=[['1.0', 'Net_1', 'Control'],
         ['SN', 'Net_0', r'$\beta^{SNr}_{E_{L}}=0$'],
         ['ST_GP', 'Net_0', r'$\beta^{STN\to GPe}_{I_{GABA}}=0$'],
         
-         ['FS_M2_pert_5', 'Net_0', r'$w_{FSN\to MSN_{D2}} \uparrow$'],
-         ['FS_pert_mod7', 'Net_0', r'$r_{FSN} \uparrow$'],
-         ['GA_FS_pert_5','Net_0', r'$w_{GPe_{TA}\to FSN} \uparrow$'],
-         ['GA_M2_pert_0.0','Net_0', r'$w_{GPe_{TA}\to MSN_{D2}} \downarrow$'],
-         ['GA_M2_pert_5', 'Net_0', r'$w_{GPe_{TA}\to MSN_{D2}} \uparrow$'],
-         ['GA_pert_mod0', 'Net_0', r'$r_{GPe_{TA}} \downarrow$'],
-         ['GA_pert_mod7', 'Net_0', r'$r_{GPe_{TA}} \uparrow$'],
-         ['GI_GA_pert_0.0', 'Net_0', r'$w_{GPe_{TI}\to GPe_{TA}} \downarrow$'],
-         ['GI_GI_pert_0.0', 'Net_0', r'$w_{GPe_{TI}\to GPe_{TI}} \downarrow$'],
-         ['GI_GI_pert_5', 'Net_0', r'$w_{GPe_{TI}\to GPe_{TI}} \uparrow$'],
-         ['GI_SN_pert_5', 'Net_0', r'$w_{GPe_{TI}\to SNr} \uparrow$'],
-         ['GI_ST_pert_5', 'Net_0', r'$w_{GPe_{TI}\to STN} \uparrow$'],
-         ['GI_pert_mod0', 'Net_0', r'$r_{GPe_{TI}} \downarrow$'],
-         ['GI_pert_mod7', 'Net_0', r'$r_{GPe_{TI}} \uparrow$'],
-         ['M1_pert_mod7', 'Net_0', r'$r_{MSN_{D1}} \uparrow$'],
+         ['FS_pert_mod1', 'Net_0', r'$r_{FSN} \uparrow$'],
+#          ['GA_M1_pert_5','Net_0', r'$w_{TA\to MSN_{D1}} \uparrow$'],
+         ['GA_M2_pert_0.0','Net_0', r'$w_{TA\to MSN_{D2}} \downarrow$'],
+         ['GA_M2_pert_5', 'Net_0', r'$w_{TA\to MSN_{D2}} \uparrow$'],
+#          ['GA_pert_mod0', 'Net_0', r'$r_{TA} \downarrow$'],
+         ['GA_pert_mod1', 'Net_0', r'$r_{TA} \uparrow$'],
+#          ['GI_GA_pert_0.0', 'Net_0', r'$w_{GPe_{TI}\to GPe_{TA}} \downarrow$'],
+         ['GI_GI_pert_0.0', 'Net_0', r'$w_{TI\to TI} \downarrow$'],
+         ['GI_GI_pert_5', 'Net_0', r'$w_{TI\to TI} \uparrow$'],
+         ['GI_ST_pert_5', 'Net_0', r'$w_{TI\to STN} \uparrow$'],
+#          ['GI_SN_pert_5', 'Net_0', r'$w_{GPe_{TI}\to SNr} \uparrow$'],
+#          ['GI_ST_pert_5', 'Net_0', r'$w_{GPe_{TI}\to STN} \uparrow$'],
+         ['GI_pert_mod0', 'Net_0', r'$r_{TI} \downarrow$'],
+          ['GI_pert_mod1', 'Net_0', r'$r_{TI} \uparrow$'],
+#          ['GI_pert_mod7', 'Net_0', r'$r_{GPe_{TI}} \uparrow$'],
+         ['M1_pert_mod1', 'Net_0', r'$r_{MSN_{D1}} \uparrow$'],
          
-         ['M2_GI_pert_0.0', 'Net_0', r'$w_{MSN_{D2} \to GPe_{TI}} \downarrow$'],
-         ['M2_GI_pert_5','Net_0', r'$w_{MSN_{D2} \to GPe_{TI}} \uparrow$'],
-         ['M2_M2_pert_0.0', 'Net_0', r'$w_{MSN_{D2} \to MSN_{D2}} \downarrow$'],
+         ['M2_GI_pert_0.0', 'Net_0', r'$w_{MSN_{D2} \to TI} \downarrow$'],
+         ['M2_GI_pert_5','Net_0', r'$w_{MSN_{D2} \to TI} \uparrow$'],
+#          ['M2_M2_pert_0.0', 'Net_0', r'$w_{MSN_{D2} \to MSN_{D2}} \downarrow$'],
          ['M2_M2_pert_5', 'Net_0', r'$w_{MSN_{D2} \to MSN_{D2}} \uparrow$'],
          ['M2_pert_mod0', 'Net_0', r'$r_{MSN_{D2}} \downarrow$'],  
-         ['M2_pert_mod7', 'Net_0', r'$r_{MSN_{D2}} \uparrow$'],  
+         ['M2_pert_mod1', 'Net_0', r'$r_{MSN_{D2}} \uparrow$'],  
 
-         ['SN_pert_mod0', 'Net_0', r'$r_{SNr} \downarrow$'],
-         ['ST_GA_pert_0.0', 'Net_0', r'$w_{STN \to GPe_{TA}} \downarrow$'],
-         ['ST_GA_pert_5', 'Net_0', r'$w_{STN \to GPe_{TA}} \uparrow$'],
-         ['ST_GI_pert_0.0', 'Net_0', r'$w_{STN \to GPe_{TI}} \downarrow$'],
-         ['ST_GI_pert_5', 'Net_0', r'$w_{STN \to GPe_{TI}} \uparrow$'],
+#          ['SN_pert_mod0', 'Net_0', r'$r_{SNr} \downarrow$'],
+         ['ST_GA_pert_0.0', 'Net_0', r'$w_{STN \to TA} \downarrow$'],
+         ['ST_GA_pert_5', 'Net_0', r'$w_{STN \to TA} \uparrow$'],
+        ['ST_GI_pert_0.0', 'Net_0', r'$w_{STN \to TI} \downarrow$'],
+#          ['ST_GI_pert_5', 'Net_0', r'$w_{STN \to GPe_{TI}} \uparrow$'],
          ['ST_pert_mod0', 'Net_0', r'$r_{STN} \downarrow$'],
-         ['ST_pert_mod7', 'Net_0', r'$r_{STN} \uparrow$']
+         ['ST_pert_mod1', 'Net_0', r'$r_{STN} \uparrow$'],
 #          ['M2_pert_mod0', 'Net_0'],       
 #          ['ST_pert_mod7', 'Net_0']
+         ['GP_pert_mod0', 'Net_0', r'$r_{GPe} \downarrow$'],
+          ['GP_pert_mod1', 'Net_0', r'$r_{GPe} \uparrow$'],
+#    
          ]
 
 

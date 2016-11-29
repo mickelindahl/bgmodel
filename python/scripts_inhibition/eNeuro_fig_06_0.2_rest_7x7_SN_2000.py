@@ -13,51 +13,52 @@ from scripts_inhibition.base_simulate import (
                       get_kwargs_list_indv_nets,
                       get_path_rate_runs)
 
-from core.network.manager import Builder_Go_NoGo_with_lesion_FS_ST_pulse_oscillation as Builder
+from core.network.manager import Builder_Go_NoGo_with_lesion_FS_base_oscillation as Builder
 from core.parallel_excecution import loop
 from core import directories as dr
 from core import my_socket
+from core.network.default_params import Perturbation_list as pl
 
 import eNeuro_fig_defaults as fd
-import eNeuro_fig_01_and_02_pert as op
+import eNeuro_fig_01_and_02_pert_SN_2000 as op
 import scripts_inhibition.base_Go_NoGo_compete as module
 import sys
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh_SN_2000/')
 ops=[op.get()[fd.idx_beta]] #0 is beta
+
 
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
-LOAD_MILNER_ON_SUPERMICRO=False
-proportion_connected=[0.1, 0.5, 1.]
-NUM_RUNS=len(proportion_connected)
-NUM_NETS=2
+NUM_NETS=5
+NUM_RUNS=len(ops)
 num_sims=NUM_NETS*NUM_RUNS
 
+
 dc=my_socket.determine_computer
-CORES=40*4if dc()=='milner' else 10
+CORES=40*4 if dc()=='milner' else 2
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
+LOCAL_NUM_THREADS= 40 if dc()=='milner' else 2
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
-amp_base=fd.amp_beta#1.1
+amp_base=fd.amp_beta#0.95
 freq= 0.0
-STN_amp_mod=fd.STN_amp_mod_beta#3.
+STN_amp_mod=fd.STN_amp_mod_beta #3.
 kwargs={
-        'amp_base':amp_base,
         
+        'amp_base':amp_base,
+
         'Builder':Builder,
         
         'cores':CORES,
         
         'debug':False,
-        'do_not_record':[],#,['M1', 'M2', 'FS','GA','GI', 'ST'], 
+        'do_not_record':[], 
         'do_runs':range(NUM_RUNS),
         'do_obj':False,
-#         'duration':[900.,100.0],
-        
+
         'file_name':FILE_NAME,
         'freqs':[freq], #need to be length  1
         'freq_oscillations':20.,
@@ -66,43 +67,46 @@ kwargs={
         'i0':FROM_DISK_0,
         'input_type':'burst3_oscillations',
         
-        'job_admin':JOB_ADMIN, #user defined class    
-        'job_name':'fig6_scl_STp',
+        'job_admin':JOB_ADMIN, #user defined clas
+        'job_name':'fig6_0.2rest',
 
+        'l_hours':['03','01','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
-        'l_hours':  ['02','02','00'], #12 because of 1.0 proportion connected
         'l_minutes':['00','00','05'],
-        'l_seconds':['00','00','00'],             
-        'labels':['D1,D2 puls=5',], 
+        'l_seconds':['00','00','00'],            
+        'labels':['Only D1', 
+                   'D1,D2',
+                   'MSN lesioned (D1, D2)',
+                   'FSN lesioned (D1, D2)',
+                   'GPe TA lesioned (D1,D2)'], 
         
         'local_num_threads':LOCAL_NUM_THREADS,
                  
-        'max_size':20000,
+        'max_size':20000.,
         'module':module,
         
-        'nets':['Net_0', 'Net_1'],
-        'nets_to_run':['Net_0', 'Net_1'],
-                
+        'nets':['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4'],
+        'nets_to_run':['Net_0', 'Net_1', 'Net_2', 'Net_3', 'Net_4'],
+        
         'other_scenario':True,
-        
+                 
         'path_rate_runs':path_rate_runs,
-        'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
+        'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',       
         'perturbation_list':ops,
-        'proportion_connected':proportion_connected, #related to toal number fo runs
         
-        'p_pulses':[5]*NUM_NETS, #size of labels
-
-        'p_sizes':[1.]*NUM_RUNS,
-        'p_subsamp':[1.]*NUM_RUNS,
+        'proportion_connected':[0.2]*1,#NUM_NETS, #related to toal number fo runs
+        'p_sizes':[1.],
+        'p_subsamp':[1.],
         
         'STN_amp_mod':STN_amp_mod,
  
-        'threshold':14.,
+         'threshold':14.,
         'tuning_freq_amp_to':'M2',
         
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
-
+         
         }
+
 if my_socket.determine_computer()=='milner':
     kw_add={
             'duration':[907.,100.0],            
@@ -120,7 +124,7 @@ elif my_socket.determine_computer() in ['thalamus','supermicro']:
             'rep':5,
             'time_bin':1000./256,
             }
-    
+
 kwargs.update(kw_add)
 
 p_list=pert_add_go_nogo_ss(**kwargs)
@@ -130,4 +134,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(num_sims, [num_sims,num_sims,NUM_RUNS], a_list, k_list )
+loop(3, [num_sims,num_sims,NUM_RUNS], a_list, k_list )
+        

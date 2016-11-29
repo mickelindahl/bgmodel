@@ -55,21 +55,21 @@ def get():
         d={}
         misc.dict_update(d, solution['equal']) 
         
-        ratio=12./y
+        ratio=100./y
         
-        dd={'nest':{'GA_M1_gaba':{'weight':0.2*ratio}, 
-                    'GA_M2_gaba':{'weight':0.4*ratio}}}
+        dd={'nest':{'GA_M1_gaba':{'weight':0.4*ratio}, 
+                    'GA_M2_gaba':{'weight':0.8*ratio}}}
         misc.dict_update(d,dd)            
          
         # Decreasing from 2 leads to ...
         # Increasing from 2 leads to ... 
-        dd={'nest':{'GA_FS_gaba':{'weight':.4*ratio}}}
+        dd={'nest':{'GA_FS_gaba':{'weight':2./0.29*(17./66.)*ratio}}}
         misc.dict_update(d,dd)           
         
         # Just assumed to be 12 ms    
-        dd={'nest':{'M1_low':{'GABAA_3_Tau_decay':12./ratio},  
-                    'M2_low':{'GABAA_3_Tau_decay':12./ratio},
-                    'FS_low':{'GABAA_2_Tau_decay':12./ratio},     
+        dd={'nest':{'M1_low':{'GABAA_3_Tau_decay':87./ratio},  
+                    'M2_low':{'GABAA_3_Tau_decay':76./ratio},
+                    'FS_low':{'GABAA_2_Tau_decay':66./ratio},     
                    }}
         
         misc.dict_update(d,dd)  
@@ -157,9 +157,10 @@ def get():
         misc.dict_update(d, solution['equal']) 
         
         dd={'conn': {'GA_GA_gaba':{'fan_in0': y,'rule':'all-all' }, 
-                     'GA_GI_gaba':{'fan_in0': 2,'rule':'all-all' },
-                     'GI_GA_gaba':{'fan_in0': 30-y,'rule':'all-all' },
-                     'GI_GI_gaba':{'fan_in0': 28,'rule':'all-all' }}}
+                     
+                     'GF_GA_gaba':{'fan_in0': int((30-y)*0.1),'rule':'all-all' },
+                     'GI_GA_gaba':{'fan_in0': (30-y)-int((30-y)*0.1),'rule':'all-all' },
+                     }}
         
         misc.dict_update(d, dd)
          

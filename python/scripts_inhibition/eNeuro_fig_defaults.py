@@ -10,5 +10,5 @@ idx_beta=0
 idx_sw=1
 STN_amp_mod_beta=3.0
 STN_amp_mod_sw=1.0
-freq_beta=0.4 #choosen freq
-freq_sw=0.4
+freq_beta=0.45 #choosen freq
+freq_sw=0.45

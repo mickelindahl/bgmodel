@@ -60,7 +60,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':range(11, NUM_RUNS), #A run for each perturbation
+        'do_runs':range(0, 11), #A run for each perturbation
         'do_obj':False,
         'do_nets':['Net_0', 'Net_1'],
         

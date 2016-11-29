@@ -778,7 +778,10 @@ def show_summed_STN(d, **k):
     axs[2].my_remove_axis(xaxis=True, yaxis=True)
     axs[3].my_remove_axis(xaxis=False, yaxis=True)    
     
-    axs[7].my_set_no_ticks(xticks=4)  
+    
+    for i in range(4,8):
+        axs[i].my_set_no_ticks(xticks=4)
+#     axs[7].my_set_no_ticks(xticks=4)  
     
     
     
@@ -1217,6 +1220,9 @@ def show_summed2(d, **k):
         
     for i in range(4,8):
         axs[i].set_yticks(k.get('xticks_coherence',[0.0, 0.5]))
+       
+#         axs[i].tick_params('both', length=1, width=1, which='major', direction='out')
+        
         
     for i in range(8,12):
 
@@ -1229,8 +1235,11 @@ def show_summed2(d, **k):
         axs[i].set_yticks([0.0, round(v*1.1/2,1)])
         axs[i].my_set_no_ticks(xticks=4)  
     
+    for i in range(4,8):
+        axs[i].my_set_no_ticks(xticks=4)
+#         axs[7].my_set_no_ticks(xticks=4)     
+#     axs[6].my_set_no_ticks(xticks=4) 
     
-    axs[7].my_set_no_ticks(xticks=4)     
     axs[4].text(-0.45, 
                 -1.1, 
                 'Coherence', 

@@ -20,21 +20,27 @@ from core import directories as dr
 from core import my_socket
 from core.network.default_params import Perturbation_list as pl
 
-import fig_defaults as fd
-import fig_01_and_02_pert as op
-import fig_07_pert_conn as op_conn
-import fig_07_pert_nuclei as op_nuc
-import fig_03_pert_dop as op_dop
+import eNeuro_fig_defaults as fd
+import eNeuro_fig_01_and_02_pert as op
+import eNeuro_fig_07_pert_conn as op_conn
+import eNeuro_fig_07_pert_nuclei as op_nuc
+import eNeuro_fig_03_pert_dop as op_dop
 import scripts_inhibition.base_Go_NoGo_compete as module
 import sys
 import pprint
 pp=pprint.pprint
 
-path_rate_runs=get_path_rate_runs('fig_01_and_02_sim_inh/')
+path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
 ops=[op.get()[fd.idx_beta]] # 0 is beta
-l_op_conn=[17, 51, 57, 67, 107, 137, 161, 167, 171, 177, 181, 187, 201, 211, 217, 221, 227]#12, 97, 108, 109, 127, 132 ]    
-l_op_nuc=[ 8, 16, 17, 25, 32, 33, 40, 49, 56, 57, 64]#16, 33, 49, 57, 64]
-l_op_dop=range(3,19)
+# l_op_conn=[17, 51, 57, 67, 107, 137, 161, 167, 171, 177, 181, 187, 201, 211, 217, 221, 227]#12, 97, 108, 109, 127, 132 ]    
+# l_op_nuc=[ 8, 16, 17, 25, 32, 33, 40, 49, 56, 57, 64]#16, 33, 49, 57, 64]
+l_op_conn=[8, 11, 12, 35, 37, 38, 40, 47, 48, 49, 50] #12, 97, 108, 109, 127, 132 ]    
+l_op_nuc=[2,4,5,8,9, 10,11,13,15,16]#16, 33, 49, 57, 64]
+
+l_op_dop=range(3,23)
+
+l_op_conn2=[4]
+l_op_nuc2=[11,12,14]
 # [4, #CTX-M1
 #           5, #CTX-M2"
 #           6, #MS-MS
@@ -63,15 +69,22 @@ Issuse wtih:
 
 op_pert_add=[pl(**{'name':'Control'})]
 
-opc=op_conn.get()
+opc=op_conn.get([0,6])
 op_pert_add+=[opc[i] for i in l_op_conn]
 
-opn=op_nuc.get()
+
+opn=op_nuc.get([0,7])
 op_pert_add+=[opn[i] for i in l_op_nuc]
 
 opn=op_dop.get()
 op_pert_add+=[opn[i] for i in l_op_dop]
 
+opc=op_conn.get([0,6])
+op_pert_add+=[opc[i] for i in l_op_conn2]
+
+
+opn=op_nuc.get([0,7])
+op_pert_add+=[opn[i] for i in l_op_nuc2]
 
 for i, o in enumerate(op_pert_add):
     print i, o
@@ -83,7 +96,7 @@ NUM_RUNS=len(op_pert_add)
 
 
 dc=my_socket.determine_computer
-CORES=40*2 if dc()=='milner' else 10
+CORES=40*6 if dc()=='milner' else 10
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
@@ -101,7 +114,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':[44],#range(44-15,NUM_RUNS),#[2,5,7,8,10,11,12,15,18,19,20,21,22],#range(NUM_RUNS),#NUM_NETS),
+        'do_runs':[42],#range(NUM_RUNS-3, NUM_RUNS),#[2,5,7,8,10,11,12,15,18,19,20,21,22],#range(NUM_RUNS),#NUM_NETS),
         'do_obj':False,
 
         'do_not_record':['M1', 'M2', 'FS','GA','GI', 'ST'], 
@@ -116,7 +129,7 @@ kwargs={
         'job_admin':JOB_ADMIN, #user defined clas
         'job_name':'fig7_rec',
 
-        'l_hours':['04','01','00'],
+        'l_hours':['04','03','00'],
         'l_mean_rate_slices':['mean_rate_slices'],
         'l_minutes':['00','00','05'],
         'l_seconds':['00','00','00'],            
@@ -176,5 +189,5 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(10, [NUM_RUNS,NUM_RUNS,NUM_RUNS], a_list, k_list )
+loop(NUM_RUNS, [NUM_RUNS,NUM_RUNS,NUM_RUNS], a_list, k_list )
         
