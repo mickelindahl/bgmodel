@@ -381,6 +381,7 @@ def _convolve(binned_data, bin_extent=1, kernel_type='triangle', axis=0,
         
     if len(kernel)>binned_data.shape[-1]:
         print 'j'   ,len(kernel),binned_data.shape[-1]
+        
     assert len(kernel)<binned_data.shape[-1], 'kernel to big for data set'
     
     conv_data=[]

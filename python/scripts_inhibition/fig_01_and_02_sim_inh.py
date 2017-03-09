@@ -13,13 +13,12 @@ from core import directories as dr
 from scripts_inhibition.base_simulate import (
                       get_args_list_inhibition,
                       get_kwargs_list_indv_nets,
-
                       pert_add_inhibition) 
 from core import my_socket
 
 import config
-import fig_01_and_02_pert as op
 import scripts_inhibition.base_inhibition_striatum as module
+import fig_01_and_02_pert as op
 import pprint
 pp=pprint.pprint
 

@@ -14,13 +14,14 @@ import core.plot_settings as ps
 
 from matplotlib import ticker
 from matplotlib.font_manager import FontProperties
-from core.my_signals import Data_bar
+from core.my_signals import Data_bar, Data_firing_rate
 from core import misc
-from core.data_to_disk import Storage_dic
+from core.data_to_disk import Storage_dic, text_save
 from core.network.manager import get_storage, save
 from scripts_inhibition.base_simulate import get_file_name, save_figures
 import pprint
 from copy import deepcopy
+from cmath import isnan
 
 pp=pprint.pprint
 
@@ -107,7 +108,10 @@ def extract_data(d, nets, models, attrs, **kwargs):
 
 
         if keys[-1]=='firing_rate':
+            y0=val.y
+            x0=val.x
             val.y=val.y[100:] #remove transient artifacts at start of sim
+            val.x=val.x[100:]
             std=numpy.std(val.y)
             v=numpy.mean(val.y)
             
@@ -179,13 +183,19 @@ def extract_data(d, nets, models, attrs, **kwargs):
             bol=(psd.x>0)*(psd.x<oi_upper)
             integral2=sum(psd.y[bol])
             oscillation_index=integral1/integral2
-
+            
+            if (isnan(oscillation_index)):
+                oscillation_index=0
+                
             args=[[keys, keys[0:-1]+['synchrony_index'],
                    keys[0:-1]+['oscillation_index'],
-                  keys[0:-1]+['psd2']],
+                  keys[0:-1]+['psd2'],
+                  keys[0:-1]+['firing_rates']],
                   [v, synchrony_index,
                    oscillation_index,
-                   psd]]
+                   psd, 
+#                    Data_firing_rate(**{'x':x0,'y': y0})
+                   ]]
         
         if keys[-1]=='psd':
             psd=val
@@ -222,11 +232,12 @@ def compute_mse(v1,v2):
 #     if v1<=0.:
 #     v_mse=numpy.NAN
 #     else:
-#     try:
-    v_mse=(v1-v2)/v1
-#     except:
-#         print 'Failed cmp v_mse for'
-#         v_mse=1.
+    try:
+#     v1+=0.0000000001
+        v_mse=(v1-v2)/v1
+    except:
+        print 'Failed cmp v_mse for'
+        v_mse=1.
     if isinstance(v_mse, numpy.ndarray):
         v_mse[numpy.isnan(v_mse)]=0
     elif numpy.isnan(v_mse):
@@ -269,6 +280,7 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                     x=float(x)
                     name=s+'_'+t
                 elif len(run_key_list)==3:
+		    #pp(run_key_list)	
                     name,_,mod=run_key_list
 #                     print mod
                     if not mod.isdigit() and not mod[0:3]=='mod':
@@ -283,7 +295,8 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 elif len(run_key_list)==1:
                     name=run_key_list[0]
                     x=0
-#                 print name 
+                    
+                print run_key_list 
                 keys1=[run, 'Net_0', model, attr]
                 keys2=[run, 'Net_1', model, attr]
                 keys3=['control',name, model, attr]
@@ -303,8 +316,10 @@ def compute_performance(d, nets, models, attrs, **kwargs):
                 try:
                     v2=misc.dict_recursive_get(d, keys2)               
                 except:
-                    print keys2
+                    print str(keys2) + 'Missing!!!!'
+#                    continue
                     pp(misc.dict_recursive_get(d, keys2[:3]))
+                    
                     raise
                 
 
@@ -432,13 +447,16 @@ def nice_labels(version=0):
        'ST':r'STN',
        'FS_M1':r'FSN$\to$$MSN_{D1}$',
        'FS_M2':r'FSN$\to$$MSN_{D2}$',
+       'GI_FS':r'$GPe_{TA}$$\to$FSN',
        'GA_FS':r'$GPe_{TA}$$\to$FSN',
        'GA_M1':r'$GPe_{TA}$$\to$$MSN_{D1}$',
        'GA_M2':r'$GPe_{TA}$$\to$$MSN_{D2}$',
+       'GA_MS':r'$GPe_{TA}$$\to$$MSN_{D2}$',
+       'GP_FS':r'$GPe_{TA}$$\to$FSN',
        'GP_ST':r'GPe$\to$STN',
        'GA_ST':r'$GPe_{TA}$$\to$STN',
        'GI_ST':r'$GPe_{TI}$$\to$STN',
-       'GP_FS':r'$GPe_{TA}$$\to$FSN',
+       'GP_FS':r'$GPe$$\to$FSN',
        'GP_GP':r'GPe$\to$GPe',
        'GA_GA':r'$GPe_{TA}$$\to$$GPe_{TA}$',
        'GA_GI':r'$GPe_{TA}$$\to$$GPe_{TI}$',
@@ -459,7 +477,24 @@ def nice_labels(version=0):
                   'GA_GA':'TA vs TA'})
  
     if version==2:
-        d.update({'GA':'TA',
+        d.update({
+                  'M2_GI':r'$MSN_{D2}$$\to$TI',
+                  'GA_MS':r'TA$\to$$MSN_{D2}$',
+                  'GA_FS':r'TA$\to$FSN',
+                  'GI_FS':r'TI$\to$FSN',
+                  'GA_M1':r'TA$\to$$MSN_{D1}$',
+                  'GA_M2':r'TA$\to$$MSN_{D2}$',
+                  'GA_MS':r'TA$\to$$MSN_{D2}$',
+                    'GA_GA':r'TA$\to$TA',
+                   'GA_GI':r'TA$\to$TI',
+                   'GI_GA':r'TI$\to$TA',
+                   'GI_GI':r'TI$\to$TI',
+                   'GI_SN':r'TI$\to$SNr',
+                'ST_GI':r'STN$\to$TI',
+                'ST_GA':r'STN$\to$TA',
+                'GI_ST':r'TI$\to$STN',
+    
+                  'GA':'TA',
                   'GI':'TI',
                   'M1':r'$MSN_{D1}$',
                   'M2':r'$MSN_{D2}$',})   
@@ -480,11 +515,11 @@ def gs_builder_conn(*args, **kwargs):
               hspace=kwargs.get('hspace', 0.1 ))
 
     iterator = [[slice(0,1),slice(0,1)],
-                [slice(1,4),slice(0,1)],
-                [slice(4,6),slice(0,1)],
+                [slice(1,6),slice(0,1)],
+                [slice(6,10),slice(0,1)],
                 [slice(0,1),slice(1,2)],
-                [slice(1,4),slice(1,2)],
-                [slice(4,6),slice(1,2)]]
+                [slice(1,6),slice(1,2)],
+                [slice(6,10),slice(1,2)]]
     
     return iterator, gs, 
 
@@ -585,9 +620,9 @@ def gs_builder_oi_si(*args, **kwargs):
 
     iterator = [[slice(1,2), slice(0,2) ],
                 [slice(2,5), slice(0,2) ],
-                [slice(1,5), slice(3,6) ],
+                [slice(1,5), slice(3,7) ],
                 [slice(5,9), slice(0,2) ],
-                [slice(5,9), slice(3,6) ]]
+                [slice(5,9), slice(3,7) ]]
     
     return iterator, gs, 
 
@@ -646,6 +681,9 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
     if flag=='gradient':
         data_keys=['z']
     
+
+    #pp(d)
+    #raise
     for k in kwargs.get('key_sort', sorted)(d.keys()):
         if k in exclude:
             continue        
@@ -959,10 +997,14 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     ax=axs[0]
     
 
-
+    pp(d3)
     bol=[l=='no_pert' for l in d3['labelsx_meta']]    
     y=[]    
     for i, _ in enumerate(d0['labelsy']):
+         
+        pp(d1['y'])
+        pp(i)
+        pp(bol)
         val=d1['y'][i, numpy.array(bol)][0][0]
         y.append(val)
 #         y[1].append(d1['y'][i, numpy.array(bol)][0])
@@ -1001,10 +1043,11 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     kw['horizontal_lines']=False
     kw['fontsize_x']=k.get('fontsize_x',24)
     kw['fontsize_y']=k.get('fontsize_y',24)
-    kw['nice_labels_x']=nice_labels(version=0)
+    kw['nice_labels_x']=nice_labels(version=2)
     kw['nice_labels_y']=nice_labels(version=0)
     kw['cmap']='coolwarm'
     kw['color_line']='k'
+    kw['csv_path']=k.get('data_path')+'syncrony.csv'
     _plot_conn(**kw)
     
     box = ax.get_position()
@@ -1061,6 +1104,7 @@ def plot_oi_si_simple(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     
     v=numpy.array(v)
     kw['ax']=ax
+    kw['csv_path']=k.get('data_path')+'oscillation.csv'
     kw['d']={'z':v,
             'labelsx_meta':[e for i, e in 
                             enumerate(d2['labelsx_meta']) if bol[i]],
@@ -1107,7 +1151,7 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     tfs=k.get('cohere_fig_title_fontsize',6)
     scale=k.get('scale', 1)
     fig, axs=ps.get_figure2(n_rows=13,
-                             n_cols=6,  
+                             n_cols=7,  
                              w=int(72/2.54*11.6)*scale,
                              h=int((72/2.54*11.6)/1.6)*scale,
                              linewidth=linewidth,
@@ -1126,11 +1170,11 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
 
     bol=[l=='Normal' for l in d1['labelsx_meta']]
     ax1.set_xlim([-0.2,4.])
-    ax2.set_ylim([0,15]) 
+    ax2.set_ylim([0,20]) 
     
-    ax1.set_ylim([40,55])
+    ax1.set_ylim([40,60])
     y=[[],[]]
-    for i, _ in enumerate(c):
+    for i, _ in enumerate(d0['labelsy']):
         y[0].append(numpy.mean(d0['y'][i,:]))
         y[1].append(d1['y'][i, numpy.array(bol)][0])
 
@@ -1232,10 +1276,11 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
     kw['vertical_lines']=False
     kw['fontsize_x']=k.get('fontsize_x',24)*scale
     kw['fontsize_y']=k.get('fontsize_y',24)*scale
-    kw['nice_labels_x']=nice_labels(version=0)
+    kw['nice_labels_x']=nice_labels(version=2)
     kw['nice_labels_y']=nice_labels(version=0)
     kw['cmap']='coolwarm'
     kw['color_line']='k'
+    kw['csv_path']=k.get('data_path')+'syncrony.csv'
     _plot_conn(**kw)
     
     box = ax.get_position()
@@ -1269,6 +1314,7 @@ def plot_oi_si(d0,d1,d2,d3, flag='dop', labelsx=[], **k):
         v.append(d3['y'][i,bol]/y2[1][i])
 
     kw['ax']=ax
+    kw['csv_path']=k.get('data_path')+'oscillation.csv'
     kw['d']={'z':numpy.array(v),
             'labelsx_meta':[e for i, e in enumerate(d2['labelsx_meta']) if bol[i]],
             'labelsx':range(len(d2['y'][0,bol])),
@@ -1462,6 +1508,7 @@ def _plot_bar(**kwargs):
      
 def _plot_conn(**kwargs):
     
+    csv_path= kwargs['csv_path']
     ax=kwargs.get('ax')
     d=kwargs.get('d')
     images=kwargs.get('images')
@@ -1547,6 +1594,18 @@ def _plot_conn(**kwargs):
 #     Z=numpy.array(Z)
 #     
     print x1.shape,y1.shape, d[z_key][::-1,].shape
+#     print len(labelsy_meta[::-1])
+#     print d[z_key][::-1,]
+    
+    
+    csv=';'.join(['nuclei']+labelsx_meta)+'\n'
+    for i, l1 in enumerate(d[z_key][::-1,]):
+#         print labelsy_meta[::-1][i],l1
+        csv+=';'.join([labelsy_meta[::-1][i]]+map(str,map(lambda x:round((x-1)*100,2),list(l1))))+'\n'
+    
+    print 'Saving csv to: ', csv_path
+    text_save(csv, csv_path)
+    
     im = ax.pcolor(x1, y1, d[z_key][::-1,], cmap=cmap)       
 #     im = ax.pcolor(x1, y1, Z[::-1,], cmap=cmap)       
 
@@ -1658,6 +1717,7 @@ def plot_conn(d0, d1, d2, d3, **kwargs):
                 'nice_labels_y':nice_labels(version=1),
                 'cmap':cmap,
                 'color_line':color_line,
+                'csv_path':kwargs.get('data_path')
                 
                 }
         k.update(kwargs)
@@ -2000,7 +2060,7 @@ def main(**kwargs):
 
     save_figures(figs, script_name, dpi=200)
 
-    pylab.show()        
+#    pylab.show()        
     
 
 #     pp(d)

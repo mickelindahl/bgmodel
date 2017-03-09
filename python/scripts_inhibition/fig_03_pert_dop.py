@@ -43,6 +43,7 @@ def get_change_to(flag, E_rev='low'):
     if flag=='GP_FS':
         if E_rev=='low':
             d={'nest':{'FS_low':{'beta_I_GABAA_2':x,
+                                 'beta_I_GABAA_3':x,
                                  }},
                 }
 
@@ -67,6 +68,8 @@ def get_change_to(flag, E_rev='low'):
     if flag=='GP':
         d={'nest':{'GI':{'beta_E_L':x,
                          'beta_V_a':x},
+                   'GF':{'beta_E_L':x,
+                         'beta_V_a':x},
                    'GA':{'beta_E_L':x,
                          'beta_V_a':x},
            }}
@@ -80,7 +83,8 @@ def get_change_to(flag, E_rev='low'):
     #11 *
     if flag=='GP_GP':
         d={'nest':{'GI':{'beta_I_GABAA_2':x},
-                   'GA':{'beta_I_GABAA_2':x}
+                   'GA':{'beta_I_GABAA_2':x},
+                   'GF':{'beta_I_GABAA_2':x}
                    }}
 
     #12 *

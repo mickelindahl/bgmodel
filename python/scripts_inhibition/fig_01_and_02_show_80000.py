@@ -121,8 +121,8 @@ def plot(file_name, figs, setup, flag,  **k):
 
 figs=[]
 file_name=('/home/mikael/results/papers/inhibition/network/'
-           +'milner/fig_01_and_02_sim_beta_80000/'
-           + 'script_0002_rEI_1700.0_rEA_200.0_rCS_250.0_rES_1800.0_rM2_740.0-amp_0.08_0.975_stn_3.0'
+           +'milner/eNeuro_fig_01_and_02_sim_beta_80000/'
+           + 'script_0000_rEI_1530.0_rEA_600.0_rCS_250.0_rES_2000.0_rM2_740.0-amp_0.11_1.0_stn_3.0'
 #            +'script_0003_rEI_1700.0_rEA_200.0_rCS_250.0-amp_0.14_1.1_stn_3.0'
            )
 setup=base_oscillation_beta.Setup(20,1)
@@ -130,8 +130,8 @@ plot(file_name, figs, setup, 'beta', **{'linewidth':0.5})
 
 
 file_name=('/home/mikael/results/papers/inhibition/network/'
-           +'milner/fig_01_and_02_sim_sw_80000/'
-           + 'script_0000_rEI_800.0_rEA_100.0_rCS_170.0_rES_1800.0_rM2_740.0-amp_0.08_0.85'
+           +'milner/eNeuro_fig_01_and_02_sim_sw_80000/'
+           + 'script_0000_rEI_720.0_rEA_300.0_rCS_170.0_rES_1800.0_rM2_740.0-amp_0.07_0.8'
 #            +'script_0001_rEI_800.0_rEA_100.0_rCS_170.0-amp_0.1_0.9'
            )
 

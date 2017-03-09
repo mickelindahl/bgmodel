@@ -3,6 +3,8 @@ Created on Aug 12, 2013
 
 @author: lindahlm
 '''
+from core import monkey_patch as mp
+mp.patch_for_milner()
 
 from core.network.manager import Builder_inhibition_striatum as Builder
 from core.parallel_excecution import loop
@@ -21,17 +23,20 @@ import sys
 import pprint
 pp=pprint.pprint
 
-ops=op.get() 
+# dr.HOME_DATA='/home/mikael/results/papers/inhibition/network/milner'
+
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 2
+FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 1
+
 NUM_NETS=6
-NUM_RUNS=2 #A run for each perturbation
+ops=op.get()
+NUM_RUNS=len(ops) #A run for each perturbation
 num_sims=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 4
+CORES=40*2 if dc()=='milner' else 4
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 1
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
@@ -42,18 +47,18 @@ kwargs={
         'file_name':FILE_NAME,
         'from_disk_0':FROM_DISK_0,
         
-        'debug':True,
+        'debug':False,
         'do_runs':range(NUM_RUNS), #A run for each perturbation
         'do_obj':False,
-        'do_nest':['Net_{}'.format(i) for i in range(NUM_NETS)],
+#         'do_nest':['Net_{}'.format(i) for i in range(NUM_NETS)],
         
         'i0':FROM_DISK_0,
         
         'job_admin':JOB_ADMIN, #user defined class
-        'job_name':'fig_03A',
+        'job_name':'fig_04A',
         
-        'l_hours':  ['00','00','00'],
-        'l_minutes':['15','10','5'],
+        'l_hours':  ['02','02','00'],
+        'l_minutes':['00','00','5'],
         'l_seconds':['00','00','00'],
         
         'lower':0.8,
@@ -65,12 +70,12 @@ kwargs={
         'nets_to_run':['Net_{}'.format(i) for i in range(NUM_NETS)],
         
         'resolution':10,
-        'repetitions':5,
+        'repetitions':1,
         
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
         
-        'size':3000,
+        'size':80000,
         
         'upper':1.5,
         
@@ -88,6 +93,6 @@ for obj in a_list:
     print obj.kwargs['setup'].nets_to_run
 
 
-loop(6,[num_sims,num_sims,NUM_RUNS], a_list, k_list )
+loop(10,[num_sims,num_sims,NUM_RUNS], a_list, k_list )
 
         

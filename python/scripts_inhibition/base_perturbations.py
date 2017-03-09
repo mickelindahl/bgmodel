@@ -57,7 +57,9 @@ def get_solution():
     # 12 Hz TA firing rate are created.  
     d={'nest':{'ST_GA_ampa':{'weight':0.25},
                'GA_GA_gaba':{'weight':0.25},
-               'GI_GA_gaba':{'weight':0.25}}}
+               'GI_GA_gaba':{'weight':0.25},
+               'GF_GA_gaba':{'weight':0.25},
+               }}
     misc.dict_update(solution, {'mul':d})    
     
     d={'node':{'EA':{'rate':200.0}}}
@@ -71,7 +73,10 @@ def get_solution():
            
     # Set such that GPe TI fires in accordance with slow wave sleep
     # in dopamine depleted rats.
-    d={'node':{'EI':{'rate':1400.0}}} # Increase with 340, to get close to 24 Hz sw dopamine depleted rats TI
+    d={'node':{
+               'EI':{'rate':1400.0}, # Increase with 340, to get close to 24 Hz sw dopamine depleted rats TI
+               'EF':{'rate':1400.0}, # Increase with 340, to get close to 24 Hz sw dopamine depleted rats TI
+               }}
     misc.dict_update(solution,{'equal':d})           
     
     # Decrease weight since tau decay is 5 times stronger
@@ -104,13 +109,190 @@ def get_solution():
     misc.dict_update(solution,{'equal':{'nest':{'C2_M2_nmda':{'delay':y}}}})            
     misc.dict_update(solution,{'equal':{'nest':{'CF_FS_ampa':{'delay':y}}}})     
     
+    
     # Dopamine effect on MS-GI
-    d={'equal':{'nest':{'GI':{'beta_I_GABAA_1': f_beta_rm(2)}}}}
+    d={'equal':{'nest':{
+                        'GI':{'beta_I_GABAA_1': f_beta_rm(2)},
+                        'GF':{'beta_I_GABAA_1': f_beta_rm(2)},
+                        }}}
     misc.dict_update(solution,d)
     
     # GI predominently connect to to GA 
-    d={'conn': {'GA_GA_gaba':{'fan_in0': 5}, 
-                'GI_GA_gaba':{'fan_in0': 25 }}}
+#     d={'equal':{'conn': {
+#                         'GA_GA_gaba':{'fan_in0': 5}, 
+#                         'GI_GA_gaba':{'fan_in0': round(25*0.9) },
+#                         'GF_GA_gaba':{'fan_in0': 25-round(25*0.9) },
+#                         }}]
+    
+    misc.dict_update(solution,d) 
+    
+    return solution
+
+
+
+def get_solution_eNeuro_rev():
+
+
+    solution={'mul':{},
+              'equal':{}}
+    
+    #Decreasing from 0.25 leads to ...
+    #Increasing from 0.25 leads to ...
+    d={'nest':{'M1_M1_gaba':{'weight':0.25},
+               'M1_M2_gaba':{'weight':0.25},
+               'M2_M1_gaba':{'weight':0.25},
+               'M2_M2_gaba':{'weight':0.25}}}
+    misc.dict_update(solution,{'mul':d})    
+    
+    # GA firing rate needs to be maintained, around 12 Hz for sw in 
+    # dopamine depleted rats). When decreasing/increasing
+    # ST-GA one need to either compensate by changing inhibition from 
+    # GPe and/or EA external input (assume that synapses from TA and TI
+    # are of equal strength. 
+    
+    # This script is first run where ST-GA GP-GA and EA individually are
+    # perturbed to determine each relative influence to TA firing rate. 
+    # From this data then combinations fo changes that should results in
+    # 12 Hz TA firing rate are created.  
+    d={'nest':{'ST_GA_ampa':{'weight':0.3},
+               'GA_GA_gaba':{'weight':0.25},
+               'GI_GA_gaba':{'weight':0.25},
+               'GF_GA_gaba':{'weight':0.25},
+               }}
+    misc.dict_update(solution, {'mul':d})    
+
+    # EA rate	    
+    d={'node':{'EA':{'rate':200.0}}}
+    misc.dict_update(solution,{'equal':d})
+    
+
+    
+    
+    # Lower GA IF curve.
+    d={'nest':{'GA':{
+                      'b':1.5,
+                      'C_m':1.5,
+                      'Delta_T':1.5
+                      }}}
+    misc.dict_update(solution,{'mul':d}) 
+    
+    # CF rate 
+    d={'node':{'CF':{'rate':950.0}}}
+    misc.dict_update(solution,{'equal':d})  
+    
+    
+    d={'netw':{
+               'GA_prop':0.25,
+               'GI_prop':0.675, #<=0.9*0.75
+               'GF_prop':0.075,     
+               }}
+    misc.dict_update(solution,{'equal':d})  
+    
+    
+    # C1 and C2 have been set such that MSN D1 and MSN D2 fires at 
+    # low firing rates (0.1-0,2 Hz). 
+    d={'node':{'C1':{'rate':560.0},
+               'C2':{'rate':700.}
+               }}
+    misc.dict_update(solution,{'equal':d})              
+           
+    # Set such that GPe TI fires in accordance with slow wave sleep
+    # in dopamine depleted rats.
+    d={'node':{
+               'EI':{'rate':1400.0}, # Increase with 340, to get close to 24 Hz sw dopamine depleted rats TI
+               'EF':{'rate':1400.0}, # Increase with 340, to get close to 24 Hz sw dopamine depleted rats TI
+               }}
+    misc.dict_update(solution,{'equal':d})           
+    
+    # Decrease weight since tau decay is 5 times stronger
+    d={'nest':{'GA_M1_gaba':{'weight':0.04}, 
+               'GA_M2_gaba':{'weight':0.08}}}
+    misc.dict_update(solution,{'equal':d})            
+     
+    # GF connects stronger to GA. This accounts for Gage 2010 data.
+#     d={'nest':{'GA_FS_gaba':{'weight':0.4},
+#                'GF_FS_gaba':{'weight':0.6}}}
+#     misc.dict_update(solution,{'mul':d})    
+       
+
+    # Long time constant from TA    
+    d={'nest':{'M1_low':{'GABAA_3_Tau_decay':87.},  
+               'M2_low':{'GABAA_3_Tau_decay':76.},
+               'FS_low':{'GABAA_2_Tau_decay':66.},     
+               }}
+    misc.dict_update(solution,{'equal':d})           
+
+    # Dopamine effect on TA and TI to striatum
+    d={'nest':{
+               'M1_low':{'beta_I_GABAA_3': f_beta_rm(2.6),
+                         'beta_I_GABAA_2': f_beta_rm(0.25)},
+               'M2_low':{'beta_I_GABAA_3': f_beta_rm(2.5),
+                         'beta_I_GABAA_2': f_beta_rm(0.25)},
+               'FS_low':{'beta_I_GABAA_2': f_beta_rm(1.6)},
+              },
+        'conn':{'M1_M1_gaba':{'beta_fan_in': f_beta_rm(0.25)},
+                'M1_M2_gaba':{'beta_fan_in': f_beta_rm(0.25)},
+                'M2_M1_gaba':{'beta_fan_in': f_beta_rm(0.25)},
+                'M2_M2_gaba':{'beta_fan_in': f_beta_rm(0.25)}
+               }}    
+    misc.dict_update(solution,{'equal':d})
+    
+    
+    # Weight TA M1/M2 1/2 
+   # d={'nest':{
+   #             'GA_M1_gaba':{'weight':0.01},
+   #             'GA_M2_gaba':{'weight':0.01*2},
+   #            }}
+
+    misc.dict_update(solution,{'equal':d})
+
+    #Dopamine such that STN increase above 50-100 %    
+    x=2.5
+    d={'nest':{'ST':{'beta_I_AMPA_1': f_beta_rm(x),
+                     'beta_I_NMDA_1': f_beta_rm(x)}}}
+    misc.dict_update(solution,{'equal':d})            
+
+    # Delay ctx striatum and ctx stn set to 2.5 ms Jaeger 2011
+    y=2.5
+    misc.dict_update(solution,{'equal':{'nest':{'C1_M1_ampa':{'delay':y}}}})
+    misc.dict_update(solution,{'equal':{'nest':{'C1_M1_nmda':{'delay':y}}}})            
+    misc.dict_update(solution,{'equal':{'nest':{'C2_M2_ampa':{'delay':y}}}})
+    misc.dict_update(solution,{'equal':{'nest':{'C2_M2_nmda':{'delay':y}}}})            
+    misc.dict_update(solution,{'equal':{'nest':{'CF_FS_ampa':{'delay':y}}}})     
+    
+
+    # Set delay GP->STN 1 ms and STN->GP 2 ms as Jaeger 2011. Might need say something
+    # that this is not rat data. With this the coherence in STN goes up. Total delay from cortex
+    # to STN via striatum is 2.5+7+1 = 10.5.
+    d={'nest':{'GI_ST_gaba':{'delay':1.},
+               'GF_ST_gaba':{'delay':1.},
+               
+               'ST_GI_ampa':{'delay':2.},
+               'ST_GF_ampa':{'delay':2.},
+               'ST_GA_ampa':{'delay':2.} }
+       }
+                 
+    misc.dict_update(solution,{'equal':d})
+    
+    # Dopamine effect on MS-GI
+    d={'equal':{'nest':{
+                        'GI':{'beta_I_GABAA_1': f_beta_rm(2)},
+                        'GF':{'beta_I_GABAA_1': f_beta_rm(2)},
+                        }}}
+    misc.dict_update(solution,d)
+    
+
+    # Activate GF to FS connection
+    d={ 'conn':{'GF_FS_gaba':{'lesion':False}}}
+
+    misc.dict_update(solution,{'equal':d})
+
+    # GI predominently connect to to GA 
+#     d={'equal':{'conn': {
+#                         'GA_GA_gaba':{'fan_in0': 5}, 
+#                         'GI_GA_gaba':{'fan_in0': round(25*0.9) },
+#                         'GF_GA_gaba':{'fan_in0': 25-round(25*0.9) },
+#                         }}]
     
     misc.dict_update(solution,d) 
     

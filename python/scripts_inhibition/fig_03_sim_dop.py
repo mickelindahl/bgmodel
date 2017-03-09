@@ -43,7 +43,7 @@ NUM_NETS=2
 num_sims=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 10
+CORES=40*8 if dc()=='milner' else 10
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 40 if dc()=='milner' else 10
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
@@ -57,7 +57,7 @@ kwargs={
         'cores':CORES,
         
         'debug':False,
-        'do_runs':range( NUM_RUNS), #A run for each perturbation
+        'do_runs':[3], #range( NUM_RUNS), #A run for each perturbation
         'do_obj':False,
         
         'external_input_mod':[],
@@ -108,6 +108,6 @@ for i, p in enumerate(p_list): print i, p
 a_list=get_args_list_oscillation(p_list, **kwargs)
 k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 
-loop(15,[num_sims, num_sims, num_sims/2], a_list, k_list )
+loop(min(num_sims, 15),[num_sims, num_sims, num_sims/2], a_list, k_list )
 
         

@@ -660,9 +660,13 @@ class Network(Network_base):
                'interval':1.,
                'to_file':False,
                'to_memory':True}
-            models=['FS', 'GA', 'GI',  'M1', 'M2', 'SN', 'ST']
+            models=['FS', 'GA', 'GI', 'GF', 'M1', 'M2', 'SN', 'ST']
             n=10
-            for model in ['FS', 'GA', 'GI',  'M1', 'M2', 'SN', 'ST']:
+            for model in models:
+                
+                if model not in self.pops.keys():
+                    continue
+                
                 self.pops[model].mm=self.pops[model].create_mm('vm_traces_'+model,d,
                                                                **{'slice':slice(0,n)})
             
@@ -673,6 +677,10 @@ class Network(Network_base):
             filename='/'.join(filename.split('/')[:-2])+'/vm_traces'
             d={}
             for model in models:
+                
+                if model not in self.pops.keys():
+                    continue
+                
                 v=my_nest.GetStatus(self.pops[model].mm['id'])[0]['events']
                 d[model]=v
             data_to_disk.pickle_save(d, filename)

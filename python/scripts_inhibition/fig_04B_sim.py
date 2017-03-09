@@ -4,18 +4,19 @@ Created on Aug 12, 2013
 @author: lindahlm
 '''
 
-from scripts_inhibition.base_MSN_cluster_compete import Setup
-from core.network.default_params import Perturbation_list as pl
+from core import monkey_patch as mp
+mp.patch_for_milner()
+
 from core.network.manager import Builder_MSN_cluster_compete as Builder
 from core.parallel_excecution import loop
 from core import directories as dr
-
 
 from scripts_inhibition.base_simulate import (
                       get_args_list_inhibition,
                       get_kwargs_list_indv_nets,
                       pert_add_MSN_cluster_compete) 
 from core import my_socket
+
 import config
 import scripts_inhibition.base_MSN_cluster_compete as module
 import fig_01_and_02_pert as op
@@ -23,19 +24,19 @@ import pprint
 import sys
 pp=pprint.pprint
 
-from copy import deepcopy
 
-ops=op.get()
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
+
 NUM_NETS=10
+ops=op.get()
 NUM_RUNS=len(ops) #A run for each perturbation
 num_sims=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
 CORES=40 if dc()=='milner' else 4
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
+LOCAL_NUM_THREADS= 40 if dc()=='milner' else 4 # seems to be important to put 40 here for milner
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
@@ -55,8 +56,8 @@ kwargs={
         'job_admin':JOB_ADMIN, #user defined class
         'job_name':'fig_04B',
         
-        'l_hours':  ['00','00','00'],
-        'l_minutes':['15','10','5'],
+        'l_hours':  ['02','01','00'],
+        'l_minutes':['00','00','5'],
         'l_seconds':['00','00','00'],
         
         'lower':1,
@@ -90,78 +91,6 @@ for obj in a_list:
     print obj.kwargs['setup'].nets_to_run
 
 
-loop(6,[num_sims, num_sims,NUM_RUNS], a_list, k_list )
+loop(10, [num_sims, num_sims,NUM_RUNS], a_list, k_list )
 
-# d_process_and_thread=par_process_and_thread(**kwargs)
-# pp(d_process_and_thread)
-# kwargs.update(d_process_and_thread)
-# 
-# p_list = pert_add_MSN_cluster_compete(**kwargs)
-# p_list = pert_set_data_path_to_milner_on_supermicro(p_list,
-#                                                   LOAD_MILNER_ON_SUPERMICRO)
-# 
-# for i, p in enumerate(p_list): print i, p
-# 
-# a_list=get_args_list_inhibition(p_list, **kwargs)
-# k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
-# 
-# def perturbations():
-# 
-#     threads=8
-# 
-#     l=[]
-#     
-# #     l.append(op.get()[0])
-#     l.append(op.get()[7])
-# 
-#     ll=[]
-#     
-# 
-#     l[-1]+=pl({'simu':{'threads':threads}},'=')
-#              
-#     return l, threads
-# 
-# 
-# 
-# rep=5
-# p_list, threads=perturbations()
-# for i, p in enumerate(p_list):
-#     print i, p
-# args_list=[]
-#  
-# 
-# from os.path import expanduser
-# home = expanduser("~")
-#    
-# path=(home + '/results/papers/inhibition/network/'
-#       +__file__.split('/')[-1][0:-3]+'/')
-# 
-# n=len(p_list)
-# 
-# 
-# 
-# for j in range(2,3):
-#     for i, p in enumerate(p_list):
-#         
-# # #         if i<n-9:
-# #         if i!=1:
-# #             continue
-# 
-#         from_disk=j
-# 
-#         fun=MSN_cluster_compete.main
-#         script_name=(__file__.split('/')[-1][0:-3]+'/script_'+str(i)+'_'+p.name)
-# #         fun(*[Builder, from_disk, p, script_name, 
-# #               Setup(**{'threads':threads,
-# #                         'repetition':rep})])
-#         args_list.append([fun,script_name]
-#                          +[Builder, from_disk, p, 
-#                            script_name, 
-#                            Setup(**{'threads':threads,
-#                                     'repetition':rep})])
-# 
-# # for i, a in enumerate(args_list):
-# #     print i, a
-# 
-# loop(args_list, path, 1)
-        
+      

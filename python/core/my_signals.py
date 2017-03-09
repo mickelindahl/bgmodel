@@ -468,8 +468,18 @@ class Data_firing_rate_base(object):
             y=self.y
             bins=kwargs.get('bins', 14)
             p=kwargs.get('period', 100.0)
+            
             y_mean, y_std, x = get_activity_historgram(y, bins, p)
             d = {'y':y_mean, 'y_std':y_std, 'x':x}
+ 
+            # breaks the code
+        
+#             y_mean, y_std, x, y_raw = get_activity_historgram(y, bins, p)
+#             d = {'y':y_mean, 
+#                  'y_std':y_std, 
+#                  'x':x, 
+#                 'y_raw':y_raw // brakes the code
+#                  }
         else:
             
             y=self.y_raw
@@ -568,6 +578,7 @@ def get_activity_historgram(y, bins, p):
     x = numpy.linspace(0, p, bins)
 
     return y_mean, y_std, x
+#     return y_mean, y_std, x, y //brakes the code
 
 
 class Data_fmin_base(object):
@@ -593,13 +604,17 @@ class Data_IF_curve_base(object):
         if part=='mean':rate=self.mean
         if part=='last':rate=self.last
           
+          
+        x = self.x if hasattr(self, 'x') else k['x'] 
+        
+        k.pop('x', None)
 #         std=numpy.std(isi,axis=1)
         
 #         m=numpy.mean(isi,axis=1)
 #         color=pylab.getp(ax.plot(self.x, m, marker='o', **k)[0], 'color')    
         
 #         ax.fill_between(x, m-std, m+std, facecolor=color, alpha=0.5)  
-        ax.plot(self.x, rate , **k)    
+        ax.plot(x, rate , **k)    
         ax.set_xlabel('Current (pA)') 
         ax.set_ylabel('Rate (spike/s)') 
 
@@ -1731,7 +1746,8 @@ class MySpikeList(SpikeList):
               self.id_list]
         
         spike_hist=map_parallel(spike_histogram_fun, *args, 
-                                **{'local_num_threads': kwargs.get('local_num_threads',1)})
+                                **{'local_num_threads': kwargs.get('local_num_threads',1 ),
+                                   'display':False})
         
 #         out=numpy.array(spike_hist, dtype=numpy.float32)
 #         print 'hej', len(self.ids),kwargs.get('local_num_threads',1), out.shape
@@ -1758,7 +1774,11 @@ class MySpikeList(SpikeList):
             result=result[0:upper,:]
 
         if average:
-            return numpy.mean(result, axis=0)
+            with misc.Stopwatch('Calculating mean firing rate'):
+                
+#                 return map_parallel(lambda x:numpy.mean(numpy.array(x),axis=0),
+#                              list(result))
+                return numpy.mean(result, axis=0)
         else:
             return result  
 #         kwargs=kwargs.get('kwargs',{})

@@ -182,7 +182,7 @@ def simulate(builder,
 #     file_name = get_file_name(script_name, home)
 #     file_name_figs = get_file_name_figs(script_name, home)
     
-    attr = ['firing_rate', 'mean_rate_slices']
+    attr = ['mean_rate_slices']
     models = ['M1', 'M2', 'FS', 'GI', 'GA', 'ST', 'SN']
     sets = []
     
@@ -191,6 +191,9 @@ def simulate(builder,
                                                           setup.director(),
                                                           setup.default_params())
     key=nets.keys()[0]
+    
+
+    
     file_name = get_file_name(script_name, nets[key].par)
     file_name_figs = get_file_name_figs(script_name,  nets[key].par)   
     
@@ -206,6 +209,8 @@ def simulate(builder,
                                       'x':amplitudes}}
     
     add_perturbations(perturbation_list, nets)
+    for p in sorted(perturbation_list.list):
+        print p
 #     sd = get_storage(file_name, info)
 
     # Adding nets no file name
@@ -222,7 +227,7 @@ def simulate(builder,
 def create_figs(file_name_figs, from_disks, d, models, setup):
     sd_figs = Storage_dic.load(file_name_figs)
 
-    d_plot_fr = setup.plot_fr()
+#     d_plot_fr = setup.plot_fr()
     d_plot_mr = setup.plot_mr()
     d_plot_mr2 = setup.plot_mr2()
     figs = []
