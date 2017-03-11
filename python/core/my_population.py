@@ -310,7 +310,9 @@ class MyNetworkNode(MyGroup):
         d=misc.dict_update(d, d_add) 
         if d['active']:
             _id=my_nest.Create(model, params=d['params'])
-            my_nest.ConvergentConnect(self.ids, _id )
+
+            my_nest.ConvergentConnect(self.ids, _id)
+
             d.update({'id':_id, 'model':model})
         
         return d 

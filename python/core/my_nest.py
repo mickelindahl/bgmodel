@@ -32,8 +32,8 @@ pp=pprint.pprint
 
 kernal_time=None
 
-version=int(''.join(nest.version().split(' ')[1].split('.')))
-if version<242:
+ver=int(''.join(nest.version().split(' ')[1].split('.')))
+if ver<242:
     pushsli=_kernel.pushsli
     runsli=_kernel.runsli
 else:
@@ -50,6 +50,17 @@ def Create(*args, **kwargs):
     else:
         return nest.Create(*args, **kwargs)  
 
+def ConvergentConnect(pre, post,  *args, **kwargs):
+    if hasattr(nest, 'ConvergentConnect'):
+        nest.ConvergentConnect(pre, post,  *args, **kwargs)
+    else:
+        nest.Connect(pre, post,  *args, **kwargs)
+
+def DivergentConnect(pre, post,  *args, **kwargs):
+    if hasattr(nest, 'DivergentConnect'):
+        nest.DivergentConnect(pre, post,  *args, **kwargs)
+    else:
+        nest.Connect(pre, post,  *args, **kwargs)
 
 def Connect_DC(*args, **kwargs):
     if comm.is_mpi_used():
@@ -465,9 +476,13 @@ def get_default_module_paths(home_module):
 #     if nest.version()=='NEST 2.4.2':
 #         s='nest-2.4.2'   
 #     if nest.version()=='NEST 2.4.2':
-#         s='nest-2.6.0'           
-    path= (home_module+'/lib/nest/ml_module')
-    sli_path =(home_module+'/share/ml_module/sli')
+#         s='nest-2.6.0'
+    if (nest.version()=='NEST 2.12.0'):
+        path='ml_module'
+        sli_path=''
+    else:
+        path= (home_module+'/lib/nest/ml_module')
+        sli_path =(home_module+'/share/ml_module/sli')
     
     return path, sli_path
 # 
@@ -483,18 +498,20 @@ def get_default_module_paths(home_module):
 def install_module(path, sli_path, model_to_exist='my_aeif_cond_exp'):
     
     
-    if not model_to_exist in nest.Models(): 
-        nest.sr('('+sli_path+') addpath')
+    if not model_to_exist in nest.Models():
+
+        if sli_path!='':
+            nest.sr('('+sli_path+') addpath')
         #nest.Install(path)
-        
+
         # Solves weird problem that I need to load it twice
         # only on my wheezy debian
-        try: 
+        try:
             nest.Install(path)#always fails in Nest 2.4.X
         except:
             nest.Install(path)#running twice fixes Nest 2.4.X
         print '...successful'
-        
+
         
 
 def GetConnProp(soruces, targets, prop_name, time):

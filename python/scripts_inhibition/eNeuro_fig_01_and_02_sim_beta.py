@@ -61,9 +61,9 @@ kwargs={
         
         'cores':CORES,
         
-        'debug':False,
+        'debug':True,
         'do_runs':range(num_runs), #A run for each perturbation
-        'do_obj':False,
+        'do_obj':True,
         
         'external_input_mod':[],#['EI','EA'],
         
@@ -115,5 +115,3 @@ for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
 loop(num_sims,[num_sims,num_sims,num_sims/2], a_list, k_list )
-
-        

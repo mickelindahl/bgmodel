@@ -2,7 +2,7 @@
 This is the basal ganglia model used in the paper 
 ["Untangling basal ganglia network dynamics and function – role of dopamine depletion and inhibition investigated in a spiking network model"](http://eneuro.org/content/early/2016/12/22/ENEURO.0156-16.2016.article-info),
 It build using [pyNEST](http://www.nest-simulator.org/introduction-to-pynest/) that under the 
-hood utilize the [NEST simulator](http://www.nest-simulator.org/). The model have been run Nest 2.4 see [nest download](http://www.nest-simulator.org/download/).
+hood utilize the [NEST simulator](http://www.nest-simulator.org/). The model have been run Nest 2.6 see [nest download](http://www.nest-simulator.org/download/).
 
 ##Installation
 
@@ -13,11 +13,11 @@ others: openmpi, libncurses-dev, libreadline-dev, libopenmpi-dev, libgsl, gsl (g
 In `~/git` run git clone `git clone https://github.com/mickelindahl/bgmodel.git`
 
 ###Install nest
-Download nest to `~/opt/NEST/dist/` (nest-2.4.2)
+Download nest to `~/opt/NEST/dist/` (nest-2.6.0)
 
 Then run `ln -s  ~/git/bgmodel/nest/dist/compile-nest-mpi.sh ~/opt/NEST/dist/compile-nest-mpi.sh`
 
-Go to folder `cd ~/opt/NEST/dist` and run `./compile-nest-mpi.sh nest-2.4.2` (OBS make sure you have GSL libaries)
+Go to folder `cd ~/opt/NEST/dist` and run `./compile-nest-mpi.sh nest-2.6.0` (Note! make sure you have GSL libaries)
 
 Update  `PYTHONPATH` with `~/opt/NEST/dist/install-nest-2.2.2/lib/python2.7/site-packages/`
 in `~/.bashrc`

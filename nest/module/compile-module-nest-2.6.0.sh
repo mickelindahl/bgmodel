@@ -1,4 +1,5 @@
 #!/bin/sh
+# This should work for nest 2.2, 2.4 and 2.6
 #Input: Take module-DATE, nest-version, nest-install-dir and nest-source-dir/models as input
 #Examples: 
 # compile-module-milner module-130701 nest-2.2.2 /pdc/vol/nest/2.2.2/ /afs/nada.kth.se/home/w/u1yxbcfw/opt/NEST/dist/nest-2.2.2/models
@@ -24,41 +25,66 @@ noProcs=$(grep -c 'model name' /proc/cpuinfo)
 #Source directory
 srcDir="$currDir/$1/"
 
+#Bootstrap directory, used temoprally. Removed at end of script.
+bootstrapDir="$currDir/bootstrap-$1-$2/" 
+
 #Build directory
 buildDir="$currDir/build-$1-$2/"
+
+#Build directory
+installDir="$currDir/install-$1-$2/"
 
 #Log directory
 logDir="$currDir/log/"
 
 echo "Source dir: $srcDir"
 echo ""
-echo "Clear previous directory and create new one"
+echo "Clear previous installation and build directories and init new ones"
 echo "Build dir: $buildDir"
-echo "Source dir: $srcDir"
+echo "Bootstrap dir: $bootstrapDir"
+echo "Install dir: $installDir"
 echo "Log dir: $logDir"
 echo "Press [Enter] key to continue..."
 read TMP
 
 #Copy source to bootstrap directory
  
-if [ -d "$buildDir" ]; then rm -r $buildDir
+if [ -d "$bootstrapDir" ]; then rm -r $bootstrapDir 
 fi
-if [ ! -d "$logDir" ]; then mkdir $logDir
+if [ -d "$buildDir" ]; then rm -r $buildDir 
+fi
+if [ -d "$installDir" ]; then rm -r $installDir 
+fi
+if [ ! -d "$logDir" ]; then mkdir $logDir 
 fi
 
 
+echo "Copying $srcDir to $bootstrapDir" 
+#mkdir $bootstrapDir
+cp -r "$srcDir" $bootstrapDir 
 echo "Creating build directory"
 mkdir $buildDir
+mkdir $installDir
 
 echo "Start installation."
 echo "Press [Enter] key to continue..."
 read TMP
 
-#Go into build dir and run cmake
-cd $buildDir
-cmake -Dwith-nest=${NEST_INSTALL_DIR}/bin/nest-config ../$1
+#Go into bootstrap dir and run bootstrap
+cd $bootstrapDir
+./bootstrap.sh 2>&1 | tee $logDir$1-$2-bootstrap
 
-# Make and make install
+#Make new build directory, configure and run make, make install and make installcheck
+echo "Entering $buildDir"
+cd $buildDir
+
+
+
+# To inform about where nest is installed --with-nest=${NEST_INSTALL_DIR}/bin/nest-config and with --prefix inform where to put module installation files
+
+
+$bootstrapDir"configure" --with-nest="${NEST_INSTALL_DIR}/bin/nest-config" --prefix=$installDir/ 2>&1 | tee $logDir$1-$2-configure
+#$bootstrapDir"configure" --with-nest="${NEST_INSTALL_DIR}/bin/nest-config" | tee $logDir$1-$2-configure
 make -j $noProcs 2>&1 | tee $logDir$1-$2-make
 make -j $noProcs install 2>&1 | tee $logDir$1-$2-install
 #sudo make -j $noProcs installcheck
