@@ -14,10 +14,10 @@ log
 .idea*
 
 # No nest source, build, install or log
-nest/dist/source
-nest/dist/build
-nest/dist/install
-nest/dist/log
+nest/dist/source/
+nest/dist/build/
+nest/dist/install/
+nest/dist/log/
 
 # No module build or log
 nest/module/build
