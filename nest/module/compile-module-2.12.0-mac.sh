@@ -15,7 +15,7 @@ echo $currDir
 START=$(date +%s)
 
 #Get number of processors on the system
-noProcs=$(grep -c 'model name' /proc/cpuinfo) 
+#noProcs=$(grep -c 'model name' /proc/cpuinfo)
 
 #Source directory
 srcDir="$currDir/source/$MODULE_NAME/"
@@ -69,8 +69,8 @@ cmake -Dwith-nest=${NEST_INSTALL_DIR}/bin/nest-config \
       ../$MODULE_NAME
 
 # Make and make install
-make -j "$noProcs" 2>&1 | tee "$logFileMake"
-make -j "$noProcs" install 2>&1 | tee "$logFileInstall"
+make -j 2 2>&1 | tee "$logFileMake"
+make -j 2 install 2>&1 | tee "$logFileInstall"
 #sudo make -j $noProcs installcheck
 
 #Stop time watch

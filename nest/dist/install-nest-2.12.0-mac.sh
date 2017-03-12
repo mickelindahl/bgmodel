@@ -36,7 +36,7 @@ START=$(date +%s)
 currDir=$(pwd)
 
 #Get number of processors on the system
-noProcs=2 #$(grep -c 'model name' /proc/cpuinfo)
+#noProcs=2 #$(grep -c 'model name' /proc/cpuinfo)
 
 #Source directory
 srcDir="$currDir/source/$NEST_FOLDER_NAME/"
@@ -96,7 +96,7 @@ cmake -DCMAKE_INSTALL_PREFIX:PATH=$installDir \
       -DCMAKE_CXX_COMPILER=g++-6 \
       $srcDir
 
-make -j "$noProcs" 2>&1 | tee "$logDir$NEST_FOLDER_NAME-make"
+make -j 2 2>&1 | tee "$logDir$NEST_FOLDER_NAME-make"
 make install 2>&1 | tee "$logDir$NEST_FOLDER_NAME-install"
 make installcheck
 
