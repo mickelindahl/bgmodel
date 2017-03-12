@@ -43,7 +43,7 @@ environment do it. E.g add the following to
 
 ```sh
 soruce ./bgmodel/nest/dist/install/nest-simulator-2.12.0/bin/nest_vars.sh
-BG_MODEL_PYTHON="{path to model}/python"
+export BG_MODEL_PYTHON="{path to model}/python"
 ```
 
 
