@@ -4,7 +4,6 @@
 /.settings/
 *.pyc
 *~
-*.txt
 *.err
 *.out
 *.png
@@ -20,7 +19,9 @@ nest/dist/install/
 nest/dist/log/
 
 # No module build or log
-nest/module/build
+nest/module/install
+nest/module/build*
+nest/module/bootstrap*
 nest/module/log
 
 # No envirnment variables in repository
