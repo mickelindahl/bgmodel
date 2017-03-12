@@ -36,6 +36,8 @@ cp sample.env .env
 ```
 Open `.env` adn edit it accordingly your system
 
+If you have not added pynest to `PYTHONPATH` do it. E.g add it
+ to `.bashrc` show as shown below
  
 ```sh
 PYNEST={path to model}/nest/dist/install/nest-simulator-2.12.0/lib/python2.7/site-packages
