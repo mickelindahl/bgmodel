@@ -194,30 +194,32 @@ int mynest::my_aeif_cond_exp_dynamics (double, const double y[], double f[], voi
  * ---------------------------------------------------------------- */
 
 mynest::my_aeif_cond_exp::Parameters_::Parameters_()
-: V_peak_    (   0.0 ), // mV
-  V_reset_   ( -60.0 ), // mV
+: C_m        ( 281.0 ), // pF
+  V_th       ( -50.4 ), // mV
   t_ref_     (   0.0 ), // ms
-  g_L        (  30.0 ), // nS
-  C_m        ( 281.0 ), // pF
-  E_L        ( -70.6 ), // mV
-  Delta_T    (   2.0 ), // mV
-  tau_w      ( 144.0 ), // ms
 
-  //a          (   4.0 ), // nS
+  V_reset_   ( -60.0 ), // mV
+
+  g_L        (  30.0 ), // nS
+  E_L        ( -70.6 ), // mV
+
   a_1          (   4.0 ), // nS
   a_2          (   4.0 ), // nS
   V_a          (  -70.6 ), // nS
 
   b          (  80.5 ), // pA
-  V_th       ( -50.4 ), // mV
-  I_e        (   0.0 ), // pA
-  gsl_error_tol( 1e-6),
-  
+  Delta_T    (   2.0 ), // mV
+  tau_w      ( 144.0 ), // ms
 
-	V_reset_slope1          (0.0), // Slope of v rested point
-	V_reset_slope2          (0.0), // Slope of v rested point
-	V_reset_max_slope1   (0.0), // mV Max increase of v reset point
-	V_reset_max_slope2   (0.0), // mV Max increase of v reset point
+  //a          (   4.0 ), // nS
+
+  I_e        (   0.0 ), // pA
+  V_peak_    (   0.0 ), // mV
+
+  V_reset_slope1          (0.0), // Slope of v rested point
+  V_reset_slope2          (0.0), // Slope of v rested point
+  V_reset_max_slope1   (0.0), // mV Max increase of v reset point
+  V_reset_max_slope2   (0.0), // mV Max increase of v reset point
 
   AMPA_1_E_rev     			(  0.0   ),  	// mV
   AMPA_1_Tau_decay 			(  3.0   ),  	// ms
@@ -235,6 +237,8 @@ mynest::my_aeif_cond_exp::Parameters_::Parameters_()
 
   GABAA_2_E_rev       (-70.0    ),  // mV
   GABAA_2_Tau_decay   (  4.0    ),  	// ms
+
+  gsl_error_tol( 1e-6),
 
   tata_dop		(0.),       //!< Proportion of open dopamine receptors. Zero as init since dopamine modulation is one then
 
@@ -334,9 +338,11 @@ void mynest::my_aeif_cond_exp::Parameters_::get(DictionaryDatum &dd) const
 	def<double>(dd,nest::names::C_m,        C_m);
 	def<double>(dd,nest::names::V_th,       V_th);
 	def<double>(dd,nest::names::t_ref,      t_ref_);
+	def<double>(dd,nest::names::V_reset,    V_reset_);
+
 	def<double>(dd,nest::names::g_L,        g_L);
 	def<double>(dd,nest::names::E_L,        E_L);
-	def<double>(dd,nest::names::V_reset,    V_reset_);
+
 	//def<double>(dd,names::a,          a);
 	def<double>(dd, "a_1",       a_1);
 	def<double>(dd, "a_2",       a_2);
@@ -346,8 +352,7 @@ void mynest::my_aeif_cond_exp::Parameters_::get(DictionaryDatum &dd) const
 	def<double>(dd,nest::names::tau_w,      tau_w);
 	def<double>(dd,nest::names::I_e,        I_e);
 	def<double>(dd,nest::names::V_peak,     V_peak_);
-	def<double>(dd,nest::names::gsl_error_tol, gsl_error_tol);
-	
+
 	
 	def<double>(dd, "V_reset_slope1",       			  V_reset_slope1);
 	def<double>(dd, "V_reset_slope2",       			  V_reset_slope2);
@@ -371,6 +376,8 @@ void mynest::my_aeif_cond_exp::Parameters_::get(DictionaryDatum &dd) const
 	def<double>(dd, "GABAA_2_E_rev",     	GABAA_2_E_rev);
 	def<double>(dd, "GABAA_2_Tau_decay", 	GABAA_2_Tau_decay);
 
+	def<double>(dd,nest::names::gsl_error_tol, gsl_error_tol);
+
 	def<double>(dd, "tata_dop",		tata_dop);       //!< Proportion of open dopamine receptors. Zero as init since dopamine modulation is one then
 
 	def<double>(dd, "beta_V_a",		beta_V_a);        //!< Dopamine effect on V_b
@@ -385,13 +392,12 @@ void mynest::my_aeif_cond_exp::Parameters_::get(DictionaryDatum &dd) const
 
 void mynest::my_aeif_cond_exp::Parameters_::set(const DictionaryDatum &dd)
 {
+	updateValue<double>(dd,nest::names::C_m, C_m);
 	updateValue<double>(dd,nest::names::V_th,    V_th);
-	updateValue<double>(dd,nest::names::V_peak,  V_peak_);
 	updateValue<double>(dd,nest::names::t_ref,   t_ref_);
-	updateValue<double>(dd,nest::names::E_L,     E_L);
 	updateValue<double>(dd,nest::names::V_reset, V_reset_);
 
-	updateValue<double>(dd,nest::names::C_m, C_m);
+	updateValue<double>(dd,nest::names::E_L,     E_L);
 	updateValue<double>(dd,nest::names::g_L, g_L);
 
 	//updateValue<double>(dd,names::a,       a);
@@ -402,8 +408,6 @@ void mynest::my_aeif_cond_exp::Parameters_::set(const DictionaryDatum &dd)
 	updateValue<double>(dd,nest::names::Delta_T, Delta_T);
 	updateValue<double>(dd,nest::names::tau_w,   tau_w);
 	updateValue<double>(dd,nest::names::I_e, I_e);
-	updateValue<double>(dd,nest::names::gsl_error_tol, gsl_error_tol);
-
 
 	updateValue<double>(dd, "V_reset_slope1",       V_reset_slope1);
 	updateValue<double>(dd, "V_reset_slope2",       V_reset_slope2);
@@ -427,6 +431,8 @@ void mynest::my_aeif_cond_exp::Parameters_::set(const DictionaryDatum &dd)
 	updateValue<double>(dd, "GABAA_2_Tau_decay", GABAA_2_Tau_decay);
 	
 	updateValue<double>(dd, "tata_dop",		tata_dop);       //!< Proportion of open dopamine receptors. Zero as init since dopamine modulation is one then
+
+	updateValue<double>(dd,nest::names::gsl_error_tol, gsl_error_tol);
 
 	updateValue<double>(dd, "beta_V_a",		beta_V_a);        //!< Dopamine effect on V_b
 	updateValue<double>(dd, "beta_E_L",		beta_E_L);        //!< Dopamine effect on E_L
@@ -602,7 +608,9 @@ void mynest::my_aeif_cond_exp::update(const nest::Time &origin, const long from,
 		// enforce setting IntegrationStep to step-t
 		while ( t < B_.step_ )
 		{
-			const int status = gsl_odeiv_evolve_apply(B_.e_, B_.c_, B_.s_,
+			const int status = gsl_odeiv_evolve_apply(B_.e_,
+			        B_.c_,
+			        B_.s_,
 					&B_.sys_,             // system of ODE
 					&t,                   // from t
 					B_.step_,             // to t <= step
@@ -620,7 +628,9 @@ void mynest::my_aeif_cond_exp::update(const nest::Time &origin, const long from,
 			// spikes are handled inside the while-loop
 			// due to spike-driven adaptation
 			if ( S_.r_ > 0 )
-				S_.y[State_::V_M] = P_.V_reset_;
+			{
+			    S_.y[State_::V_M] = P_.V_reset_;
+			}
 
 			/*
 			If V > V_peak

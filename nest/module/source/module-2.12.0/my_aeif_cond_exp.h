@@ -221,31 +221,30 @@ private:
 	//! Independent parameters
 	struct Parameters_
 	{
-		double V_peak_;     //!< Spike detection threshold in mV
-		double V_reset_;    //!< Reset Potential in mV
+		double C_m;         //!< Membrane Capacitance in pF
+		double V_th;        //!< Spike threshold in mV.
 		double t_ref_;      //!< Refractory period in ms
 
-		double g_L;         //!< Leak Conductance in nS
-		double C_m;         //!< Membrane Capacitance in pF
+	    double V_reset_;    //!< Reset Potential in mV
+
+	    double g_L;         //!< Leak Conductance in nS
 		double E_L;         //!< Leak reversal Potential (aka resting potential) in mV
+
+    	double a_1;				 //!< Subthreshold adaptation in nS. voltage interval [-inf v_b]
+		double a_2;				 //!< Subthreshold adaptation in nS. interval [v_b +inf]
+    	double V_a;			   //!< Recovery variable voltage threshold
+
+		double b;           //!< Spike-triggered adaptation in pA
 		double Delta_T;     //!< Slope faktor in ms.
 		double tau_w;       //!< adaptation time-constant in ms.
-		double b;           //!< Spike-triggered adaptation in pA
-		double V_th;        //!< Spike threshold in mV.
 		double I_e;         //!< Intrinsic current in pA.
-
-		double V_a;			   //!< Recovery variable voltage threshold
-		double a_1;				 //!< Subthreshold adaptation in nS. voltage interval [-inf v_b]
-		double a_2;				 //!< Subthreshold adaptation in nS. interval [v_b +inf]
+	    double V_peak_;     //!< Spike detection threshold in mV
 
 
 		double  V_reset_slope1;          //!< Slope of v rested point
 		double  V_reset_slope2;          //!< Slope of v rested point
 		double  V_reset_max_slope1;   //!< Max increase of v reset point
 		double  V_reset_max_slope2;   //!< Max increase of v reset point
-
-
-
 
 		// Synaptic parameters
 		double AMPA_1_E_rev;        //!< AMPA_1 reversal Potential in mV
@@ -299,20 +298,6 @@ public:
 	struct State_
 	{
 
-		//! Symbolic indices to the elements of the state vector y
-		enum StateVecElems_ { V_M = 0, u,
-			G_AMPA_1,
-			G_AMPA_2,
-			G_NMDA_1,
-			G_GABAA_1,
-			G_GABAA_2,
-			STATE_VEC_SIZE };
-
-		//! state vector, must be C-array for GSL solver
-		double y[STATE_VEC_SIZE];
-		unsigned int     r_;           //!< number of refractory steps remaining
-
-
 
 		// Contructors, copy-constructors and destructors has to be defined in
 		// .cpp in order to retrieve them.
@@ -323,6 +308,21 @@ public:
 		double I_GABAA_1_; //!< GABAA current; member only to allow recording
 		double I_GABAA_2_; //!< GABAA current; member only to allow recording
 		double I_V_clamp_; //!< Current to inject in voltage clamp; member only to allow recording
+
+		//! Symbolic indices to the elements of the state vector y
+		enum StateVecElems_ { V_M = 0, u,
+			G_AMPA_1,
+			G_AMPA_2,
+			G_NMDA_1,
+			G_GABAA_1,
+			G_GABAA_2,
+			STATE_VEC_SIZE };
+
+
+    	//! state vector, must be C-array for GSL solver
+		double y[STATE_VEC_SIZE];
+        unsigned int     r_;           //!< number of refractory steps remaining
+
 
 		// Taken from ht_neuron use to be only State_(const Parameters_&) and
 		// State_(const State_&). Changed since compiler complained that I_AMPA_1,

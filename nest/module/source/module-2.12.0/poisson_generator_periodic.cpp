@@ -47,10 +47,11 @@ using namespace std;
 using namespace nest;
 
 mynest::poisson_generator_periodic::Parameters_::Parameters_()
-  : period_first_(500.0),
-    period_second_(500.0),
-	  rate_first_(10.0),
-    rate_second_(20.0) // pA
+  : rate_first_(10.0),
+    rate_second_(20.0), // pA
+    period_first_(500.0),
+    period_second_(500.0)
+
 {}
 
 
@@ -60,19 +61,19 @@ mynest::poisson_generator_periodic::Parameters_::Parameters_()
 
 void mynest::poisson_generator_periodic::Parameters_::get(DictionaryDatum &d) const
 {
-  def<double>(d, "period_first", period_first_);
-  def<double>(d, "period_second", period_second_);
   def<double>(d, "rate_first", rate_first_);
   def<double>(d, "rate_second", rate_second_);
+  def<double>(d, "period_first", period_first_);
+  def<double>(d, "period_second", period_second_);
 
 }
 
 void mynest::poisson_generator_periodic::Parameters_::set(const DictionaryDatum& d)
 {
-	updateValue<double>(d, "period_first", period_first_);
-	updateValue<double>(d, "period_second", period_second_);
 	updateValue<double>(d, "rate_first", rate_first_);
 	updateValue<double>(d, "rate_second", rate_second_);
+	updateValue<double>(d, "period_first", period_first_);
+	updateValue<double>(d, "period_second", period_second_);
 
   if (( rate_first_ < 0 ) || ( rate_second_ < 0 ))
     throw nest::BadProperty("The rate cannot be negative.");

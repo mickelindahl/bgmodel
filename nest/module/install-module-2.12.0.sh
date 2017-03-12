@@ -25,8 +25,8 @@ buildDir="$currDir/build/$MODULE_NAME/"
 
 #Log directory
 logDir="$currDir/log/"
-logFileMake="$logDir$1-make"
-logFileInstall="$logDir$1-install"
+logFileMake="$logDir$MODULE_NAME-make"
+logFileInstall="$logDir$MODULE_NAME-install"
 
 echo "Source dir: $srcDir"
 echo ""
@@ -63,9 +63,7 @@ read TMP
 
 #Go into build dir and run cmake
 cd "$buildDir"
-cmake -Dwith-nest=${NEST_INSTALL_DIR}/bin/nest-config \
-      -DCMAKE_C_COMPILER=gcc-6 \
-      -DCMAKE_CXX_COMPILER=g++-6 \
+cmake -Dwith-nest=${NEST_INSTALL_DIR}/bin/nest-config
       ../$MODULE_NAME
 
 # Make and make install

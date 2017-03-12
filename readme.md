@@ -14,6 +14,16 @@ Dependencies module
 * autoconf, automake
 
 
+Dependences python
+* cuython
+```
+suod apt-get install cython
+sudo pip install python-dotenv
+sudo pip install NeuroTools
+sudo pip install mpi4py
+sudo pip install psycopg2
+```
+
 clone the repository
 
 ```

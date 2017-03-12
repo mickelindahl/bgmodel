@@ -185,7 +185,10 @@ SeeAlso: poisson_generator_periodic_ps, Device, parrot_neuron
 //  }
 
   inline
-  nest::port poisson_generator_periodic::send_test_event(nest::Node& target, nest::rport receptor_type, nest::synindex syn_id, bool dummy_target)
+  nest::port poisson_generator_periodic::
+  send_test_event(nest::Node& target,
+  nest::rport receptor_type,
+  nest::synindex syn_id, bool dummy_target)
   {
 	device_.enforce_single_syn_type(syn_id);
 

@@ -91,7 +91,7 @@ cd "$buildDir"
 echo "Press [Enter] key to continue..."
 read TMP
 
-cmake -DCMAKE_INSTALL_PREFIX:PATH=$installDir $srcDir
+cmake -DCMAKE_INSTALL_PREFIX:PATH="$installDir" "$srcDir"
 make -j "$noProcs" 2>&1 | tee "$logDir$NEST_FOLDER_NAME-make"
 make install 2>&1 | tee "$logDir$NEST_FOLDER_NAME-install"
 make installcheck
