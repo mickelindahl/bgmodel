@@ -30,14 +30,15 @@ Else to only install the model with prevoius nest installtion
 ```
 cd {path to model}/module/compile-module-2.12.0.sh {path to nest installation}
 ```
+Int `{path to model}/` Copy `sample.env` to `.env`
+```
+cp sample.env .env
+```
+Open `.env` adn edit it accordingly your system
 
-Copy `sample.env` to `.env`
-```
-cp sample.ev .env
-```
  
 ```sh
-PYNEST=/home/mikael/opt/NEST/dist/install-nest-2.2.2/lib/python2.7/site-packages/
+PYNEST={path to model}/nest/dist/install/nest-simulator-2.12.0/lib/python2.7/site-packages
 export PYTHONPATH=$PYTHONPATH:$PYNEST
 ```
 
