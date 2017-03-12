@@ -574,15 +574,16 @@ def MySimulate(duration):
     s = s - m*60
     print 'Rank %i simulation time: %i minutes, %i seconds' % ( Rank(), m, s )    
 
-          
-def ResetKernel(threads=1, print_time=False, display=False, **kwargs):
+
+def ResetKernel(threads=1, print_time=True, display=False, **kwargs):
 
     if display:
         print 'Reseting kernel'
         
     nest.ResetKernel()
     nest.SetKernelStatus({"local_num_threads":kwargs.get('local_num_threads',1),
-                          "print_time": print_time})
+                           "print_time": print_time
+                          })
     
     
     if 'data_path' in kwargs.keys():

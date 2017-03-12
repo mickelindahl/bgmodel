@@ -307,7 +307,7 @@ class Network_base(object):
             msg='No such directory. Need to create {}'.format(self.path_nest)
             raise IOError(msg)
         
-        my_nest.SetKernelStatus({'print_time':self.get_print_time(),
+        my_nest.SetKernelStatus({'print_time':True,#self.get_print_time(),
                                  'data_path':self.path_nest, 
                                  'overwrite_files': True})    
  
@@ -344,7 +344,8 @@ class Network_base(object):
                 t=my_nest.GetKernelStatus('time')
                 my_nest.SetKernelTime(t)
                 with Barrier():
-                    my_nest.ResetKernel(**{'data_path':self.path_nest})    
+                    my_nest.ResetKernel(**{
+                        'data_path':self.path_nest})
                 gc.collect()
                 self.do_reset()
 
@@ -598,10 +599,11 @@ class Network(Network_base):
         '''
         with Stop_stdout(not self.verbose), Stopwatch('Building',
                                                       self.stopwatch):
-            
+            print 'Do build!!! self.local_num_threads', self.local_num_threads
             my_nest.ResetKernel(local_num_threads=self.local_num_threads,
 #                                 threads_local=self.threads_local,
-                                print_time=False)  
+                                print_time=True)
+            pp(my_nest.GetKernelStatus())
 #             print self.par['simu']['sd_params']      
 #             t=self.params_surfs
         
@@ -644,46 +646,46 @@ class Network(Network_base):
                    str(self.get_start_rec()),
                    str(self.get_stop_rec()))
 #         print 'After fromat', comm.rank()
-        with Stop_stdout(not self.verbose), Stopwatch(s,  self.stopwatch):        
+#         with Stop_stdout(not self.verbose), Stopwatch(s,  self.stopwatch):
 #             print 'Before reset kernel', comm.rank()
     
-            self.set_kernel_status()
+        self.set_kernel_status()
 #             print 'After reset kernel', comm.rank()
-    
-#             my_nest.MySimulate(self.sim_time)       
+
+#             my_nest.MySimulate(self.sim_time)
 #             pp(my_nest.GetStatus([34]))
 
-            d={'active':True,
-               'record_from':['V_m'], 
-               'start':0.0, 
-               'stop':numpy.inf,
-               'interval':1.,
-               'to_file':False,
-               'to_memory':True}
-            models=['FS', 'GA', 'GI', 'GF', 'M1', 'M2', 'SN', 'ST']
-            n=10
-            for model in models:
-                
-                if model not in self.pops.keys():
-                    continue
-                
-                self.pops[model].mm=self.pops[model].create_mm('vm_traces_'+model,d,
-                                                               **{'slice':slice(0,n)})
-            
-            my_nest.Simulate(self.sim_time, chunksize=20000.) 
-            self.sim_time_progress+=self.sim_time
-              
-            filename=self.par['simu']['path_nest']
-            filename='/'.join(filename.split('/')[:-2])+'/vm_traces'
-            d={}
-            for model in models:
-                
-                if model not in self.pops.keys():
-                    continue
-                
-                v=my_nest.GetStatus(self.pops[model].mm['id'])[0]['events']
-                d[model]=v
-            data_to_disk.pickle_save(d, filename)
+        d={'active':True,
+           'record_from':['V_m'],
+           'start':0.0,
+           'stop':numpy.inf,
+           'interval':1.,
+           'to_file':False,
+           'to_memory':True}
+        models=['FS', 'GA', 'GI', 'GF', 'M1', 'M2', 'SN', 'ST']
+        n=10
+        for model in models:
+
+            if model not in self.pops.keys():
+                continue
+
+            self.pops[model].mm=self.pops[model].create_mm('vm_traces_'+model,d,
+                                                           **{'slice':slice(0,n)})
+
+        my_nest.Simulate(self.sim_time, chunksize=20000.)
+        self.sim_time_progress+=self.sim_time
+
+        filename=self.par['simu']['path_nest']
+        filename='/'.join(filename.split('/')[:-2])+'/vm_traces'
+        d={}
+        for model in models:
+
+            if model not in self.pops.keys():
+                continue
+
+            v=my_nest.GetStatus(self.pops[model].mm['id'])[0]['events']
+            d[model]=v
+        data_to_disk.pickle_save(d, filename)
                 
     def do_delete_nest_data(self): 
         with Stop_stdout(not self.verbose):

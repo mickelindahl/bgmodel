@@ -13,6 +13,12 @@ par={
     'rate_second':800.
 }
 
+df =nest.GetDefaults("my_aeif_cond_exp")
+pp(df)
+
+nest.CopyModel("my_aeif_cond_exp","FS",
+               {"b":2.5})
+
 rec=nest.GetDefaults("my_aeif_cond_exp")["receptor_types"]
 pp(rec)
 n=nest.Create(**{

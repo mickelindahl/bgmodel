@@ -23,6 +23,8 @@ import pprint
 pp=pprint.pprint
 
 
+
+
 FILE_NAME=__file__.split('/')[-1][0:-3]
 FROM_DISK_0=0
 
@@ -75,7 +77,7 @@ kwargs={
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
                 
-        'size':3000,
+        'size':1000,
         
         'upper':3,
         

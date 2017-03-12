@@ -408,6 +408,7 @@ void mynest::my_aeif_cond_exp::Parameters_::set(const DictionaryDatum &dd)
 	updateValue<double>(dd,nest::names::Delta_T, Delta_T);
 	updateValue<double>(dd,nest::names::tau_w,   tau_w);
 	updateValue<double>(dd,nest::names::I_e, I_e);
+	updateValue<double>(dd,nest::names::V_peak, V_peak_);
 
 	updateValue<double>(dd, "V_reset_slope1",       V_reset_slope1);
 	updateValue<double>(dd, "V_reset_slope2",       V_reset_slope2);
