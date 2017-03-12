@@ -25,16 +25,20 @@ n=nest.Create(**{
     'model':'poisson_generator_periodic',
     'n':100,
     'params':par})
-m=nest.Create('my_aeif_cond_exp', 1)
+# m=nest.Create('aeif_cond_exp', 100)
+m=nest.Create('my_aeif_cond_exp', 100)
+# m=nest.Create('izhik_cond_exp', 100)
 #
 nest.CopyModel("static_synapse","excitatory",
                {"weight":2.5,
                 "delay":0.5,
-                "receptor_type": rec["AMPA_1"]})
+                "receptor_type": rec["AMPA_1"]
+                # "receptor_type": 0
+                })
 #
 nest.Connect(n, m, **{
     "model":"excitatory"
 })
 
 nest.SetKernelStatus({'print_time':True})
-nest.Simulate(100000)
+nest.Simulate(10000)
