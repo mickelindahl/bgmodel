@@ -36,14 +36,16 @@ cp sample.env .env
 ```
 Open `.env` adn edit it accordingly your system
 
-If you have not added nest variables to your 
-environment do it. E.g add the following to
+Add path to project python directory and
+if you have not added nest variables to your 
+environment do it. Add the following to
  to `.bashrc`. That will set all nessecary env variables for
  running nest.
 
 ```sh
-soruce ./bgmodel/nest/dist/install/nest-simulator-2.12.0/bin/nest_vars.sh
 export BG_MODEL_PYTHON="{path to model}/python"
+export PYTHONPATH=$PYTHONPAT:$BG_MODEL_PYTHON
+soruce ./bgmodel/nest/dist/install/nest-simulator-2.12.0/bin/nest_vars.sh
 ```
 
 
