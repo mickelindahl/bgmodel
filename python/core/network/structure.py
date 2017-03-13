@@ -893,9 +893,17 @@ def connect_conns(params_nest, conns, popus, display_print=False):
 #         delete_and_gc_collect(c)
         
 #         my_nest.Connect_DC(pre, post , weights_input_rates, delays, model, only_local=True)
-        my_nest.Connect_speed(pre, post , weights, delays, model=model)    
-       
-#         delete_and_gc_collect(weights_input_rates, delays, pre, post)
+        my_nest.Connect_speed(pre, post , weights, delays, model=model)
+
+        print 'Connecting ' +' my_nest.GetConnections ', len(my_nest.GetConnections(pre)), len(pre)
+        # syn_dict={
+        #     "model":model,
+        #     "weight":weights
+        # }
+        #
+        # my_nest.Connect(pre, post, weights, delays, model=model)
+
+        #         delete_and_gc_collect(weights_input_rates, delays, pre, post)
 #         
         del weights
         del delays
