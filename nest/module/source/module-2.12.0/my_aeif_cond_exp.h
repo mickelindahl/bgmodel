@@ -256,7 +256,7 @@ private:
     double Delta_T; //!< Slope faktor in ms.
     double tau_w;   //!< adaptation time-constant in ms.
     double a_1;				 //!< Subthreshold adaptation in nS. voltage interval [-inf v_b]
-	double a_2;				 //!< Subthreshold adaptation in nS. interval [v_b +inf]
+	  double a_2;				 //!< Subthreshold adaptation in nS. interval [v_b +inf]
     double V_a;			   //!< Recovery variable voltage threshold
     double b;       //!< Spike-triggered adaptation in pA
     double V_th;    //!< Spike threshold in mV.

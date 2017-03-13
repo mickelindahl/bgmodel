@@ -41,4 +41,4 @@ nest.Connect(n, m, **{
 })
 
 nest.SetKernelStatus({'print_time':True})
-nest.Simulate(10000)
+nest.Simulate(1000)

@@ -221,21 +221,21 @@ mynest::my_aeif_cond_exp::Parameters_::Parameters_()
   V_reset_max_slope2   (0.0), // mV Max increase of v reset point
 
   AMPA_1_E_rev     			(  0.0   ),  	// mV
-  AMPA_1_Tau_decay 			(  3.0   ),  	// ms
+  AMPA_1_Tau_decay 			(  .2   ),  	// ms
 
   AMPA_2_E_rev     			(  0.0   ),  	// mV
-  AMPA_2_Tau_decay 			(  3.0   ),  	// ms
+  AMPA_2_Tau_decay 			(  .2   ),  	// ms
 
   NMDA_1_E_rev     			(  0.0   ), 	// mV
   NMDA_1_Tau_decay 			(  100.0 ), 	// ms
   NMDA_1_Vact      			( -58.0  ),  	// mV
   NMDA_1_Sact           (  2.5   ),  	// mV
 
-  GABAA_1_E_rev       (-70.0    ),  // mV
-  GABAA_1_Tau_decay   (  4.0    ),  // ms
+  GABAA_1_E_rev       (-85.0    ),  // mV
+  GABAA_1_Tau_decay   (  2.0    ),  // ms
 
-  GABAA_2_E_rev       (-70.0    ),  // mV
-  GABAA_2_Tau_decay   (  4.0    ),  	// ms
+  GABAA_2_E_rev       (-85.0    ),  // mV
+  GABAA_2_Tau_decay   (  2.0    ),  	// ms
 
   tata_dop		(0.),       //!< Proportion of open dopamine receptors. Zero as init since dopamine modulation is one then
 
@@ -663,6 +663,8 @@ mynest::my_aeif_cond_exp::update(const nest::Time &origin,
       }
       else if ( S_.y_[ State_::V_M ] >= V_.V_peak )
       {
+
+//        S_.y_[ State_::V_M ] = P_.V_reset_;
         // Spike reset voltage point adapation
         if ( S_.y_[State_::u] < 0 )
         {

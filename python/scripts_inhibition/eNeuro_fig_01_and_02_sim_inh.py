@@ -37,7 +37,7 @@ NUM_RUNS=len(ops) #A run for each perturbation
 num_sim=NUM_NETS*NUM_RUNS
 
 dc=my_socket.determine_computer
-CORES=40 if dc()=='milner' else 4
+CORES=40 if dc()=='milner' else 1
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
 LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
@@ -71,13 +71,13 @@ kwargs={
         'nets':['Net_{}'.format(i) for i in range(NUM_NETS)],
         'nets_to_run':['Net_{}'.format(i) for i in range(NUM_NETS)],
         
-        'resolution':5,
+        'resolution':2,
         'repetitions':1,
         
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
                 
-        'size':1000,
+        'size':500,
         
         'upper':3,
         
