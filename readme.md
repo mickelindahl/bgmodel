@@ -9,7 +9,8 @@ The model includes dopamine modulated neurons and synapses,
 This basal ganglia model (tag 1.0.0 and nest-2.2.2) were used in the paper 
 ["Untangling basal ganglia network dynamics and function – role of dopamine depletion and inhibition investigated in a spiking network model"](http://eneuro.org/content/early/2016/12/22/ENEURO.0156-16.2016.article-info).
 It build using [pyNEST](http://www.nest-simulator.org/introduction-to-pynest/) that under the 
-hood utilize the [NEST simulator](http://www.nest-simulator.org/). The model have been run Nest 2.6 see [nest download](http://www.nest-simulator.org/download/).
+hood utilize the [NEST simulator](http://www.nest-simulator.org/). The model have been run Nest 2.6 see [nest download](http://www.nest-simulator.org/download/). 
+Script used for the paper are located in `python/scripts_inhibition`. 
 
 ## Installation
 
