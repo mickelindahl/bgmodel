@@ -178,6 +178,7 @@ echo "NEST compiler flags : $NEST_CPPFLAGS"
 # we want to have the versions where this is resolved, too:
 eval eval eval  PKGDOCDIR_AS_CONFIGURED=$PKGDOCDIR
 eval eval eval  PKGDATADIR_AS_CONFIGURED=$PKGDATADIR
+eval eval eval LIBDIR_AS_CONFIGURED=$libdir
 
 echo
 echo "-------------------------------------------------------"
@@ -186,6 +187,5 @@ echo "You can build and install MlModule now, using"
 echo "  make"
 echo "  make install"
 echo
-echo "MlModule will be installed to:"
-echo -n "  "; eval eval echo "$libdir"
+echo "MlModule will be installed to: $LIBDIR_AS_CONFIGURED"
 echo

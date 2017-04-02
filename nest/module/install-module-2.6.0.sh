@@ -9,7 +9,7 @@ export LD_LIBRARY_PATH="$NEST_INSTALL_DIR/lib/nest"
 
 echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 
-MODULE_NAME=module-2.2.2
+MODULE_NAME=module-2.6.0
 
 echo "Nest installation dir: $NEST_INSTALL_DIR"
 
@@ -106,7 +106,7 @@ cp ${NEST_INSTALL_DIR}/share/ml_module/sli/ml_module.sli ${NEST_INSTALL_DIR}/sha
 echo ""
 echo "It took $DIFF seconds"
 echo "Module installed to ${NEST_INSTALL_DIR}"
-
+#
 #echo ""
 #echo "Make sure LD_LIBRARY_PATH includes ${NEST_INSTALL_DIR}/lib/nest/"
 #echo "To be sure run in python"

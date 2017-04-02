@@ -161,7 +161,7 @@ void mynest::poisson_generator_periodic::update(nest::Time const & T,
 void mynest::poisson_generator_periodic::event_hook(nest::DSSpikeEvent& e)
 {
   librandom::RngPtr rng = net_->get_rng(get_thread());
-  nest::ulong_t n_spikes = V_.poisson_dev_.uldev(rng);
+  nest::long_t n_spikes = V_.poisson_dev_.ldev(rng);
 
   if ( n_spikes > 0 ) // we must not send events with multiplicity 0
   {

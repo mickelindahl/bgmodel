@@ -118,7 +118,8 @@ SeeAlso: poisson_generator_dynamic_ps, Device, parrot_neuron
 
     using nest::Node::event_hook;
 
-    nest::port check_connection(nest::Connection&, nest::port);
+//    nest::port check_connection(nest::Connection&, nest::port);
+    nest::port send_test_event(nest::Node&, nest::rport, nest::synindex, bool);
 
     void get_status(DictionaryDatum &) const;
     void set_status(const DictionaryDatum &) ;
@@ -175,14 +176,33 @@ SeeAlso: poisson_generator_dynamic_ps, Device, parrot_neuron
 
   };
 
-//  Commecnt out this and it works
+////  Commecnt out this and it works
+//  inline
+//  nest::port mynest::poisson_generator_dynamic::check_connection(nest::Connection& c, nest::port receptor_type)
+//  {
+//    nest::DSSpikeEvent e;
+//    e.set_sender(*this);
+//    c.check_event(e);
+//    return c.get_target()->connect_sender(e, receptor_type);
+//  }
+
   inline
-  nest::port mynest::poisson_generator_dynamic::check_connection(nest::Connection& c, nest::port receptor_type)
+  nest::port poisson_generator_dynamic::send_test_event(nest::Node& target, nest::rport receptor_type, nest::synindex syn_id, bool dummy_target)
   {
-    nest::DSSpikeEvent e;
-    e.set_sender(*this);
-    c.check_event(e);
-    return c.get_target()->connect_sender(e, receptor_type);
+	device_.enforce_single_syn_type(syn_id);
+
+	if ( dummy_target )
+	{
+      nest::DSSpikeEvent e;
+      e.set_sender(*this);
+      return target.handles_test_event(e, receptor_type);
+	}
+	else
+	{
+		nest::SpikeEvent e;
+      e.set_sender(*this);
+      return target.handles_test_event(e, receptor_type);
+	}
   }
 
 

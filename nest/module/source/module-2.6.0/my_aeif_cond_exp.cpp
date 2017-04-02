@@ -19,7 +19,7 @@
 
 #ifdef HAVE_GSL_1_11
 
-#include "universal_data_logger_impl.h"
+
 
 #include "exceptions.h"
 #include "network.h"
@@ -28,6 +28,7 @@
 #include "doubledatum.h"
 #include "dictutils.h"
 #include "numerics.h"
+#include "universal_data_logger_impl.h"
 #include <limits>
 
 #include <cmath>
@@ -691,7 +692,6 @@ void mynest::my_aeif_cond_exp::handle(nest::SpikeEvent & e)
 void mynest::my_aeif_cond_exp::handle(nest::CurrentEvent &e)
 {
 	assert ( e.get_delay() > 0 );
-
 
 	// add weighted current; HEP 2002-10-04
 	B_.currents_.add_value(e.get_rel_delivery_steps(network()->get_slice_origin()),

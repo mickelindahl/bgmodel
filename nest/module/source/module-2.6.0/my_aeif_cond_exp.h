@@ -135,26 +135,23 @@ public:
 	my_aeif_cond_exp(const my_aeif_cond_exp&);
 	~my_aeif_cond_exp();
 
-	/**
-	 * Import sets of overloaded virtual functions.
-	 * We need to explicitly include sets of overloaded
-	 * virtual functions into the current scope.
-	 * According to the SUN C++ FAQ, this is the correct
-	 * way of doing things, although all other compilers
-	 * happily live without.
-	 */
-	using nest::Node::connect_sender;
+    /**
+     * Import sets of overloaded virtual functions.
+     * @see Technical Issues / Virtual Functions: Overriding, Overloading, and Hiding
+     */
+//	using nest::Node::connect_sender;
 	using nest::Node::handle;
+    using Node::handles_test_event;
 
-	nest::port check_connection(nest::Connection &, nest::port);
+    nest::port send_test_event(Node&, nest::rport, nest::synindex, bool);
 
 	void handle(nest::SpikeEvent &);
 	void handle(nest::CurrentEvent &);
 	void handle(nest::DataLoggingRequest &);
 
-	nest::port connect_sender(nest::SpikeEvent &, nest::port);
-	nest::port connect_sender(nest::CurrentEvent &, nest::port);
-	nest::port connect_sender(nest::DataLoggingRequest &, nest::port);
+    nest::port handles_test_event(nest::SpikeEvent &, nest::rport);
+    nest::port handles_test_event(nest::CurrentEvent &, nest::rport);
+    nest::port handles_test_event(nest::DataLoggingRequest &, nest::rport);
 
 	void get_status(DictionaryDatum &) const;
 	void set_status(const DictionaryDatum &);
@@ -445,82 +442,128 @@ public:
 	static nest::RecordablesMap<my_aeif_cond_exp> recordablesMap_;
 };
 
+//inline
+//nest::port mynest::my_aeif_cond_exp::check_connection(nest::Connection& c, nest::port receptor_type)
+//{
+//	nest::SpikeEvent e;
+//	e.set_sender(*this);
+//	c.check_event(e);
+//	return c.get_target()->connect_sender(e, receptor_type);
+//}
+//
+//inline
+//nest::port mynest::my_aeif_cond_exp::connect_sender(nest::SpikeEvent&, nest::port receptor_type)
+//{
+//	// If receptor type is less than 1 =(MIN_SPIKE_RECEPTOR) or greater or equal to 4
+//	// (=SUP_SPIKE_RECEPTOR) then provided receptor type is not a spike receptor.
+//	if ( receptor_type < MIN_SPIKE_RECEPTOR || receptor_type >= SUP_SPIKE_RECEPTOR )
+//		// Unknown receptor type is less than 0 or greater than 6
+//		// (SUP_CURR_RECEPTOR).
+//		if ( receptor_type < 0 || receptor_type >= SUP_CURR_RECEPTOR )
+//			throw nest::UnknownReceptorType(receptor_type, get_name());
+//	// Otherwise it is a current receptor or receptor 0 (data logging request
+//	// not used here and therefore incompatible.
+//		else
+//			throw nest::IncompatibleReceptorType(receptor_type, get_name(), "SpikeEvent");
+//	// If we arrive here the receptor type is a spike receptor and either 1, 2 or 3 e.i.
+//	// greater or equal to MIN_SPIKE_RECEPTOR = 1, and less than SUP_SPIKE_RECEPTOR
+//	// = 4. Then 0, 1, or 2 is returned.
+//	return receptor_type - MIN_SPIKE_RECEPTOR;
+//}
+//
+//inline
+//nest::port mynest::my_aeif_cond_exp::connect_sender(nest::CurrentEvent&, nest::port receptor_type)
+//{
+//	// If receptor type is less than 4 (MIN_CURR_RECEPTOR) or greater or equal
+//	// to 5 (SUP_CURR_RECEPTOR) the provided receptor type is not current
+//	// receptor.
+//	if ( receptor_type < MIN_CURR_RECEPTOR || receptor_type >= SUP_CURR_RECEPTOR )
+//		// If receptor is not a current receptor but still a receptor type that is
+//		// the receptor type is greater or equal to 0 or less than 3
+//		// (MIN_CURR_RECEPTOR).
+//		if ( receptor_type >= 0 && receptor_type < MIN_CURR_RECEPTOR )
+//			throw nest::IncompatibleReceptorType(receptor_type, get_name(), "CurrentEvent");
+//	// Otherwise unknown receptor type.
+//		else
+//			throw nest::UnknownReceptorType(receptor_type, get_name());
+//	//MIN_CURR_RECEPTOR =4, If here receptor type equals 4  and 0 is returned.
+//	return receptor_type - MIN_CURR_RECEPTOR;
+//}
+//
+//inline
+//nest::port mynest::my_aeif_cond_exp::connect_sender(nest::DataLoggingRequest& dlr,
+//		nest::port receptor_type)
+//{
+//	// If receptor type does not equal 0 then it is not a data logging request
+//	// receptor.
+//	if ( receptor_type != 0 )
+//		// If not a spike or current receptor that is less than 0 or greater or
+//		//  equal to 4 (SUP_CURR_RECEPTOR).
+//		if ( receptor_type < 0 || receptor_type >= SUP_CURR_RECEPTOR )
+//			throw nest::UnknownReceptorType(receptor_type, get_name());
+//	// Otherwise it is a spike or current receptor type.
+//		else
+//			throw nest::IncompatibleReceptorType(receptor_type, get_name(), "DataLoggingRequest");
+//	// CHANGED
+//	//B_.logger_.connect_logging_device(dlr, recordablesMap_);
+//	//return 0;
+//
+//	// TO
+//	return B_.logger_.connect_logging_device(dlr, recordablesMap_);
+//
+//}
+
 inline
-nest::port mynest::my_aeif_cond_exp::check_connection(nest::Connection& c, nest::port receptor_type)
+nest::port mynest::my_aeif_cond_exp::send_test_event(nest::Node& target, nest::rport receptor_type, nest::synindex, bool)
 {
-	nest::SpikeEvent e;
-	e.set_sender(*this);
-	c.check_event(e);
-	return c.get_target()->connect_sender(e, receptor_type);
+  nest::SpikeEvent e;
+  e.set_sender(*this);
+  return target.handles_test_event(e, receptor_type);
 }
 
 inline
-nest::port mynest::my_aeif_cond_exp::connect_sender(nest::SpikeEvent&, nest::port receptor_type)
+nest::port mynest::my_aeif_cond_exp::handles_test_event(nest::SpikeEvent&, nest::rport receptor_type)
 {
-	// If receptor type is less than 1 =(MIN_SPIKE_RECEPTOR) or greater or equal to 4
-	// (=SUP_SPIKE_RECEPTOR) then provided receptor type is not a spike receptor.
-	if ( receptor_type < MIN_SPIKE_RECEPTOR || receptor_type >= SUP_SPIKE_RECEPTOR )
-		// Unknown receptor type is less than 0 or greater than 6
-		// (SUP_CURR_RECEPTOR).
-		if ( receptor_type < 0 || receptor_type >= SUP_CURR_RECEPTOR )
-			throw nest::UnknownReceptorType(receptor_type, get_name());
-	// Otherwise it is a current receptor or receptor 0 (data logging request
-	// not used here and therefore incompatible.
-		else
-			throw nest::IncompatibleReceptorType(receptor_type, get_name(), "SpikeEvent");
-	// If we arrive here the receptor type is a spike receptor and either 1, 2 or 3 e.i.
-	// greater or equal to MIN_SPIKE_RECEPTOR = 1, and less than SUP_SPIKE_RECEPTOR
-	// = 4. Then 0, 1, or 2 is returned.
-	return receptor_type - MIN_SPIKE_RECEPTOR;
+  if ( receptor_type < MIN_SPIKE_RECEPTOR || receptor_type >= SUP_SPIKE_RECEPTOR )
+  {
+    if ( receptor_type < 0 || receptor_type >= SUP_CURR_RECEPTOR )
+	throw nest::UnknownReceptorType(receptor_type, get_name());
+    else
+	throw nest::IncompatibleReceptorType(receptor_type, get_name(), "SpikeEvent");
+  }
+  return receptor_type - MIN_SPIKE_RECEPTOR;
 }
 
 inline
-nest::port mynest::my_aeif_cond_exp::connect_sender(nest::CurrentEvent&, nest::port receptor_type)
+nest::port mynest::my_aeif_cond_exp::handles_test_event(nest::CurrentEvent&, nest::rport receptor_type)
 {
-	// If receptor type is less than 4 (MIN_CURR_RECEPTOR) or greater or equal
-	// to 5 (SUP_CURR_RECEPTOR) the provided receptor type is not current
-	// receptor.
-	if ( receptor_type < MIN_CURR_RECEPTOR || receptor_type >= SUP_CURR_RECEPTOR )
-		// If receptor is not a current receptor but still a receptor type that is
-		// the receptor type is greater or equal to 0 or less than 3
-		// (MIN_CURR_RECEPTOR).
-		if ( receptor_type >= 0 && receptor_type < MIN_CURR_RECEPTOR )
-			throw nest::IncompatibleReceptorType(receptor_type, get_name(), "CurrentEvent");
-	// Otherwise unknown receptor type.
-		else
-			throw nest::UnknownReceptorType(receptor_type, get_name());
-	//MIN_CURR_RECEPTOR =4, If here receptor type equals 4  and 0 is returned.
-	return receptor_type - MIN_CURR_RECEPTOR;
+  if ( receptor_type < MIN_CURR_RECEPTOR || receptor_type >= SUP_CURR_RECEPTOR )
+  {
+    if ( receptor_type >= 0 && receptor_type < MIN_CURR_RECEPTOR )
+	throw nest::IncompatibleReceptorType(receptor_type, get_name(), "CurrentEvent");
+    else
+	throw nest::UnknownReceptorType(receptor_type, get_name());
+  }
+  return receptor_type - MIN_CURR_RECEPTOR;
 }
 
 inline
-nest::port mynest::my_aeif_cond_exp::connect_sender(nest::DataLoggingRequest& dlr,
-		nest::port receptor_type)
+nest::port mynest::my_aeif_cond_exp::handles_test_event(nest::DataLoggingRequest& dlr,
+		nest::rport receptor_type)
 {
-	// If receptor type does not equal 0 then it is not a data logging request
-	// receptor.
-	if ( receptor_type != 0 )
-		// If not a spike or current receptor that is less than 0 or greater or
-		//  equal to 4 (SUP_CURR_RECEPTOR).
-		if ( receptor_type < 0 || receptor_type >= SUP_CURR_RECEPTOR )
-			throw nest::UnknownReceptorType(receptor_type, get_name());
-	// Otherwise it is a spike or current receptor type.
-		else
-			throw nest::IncompatibleReceptorType(receptor_type, get_name(), "DataLoggingRequest");
-	// CHANGED
-	//B_.logger_.connect_logging_device(dlr, recordablesMap_);
-	//return 0;
-
-	// TO
-	return B_.logger_.connect_logging_device(dlr, recordablesMap_);
-
+  if ( receptor_type != 0 )
+  {
+    if ( receptor_type < 0 || receptor_type >= SUP_CURR_RECEPTOR )
+	throw nest::UnknownReceptorType(receptor_type, get_name());
+    else
+	throw nest::IncompatibleReceptorType(receptor_type, get_name(), "DataLoggingRequest");
+  }
+  return B_.logger_.connect_logging_device(dlr, recordablesMap_);
 }
 
 
-
-
 inline
-void my_aeif_cond_exp::get_status(DictionaryDatum &d) const
+void mynest::my_aeif_cond_exp::get_status(DictionaryDatum &d) const
 {
 	P_.get(d);
 	S_.get(d);
@@ -545,7 +588,7 @@ void my_aeif_cond_exp::get_status(DictionaryDatum &d) const
 }
 
 inline
-void my_aeif_cond_exp::set_status(const DictionaryDatum &d)
+void mynest::my_aeif_cond_exp::set_status(const DictionaryDatum &d)
 {
 	Parameters_ ptmp = P_;  // temporary copy in case of errors
 	ptmp.set(d);            // throws if BadProperty

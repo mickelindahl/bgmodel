@@ -1,6 +1,6 @@
 # Bgmodel
-This is the basal ganglia model used in the paper 
-["Untangling basal ganglia network dynamics and function – role of dopamine depletion and inhibition investigated in a spiking network model"](http://eneuro.org/content/early/2016/12/22/ENEURO.0156-16.2016.article-info),
+This basal ganglia model (tag 1.0.0) were used in the paper 
+["Untangling basal ganglia network dynamics and function – role of dopamine depletion and inhibition investigated in a spiking network model"](http://eneuro.org/content/early/2016/12/22/ENEURO.0156-16.2016.article-info).
 It build using [pyNEST](http://www.nest-simulator.org/introduction-to-pynest/) that under the 
 hood utilize the [NEST simulator](http://www.nest-simulator.org/). The model have been run Nest 2.6 see [nest download](http://www.nest-simulator.org/download/).
 
@@ -20,15 +20,16 @@ Got to `dist` director within model
 cd {path to model}/dist
 ```
 
-Install nest with module either for 
-[linux](https://github.com/mickelindahl/bgmodel#install-nest-and-module-linux) 
-or [mac](https://github.com/mickelindahl/bgmodel#install-nest-and-module-mac) 
+These install scripts are available in `nest/`. 
+Choose one for your system and run it.
 
-Else to only install the model with previous nest installtion
-```
-cd {path to model}/module/compile-module-2.12.0.sh {path to nest installation}
-```
-Int `{path to model}/` Copy `sample.env` to `.env`
+* `install_2.12.0_linux.sh`
+* `install_2.6.0_linux.sh`
+* `install_2.2.2_linux.sh`
+* `install_2.12.0_mac.sh`
+
+
+Then copy `sample.env` to `.env`
 ```
 cp sample.env .env
 ```
@@ -52,39 +53,6 @@ sudo pip install NeuroTools
 sudo pip install mpi4py
 sudo pip install psycopg2
 ```
-
-## Install nest and module linux
-### Nest 2.12.0 
-Run
-```
-./install_2.12.0.sh
-```
-
-### Nest 2.2.2
-Run
-```
-./install_2.2.2.sh
-```
-
-## Install nest and module Mac
-### Nest 2.12.0
-Run
-```
-./install_2.12.0_mac.sh
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
