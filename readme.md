@@ -21,7 +21,7 @@ sudo pip install mpi4py
 sudo pip install psycopg2
 ```
 
-##Installation
+## Installation
 
 Make sure you have installed all dependencies
 
@@ -36,9 +36,11 @@ Got to `dist` director within model
 cd {path to model}/dist
 ```
 
-Install nest with module either for [linux](https://github.com/mickelindahl/bgmodel#linux) 
+Install nest with module either for 
+[linux](https://github.com/mickelindahl/bgmodel#linux) 
+or [mac](https://github.com/mickelindahl/bgmodel#mac) 
 
-Else to only install the model with prevoius nest installtion
+Else to only install the model with previous nest installtion
 ```
 cd {path to model}/module/compile-module-2.12.0.sh {path to nest installation}
 ```
@@ -46,23 +48,24 @@ Int `{path to model}/` Copy `sample.env` to `.env`
 ```
 cp sample.env .env
 ```
-Open `.env` adn edit it accordingly your system
+Open `.env` and set data result path
 
+Done!
 
-### Linux
-#### With Nest 2.12.0 
+## Install nest and module linux
+### Nest 2.12.0 
 Run
 ```
 ./install_2.12.0.sh
 ```
 
-#### With Nest 2.2.2
+#### Nest 2.2.2
 Run
 ```
 ./install_2.2.2.sh
 ```
 
-### Mac
+### Install nest and module Mac
 #### Nest 2.12.0
 Run
 ```
