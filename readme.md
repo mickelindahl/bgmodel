@@ -36,7 +36,7 @@ Got to `dist` director within model
 cd {path to model}/dist
 ```
 
-Install nest with module either for [linux](##linux) 
+Install nest with module either for [linux](#linux) 
 
 Else to only install the model with prevoius nest installtion
 ```
