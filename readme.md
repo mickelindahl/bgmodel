@@ -36,7 +36,7 @@ Got to `dist` director within model
 cd {path to model}/dist
 ```
 
-Install nest with module either for [linux](#linux) 
+Install nest with module either for [linux](https://github.com/mickelindahl/bgmodel#linux) 
 
 Else to only install the model with prevoius nest installtion
 ```
