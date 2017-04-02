@@ -68,27 +68,6 @@ def get(flag='perturbations'):
     d['node']['C2']['rate']=rM2
     d['node']['CF']['rate']=rCF
 
-
-    # d['node']['EF']['lesion']=True
-    # d['node']['EI']['lesion']=True
-    # d['node']['EA']['lesiom']=True
-    # d['node']['ES']={'lesiom':True}
-    # d['node']['EF']['lesiom'] = True
-    #
-    # # d['node']['C2']['lesion']=True
-    # d['node']['CF']['lesion']=True
-    # d['node']['CS']={'lesion':True}
-    # # d['node']['C1']['lesion'] = True
-    #
-    # d['node']['M1']={'lesion':True}
-    # d['node']['M2']={'lesion': True}
-    # d['node']['FS']={'lesion': True}
-    # d['node']['GI'] = {'lesion': True}
-    # d['node']['GA'] = {'lesion': True}
-    # d['node']['GF'] = {'lesion': True}
-    # d['node']['ST'] = {'lesion': True}
-    # d['node']['SN'] = {'lesion': True}
-
     misc.dict_update(d, {'node':{'CS':{'rate':rCS}}})
     misc.dict_update(d, {'node':{'ES':{'rate':rES}}}) 
     s='rEI_{0}_rEA_{1}_rCS_{2}_rES_{3}_rM2_{4}'.format( rEI, rEA, rCS, rES, rM2 )
