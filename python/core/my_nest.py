@@ -226,14 +226,12 @@ def _Connect_mpi(*args, **kwargs):
         _Connect(*args, **kwargs)
 
 
-
 def _Connect(pre, post, *args, **kwargs):
-
 
     if hasattr(nest, 'OneToOneConnect'):
         nest.OneToOneConnect(pre, post,  *args, **kwargs)
     else:
-        nest.Connect(pre, post,  *args, **kwargs)
+        Connect_speed(pre, post,  *args, **kwargs)
 
 
 def fun_pre_post(s,d,m):

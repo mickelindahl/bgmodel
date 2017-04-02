@@ -854,11 +854,19 @@ def connect(popus, surfs, params_nest, params_conn, display_print=False):
 
 def connect_conns(params_nest, conns, popus, display_print=False):
     for c in conns:
+
+        # if c.name[0] not in ['E','C']:
+        # if c.name[0:5] not in ['C1_M1', 'C2_M2']:
+        if c.name[0:5] not in ['E']:
+
+            continue
+
         if display_print and comm.rank()==0:
             print 'Connecting '+str(c)
         my_nest.MyCopyModel( params_nest[c.get_syn()], c.get_syn())
         #c.copy_model( params_nest )
-                    
+
+
         sr_ids=numpy.array(popus[c.get_source()].ids)
         tr_ids=numpy.array(popus[c.get_target()].ids)
 
@@ -955,7 +963,11 @@ def create_connections(surfs, params_conn, display_print=False):
       
 def create_surfaces(params_surf):
     surfs=Surface_dic()       
-    for k,v in params_surf.iteritems(): 
+    for k,v in params_surf.iteritems():
+        #
+        # if k not in ['SN', 'ES']:
+        #     continue
+
         surfs.add(k, **v)
     return surfs
 

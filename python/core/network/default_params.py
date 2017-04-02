@@ -2789,6 +2789,7 @@ class InhibitionPar_base(object):
         for key in network.keys():
             # model=GetNode(key, 'model')
             d = self._get_defaults_node_network(key)
+
             network[key] = misc.dict_update(d, network[key])
 
         d = {'M1': {'n_sets': GetNetw('n_actions')},
