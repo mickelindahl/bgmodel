@@ -894,14 +894,23 @@ def connect_conns(params_nest, conns, popus, display_print=False):
         
 #         my_nest.Connect_DC(pre, post , weights_input_rates, delays, model, only_local=True)
         my_nest.Connect_speed(pre, post , weights, delays, model=model)
-
-        print 'Connecting ' +' my_nest.GetConnections ', len(my_nest.GetConnections(pre)), len(pre)
+#
         # syn_dict={
         #     "model":model,
-        #     "weight":weights
+        #     "weight":weights,
+        #     "delay":delays,
         # }
-        #
-        # my_nest.Connect(pre, post, weights, delays, model=model)
+        # conn_dict={
+        #     "rule": "one_to_one",
+        # }
+        # import nest
+        # nest.Connect(pre, post, conn_dict, syn_dict)
+        # pp(my_nest.GetConnections(list(set(pre)))[0])
+        # pp(my_nest.GetConnections(post)[0])
+        # print pre[0], post[0]
+        # print model, len(pre), len(post), len(weights), len(delays)
+        # print 'Connecting ' + ' my_nest.GetConnections ', len(my_nest.GetConnections(list(set(pre)))), len(pre)
+        # print 'Connecting ' + ' my_nest.GetConnections ', len(my_nest.GetConnections(post)), len(post)
 
         #         delete_and_gc_collect(weights_input_rates, delays, pre, post)
 #         

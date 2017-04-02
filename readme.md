@@ -4,18 +4,15 @@ This is the basal ganglia model used in the paper
 It build using [pyNEST](http://www.nest-simulator.org/introduction-to-pynest/) that under the 
 hood utilize the [NEST simulator](http://www.nest-simulator.org/). The model have been run Nest 2.6 see [nest download](http://www.nest-simulator.org/download/).
 
-##Installation
-
-Dependencies:
+## Dependencies
 * python: numpy, scipy, mpi4py, NeuroTools (0.2.0), psycopg2
 others: openmpi, libncurses-dev, libreadline-dev, libopenmpi-dev, libgsl, gsl (gnu scitific library, solver, neccesary for module) 
 
 Dependencies module
 * autoconf, automake
 
-
 Dependences python
-* cuython
+* cython
 ```
 suod apt-get install cython
 sudo pip install python-dotenv
@@ -24,17 +21,22 @@ sudo pip install mpi4py
 sudo pip install psycopg2
 ```
 
+##Installation
+
+Make sure you have installed all dependencies
+
 clone the repository
 
 ```
 git clone https://github.com/mickelindahl/bgmodel.git
 ```
 
-To install both nest and the model ooen terminal and enter 
+Got to `dist` director within model
 ```
 cd {path to model}/dist
-./install_nest_2.12_and_module_2.12.sh
 ```
+
+Install nest with module either for [linux](##linux) 
 
 Else to only install the model with prevoius nest installtion
 ```
@@ -46,17 +48,27 @@ cp sample.env .env
 ```
 Open `.env` adn edit it accordingly your system
 
-Add path to project python directory and
-if you have not added nest variables to your 
-environment do it. Add the following to
- to `.bashrc`. That will set all nessecary env variables for
- running nest.
 
-```sh
-export BG_MODEL_PYTHON="{path to model}/python"
-export PYTHONPATH=$PYTHONPAT:$BG_MODEL_PYTHON
-soruce ./bgmodel/nest/dist/install/nest-simulator-2.12.0/bin/nest_vars.sh
+### Linux
+#### With Nest 2.12.0 
+Run
 ```
+./install_2.12.0.sh
+```
+
+#### With Nest 2.2.2
+Run
+```
+./install_2.2.2.sh
+```
+
+### Mac
+#### Nest 2.12.0
+Run
+```
+./install_2.12.0_mac.sh
+```
+
 
 
 

@@ -477,7 +477,7 @@ def get_default_module_paths(home_module):
 #         s='nest-2.4.2'   
 #     if nest.version()=='NEST 2.4.2':
 #         s='nest-2.6.0'
-    if (nest.version()=='NEST 2.12.0'):
+    if (nest.version() in ['NEST 2.2.2', 'NEST 2.12.0']):
         path='ml_module'
         sli_path=''
     else:

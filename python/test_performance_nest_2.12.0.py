@@ -36,9 +36,23 @@ nest.CopyModel("static_synapse","excitatory",
                 # "receptor_type": 0
                 })
 
-nest.Connect(n, m, **{
-    "model":"excitatory"
-})
+syn_dict = {
+    "model": 'excitatory',
+    "weight": [0.5]*len(n),
+    "delay": [2.]*len(n),
+}
+conn_dict = {
+    "rule": "one_to_one",
+}
+
+nest.Connect(n, m, conn_dict, syn_dict)
+print 'Connecting ' + ' my_nest.GetConnections ', len(nest.GetConnections(n)), len(n)
+
+#
+
+# nest.Connect(n, m, **{
+#     "model":"excitatory"
+# })
 
 nest.SetKernelStatus({'print_time':True})
 nest.Simulate(1000)
