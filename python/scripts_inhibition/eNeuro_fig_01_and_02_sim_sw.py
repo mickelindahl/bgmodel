@@ -5,26 +5,49 @@ Created on Aug 12, 2013
 
 '''
 
+
+# Patch for milner. Avoid importing nest in shell.
 from core import monkey_patch as mp
 mp.patch_for_milner()
 
+# Helper modules for simulation
 from scripts_inhibition.base_simulate import (get_path_rate_runs,
                       get_args_list_oscillation,
                       get_kwargs_list_indv_nets, 
                       pert_add_oscillations) 
 
-# from core.network import default_params
+# Import builder defining a special build version of the model
+# from the defautl model. In this case a model that have
+# slow wave input instead of no modulation
 from core.network.manager import Builder_slow_wave2 as Builder
+
+# Tool for running multiple simulations at once (for example
+# when you have different parameter combinations which
+# results in multiple simulations. Here we only have to
+# scenarios normal and dopamine depleted.)
 from core.parallel_excecution import loop
+
+# Set som global variables
 from core import directories as dr
+
+# Module for detemining computer type
 from core import my_socket
 
+# Job configureations fordifferent type of
+# computers e.g. desktop vs milner supercomputer
 from scripts_inhibition import config
+
+# Default values for eNeuro simlkations
 import eNeuro_fig_defaults as fd
+
+# Model perturbations. You will end up with
+# as many simulations as the number of
+# perturbations lists you have.
+import eNeuro_fig_01_and_02_pert as op
 import numpy
 import sys
+
 import scripts_inhibition.base_oscillation_sw as module
-import eNeuro_fig_01_and_02_pert as op
 import pprint
 pp=pprint.pprint
 
@@ -36,7 +59,7 @@ LOAD_MILNER_ON_SUPERMICRO=False
 NUM_NETS=2
 
 amp_base=[fd.amp_sw] #numpy.arange(1.05, 1.2, 0.05)
-freqs=[ fd.freq_sw ] #numpy.arange(0.5, .8, 0.2)
+freqs=[ fd.freq_sw ] #numpy.arange(0.5, .8, 0.2) // rate shift
 #ops=op.get()['sw']
 ops=[op.get()[fd.idx_sw]]
 n=len(amp_base)
@@ -48,9 +71,9 @@ num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
-CORES=40*4 if dc()=='milner' else 10
+CORES=40*4 if dc()=='milner' else 4
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
@@ -63,7 +86,7 @@ kwargs={
         
         'debug':False,
         'do_runs':range(num_runs), #A run for each perturbation
-        'do_obj':False,
+        'do_obj':True,
         
         'external_input_mod':[],
         

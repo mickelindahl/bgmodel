@@ -232,6 +232,7 @@ def _Connect(pre, post, *args, **kwargs):
         nest.OneToOneConnect(pre, post,  *args, **kwargs)
     else:
         Connect_speed(pre, post,  *args, **kwargs)
+        #nest.Connect(pre, post,  *args, **kwargs)
 
 
 def fun_pre_post(s,d,m):

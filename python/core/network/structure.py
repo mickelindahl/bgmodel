@@ -857,9 +857,9 @@ def connect_conns(params_nest, conns, popus, display_print=False):
 
         # if c.name[0] not in ['E','C']:
         # if c.name[0:5] not in ['C1_M1', 'C2_M2']:
-        if c.name[0:5] not in ['E']:
-
-            continue
+        #if c.name[0:5] not in ['E']:
+        #
+        # continue
 
         if display_print and comm.rank()==0:
             print 'Connecting '+str(c)
