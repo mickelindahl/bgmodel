@@ -50,9 +50,9 @@ kwargs={
         'file_name':FILE_NAME,
         'from_disk_0':FROM_DISK_0,
         
-        'debug':True,
+        'debug':False,
         'do_runs':range(NUM_RUNS), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
                  
         'i0':FROM_DISK_0,
         
@@ -71,13 +71,13 @@ kwargs={
         'nets':['Net_{}'.format(i) for i in range(NUM_NETS)],
         'nets_to_run':['Net_{}'.format(i) for i in range(NUM_NETS)],
         
-        'resolution':2,
+        'resolution':5,
         'repetitions':1,
         
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
                 
-        'size':500,
+        'size':3000,
         
         'upper':3,
         
