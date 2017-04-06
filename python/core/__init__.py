@@ -28,12 +28,19 @@ plot_settings        - contains functions setting nice plot settings
 import os
 import nest
 from os.path import join, dirname
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 
 path = dirname(dirname(dirname(__file__)))
 dotenv_path = join(path, '.env')
-load_dotenv(dotenv_path)
+
+f=open(dotenv_path)
+
+for l in f.readlines():
+    l=l.strip('\n').strip('\r')
+    key, val=l.split('=')
+    os.environ[key]=val
+# load_dotenv(dotenv_path)
 
 os.environ['BGMODEL_HOME']=path
 os.environ['BGMODEL_HOME_CODE']=join(path, 'python')
