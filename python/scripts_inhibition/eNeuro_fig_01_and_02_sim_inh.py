@@ -52,7 +52,7 @@ kwargs={
         
         'debug':False,
         'do_runs':range(NUM_RUNS), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
                  
         'i0':FROM_DISK_0,
         
