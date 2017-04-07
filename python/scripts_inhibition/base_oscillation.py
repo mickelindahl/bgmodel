@@ -1407,6 +1407,7 @@ def show_isi(d, **k):
             nb=10
 
             print 'nb', nb
+            print 'cv_isi_raw', cv_isi_raw
 
             hg,_=numpy.histogram(cv_isi_raw, numpy.linspace(0.,1.,nb+1))
             pos=numpy.linspace(0.025, 0.975, nb)
