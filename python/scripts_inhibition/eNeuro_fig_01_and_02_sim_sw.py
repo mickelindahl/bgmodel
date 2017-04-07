@@ -11,10 +11,9 @@ from core import monkey_patch as mp
 mp.patch_for_milner()
 
 # Helper modules for simulation
-from scripts_inhibition.base_simulate import (get_path_rate_runs,
-                      get_args_list_oscillation,
-                      get_kwargs_list_indv_nets, 
-                      pert_add_oscillations) 
+from scripts_inhibition.base_simulate import (
+      get_path_rate_runs, # for locating tuning data
+      pert_add_oscillations)
 
 # Import builder defining a special build version of the model
 # from the defautl model. In this case a model that have
@@ -44,6 +43,7 @@ import eNeuro_fig_defaults as fd
 # as many simulations as the number of
 # perturbations lists you have.
 import eNeuro_fig_01_and_02_pert as op
+
 import numpy
 import sys
 

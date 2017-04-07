@@ -1405,6 +1405,9 @@ def show_isi(d, **k):
             ax=axs[i+2]
             
             nb=10
+
+            print 'nb', nb
+
             hg,_=numpy.histogram(cv_isi_raw, numpy.linspace(0.,1.,nb+1))
             pos=numpy.linspace(0.025, 0.975, nb)
             axs[i+2].my_remove_axis(xaxis=False, yaxis=True)
