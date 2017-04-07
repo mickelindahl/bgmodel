@@ -12,7 +12,9 @@ mp.patch_for_milner()
 
 # Helper modules for simulation
 from scripts_inhibition.base_simulate import (
-      get_path_rate_runs, # for locating tuning data
+      get_path_rate_runs,
+      get_args_list_oscillation,
+      get_kwargs_list_indv_nets,
       pert_add_oscillations)
 
 # Import builder defining a special build version of the model
