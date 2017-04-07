@@ -48,7 +48,7 @@ from NeuroTools.plotting import get_display, set_labels, set_axis_limits
 
 from scipy.sparse import csc_matrix
 
-if (!hasattr(scipy.stats, 'nanmean')):
+if not hasattr(scipy.stats, 'nanmean'):
     scipy.stats.nanmean=scipy.nanmean
     scipy.stats.nanstd=scipy.nanstd
 
