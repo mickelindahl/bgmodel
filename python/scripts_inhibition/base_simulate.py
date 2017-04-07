@@ -403,11 +403,8 @@ def get_path_nest(script_name, keys, par=None):
     return file_name
 
 def get_path_rate_runs(simulation_name):
-    if my_socket.determine_computer() == 'milner':
-        path_rate_runs = dr.HOME_DATA + '/'+simulation_name
-    else:
-        path_rate_runs = dr.HOME_DATA + '/'+simulation_name
-    return path_rate_runs
+    return dr.HOME_DATA + '/'+simulation_name
+
 
 def get_threads_postprocessing(t_shared, t_mpi, shared):
     if shared:
@@ -564,11 +561,11 @@ def pert_add_single(**kwargs):
 
 def pert_add_oscillations(**kwargs):
     
-    amp_base=kwargs.get('amp_base') 
-    amp_base_skip=kwargs.get('amp_base_skip', [])
-    do_reset=kwargs.get('do_reset', True)
-    down_vec=kwargs.get('down_vec')    
-    freqs=kwargs.get('freqs')
+    amp_base=kwargs.get('amp_base') # Scaling of base frequency
+    amp_base_skip=kwargs.get('amp_base_skip', []) #skip amplitude modulation for nuclies in this list
+    do_reset=kwargs.get('do_reset', True) #reset simulations between runs in engine.py with nest.reset
+    down_vec=kwargs.get('down_vec') #?
+    freqs=kwargs.get('freqs') # Frequency amplitude modulation
     freq_oscillation=kwargs.get('freq_oscillation')
     external_input_mod=kwargs.get('external_input_mod',[]) 
     input_mod=kwargs.get('input_mod',['C1', 'C2', 'CF', 'CS'])
