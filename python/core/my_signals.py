@@ -26,6 +26,7 @@ from copy import deepcopy
 import numpy
 import pylab
 import scipy.stats
+import scipy
 import sys
 import unittest
 import subprocess
@@ -47,6 +48,9 @@ from NeuroTools.plotting import get_display, set_labels, set_axis_limits
 
 from scipy.sparse import csc_matrix
 
+if (!hasattr(scipy.stats, 'nanmean')):
+    scipy.stats.nanmean=scipy.nanmean
+    scipy.stats.nanstd=scipy.nanstd
 
 import pprint
 pp=pprint.pprint
@@ -573,12 +577,8 @@ def get_activity_historgram(y, bins, p):
     assert len(y) == m * bins, 'not equal'
     y = numpy.reshape(y, [bins, m])
 
-    if (hasattr(scipy.stats, 'nanmean')):
-        y_mean = scipy.stats.nanmean(y, axis=1)
-        y_std = scipy.stats.nanstd(y, axis=1)
-    else:
-        y_mean = scipy.nanmean(y, axis=1)
-        y_std = scipy.nanstd(y, axis=1)
+    y_mean = scipy.stats.nanmean(y, axis=1)
+    y_std = scipy.stats.nanstd(y, axis=1)
     x = numpy.linspace(0, p, bins)
 
     return y_mean, y_std, x
