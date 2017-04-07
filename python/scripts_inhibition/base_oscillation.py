@@ -1408,6 +1408,8 @@ def show_isi(d, **k):
 
             print 'nb', nb
             print 'cv_isi_raw', cv_isi_raw
+            cv_isi_raw[numpy.isnan(cv_isi_raw)]=0
+
 
             hg,_=numpy.histogram(cv_isi_raw, numpy.linspace(0.,1.,nb+1))
             pos=numpy.linspace(0.025, 0.975, nb)
