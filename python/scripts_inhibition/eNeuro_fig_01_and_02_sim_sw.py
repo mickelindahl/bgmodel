@@ -117,8 +117,8 @@ kwargs={
         'path_results':dr.HOME_DATA+ '/'+ FILE_NAME + '/',
         'perturbation_list':ops,
                 
-        'sim_time':40000.0,
-        'size':20000.0 ,
+        'sim_time':20000.0,
+        'size':5000.0 ,
         'STN_amp_mod':STN_amp_mod,
         
         'tuning_freq_amp_to':'M2',
