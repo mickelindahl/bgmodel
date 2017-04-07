@@ -573,8 +573,12 @@ def get_activity_historgram(y, bins, p):
     assert len(y) == m * bins, 'not equal'
     y = numpy.reshape(y, [bins, m])
 
-    y_mean = scipy.stats.nanmean(y, axis=1)
-    y_std = scipy.stats.nanstd(y, axis=1)
+    if (hasattr(scipy.stats, 'nanmean')):
+        y_mean = scipy.stats.nanmean(y, axis=1)
+        y_std = scipy.stats.nanstd(y, axis=1)
+    else:
+        y_mean = scipy.nanmean(y, axis=1)
+        y_std = scipy.nanstd(y, axis=1)
     x = numpy.linspace(0, p, bins)
 
     return y_mean, y_std, x
