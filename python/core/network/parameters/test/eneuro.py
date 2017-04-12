@@ -9,7 +9,7 @@ import unittest
 
 class TestEneuro( unittest.TestCase ):
     def test_show_par(self):
-        dic=misc.dict_reduce(EneuroPar().dic, {})
+        dic = misc.dict_reduce(EneuroPar().dic, {})
 
         for key in sorted(list(dic.keys())):
             print key, dic[key]
@@ -23,12 +23,20 @@ class TestEneuro( unittest.TestCase ):
 
         EneuroPar().dic_print_change('', d1, d2)
 
+
+class Test( unittest.TestCase ):
+    def test_example(self):
+        print 'test'
+
 if __name__ == '__main__':
 
 
     d = { TestEneuro:[
         # 'test_show_par',
-        # 'test_diff_eNeuro_perturbations_sw'
+        'test_diff_eNeuro_perturbations_sw'
+    ],
+    Test:[
+        # 'test_example'
     ]}
 
     suite = unittest.TestSuite()

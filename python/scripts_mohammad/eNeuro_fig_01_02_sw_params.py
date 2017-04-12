@@ -7,6 +7,14 @@ the first step to have one sample parameter set with which the sw simulation can
 import pickle
 import nest
 
+'''
+from core.network.parameters.eneuro import EneuroPar
+
+eneuro = EneuroPar()
+dic = eneuro.dic
+print dic
+'''
+
 data_dir = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/bgmodel/python/scripts_mohammad/temp-data/'
 
 # Reading data to variables

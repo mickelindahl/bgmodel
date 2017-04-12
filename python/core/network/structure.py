@@ -862,7 +862,7 @@ def connect_conns(params_nest, conns, popus, display_print=False):
         # continue
 
         if display_print and comm.rank()==0:
-            print 'Connecting '+str(c)
+            print 'Connecting '+str(c), params_nest[c.get_syn()]
         my_nest.MyCopyModel( params_nest[c.get_syn()], c.get_syn())
         #c.copy_model( params_nest )
 
