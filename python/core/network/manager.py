@@ -1818,8 +1818,10 @@ def phases_diff_with_cohere(data, **k):
 def psd(data, **k):
     return data.get_psd(**k)
 
+# Run simulation
 def run(net):
 
+    # Start a simulation
     d=net.simulation_loop()
     return {net.get_name():d}
 

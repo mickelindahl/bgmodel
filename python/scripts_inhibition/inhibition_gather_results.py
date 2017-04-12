@@ -16,8 +16,8 @@ import pprint
 pp=pprint.pprint
 
 
-
-
+# Function to retrieve amp
+# - freq equals the desired frequency of M1 or M2
 def get_amlitudes(freqs, data):
     
     out={}

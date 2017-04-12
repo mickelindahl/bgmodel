@@ -753,7 +753,7 @@ class Par_base(object):
 
         return misc.dict_recursive_get(self.dep, args + ['val'])
 
-    def dic_print_change(self, s, d1, d2):
+    def dic_print_change(self, s, d1, d2, flag='1 row'):
 
         d1_reduced = misc.dict_reduce(d1, {}, deliminator='.')
         d2_reduced = misc.dict_reduce(d2, {}, deliminator='.')
@@ -762,7 +762,11 @@ class Par_base(object):
             if key in d2_reduced.keys():
                 val_old = d2_reduced[key]
                 if val_old != val and val_old != None:
-                    print 'Change ' + s + ' ' + key + ' ' + str(val_old) + '->' + str(val)
+                    if flag=='1 row':
+                        print 'Change ' + s + ' ' + key + ' ' + str(val_old) + '->' + str(val)
+                    elif flag=='2 rows':
+                        print 'Dic 1', str(val)
+                        print 'Dic 2', str(val_old)
 
     def _get(self, *args):
 
@@ -4845,7 +4849,7 @@ def iter_node_connected_to(d, target):
         l.append(s)
 
 
-def print_dic_comparison(d1, d2, flag='keys'):
+def print_dic_comparison(d1, d2, flag='keys', names=[1,2]):
     ind1 = numpy.argsort(misc.dict_reduce(d1, {}).keys())
     ind2 = numpy.argsort(misc.dict_reduce(d2, {}).keys())
     a = misc.dict_reduce(d1, {}).values()
@@ -4855,18 +4859,19 @@ def print_dic_comparison(d1, d2, flag='keys'):
     for i, j in zip(ind1, ind2):
 
         if flag == 'all':
-            print 1, c[i], a[i]
-            print 2, d[j], b[j]
+            print names[0], c[i], a[i]
+            print names[1], d[j], b[j]
 
         if flag == 'keys':
             if c[i] != d[j]:
-                print 1, c[i], a[i]
-                print 2, d[j], b[j]
+                print names[0], c[i], a[i]
+                print names[1], d[j], b[j]
         if flag == 'values':
 
+
             if a[i] != b[j]:
-                print 'Depen data', c[i], a[i]
-                print 'Dummy data', d[j], b[j]
+                print names[0], c[i], a[i]
+                print names[1], d[j], b[j]
 
 
 import unittest

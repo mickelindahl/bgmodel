@@ -328,7 +328,8 @@ class Network_base(object):
     
     def set_path_nest(self, v):
         self.par.set_path_nest(v)
-    
+
+
     def simulation_loop(self):
         d={}
         self.do_reset()
@@ -662,6 +663,7 @@ class Network(Network_base):
            'interval':1.,
            'to_file':False,
            'to_memory':True}
+
         models=['FS', 'GA', 'GI', 'GF', 'M1', 'M2', 'SN', 'ST']
         n=10
         for model in models:

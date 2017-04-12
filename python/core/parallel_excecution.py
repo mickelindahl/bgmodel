@@ -161,7 +161,8 @@ def loop(*args, **kwargs):
                           log_to_file=True,
                           log_file_name=log_file_name,
                           **kwargs)
-    
+
+    # Iterate over entry points
     for m in m_list:
         
         q=Queue.Queue()

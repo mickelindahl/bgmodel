@@ -130,7 +130,7 @@ def get_args_list_oscillation(p_list, **kwargs):
     
 
     def get_setup_args_and_kwargs(_, **kwargs):
-        freq_oscillation=kwargs.get('freq_oscillation')        
+        freq_oscillation=kwargs.get('freq_oscillation') # 20 for beta, 1 for slow wave (Hz)
         local_num_threads=kwargs.get('local_num_threads')
         args=[1000.0 / freq_oscillation, 
                local_num_threads,]
@@ -150,9 +150,9 @@ def get_args_list_oscillation_opt(p_list, **kwargs):
         args=[1000.0 / freq_oscillation, 
                local_num_threads,]
 
-        kw={'nets_to_run':kwargs['nets_to_run'],
-            'tp_name':kwargs.get('tp_names')[i],
-            'opt':kwargs.get('opt')[i]}
+        kw={ 'nets_to_run':kwargs['nets_to_run'], # number of networks to run, defined in build from manager.py
+             'tp_name':kwargs.get('tp_names')[i],
+             'opt':kwargs.get('opt')[i]}
         
         return args, kw
     
@@ -329,18 +329,27 @@ def get_args_list_Go_NoGo_compete_oscillation(p_list, **kwargs):
 def get_kwargs_list_indv_nets(n_pert, kwargs):
     
 
-    do_runs=kwargs.get('do_runs')
-    from_disk_0=kwargs.get('from_disk_0')
+    do_runs=kwargs.get('do_runs') # FOr debugong. If true simulations are first run in serial and informatinos is printed out
+    from_disk_0=kwargs.get('from_disk_0') # Simulation entrypoint.  0-> run from scratch, 1->start with loading load simulation data 2-> figures
 #     process_type=kwargs.get('process_type')
 #     subp_job_script=kwargs.get('subp_job_script')   
     
     kwargs_list=[]
     index=-1
-    for j in range(0, 3):
+
+    # Loop over entrypoints and perturbations and create kwargs for each
+    # simulation
+    for j in range(0, 3): # Entrypoints 3 (0,1,2)
+
         for i in range(n_pert):
-            
-            if j<2: nets_list=[[nets] for nets in kwargs.get('nets')]
-            else: nets_list=[kwargs.get('nets')]
+
+            # If simulation or data analysis run each network separatly
+            if j<2:
+                nets_list=[[nets] for nets in kwargs.get('nets')] #The network id is in nets e.g.nets = 'Net_0'
+
+            # If create figure run them al together
+            else:
+                nets_list=[kwargs.get('nets')]
         
             do_nets=kwargs.get('do_nets')
                     
@@ -349,8 +358,10 @@ def get_kwargs_list_indv_nets(n_pert, kwargs):
             
                 if (i not in do_runs) and do_runs:
                     kwargs['active']=False
+
                 elif j < from_disk_0:
                     kwargs['active']=False
+
                 elif do_nets and j<2:
                     kwargs['active']=True
                     for net in nets:
@@ -532,8 +543,8 @@ def pert_add(p_list, **kwargs):
 
 def iterator_oscillations(freqs, STN_amp_mod, l):
     for j, _ in enumerate(freqs):
-        for STN_amp in STN_amp_mod:
-            for i, _l in enumerate(l):
+        for STN_amp in STN_amp_mod: # Ignore will always be one
+            for i, _l in enumerate(l): # Iterate over perturbations
                 yield j, i, STN_amp, _l
 
 def pert_add_single(**kwargs):
@@ -566,20 +577,22 @@ def pert_add_oscillations(**kwargs):
     do_reset=kwargs.get('do_reset', True) #reset simulations between runs in engine.py with nest.reset
     down_vec=kwargs.get('down_vec') #?
     freqs=kwargs.get('freqs') # Frequency amplitude modulation
-    freq_oscillation=kwargs.get('freq_oscillation')
-    external_input_mod=kwargs.get('external_input_mod',[]) 
+    freq_oscillation=kwargs.get('freq_oscillation') # Frequency in Hz of network oscillations
+    external_input_mod=kwargs.get('external_input_mod',[])  # List external nputs that should also be modulated e.g '
+                                                            # 'ES' (external input to SNr)
     input_mod=kwargs.get('input_mod',['C1', 'C2', 'CF', 'CS'])
     no_mod=kwargs.get('no_mod',[])
     local_num_threads=kwargs.get('local_num_threads')
-    null_down=kwargs.get('null_down', False)
-    null_down_STN=kwargs.get('null_down_stn', False)
-    path_rate_runs=kwargs.get('path_rate_runs')
-    perturbation_list=kwargs.get('perturbation_list')
+    null_down=kwargs.get('null_down', False) # set oscillation trough of input rate to zero
+    null_down_STN=kwargs.get('null_down_stn', False) # set oscillation trough of input rate to zero only for STN
+    path_rate_runs=kwargs.get('path_rate_runs') # Were to store simulation output
+    perturbation_list=kwargs.get('perturbation_list') #Perturbation list to apply
     sim_time=kwargs.get('sim_time')
-    size=kwargs.get('size')
-    STN_amp_mod=kwargs.get('STN_amp_mod', [1.])
-    tuning_freq_amp_to=kwargs.get('tuning_freq_amp_to', 'M1')
-    
+    size=kwargs.get('size') # Network size
+    STN_amp_mod=kwargs.get('STN_amp_mod', [1.]) # Degree of modulation for STN
+    tuning_freq_amp_to=kwargs.get('tuning_freq_amp_to', 'M2') # Tuning base rate of MSN neurons either to D1 or D2
+
+    # To all perturbations add simulation time, simulation stop, number of thread etc. stuff
     l=perturbation_list
     for i in range(len(l)):
         l[i] += pl({'simu':{
@@ -590,18 +603,26 @@ def pert_add_oscillations(**kwargs):
                             'local_num_threads':local_num_threads}, 
                 'netw':{'size':size}}, 
             '=')
-    
+
+
     kw_process={'freqs':freqs,
                 'tuning_freq_amp_to':tuning_freq_amp_to}
+
+    # Upper band amplitude for M1 or M2 that during oscillations
     damp = process(path_rate_runs, **kw_process)
     for key in sorted(damp.keys()):
         val = damp[key]
         print  key, numpy.round(val, 2)
     
     ll = []
-    
+
+    # Iterate over all simulations combinations number of freq x number of
+    # STN_amp x number of perturbations lists = number of simulations
+    # Add input combinations as an perturbation
     for j, i, STN_amp, _l in iterator_oscillations(freqs, STN_amp_mod, l):
-        amp = [numpy.round(damp[_l.name][j], 2), 
+        # amp = [scale for apmlitude of osccilations, scale for baseline firing rate]
+        # e.g. C1_rate = C1_rate0 * amp[1] +/- C1_rate*amp[0]
+        amp = [numpy.round(damp[_l.name][j], 2),
                amp_base[j]]
             
         _l = deepcopy(_l)
@@ -620,16 +641,13 @@ def pert_add_oscillations(**kwargs):
             elif down_vec:
                 down=down_vec[j]
             else:
-                down=-amp[0]*factor
+                down=-amp[0]*factor # base case
             
             if key not in amp_base_skip:
-                amp0=amp[1]
+                amp0=amp[1] # base case change the base amplitude with this scale
             else: 
                 amp0=1.
-            
-            if amp0>1.0:
-                pass
-            
+
             upp=amp[0]
             
 #             print amp, amp0

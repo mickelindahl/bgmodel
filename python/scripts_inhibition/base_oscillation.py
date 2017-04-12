@@ -11,7 +11,8 @@ from core.data_to_disk import Storage_dic
 from core.network import manager
 from core.network.data_processing import Data_units_relation
 from core.network.manager import (add_perturbations, compute, 
-                                     run, save, load, get_storage_list)
+                                     run, # Important function. Initated network simulations
+                                  save, load, get_storage_list)
 from core.network.manager import Builder_beta as Builder
 from core.my_signals import Data_bar
 

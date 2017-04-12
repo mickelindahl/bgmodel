@@ -216,7 +216,7 @@ def run_data_base_dump(run, net, script_name, net_name, category, file_name, **k
     
 
     t=time.time()
-    dd=run(net)
+    dd=run(net) # Network is run
 
     par_data = cPickle.dumps(net.par.dic, -1)
     

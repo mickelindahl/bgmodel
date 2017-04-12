@@ -12,10 +12,10 @@ mp.patch_for_milner()
 
 # Helper modules for simulation
 from scripts_inhibition.base_simulate import (
-      get_path_rate_runs,
-      get_args_list_oscillation,
+      get_path_rate_runs, # to find input data runs
+      pert_add_oscillations,
       get_kwargs_list_indv_nets,
-      pert_add_oscillations)
+      get_args_list_oscillation)
 
 # Import builder defining a special build version of the model
 # from the defautl model. In this case a model that have
@@ -88,7 +88,7 @@ kwargs={
         
         'debug':False,
         'do_runs':range(num_runs), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
         
         'external_input_mod':[],
         
@@ -126,6 +126,8 @@ kwargs={
         'wrapper_process':WRAPPER_PROCESS, #user defined wrapper of subprocesses
         }
 
+# Add input oscillation setup as perturations
+# NUmber of simulations will increaase from len(ops)->len(freqs)*len(ops)*len(STN_amp_mod)
 p_list = pert_add_oscillations(**kwargs)
 
 for i, p in enumerate(p_list): 
@@ -137,6 +139,6 @@ k_list=get_kwargs_list_indv_nets(len(p_list), kwargs)
 for i, obj in enumerate(a_list):
     print i, obj.kwargs['from_disk']
 
-loop(num_sims,[num_sims,num_sims,num_sims/2], a_list, k_list )
+loop(num_sims,[num_sims, num_sims, num_sims/2], a_list, k_list )
 
         
