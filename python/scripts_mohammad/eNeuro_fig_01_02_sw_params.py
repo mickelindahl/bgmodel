@@ -7,14 +7,14 @@ the first step to have one sample parameter set with which the sw simulation can
 import pickle
 import nest
 
-'''
+
 from core.network.parameters.eneuro import EneuroPar
 
 eneuro = EneuroPar()
-dic = eneuro.dic
-print dic
-'''
+params_dic = eneuro.dic
+print params_dic
 
+'''
 data_dir = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/bgmodel/python/scripts_mohammad/temp-data/'
 
 # Reading data to variables
@@ -26,11 +26,12 @@ hd1.close()
 with open(data_dir+'poppar.pickle','rb') as hd2:
     params_pop = pickle.load(hd2)
 hd1.close()
+'''
 
 # Other parameters which might not be in the variables above
 
 # Generating parrot neurons and a dynamic poisson generator for CX to MSN D1
-C1_n = params_pop['C1']['n']
+C1_n = params_dic[]['C1']['n']
 C1_model = 'parrot_neuron'
 C1_params = params_pop['C1']['params']
 
