@@ -69,6 +69,45 @@ CF = nest.Create(CF_model, CF_n, params = {'rate':CF_rate,
                                          # 'origin':C1_start,
                                          'stop':CF_stop})
 
+# Generating cortical inputs to MSN D1 (NMDA)
+
+# C1_n = params_dic['node']['C1']['n']
+C1_n = 1
+C1_model = params_dic['nest']['C1']['type_id']
+C1_rate = params_dic['node']['C1']['rate']
+C1_start = 1.0
+C1_stop = params_dic['node']['C1']['spike_setup'][0]['t_stop']
+
+C1N = nest.Create(C1_model, C1_n, params = {'rate':C1_rate,
+                                         # 'origin':C1_start,
+                                         'stop':C1_stop})
+
+# Generating cortical inputs to MSN D2 (NMDA)
+
+# C1_n = params_dic['node']['C1']['n']
+C2_n = 1
+C2_model = params_dic['nest']['C2']['type_id']
+C2_rate = params_dic['node']['C2']['rate']
+C2_start = 1.0
+C2_stop = params_dic['node']['C2']['spike_setup'][0]['t_stop']
+
+C2N = nest.Create(C2_model, C2_n, params = {'rate':C2_rate,
+                                         # 'origin':C1_start,
+                                         'stop':C2_stop})
+
+# Generating cortical inputs to FSI (NMDA)
+
+# C1_n = params_dic['node']['C1']['n']
+CF_n = 1
+CF_model = params_dic['nest']['CF']['type_id']
+CF_rate = params_dic['node']['CF']['rate']
+CF_start = 1.0
+CF_stop = params_dic['node']['CF']['spike_setup'][0]['t_stop']
+
+CFN = nest.Create(CF_model, CF_n, params = {'rate':CF_rate,
+                                         # 'origin':C1_start,
+                                         'stop':CF_stop})
+
 # Generating cortical inputs to STN
 
 # C1_n = params_dic['node']['C1']['n']
@@ -79,6 +118,19 @@ CS_start = 1.0
 CS_stop = params_dic['node']['CS']['spike_setup'][0]['t_stop']
 
 CS = nest.Create(CS_model, CS_n, params = {'rate':CS_rate,
+                                         # 'origin':C1_start,
+                                         'stop':CS_stop})
+
+# Generating cortical inputs to STN (NMDA)
+
+# C1_n = params_dic['node']['C1']['n']
+CS_n = 1
+CS_model = params_dic['nest']['CS']['type_id']
+CS_rate = params_dic['node']['CS']['rate']
+CS_start = 1.0
+CS_stop = params_dic['node']['CS']['spike_setup'][0]['t_stop']
+
+CSN = nest.Create(CS_model, CS_n, params = {'rate':CS_rate,
                                          # 'origin':C1_start,
                                          'stop':CS_stop})
 
@@ -107,6 +159,19 @@ EI_stop = params_dic['node']['EI']['spike_setup'][0]['t_stop']
 EI = nest.Create(EI_model, EI_n, params = {'rate':EI_rate,
                                          # 'origin':C1_start,
                                          'stop':EI_stop})
+
+# Generating external excitatory inputs to GP Proto
+
+# C1_n = params_dic['node']['C1']['n']
+EF_n = 1
+EF_model = params_dic['nest']['EF']['type_id']
+EF_rate = params_dic['node']['EF']['rate']
+EF_start = 1.0
+EF_stop = params_dic['node']['EF']['spike_setup'][0]['t_stop']
+
+EF = nest.Create(EF_model, EF_n, params = {'rate':EF_rate,
+                                         # 'origin':C1_start,
+                                         'stop':EF_stop})
 
 # Generating external excitatory inputs to SNr
 
@@ -199,7 +264,7 @@ nest.CopyModel(SN_model, 'SNr', params = SN_params)
 
 SN = nest.Create('SNr', SN_n)
 
-# Creating neuron objects for simulations GP FSI?
+# Creating neuron objects for simulations GP projecting to FS?
 
 GF_n = params_dic['node']['GF']['n']
 GF_model = params_dic['nest']['GF']['type_id']
@@ -212,18 +277,622 @@ GF = nest.Create('GPFS', GF_n)
 
 # Connecting populations together
 
-# Connecting cortical input to MSN D1
+# Connecting cortical input to MSN D1 (AMPA)
 
-synmodel = params_dic['nest']['C1_M1_ampa']['type_id']
-weight = params_dic['nest']['C1_M1_ampa']['weight']
-delay = params_dic['nest']['C1_M1_ampa']['delay']
-rule = 'all-to-all'
-syn = params_dic['conn']['C1_M1_ampa']['syn']
+conn_name = 'C1_M1_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
 
-nest.CopyModel(synmodel,syn,{'delay':delay,
-                          'weight':weight})
+nest.CopyModel(synmodel, syn, syndic)
 
 nest.Connect(C1, M1, syn_spec=syn)
+
+# Connecting cortical input to MSN D1 (NMDA)
+
+conn_name = 'C1_M1_nmda'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(C1N, M1, syn_spec=syn)
+
+# Connecting cortical input to MSN D2 (AMPA)
+
+conn_name = 'C2_M2_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(C2, M2, syn_spec=syn)
+
+# Connecting cortical input to MSN D2 (NMDA)
+
+conn_name = 'C2_M2_nmda'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(C2N, M2, syn_spec=syn)
+
+# Connecting cortical input to FSI
+
+conn_name = 'CF_FS_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(CF, FS, syn_spec=syn)
+
+# Connecting cortical input to STN (AMPA)
+
+conn_name = 'CS_ST_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(CS, ST, syn_spec=syn)
+
+# Connecting cortical input to STN (NMDA)
+
+conn_name = 'CS_ST_nmda'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(CSN, ST, syn_spec=syn)
+
+# Connecting external input to SNr
+
+conn_name = 'ES_SN_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(ES, SN, syn_spec=syn)
+
+# Connecting external input to GP Arky
+
+conn_name = 'EA_GA_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(EA, GA, syn_spec=syn)
+
+# Connecting external input to GP Proto
+
+conn_name = 'EI_GI_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(EI, GI, syn_spec=syn)
+
+# Connecting external input to GP-projecting FSI
+
+conn_name = 'EF_GF_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(EF, GF, syn_spec=syn)
+
+
+# Connecting MSN D1 to MSN D1
+
+conn_name = 'M1_M1_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(M1, M1, conn_spec=conn, syn_spec=syn)
+
+# Connecting MSN D1 to MSN D2
+
+conn_name = 'M1_M2_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(M1, M2, conn_spec=conn, syn_spec=syn)
+
+# Connecting MSN D2 to MSN D2
+
+conn_name = 'M2_M2_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(M2, M2, conn_spec=conn, syn_spec=syn)
+
+# Connecting MSN D2 to MSN D1
+
+conn_name = 'M2_M1_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(M2, M1, conn_spec=conn, syn_spec=syn)
+
+# Connecting FSI to MSN D1
+
+conn_name = 'FS_M1_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(FS, M1, conn_spec=conn, syn_spec=syn)
+
+# Connecting FSI to MSN D2
+
+conn_name = 'FS_M2_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(FS, M2, conn_spec=conn, syn_spec=syn)
+
+# Connecting FSI to FSI
+
+conn_name = 'FS_FS_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(FS, FS, conn_spec=conn, syn_spec=syn)
+
+# Connecting MSN D1 to SNr
+
+conn_name = 'M1_SN_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(M1, SN, conn_spec=conn, syn_spec=syn)
+
+# Connecting MSN D2 to GP Arky
+
+conn_name = 'M2_GA_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(M2, GA, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Arky to MSN D2
+
+conn_name = 'GA_M2_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GA, M2, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Arky to MSN D1
+
+conn_name = 'GA_M1_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GA, M1, conn_spec=conn, syn_spec=syn)
+
+# Connecting MSN D2 to GP Proto
+
+conn_name = 'M2_GI_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(M2, GI, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Proto to MSN D2
+
+conn_name = 'GI_M2_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GI, M2, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Proto to MSN D1
+
+conn_name = 'GI_M1_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GI, M1, conn_spec=conn, syn_spec=syn)
+
+# Connecting MSN D2 to GP FSI projecting
+
+conn_name = 'M2_GF_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(M2, GF, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP FSI projecting to MSN D2
+
+conn_name = 'GF_M2_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GF, M2, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP FSI projecting to MSN D1
+
+conn_name = 'GF_M1_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GF, M1, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP special neurons to FSI projecting. Maybe they are not really special but rather are add to tailor the
+# need for reviewers
+
+conn_name = 'GF_FS_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GF, FS, conn_spec=conn, syn_spec=syn)
+
+# Connecting GPe Proto to FSI
+
+conn_name = 'GI_FS_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GI, FS, conn_spec=conn, syn_spec=syn)
+
+# Connecting GPe Arky to FSI
+
+conn_name = 'GA_FS_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GA, FS, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP special neurons to GP Proto.
+
+conn_name = 'GF_GI_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GF, GI, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Proto to GP special neurons.
+
+conn_name = 'GI_GF_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GI, GF, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP special neurons to GP Arky.
+
+conn_name = 'GF_GA_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GF, GA, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Arky to GP special neurons.
+
+conn_name = 'GA_GF_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GA, GF, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP special neurons to themselves.
+
+conn_name = 'GF_GF_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GF, GF, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Arky to themselves.
+
+conn_name = 'GA_GA_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GA, GA, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Proto to themselves.
+
+conn_name = 'GI_GI_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GI, GI, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Proto to GP Arky.
+
+conn_name = 'GI_GA_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GI, GA, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Arky to GP Proto.
+
+conn_name = 'GA_GI_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GA, GI, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Proto to STN.
+
+conn_name = 'GI_ST_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GI, ST, conn_spec=conn, syn_spec=syn)
+
+# Connecting STN to GP Proto.
+
+conn_name = 'ST_GI_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(ST, GI, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP FS to STN.
+
+conn_name = 'GF_ST_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GF, ST, conn_spec=conn, syn_spec=syn)
+
+# Connecting STN to GP FS.
+
+conn_name = 'ST_GF_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(ST, GF, conn_spec=conn, syn_spec=syn)
+
+# Connecting STN to GP Arky
+
+conn_name = 'ST_GA_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(ST, GA, conn_spec=conn, syn_spec=syn)
+
+# Connecting STN to STN
+
+conn_name = 'ST_ST_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(ST, ST, conn_spec=conn, syn_spec=syn)
+
+# Connecting STN to SNr
+
+conn_name = 'ST_SN_ampa'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(ST, SN, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP FS to SNr
+
+conn_name = 'GF_SN_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GF, SN, conn_spec=conn, syn_spec=syn)
+
+# Connecting GP Proto to SNr
+
+conn_name = 'GI_SN_gaba'
+syndic = params_dic['nest'][conn_name]
+synmodel = syndic.pop('type_id')
+syn = params_dic['conn'][conn_name]['syn']
+indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
+conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+
+nest.CopyModel(synmodel, syn, syndic)
+
+nest.Connect(GI, SN, conn_spec=conn, syn_spec=syn)
 
 '''
 # Generating parrot neurons and a dynamic poisson generator for CX to MSN D1
