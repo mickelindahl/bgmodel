@@ -534,7 +534,7 @@ class EneuroParBase( object ):
         dic['nest']['FS']['GABAA_1_Tau_decay'] = GetNest('FS_FS_gaba', 'tau_psc')
 
         # From GPe TA
-        dic['nest']['FS']['GABAA_2_Tau_decay'] = 66
+        dic['nest']['FS']['GABAA_2_Tau_decay'] = 66.
         dic['nest']['FS']['GABAA_2_E_rev'] = -74.  # n.d. set as for MSNs
 
         # From GPe TI (10 % TF)

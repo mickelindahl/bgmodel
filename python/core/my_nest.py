@@ -558,8 +558,14 @@ def MyCopyModel(params, new_name):
     type_id=params['type_id']
     del params['type_id']
     if not new_name in nest.Models():
-        CopyModel( type_id, new_name, params ) 
-    
+        try:
+            CopyModel( type_id, new_name, params )
+        except Exception as e:
+
+            print type_id, new_name
+            pp(params)
+
+            raise e
         
 def MySimulate(duration):
 

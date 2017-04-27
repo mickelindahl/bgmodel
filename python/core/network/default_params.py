@@ -66,6 +66,7 @@ models   - define neuron and synapse models
 network  - define layers and populations
 '''
 
+from core import data_to_disk
 from copy import deepcopy
 from core import directories as dr
 from core import misc
@@ -948,6 +949,44 @@ class Par_base(object):
             syn = val['syn']
             for model in models:
                 yield conn, syn, model
+
+    def nest_clear_data_path(self, kwargs):
+
+        path = self.dic['simu']['path_nest']
+
+        if not os.path.isdir(path):
+            return
+
+        for filename in sorted(os.listdir(path)):
+            if filename.endswith(".gdf"):
+                if kwargs.get('display', True):
+                    print 'Deleting: ' + path + '/' + filename
+                os.remove(path + '/' + filename)
+
+    def nest_set_kernel_status(self):
+
+        print 'test'
+        if not os.path.isdir(self.dic['simu']['path_nest']):
+            warnings.warn('Nest storage path missing ' + self.dic['simu']['path_nest'] + '. Attempts to create it')
+
+        data_to_disk.mkdir(self.dic['simu']['path_nest'])
+
+        nest.SetKernelStatus({
+
+                'data_path': self.dic['simu']['path_nest'],
+                'local_num_threads': self.dic['simu']['local_num_threads'],
+                'print_time': self.dic['simu']['print_time'],
+
+            })
+
+    def set(self, d):
+        self.update_perturbations(Perturbation_list(d, '='))
+
+    def set_addition(self, d):
+        self.update_perturbations(Perturbation_list(d, '+'))
+
+    def set_multiplication(self, d):
+        self.update_perturbations(Perturbation_list(d, '*'))
 
     def set_opt(self, val):
         d = {'netw': {'optimization': val}}

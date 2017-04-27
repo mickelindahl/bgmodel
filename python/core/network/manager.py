@@ -1826,7 +1826,7 @@ def run(net):
     return {net.get_name():d}
 
 def save(storage_dic, d):         
-        storage_dic.save_dic(d, **{'use_hash':False})
+    storage_dic.save_dic(d, **{'use_hash':False})
                     
 def spike_statistic(data,**k):
     return data.get_spike_stats(**k)
