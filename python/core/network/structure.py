@@ -16,7 +16,11 @@ import gc
 
 from copy import deepcopy
 from itertools import izip
-from core import data_to_disk, my_nest, my_population, misc, directories
+from core import data_to_disk
+from core import my_nest
+from core import my_population
+from core import misc
+from core import directories
 
 from core.misc import my_slice, Base_dic
 from core.parallelization import map_parallel, comm, Barrier

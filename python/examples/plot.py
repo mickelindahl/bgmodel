@@ -2,6 +2,6 @@
 
 from core import data_to_disk
 
-path = '/home/mikael/git/bgmodel/results/example/simulate/data'
+path = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/bgmodel/results/example/simulate/data'
 sd = data_to_disk.Storage_dic.load(path, ['Net_0'])
 print sd

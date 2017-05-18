@@ -29,3 +29,8 @@ nest/module/log
 
 # No results in repo
 results
+
+# Temp-data
+
+python/.spyproject/
+python/scripts_mohammad/temp-data/

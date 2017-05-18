@@ -79,17 +79,11 @@ def main():
     # Create news populations and connections structures
     surfs, pops = build(par)
 
-    # Show kernel status
-    pp(my_nest.GetKernelStatus())
-
     # Connect populations accordingly to connections structure
     connect(par, surfs, pops)
 
-    # Show kernel status
-    pp(my_nest.GetKernelStatus())
-
     # Simulate
-    my_nest.Simulate(1900)
+    my_nest.Simulate(500)
 
     # Create spike signals
     d = postprocessing(pops)
