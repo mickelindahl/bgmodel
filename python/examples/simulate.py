@@ -55,11 +55,14 @@ def main():
 
     # Configure simulation parameters
     par.set({
+        'netw':{
+          'size':3000
+        },
         'simu': {
             'local_num_threads': 8,
             'path_data': par.dic['simu']['path_data'] + 'example/simulate/data',
             'path_figure': par.dic['simu']['path_data'] + 'example/simulate/fig',
-            'path_nest': par.dic['simu']['path_data'] + 'example/simulate/nest',
+            'path_nest': par.dic['simu']['path_data'] + 'example/simulate/nest/', # trailing slash important
             'print_time':True,
             'sd_params': {
                 'to_file': True,
@@ -83,7 +86,7 @@ def main():
     connect(par, surfs, pops)
 
     # Simulate
-    my_nest.Simulate(500)
+    my_nest.Simulate(2000)
 
     # Create spike signals
     d = postprocessing(pops)
@@ -93,6 +96,6 @@ def main():
     sd.save_dic({'Net_0':d}, **{'use_hash': False})
 
 
-
+# main()
 if __name__ == '__main__':
     main()

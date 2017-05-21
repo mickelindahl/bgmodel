@@ -290,8 +290,8 @@ class Job_admin_sbatch(Job_admin_abstract):
         self.p_sbatch_err=pr+'/std/sbatch/err{0:0>4}'.format(index)
         self.p_tee_out=pr+'/std/tee/out{0:0>4}'.format(index)
         self.p_par=pr+'/params/run{0:0>4}.pkl'.format(index)
-        self.p_script=dr.HOME_CODE+'/core_old/core/parallel_excecution/simulation.py'
-        self.p_bash0=dr.HOME_CODE+'/core_old/core/parallel_excecution/jobb0_milner.sh'
+        self.p_script=dr.HOME_CODE+'/core/parallel_excecution/simulation.py'
+        self.p_bash0=dr.HOME_CODE+'/core/parallel_excecution/jobb0_milner.sh'
         self.p_bash=pr+'/jobbs/jobb_{0:0>4}.sh'.format(index)
         
         data_to_disk.mkdir('/'.join(self.p_subp_out.split('/')[0:-1]))
