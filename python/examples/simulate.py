@@ -63,6 +63,7 @@ def main():
             'path_data': par.dic['simu']['path_data'] + 'example/simulate/data',
             'path_figure': par.dic['simu']['path_data'] + 'example/simulate/fig',
             'path_nest': par.dic['simu']['path_data'] + 'example/simulate/nest/', # trailing slash important
+            'stop_rec': 10000.,
             'print_time':True,
             'sd_params': {
                 'to_file': True,
