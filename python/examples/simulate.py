@@ -50,8 +50,8 @@ def main():
     my_nest.ResetKernel()
 
     # Get parameters
-    par = EneuroBetaPar(other=EneuroPar())
-
+    #par = EneuroBetaPar(other=EneuroPar())
+    par = EneuroPar()
 
     # Configure simulation parameters
     par.set({
