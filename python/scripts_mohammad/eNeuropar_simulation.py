@@ -6,13 +6,30 @@ the first step to have one sample parameter set with which the sw simulation can
 
 # import pickle
 import nest
+import nest.raster_plot as raster
+'''
+import matplotlib
+matplotlib.use('Agg')
+'''
+import matplotlib.pyplot as plt
+import os
 
+res_dir = os.getenv('BG_MODEL_PYTHON') + '/results-tr-sims/'
+
+if not os.path.isdir(res_dir):
+    os.mkdir(res_dir)
+
+
+
+nest.SetKernelStatus({'local_num_threads':4})
 nest.Install('ml_module')
 
 
 from core.network.parameters.eneuro import EneuroPar
 
 eneuro = EneuroPar()
+eneuro.set({'simu':{'sim_stop':4000.}
+            })
 params_dic = eneuro.dic
 # print params_dic
 
@@ -66,7 +83,7 @@ CF_start = 1.0
 CF_stop = params_dic['node']['CF']['spike_setup'][0]['t_stop']
 
 CF = nest.Create(CF_model, CF_n, params = {'rate':CF_rate,
-                                         # 'origin':C1_start,
+                                         'origin':CF_start,
                                          'stop':CF_stop})
 
 # Generating cortical inputs to MSN D1 (NMDA)
@@ -283,10 +300,12 @@ conn_name = 'C1_M1_ampa'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
 
-nest.Connect(C1, M1, syn_spec=syn)
+    nest.Connect(C1, M1, syn_spec=syn)
 
 # Connecting cortical input to MSN D1 (NMDA)
 
@@ -294,10 +313,11 @@ conn_name = 'C1_M1_nmda'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(C1N, M1, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(C1N, M1, syn_spec=syn)
 
 # Connecting cortical input to MSN D2 (AMPA)
 
@@ -305,10 +325,11 @@ conn_name = 'C2_M2_ampa'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(C2, M2, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(C2, M2, syn_spec=syn)
 
 # Connecting cortical input to MSN D2 (NMDA)
 
@@ -316,10 +337,11 @@ conn_name = 'C2_M2_nmda'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(C2N, M2, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(C2N, M2, syn_spec=syn)
 
 # Connecting cortical input to FSI
 
@@ -327,10 +349,11 @@ conn_name = 'CF_FS_ampa'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(CF, FS, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(CF, FS, syn_spec=syn)
 
 # Connecting cortical input to STN (AMPA)
 
@@ -338,10 +361,11 @@ conn_name = 'CS_ST_ampa'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(CS, ST, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(CS, ST, syn_spec=syn)
 
 # Connecting cortical input to STN (NMDA)
 
@@ -349,10 +373,11 @@ conn_name = 'CS_ST_nmda'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(CSN, ST, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(CSN, ST, syn_spec=syn)
 
 # Connecting external input to SNr
 
@@ -360,10 +385,11 @@ conn_name = 'ES_SN_ampa'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(ES, SN, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(ES, SN, syn_spec=syn)
 
 # Connecting external input to GP Arky
 
@@ -371,10 +397,11 @@ conn_name = 'EA_GA_ampa'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(EA, GA, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(EA, GA, syn_spec=syn)
 
 # Connecting external input to GP Proto
 
@@ -382,10 +409,11 @@ conn_name = 'EI_GI_ampa'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(EI, GI, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(EI, GI, syn_spec=syn)
 
 # Connecting external input to GP-projecting FSI
 
@@ -393,10 +421,11 @@ conn_name = 'EF_GF_ampa'
 syndic = params_dic['nest'][conn_name]
 synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(EF, GF, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(EF, GF, syn_spec=syn)
 
 
 # Connecting MSN D1 to MSN D1
@@ -407,10 +436,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(M1, M1, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(M1, M1, conn_spec=conn, syn_spec=syn)
 
 # Connecting MSN D1 to MSN D2
 
@@ -420,10 +450,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(M1, M2, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(M1, M2, conn_spec=conn, syn_spec=syn)
 
 # Connecting MSN D2 to MSN D2
 
@@ -433,10 +464,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(M2, M2, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(M2, M2, conn_spec=conn, syn_spec=syn)
 
 # Connecting MSN D2 to MSN D1
 
@@ -446,10 +478,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(M2, M1, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(M2, M1, conn_spec=conn, syn_spec=syn)
 
 # Connecting FSI to MSN D1
 
@@ -459,10 +492,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(FS, M1, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(FS, M1, conn_spec=conn, syn_spec=syn)
 
 # Connecting FSI to MSN D2
 
@@ -472,10 +506,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(FS, M2, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(FS, M2, conn_spec=conn, syn_spec=syn)
 
 # Connecting FSI to FSI
 
@@ -485,10 +520,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(FS, FS, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(FS, FS, conn_spec=conn, syn_spec=syn)
 
 # Connecting MSN D1 to SNr
 
@@ -498,10 +534,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(M1, SN, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(M1, SN, conn_spec=conn, syn_spec=syn)
 
 # Connecting MSN D2 to GP Arky
 
@@ -511,10 +548,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(M2, GA, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(M2, GA, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Arky to MSN D2
 
@@ -524,10 +562,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GA, M2, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GA, M2, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Arky to MSN D1
 
@@ -537,10 +576,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GA, M1, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GA, M1, conn_spec=conn, syn_spec=syn)
 
 # Connecting MSN D2 to GP Proto
 
@@ -550,10 +590,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(M2, GI, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(M2, GI, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Proto to MSN D2
 
@@ -563,10 +604,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GI, M2, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GI, M2, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Proto to MSN D1
 
@@ -576,10 +618,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GI, M1, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GI, M1, conn_spec=conn, syn_spec=syn)
 
 # Connecting MSN D2 to GP FSI projecting
 
@@ -589,10 +632,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(M2, GF, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(M2, GF, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP FSI projecting to MSN D2
 
@@ -602,10 +646,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GF, M2, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GF, M2, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP FSI projecting to MSN D1
 
@@ -615,10 +660,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GF, M1, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GF, M1, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP special neurons to FSI projecting. Maybe they are not really special but rather are add to tailor the
 # need for reviewers
@@ -629,10 +675,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GF, FS, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GF, FS, conn_spec=conn, syn_spec=syn)
 
 # Connecting GPe Proto to FSI
 
@@ -642,10 +689,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GI, FS, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GI, FS, conn_spec=conn, syn_spec=syn)
 
 # Connecting GPe Arky to FSI
 
@@ -655,10 +703,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GA, FS, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GA, FS, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP special neurons to GP Proto.
 
@@ -668,10 +717,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GF, GI, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GF, GI, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Proto to GP special neurons.
 
@@ -681,10 +731,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GI, GF, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GI, GF, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP special neurons to GP Arky.
 
@@ -694,10 +745,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GF, GA, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GF, GA, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Arky to GP special neurons.
 
@@ -707,10 +759,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GA, GF, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GA, GF, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP special neurons to themselves.
 
@@ -720,10 +773,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GF, GF, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GF, GF, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Arky to themselves.
 
@@ -733,10 +787,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GA, GA, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GA, GA, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Proto to themselves.
 
@@ -746,10 +801,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GI, GI, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GI, GI, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Proto to GP Arky.
 
@@ -759,10 +815,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GI, GA, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GI, GA, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Arky to GP Proto.
 
@@ -772,10 +829,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GA, GI, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GA, GI, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Proto to STN.
 
@@ -785,10 +843,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GI, ST, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GI, ST, conn_spec=conn, syn_spec=syn)
 
 # Connecting STN to GP Proto.
 
@@ -798,10 +857,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(ST, GI, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(ST, GI, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP FS to STN.
 
@@ -811,10 +871,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GF, ST, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GF, ST, conn_spec=conn, syn_spec=syn)
 
 # Connecting STN to GP FS.
 
@@ -824,10 +885,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(ST, GF, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(ST, GF, conn_spec=conn, syn_spec=syn)
 
 # Connecting STN to GP Arky
 
@@ -837,10 +899,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(ST, GA, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(ST, GA, conn_spec=conn, syn_spec=syn)
 
 # Connecting STN to STN
 
@@ -850,10 +913,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(ST, ST, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(ST, ST, conn_spec=conn, syn_spec=syn)
 
 # Connecting STN to SNr
 
@@ -863,10 +927,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(ST, SN, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(ST, SN, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP FS to SNr
 
@@ -876,10 +941,11 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
-
-nest.Connect(GF, SN, conn_spec=conn, syn_spec=syn)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GF, SN, conn_spec=conn, syn_spec=syn)
 
 # Connecting GP Proto to SNr
 
@@ -889,10 +955,70 @@ synmodel = syndic.pop('type_id')
 syn = params_dic['conn'][conn_name]['syn']
 indeg = params_dic['conn'][conn_name]['fan_in'].as_integer_ratio()[0]
 conn = {'rule': 'fixed_indegree', 'indegree':indeg}
+isconn = params_dic['conn'][conn_name]['lesion']
 
-nest.CopyModel(synmodel, syn, syndic)
+if not isconn:
+    nest.CopyModel(synmodel, syn, syndic)
+    nest.Connect(GI, SN, conn_spec=conn, syn_spec=syn)
 
-nest.Connect(GI, SN, conn_spec=conn, syn_spec=syn)
+# Connecting spike detectors to the populations
+
+SN_spks = nest.Create('spike_detector',params={'start':1000.})
+nest.Connect(SN,SN_spks)
+
+ST_spks = nest.Create('spike_detector',params={'start':1000.})
+nest.Connect(ST,ST_spks)
+
+M1_spks = nest.Create('spike_detector',params={'start':1000.})
+nest.Connect(M1,M1_spks)
+
+M2_spks = nest.Create('spike_detector',params={'start':1000.})
+nest.Connect(M2,M2_spks)
+
+FS_spks = nest.Create('spike_detector',params={'start':1000.})
+nest.Connect(FS,FS_spks)
+
+GA_spks = nest.Create('spike_detector',params={'start':1000.})
+nest.Connect(GA,GA_spks)
+
+GI_spks = nest.Create('spike_detector',params={'start':1000.})
+nest.Connect(GI,GI_spks)
+
+GF_spks = nest.Create('spike_detector',params={'start':1000.})
+nest.Connect(GF,GF_spks)
+
+nest.Simulate(5000.)
+
+raster.from_device(SN_spks,hist=True)
+#plt.savefig(res_dir+'SNr.svg',format='svg')
+plt.savefig(res_dir+'SNr.pdf',format='pdf')
+
+raster.from_device(ST_spks,hist=True)
+#plt.savefig(res_dir+'STN.svg',format='svg')
+plt.savefig(res_dir+'STN.pdf',format='pdf')
+
+raster.from_device(M1_spks,hist=True)
+plt.savefig(res_dir+'MSND1.pdf',format='pdf')
+
+#raster.from_device(M2_spks,hist=True)
+#plt.savefig(res_dir+'MSND2.pdf',format='pdf')
+
+
+raster.from_device(FS_spks,hist=True)
+plt.savefig(res_dir+'FSI.pdf',format='pdf')
+
+raster.from_device(GA_spks,hist=True)
+#plt.savefig(res_dir+'GPeArky.svg',format='svg')
+plt.savefig(res_dir+'GPeArky.pdf',format='pdf')
+
+raster.from_device(GI_spks,hist=True)
+#plt.savefig(res_dir+'GPeProto.svg',format='svg')
+plt.savefig(res_dir+'GPeProto.pdf',format='pdf')
+
+raster.from_device(GF_spks,hist=True)
+#plt.savefig(res_dir+'GPeFSI.svg',format='svg')
+plt.savefig(res_dir+'GPeFSI.pdf',format='pdf')
+
 
 '''
 # Generating parrot neurons and a dynamic poisson generator for CX to MSN D1

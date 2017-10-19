@@ -3,7 +3,8 @@
 from core.network import structure
 from core.network import engine
 from core import my_nest, data_to_disk
-from core.network.parameters.eneuro_beta import EneuroBetaPar
+#from core.network.parameters.eneuro_beta import EneuroBetaPar
+from core.network.parameters.eneuro_ramp import EneuroRampPar
 # from core.network.default_params import Beta
 from core.network.parameters.eneuro import EneuroPar
 from scripts_inhibition.base_oscillation import add_GI, add_GPe
@@ -51,7 +52,8 @@ def main():
 
     # Get parameters
     #par = EneuroBetaPar(other=EneuroPar())
-    par = EneuroPar()
+    #par = EneuroPar()
+    par = EneuroRampPar(other=EneuroPar())
 
     # Configure simulation parameters
     par.set({
@@ -87,7 +89,7 @@ def main():
     connect(par, surfs, pops)
 
     # Simulate
-    my_nest.Simulate(2000)
+    my_nest.Simulate(8000.)
 
     # Create spike signals
     d = postprocessing(pops)

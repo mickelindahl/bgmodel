@@ -4328,6 +4328,33 @@ def calc_spike_setup(n, params, rate, start, stop, typ, testing=False):
                    'idx': idx,
                    't_stop': stop}]
 
+    if typ == 'ramp':
+        #ru = rate * float(params['slope'] / params['step'])
+        #rd = rate * max(0., float(params['p_amplitude0'] + params['p_amplitude_down']))
+        slop=params['slope']#10 #hz/1000ms
+        step=params['step'] #200 #ms
+        length=params['ramp_dur'] #2000
+        m=int(length/step)
+        print m
+        ramp_start=params['ramp_start']    #2000
+
+        #rates=[  2,  4,   6,   8, 10]
+        #rates=[200, 400, 600, 800, 1000]
+
+        rates=range(1,m+1,1)
+        rates=[rate + r*slop*1000/step for r in rates]
+        times=range(ramp_start+step, ramp_start+step*(m+1), step)
+
+        rates=[rate]+rates
+        times=[1]+times
+
+        idx = range(n)
+
+        setup += [{'rates': rates,
+                   'times': times,
+                   'idx': idx,
+                   't_stop': stop}]
+
     if typ == 'oscillation3':
         ru = rate * (params['p_amplitude0'] + params['p_amplitude_mod'])
         rd = rate * max(0, (params['p_amplitude0'] - params['p_amplitude_mod']))
