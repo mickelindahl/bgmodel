@@ -16,12 +16,12 @@ class EneuroRampParBase(object):
                'node': {}}
 
         d = {'type': 'ramp',
-             'params': {'step': 200,
-                        'slope': 10,
-                        'ramp_dur': 2000,
-                        'ramp_start': 2000}}
+             'params': {'step': 50.,
+                        'slope': .2,
+                        'ramp_dur': 10000.,
+                        'ramp_start': 2000.}}
 
-        for key in ['C1', 'C2', 'CF', 'CS']:
+        for key in ['C1', 'C2']:
             dic['netw']['input'][key] = d
             new_name = key + 'd'
             dic['nest'][new_name] = {'type_id': 'poisson_generator_dynamic',
