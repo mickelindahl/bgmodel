@@ -4334,6 +4334,7 @@ def calc_spike_setup(n, params, rate, start, stop, typ, testing=False):
         slop=params['slope']#10 #hz/1000ms
         step=params['step'] #200 #ms
         length=params['ramp_dur'] #2000
+        #rate = params['baserate']
         m=int(length/step)
         print m
         ramp_start=params['ramp_start']    #2000
@@ -4341,9 +4342,9 @@ def calc_spike_setup(n, params, rate, start, stop, typ, testing=False):
         #rates=[  2,  4,   6,   8, 10]
         #rates=[200, 400, 600, 800, 1000]
 
-        rates=range(1,m+1,1)
-        rates=[rate + r*slop*1000/step for r in rates]
-        times=range(ramp_start+step, ramp_start+step*(m+1), step)
+        rates=numpy.arange(1,m+1,1.)
+        rates=[rate + r*slop*1000./step for r in rates]
+        times=numpy.arange(ramp_start+step, ramp_start+step*(m+1), step)
 
         rates=[rate]+rates
         times=[1]+times
