@@ -762,7 +762,13 @@ class Par_base(object):
         for key, val in d1_reduced.iteritems():
             if key in d2_reduced.keys():
                 val_old = d2_reduced[key]
-                if val_old != val and val_old != None:
+
+                bool=val_old != val
+
+                if type(val) is float:
+                    bool = abs(val_old - val)>0.00000000001
+
+                if bool and val_old != None:
                     if flag=='1 row':
                         print 'Change ' + s + ' ' + key + ' ' + str(val_old) + '->' + str(val)
                     elif flag=='2 rows':
@@ -2556,7 +2562,7 @@ class InhibitionPar_base(object):
         dic['nest']['MS']['GABAA_1_Tau_decay'] = GetNest('FS_M1_gaba', 'tau_psc')
 
         # From GPE
-        dic['nest']['MS']['GABAA_3_Tau_decay'] = 12 * 5.
+        dic['nest']['MS']['GABAA_3_Tau_decay'] = 87 # 12 * 5.
         dic['nest']['MS']['GABAA_3_E_rev'] = -74.  # n.d. set as for MSN and FSN
         dic['nest']['MS']['beta_I_GABAA_3'] = 0.0  # -0.625 #Dopamine leads to weakening of MSN synspase
 

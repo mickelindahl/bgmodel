@@ -110,7 +110,13 @@ execute_process(
 )
 
 # Use the `NEST_PREFIX` as `CMAKE_INSTALL_PREFIX`.
+
+#if ( module-install-dir )
+#  set( CMAKE_INSTALL_PREFIX "${module-install-dir}" CACHE STRING "Install path prefix, prepended onto install directories." FORCE )
+#else()
 set( CMAKE_INSTALL_PREFIX "${NEST_PREFIX}" CACHE STRING "Install path prefix, prepended onto install directories." FORCE )
+#endif()
+
 
 # Get the CXXFLAGS.
 execute_process(

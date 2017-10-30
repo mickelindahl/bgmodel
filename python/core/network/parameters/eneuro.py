@@ -11,6 +11,8 @@ from core.network.default_params import Par_base, \
     DepNetw, \
     DepNode
 
+d0=0.8
+f_beta_rm=lambda f: (1-f)/(d0+f*(1-d0))
 
 class EneuroParBase( object ):
     def _get_par_constant(self):
@@ -63,9 +65,9 @@ class EneuroParBase( object ):
         dic['netw']['GP_fan_in'] = 30
         dic['netw']['GP_rate'] = 30.
         dic['netw']['GP_fan_in_prop_GA'] = 1 / 17.
-        dic['netw']['GA_prop'] = 0.2
-        dic['netw']['GI_prop'] = 0.72  # <= 0.9*0.8
-        dic['netw']['GF_prop'] = 0.08  # <= 0.1*0.8 10 % of TI cells project to striatum
+        dic['netw']['GA_prop'] = 0.25 # 0.2
+        dic['netw']['GI_prop'] = 0.675 # 0.72  # <= 0.9*0.8
+        dic['netw']['GF_prop'] = 0.075 # 0.08  # <= 0.1*0.8 10 % of TI cells project to striatum
         #         dic['netw']['GN_prop']=0.9
 
         dic['netw']['MS_prop'] = 0.475
@@ -120,7 +122,7 @@ class EneuroParBase( object ):
         # CTX-FSN
         dic['nest']['CF_FS_ampa'] = {}
         dic['nest']['CF_FS_ampa']['weight'] = 0.25  # n.d. set as for CTX to MSN
-        dic['nest']['CF_FS_ampa']['delay'] = 12.0  # n.d. set as for CTX to MSN
+        dic['nest']['CF_FS_ampa']['delay'] = 2.5 # 12.0  # n.d. set as for CTX to MSN
         dic['nest']['CF_FS_ampa']['type_id'] = 'static_synapse'
         dic['nest']['CF_FS_ampa']['receptor_type'] = self.rec['izh']['AMPA_1']  # n.d. set as for CTX to MSN
 
@@ -167,7 +169,7 @@ class EneuroParBase( object ):
         # CTX-MSN D1
         dic['nest']['C1_M1_ampa'] = {}
         dic['nest']['C1_M1_ampa']['weight'] = .5  # constrained by Ellender 2011
-        dic['nest']['C1_M1_ampa']['delay'] = 12.  # Mallet 2005
+        dic['nest']['C1_M1_ampa']['delay'] = 2.5 # 12.  # Mallet 2005
         dic['nest']['C1_M1_ampa']['type_id'] = 'static_synapse'
         dic['nest']['C1_M1_ampa']['receptor_type'] = self.rec['izh']['AMPA_1']
 
@@ -184,19 +186,19 @@ class EneuroParBase( object ):
 
         # MSN-MSN
         dic['nest']['M1_M1_gaba'] = {}
-        dic['nest']['M1_M1_gaba']['weight'] = 0.6  # Taverna 2008
+        dic['nest']['M1_M1_gaba']['weight'] = 0.15 #0.6  # Taverna 2008
         dic['nest']['M1_M1_gaba']['delay'] = 1.7  # Taverna 2004
         dic['nest']['M1_M1_gaba']['type_id'] = 'static_synapse'
         dic['nest']['M1_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_2']
 
         dic['nest']['M1_M2_gaba'] = deepcopy(dic['nest']['M1_M1_gaba'])
-        dic['nest']['M1_M2_gaba']['weight'] = 1.5  # Taverna 2008
+        dic['nest']['M1_M2_gaba']['weight'] = 0.375 #1.5  # Taverna 2008
 
         dic['nest']['M2_M1_gaba'] = deepcopy(dic['nest']['M1_M1_gaba'])
-        dic['nest']['M2_M1_gaba']['weight'] = 1.8  # Taverna 2008
+        dic['nest']['M2_M1_gaba']['weight'] = 0.45 # 1.8  # Taverna 2008
 
         dic['nest']['M2_M2_gaba'] = deepcopy(dic['nest']['M1_M1_gaba'])
-        dic['nest']['M2_M2_gaba']['weight'] = 1.4  # Taverna 2008
+        dic['nest']['M2_M2_gaba']['weight'] = 0.35 # 1.4  # Taverna 2008
 
         # FSN-MSN
         dic['nest']['FS_M1_gaba'] = {}
@@ -223,16 +225,16 @@ class EneuroParBase( object ):
 
         # GPE-MSN
         dic['nest']['GA_M1_gaba'] = {}
-        dic['nest']['GA_M1_gaba']['weight'] = 1. / 5  # Glajch 2013
+        dic['nest']['GA_M1_gaba']['weight'] = 0.04 # 1. / 5  # Glajch 2013
         dic['nest']['GA_M1_gaba']['delay'] = 1.7
         dic['nest']['GA_M1_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GA_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']
 
         dic['nest']['GA_M2_gaba'] = deepcopy(dic['nest']['GA_M1_gaba'])
-        dic['nest']['GA_M2_gaba']['weight'] = 1. * 2 / 5  ## Glajch 2013
+        dic['nest']['GA_M2_gaba']['weight'] = 0.08 #1. * 2 / 5  ## Glajch 2013
 
         dic['nest']['GI_M1_gaba'] = {}
-        dic['nest']['GI_M1_gaba']['weight'] = 1. / 5  # Glajch 2013
+        dic['nest']['GI_M1_gaba']['weight'] = 0.2 # 1. / 5  # Glajch 2013
         dic['nest']['GI_M1_gaba']['delay'] = 1.7
         dic['nest']['GI_M1_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GI_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']
@@ -241,7 +243,7 @@ class EneuroParBase( object ):
         dic['nest']['GI_M2_gaba']['weight'] = 1. * 2 / 5  ## Glajch 2013
 
         dic['nest']['GF_M1_gaba'] = {}
-        dic['nest']['GF_M1_gaba']['weight'] = 1. / 5  # Glajch 2013
+        dic['nest']['GF_M1_gaba']['weight'] = 0.2 #1. / 5  # Glajch 2013
         dic['nest']['GF_M1_gaba']['delay'] = 1.7
         dic['nest']['GF_M1_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GF_M1_gaba']['receptor_type'] = self.rec['izh']['GABAA_3']
@@ -263,7 +265,7 @@ class EneuroParBase( object ):
         # GPe I-STN
         dic['nest']['GI_ST_gaba'] = {}
         dic['nest']['GI_ST_gaba']['weight'] = .08  # n.d.
-        dic['nest']['GI_ST_gaba']['delay'] = 5.
+        dic['nest']['GI_ST_gaba']['delay'] = 1. #5.
         dic['nest']['GI_ST_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GI_ST_gaba']['receptor_type'] = self.rec['aeif']['GABAA_1']
 
@@ -290,20 +292,22 @@ class EneuroParBase( object ):
 
         # GPe-GPe
         dic['nest']['GA_GA_gaba'] = {}
-        dic['nest']['GA_GA_gaba']['weight'] = 1.3  # constrained by (Sims et al. 2008)
+        dic['nest']['GA_GA_gaba']['weight'] = 0.325 # 1.3  # constrained by (Sims et al. 2008)
         dic['nest']['GA_GA_gaba']['delay'] = 1.  # n.d. assumed due to approximity
         dic['nest']['GA_GA_gaba']['type_id'] = 'static_synapse'
         dic['nest']['GA_GA_gaba']['receptor_type'] = self.rec['aeif']['GABAA_2']
 
-        dic['nest']['GA_GI_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
-        dic['nest']['GI_GA_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
         dic['nest']['GI_GI_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
+        dic['nest']['GI_GI_gaba']['weight'] = 1.3  # constrained by (Sims et al. 2008)
+
+        dic['nest']['GA_GI_gaba'] = deepcopy(dic['nest']['GI_GI_gaba'])
+        dic['nest']['GI_GA_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
 
         dic['nest']['GF_GA_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
-        dic['nest']['GF_GI_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
-        dic['nest']['GF_GF_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
-        dic['nest']['GI_GF_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
-        dic['nest']['GA_GF_gaba'] = deepcopy(dic['nest']['GA_GA_gaba'])
+        dic['nest']['GF_GI_gaba'] = deepcopy(dic['nest']['GI_GI_gaba'])
+        dic['nest']['GF_GF_gaba'] = deepcopy(dic['nest']['GI_GI_gaba'])
+        dic['nest']['GI_GF_gaba'] = deepcopy(dic['nest']['GI_GI_gaba'])
+        dic['nest']['GA_GF_gaba'] = deepcopy(dic['nest']['GI_GI_gaba'])
         #
 
         # MSN D2-GPe I
@@ -332,13 +336,15 @@ class EneuroParBase( object ):
 
         # STN-GPe
         dic['nest']['ST_GA_ampa'] = {}
-        dic['nest']['ST_GA_ampa']['weight'] = 0.35  # constrained by (Hanson & Dieter Jaeger 2002)
-        dic['nest']['ST_GA_ampa']['delay'] = 5.  # Ammari 2010
+        dic['nest']['ST_GA_ampa']['weight'] = 0.105 # 0.35  # constrained by (Hanson & Dieter Jaeger 2002)
+        dic['nest']['ST_GA_ampa']['delay'] = 2.0 #5.  # Ammari 2010
         dic['nest']['ST_GA_ampa']['type_id'] = 'static_synapse'
         dic['nest']['ST_GA_ampa']['receptor_type'] = self.rec['aeif']['AMPA_1']
 
         dic['nest']['ST_GI_ampa'] = deepcopy(dic['nest']['ST_GA_ampa'])
-        dic['nest']['ST_GF_ampa'] = deepcopy(dic['nest']['ST_GA_ampa'])
+        dic['nest']['ST_GI_ampa']['weight'] = 0.35  # constrained by (Hanson & Dieter Jaeger 2002)
+
+        dic['nest']['ST_GF_ampa'] = deepcopy(dic['nest']['ST_GI_ampa'])
 
         # EXR-SNr
         dic['nest']['ES_SN_ampa'] = {}
@@ -472,7 +478,7 @@ class EneuroParBase( object ):
         dic['nest']['MS']['GABAA_1_Tau_decay'] = GetNest('FS_M1_gaba', 'tau_psc')
 
         # From GPE
-        dic['nest']['MS']['GABAA_3_Tau_decay'] = 12 * 5.
+        dic['nest']['MS']['GABAA_3_Tau_decay'] = 87. # 12 * 5.
         dic['nest']['MS']['GABAA_3_E_rev'] = -74.  # n.d. set as for MSN and FSN
         dic['nest']['MS']['beta_I_GABAA_3'] = 0.0  # -0.625 #Dopamine leads to weakening of MSN synspase
 
@@ -487,19 +493,31 @@ class EneuroParBase( object ):
         dic['nest']['M1']['beta_V_b'] = dic['nest']['M1']['beta_E_L']
         dic['nest']['M1']['beta_I_NMDA_1'] = 1.04  # -1.04 #Minus size it is plus in Humphrie 2009
 
+        dic['nest']['M1']['GABAA_3_Tau_decay'] = 87.
+
         dic['nest']['M1_low'] = deepcopy(dic['nest']['M1'])
+        dic['nest']['M1_low']['beta_I_GABAA_3'] = f_beta_rm(2.6)
+        dic['nest']['M1_low']['beta_I_GABAA_2'] = f_beta_rm(0.25)  #
+
         dic['nest']['M1_high'] = deepcopy(dic['nest']['M1'])
         dic['nest']['M1_high']['GABAA_1_E_rev'] = -64.  # (Bracci & Panzeri 2006)
         dic['nest']['M1_high']['GABAA_2_E_rev'] = -64.  # (Bracci & Panzeri 2006)
         dic['nest']['M1_high']['GABAA_3_E_rev'] = -64.  # n.d. set asfor MSN and FSN
+
+
 
         dic['nest']['M2'] = deepcopy(dic['nest']['MS'])
         dic['nest']['M2']['d'] = 91.  # (E.M. Izhikevich 2007)
         dic['nest']['M2']['E_L'] = -80.  # (E.M. Izhikevich 2007)
         dic['nest']['M2']['V_b'] = dic['nest']['M2']['E_L']
         dic['nest']['M2']['beta_I_AMPA_1'] = -0.26  # 0.26
+        dic['nest']['M2']['GABAA_3_Tau_decay'] = 87.
 
         dic['nest']['M2_low'] = deepcopy(dic['nest']['M2'])
+        dic['nest']['M2_low']['beta_I_GABAA_3'] = f_beta_rm(2.5)
+        dic['nest']['M2_low']['beta_I_GABAA_2'] = f_beta_rm(0.25)  #
+        dic['nest']['M2_low']['GABAA_3_Tau_decay'] = 76.
+
         dic['nest']['M2_high'] = deepcopy(dic['nest']['M2'])
         dic['nest']['M2_high']['GABAA_1_E_rev'] = -64.  # (Bracci & Panzeri 2006)
         dic['nest']['M2_high']['GABAA_2_E_rev'] = -64.  # (Bracci & Panzeri 2006)
@@ -549,6 +567,8 @@ class EneuroParBase( object ):
         dic['nest']['FS']['beta_I_GABAA_3'] = 0.0  # -0.83 #0.8 # From GPe A
 
         dic['nest']['FS_low'] = deepcopy(dic['nest']['FS'])
+        dic['nest']['FS_low']['beta_I_GABAA_2'] = f_beta_rm(1.6)
+
         dic['nest']['FS_high'] = deepcopy(dic['nest']['FS'])
         dic['nest']['FS_high']['GABAA_1_E_rev'] = -64.  # n.d. set as for MSNs
         dic['nest']['FS_high']['GABAA_2_E_rev'] = -64.  # n.d. set as for MSNs
@@ -591,8 +611,8 @@ class EneuroParBase( object ):
         dic['nest']['ST']['GABAA_1_Tau_decay'] = 8.  # (Baufreton et al. 2009)
         dic['nest']['ST']['GABAA_1_E_rev'] = -84.0  # (Baufreton et al. 2009)
 
-        dic['nest']['ST']['beta_I_AMPA_1'] = -0.45  # 0.4 # From Cortex
-        dic['nest']['ST']['beta_I_NMDA_1'] = -0.45  # 0.4 # From Cortex
+        dic['nest']['ST']['beta_I_AMPA_1'] = f_beta_rm(2.5) #-0.45  # 0.4 # From Cortex
+        dic['nest']['ST']['beta_I_NMDA_1'] = f_beta_rm(2.5) #-0.45  # 0.4 # From Cortex
         dic['nest']['ST']['beta_I_GABAA_1'] = -0.24  # 0.4 # From GPe I
 
         dic['nest']['ST']['tata_dop'] = DepNetw('calc_tata_dop')
@@ -644,18 +664,23 @@ class EneuroParBase( object ):
         dic['nest']['GP']['tata_dop'] = DepNetw('calc_tata_dop')
 
         dic['nest']['GA'] = deepcopy(dic['nest']['GP'])
+        dic['nest']['GA']['C_m'] = 60.
+        dic['nest']['GA']['Delta_T'] = 2.55
+        dic['nest']['GA']['b'] = 105.
 
         #         dic['nest']['GA']['b'] = dic['nest']['GA']['b'] *1.5 # I-F relation
         #         dic['nest']['GA']['C_m']=dic['nest']['GA']['C_m']*1.5
         # #         dic['nest']['GA']['a_1']  = 0.5
         #         dic['nest']['GA']['Delta_T'] = dic['nest']['GA']['Delta_T']*1.5 # 1.7*2
         dic['nest']['GI'] = deepcopy(dic['nest']['GP'])
+        dic['nest']['GI']['beta_I_GABAA_1']=f_beta_rm(2)
 
         # MSN D2-GPe
         dic['nest']['GI']['GABAA_1_E_rev'] = -65.  # (Rav-Acha et al. 2005)
         dic['nest']['GI']['GABAA_1_Tau_decay'] = GetNest('M2_GI_gaba', 'tau_psc')  # (Shen et al. 2008)
 
         dic['nest']['GF'] = deepcopy(dic['nest']['GI'])
+        dic['nest']['GF']['beta_I_GABAA_1'] = f_beta_rm(2)
 
         # SNR
         # ===
@@ -708,12 +733,12 @@ class EneuroParBase( object ):
         # Model inputs
         inputs = {'C1': {'target': 'M1', 'rate': 560.},  # 530.-20.0},
                   'C2': {'target': 'M2', 'rate': 740.},  # 690.-20.0},
-                  'CF': {'target': 'FS', 'rate': 950.},  # 624.},
-                  'CS': {'target': 'ST', 'rate': 200.0},  # 160.},#295
-                  'EA': {'target': 'GA', 'rate': 200.},
-                  'EI': {'target': 'GI', 'rate': 1100.0},  # 1130.},
-                  'EF': {'target': 'GF', 'rate': 1100.0},  # 1130.},
-                  'ES': {'target': 'SN', 'rate': 1800.}}  # 295
+                  'CF': {'target': 'FS', 'rate': 807.5},  # 624.},
+                  'CS': {'target': 'ST', 'rate': 250.0},  # 160.},#295
+                  'EA': {'target': 'GA', 'rate': 300.},
+                  'EI': {'target': 'GI', 'rate': 1430.0},  # 1130.},
+                  'EF': {'target': 'GF', 'rate': 1430.0},  # 1130.},
+                  'ES': {'target': 'SN', 'rate': 2000.}}  # 295
 
         for key, val in inputs.items():
             d = self._get_defaults_node_input(key, val['target'])
@@ -879,7 +904,7 @@ class EneuroParBase( object ):
                 d['beta_fan_in'] = -0.9  # 0.8
             # Set beta for MS_MS
             if k in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba', 'M2_M2_gaba']:
-                d['beta_fan_in'] = 0.56
+                d['beta_fan_in'] = 0.882352941176 #0.56
 
             e = None
             if k in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba',
@@ -896,7 +921,8 @@ class EneuroParBase( object ):
             if k in [
                 'M2_GA_gaba',
                 'GI_FS_gaba', 'GI_M1_gaba', 'GI_M2_gaba',
-                'GF_FS_gaba', 'GF_M1_gaba', 'GF_M2_gaba'
+                # 'GF_FS_gaba',
+                'GF_M1_gaba', 'GF_M2_gaba'
             ]:
                 d['lesion'] = True
             conns[k] = misc.dict_update(d, conns[k])
