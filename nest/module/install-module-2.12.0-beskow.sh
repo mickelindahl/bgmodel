@@ -2,7 +2,7 @@
 
 #Input: Take nest-install-dir
 
-#Examples: 
+#Examples:
 # ./compile-module-beskow-2.12.0.sh /pdc/vol/nest/2.12.0-py27/
 
 
@@ -16,6 +16,16 @@ export NEST_INSTALL_DIR="$1"
 module swap PrgEnv-cray PrgEnv-gnu
 #module add nest
 module add cmake/2.8.12.2
+
+prereq	 PrgEnv-gnu
+module		 load gsl/2.3
+module		 load python/2.7.13
+#prepend-path	 PATH /pdc/vol/nest/2.12.0-py27/bin
+prepend-path	 MANPATH /pdc/vol/nest/2.12.0-py27/share/man
+prepend-path	 PYTHONPATH /pdc/vol/nest/2.12.0-py27/lib64/python2.7/site-packages
+setenv		 CRAY_ROOTFS DSL
+export CRAYPE_LINK_TYPE=dynamic
+
 
 # Directory where nest have been installed
 export NEST_INSTALL_DIR="$1"
@@ -31,7 +41,7 @@ echo $currDir
 START=$(date +%s)
 
 #Get number of processors on the system
-noProcs=$(grep -c 'model name' /proc/cpuinfo) 
+noProcs=$(grep -c 'model name' /proc/cpuinfo)
 
 #Source directory
 srcDir="$currDir/source/$MODULE_NAME/"
@@ -94,11 +104,11 @@ read TMP
 #Go into build dir and run cmake
 cd "$buildDir"
 cmake -DCMAKE_INSTALL_PREFIX=$installDir -Dwith-nest=${NEST_INSTALL_DIR}/bin/nest-config
-      ../$MODULE_NAME  
+      ../$MODULE_NAME
 
 # Make and make install
-make -j "$noProcs" 2>&1 | tee "$logFileMake"
-make -j "$noProcs" install 2>&1 | tee "$logFileInstall"
+make -j 2 2>&1 | tee "$logFileMake"
+make install 2>&1 | tee "$logFileInstall"
 #sudo make -j $noProcs installcheck
 
 #Stop time watch

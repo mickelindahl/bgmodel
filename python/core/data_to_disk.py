@@ -6,13 +6,11 @@ Created on Jun 18, 2013
 
 
 import cPickle as pickle # Can be 1000 times faster than pickle
-import numpy
 import os
 import subprocess
 import unittest
 
 import core.misc as misc
-import core.my_nest as my_nest
 from core.misc import Base_dic
 from core.parallelization import comm, Barrier
 from os.path import expanduser

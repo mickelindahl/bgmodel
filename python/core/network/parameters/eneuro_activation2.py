@@ -6,7 +6,7 @@ from core.network.default_params import Par_base, \
 import copy
 
 
-class EneuroActivationBetaParBase(object):
+class EneuroActivation2ParBase(object):
     def _get_par_constant(self):
         dic_other = self.other.get_par_constant()
 
@@ -18,8 +18,8 @@ class EneuroActivationBetaParBase(object):
                'node': {}}
 
         d = {'type': 'oscillation2',
-             'params': {'p_amplitude_upp': 0.08,
-                        'p_amplitude_down': -0.08,
+             'params': {'p_amplitude_upp': 0.0,
+                        'p_amplitude_down': 0.0,
                         'p_amplitude0': .975,
                         'freq': 20.,
                         'freq_min': None,
@@ -44,5 +44,5 @@ class EneuroActivationBetaParBase(object):
         return dic
 
 
-class EneuroActivationBetaPar(Par_base, EneuroActivationBetaParBase, Par_base_mixin):
+class EneuroActivation2Par(Par_base, EneuroActivation2ParBase, Par_base_mixin):
     pass

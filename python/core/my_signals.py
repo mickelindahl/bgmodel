@@ -487,8 +487,8 @@ class Data_firing_rate_base(object):
         else:
             
             y=self.y_raw
-            bins=[kwargs.get('bins', 14)]*y.shape[0]
-            p=[kwargs.get('period', 100.0)]*y.shape[0]
+            bins=[kwargs.get('bins', 10)]*y.shape[0]
+            p=[kwargs.get('period', 100)]*y.shape[0]
             d=map_parallel(get_activity_historgram,*[y, bins, p])
         
             y_raw=numpy.array(d)[:,0,:]
@@ -564,7 +564,30 @@ class Data_firing_rates(Data_element_base, Data_firing_rates_base):
 
 def get_activity_historgram(y, bins, p):
     n = int(len(y) / p)
-    y = y[:n * p]
+    p=int(p)
+
+
+    print len(y)
+    try:
+        y = y[:n * p]
+    except Exception as e:
+
+        print n
+        print p
+        print len(bin)
+
+        print len(y)
+
+        raise e
+
+    print n
+    print p
+    print bins
+
+    print len(y)
+
+    # raise e
+
     y = numpy.reshape(y, [n, p])
     y = numpy.mean(y, axis=0)
     m = int(numpy.ceil(p / bins))
@@ -573,7 +596,10 @@ def get_activity_historgram(y, bins, p):
     for _ in range(n_nans):
         y = numpy.insert(y, j, numpy.NaN)
         j += m
-    
+
+    print len(y)
+    print m * bins
+
     assert len(y) == m * bins, 'not equal'
     y = numpy.reshape(y, [bins, m])
 

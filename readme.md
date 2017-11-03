@@ -45,7 +45,30 @@ Open `.env` and set data result path
 
 Done!
 
+## Install neurotools on beskow
+
+Stand in the root of the model and run
+```sh
+module		 load python/2.7.13
+TMP=$(pwd)
+
+mkdir tmp
+cp resources/NeuroTools-0.3.1.tar.gz tmp
+cd tmp
+tar -xzf NeuroTools-0.3.1.tar.gz
+cd NeuroTools-0.3.1
+python setup.py install --prefix=$TMP/local
+cd ..
+cd ..
+rm -r tmp
+```
+
+Then add `{model root}/local/lib64/python2.6/site-packages` to your python path
+
+
+
 ## Dependencies
+
 * python: numpy, scipy, mpi4py, NeuroTools (0.2.0), psycopg2
 others: openmpi, libncurses-dev, libreadline-dev, libopenmpi-dev, libgsl, gsl (gnu scitific library, solver, neccesary for module) 
 
@@ -54,6 +77,9 @@ Dependencies module
 
 Dependences python
 * cython
+
+
+
 ```
 suod apt-get install cython
 sudo pip install python-dotenv

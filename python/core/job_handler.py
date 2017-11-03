@@ -4,7 +4,6 @@ Created on Sep 30, 2014
 @author: mikael
 '''
 import os
-import subprocess
 import subprocess as sp
 import time
 

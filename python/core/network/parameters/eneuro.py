@@ -10,7 +10,7 @@ from core.network.default_params import Par_base, \
     GetNode, \
     DepNetw, \
     DepNode
-
+import math
 d0=0.8
 f_beta_rm=lambda f: (1-f)/(d0+f*(1-d0))
 
@@ -25,8 +25,8 @@ class EneuroParBase( object ):
         dic['simu'] = {}
         dic['simu']['do_reset'] = False
         dic['simu']['mm_params'] = {'interval': 0.5,
-                                    'to_file': True,
-                                    'to_memory': False,
+                                    'to_file': False,
+                                    'to_memory': True,
                                     'record_from': ['V_m']}
 
         dp = dr.HOME_DATA + '/'
@@ -42,12 +42,12 @@ class EneuroParBase( object ):
         dic['simu']['path_nest'] = dn
         dic['simu']['print_time'] = True
         dic['simu']['save_conn'] = {'active': True, 'overwrite': False}
-        dic['simu']['sd_params'] = {'to_file': False, 'to_memory': True}
-        dic['simu']['sim_time'] = 2000.0
-        dic['simu']['sim_stop'] = 2000.0
-        dic['simu']['stop_rec'] = 2000.0
-        dic['simu']['start_rec'] = 1000.0
-        dic['simu']['local_num_threads'] = 1
+        dic['simu']['sd_params'] = {'to_file': True, 'to_memory': False}
+        dic['simu']['sim_time'] = 10000.0
+        dic['simu']['sim_stop'] = 10000.0
+        dic['simu']['stop_rec'] = float('inf')
+        dic['simu']['start_rec'] = 0.0
+        dic['simu']['local_num_threads'] = 10
         #         dic['simu']['threads_local']=1
 
         # ========================
@@ -107,7 +107,7 @@ class EneuroParBase( object ):
                                      'I_e': False  # need to be false so that I_vivo can be modified
                                      }
 
-        dic['netw']['size'] = 10000.0
+        dic['netw']['size'] = 20000.0
         dic['netw']['sub_sampling'] = {'M1': 1.0, 'M2': 1.0}
         dic['netw']['tata_dop'] = 0.8
         dic['netw']['tata_dop0'] = 0.8
