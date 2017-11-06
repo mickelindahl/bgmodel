@@ -1543,7 +1543,9 @@ class Setup(object):
                                                'Net_1' ])
         
 
-        self.period=period       
+        self.period=period
+
+
     def builder(self):
         return {}
     
@@ -1709,6 +1711,9 @@ def     simulate(builder=Builder,
     d_phases_diff_with_cohere = setup.phases_diff_with_cohere()
     d_firing_rate = setup.firing_rate()
     d_activity_hist=setup.activity_histogram()
+
+    # pp(d_activity_hist)
+    # raise
     
     attr = [
         'firing_rate', 
@@ -1748,6 +1753,9 @@ def     simulate(builder=Builder,
                                  setup.default_params())
     
     add_perturbations(perturbation_list, nets)
+
+
+
     for p in sorted(perturbation_list.list):
         print p
 #     print nets['Net_0'].par['nest']['M1_M1_gaba']['weight']
@@ -1848,6 +1856,10 @@ def     simulate(builder=Builder,
 def cmp_activity_hist(models, d, **kwargs):
     for key1 in d.keys():
         for model in models:
+
+            print 'cmp_activity_hist'
+            pp(kwargs)
+
             obj=d[key1][model]['firing_rate'].get_activity_histogram(**kwargs)
             d[key1][model]['activity_histogram'] = obj
 

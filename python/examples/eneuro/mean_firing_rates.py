@@ -52,7 +52,7 @@ def main(mode,size):
 if __name__ == '__main__':
 
     mode = 'activation-dopamine-depleted'
-    size = 20000
+    size = 5000
     main(mode, size)
 
 # print sd

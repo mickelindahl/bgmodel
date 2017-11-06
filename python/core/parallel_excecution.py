@@ -313,9 +313,11 @@ class Job_admin_sbatch(Job_admin_abstract):
         '''
 
         kw_bash={'home':dr.HOME,
-                 'hours':'00',
+                 'hours':self.hours,
+                 'nest_installation_path':self.nest_installation_path,
+                 'root_model': self.root_model,
                  'deptj':1,
-                 'job_name':'dummy_job',
+                 'job_name':self.job_name,
                  'cores_hosting_OpenMP_threads':40/self.local_threads,
                  'local_num_threads':self.local_threads, 
                  'memory_per_node':int(819*self.local_threads),
@@ -323,13 +325,13 @@ class Job_admin_sbatch(Job_admin_abstract):
                  'num-of-nodes':40/40,
                  'num-mpi-tasks-per-node':40/self.local_threads,
                  'num-threads-per-mpi-process':self.local_threads, 
-                 'minutes':'10',
+                 'minutes':self.minutes,
                  'path_sbatch_err':self.p_sbatch_err,
                  'path_sbatch_out':self.p_sbatch_out,
                  'path_tee_out':self.p_tee_out,
                  'path_params':self.p_par,
                  'path_script':self.p_script,
-                 'seconds':'00',
+                 'seconds':self.seconds,
                  
             }
         kw_bash.update(kw) 

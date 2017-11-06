@@ -6,6 +6,7 @@ from core import my_nest, data_to_disk
 from core.network.parameters.eneuro import EneuroPar
 
 from core.network.parameters.eneuro_activation import EneuroActivationPar
+from core.network.parameters.eneuro_activation2 import EneuroActivation2Par
 from core.network.parameters.eneuro_activation_beta import EneuroActivationBetaPar
 from core.network.parameters.eneuro_sw import EneuroSwPar
 
@@ -86,13 +87,16 @@ def main(mode, size):
     # Get parameters
     # par = EneuroBetaPar(other=EneuroPar())
 
-    if mode in ['activation-control',  'activation-dopamine-depleted']:
+    if mode in ['activation-control', 'activation2-control',  'activation-dopamine-depleted']:
 
         if mode == 'activation-control':
 
             par = EneuroActivationPar(other=EneuroPar())
             dop = 0.8
+        elif mode == 'activation2-control':
 
+            par = EneuroActivation2Par(other=EneuroPar())
+            dop = 0.8
         elif mode == 'activation-dopamine-depleted':
             par = EneuroActivationBetaPar(other=EneuroPar())
             dop = 0.0
@@ -162,7 +166,7 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    my_nest.Simulate(3000.)
+    my_nest.Simulate(10000.)
     #
     # # Create spike signals
     d = postprocessing(pops)
@@ -175,10 +179,11 @@ def main(mode, size):
 # main()
 if __name__ == '__main__':
 
-    size = sys.argv[1] if len(sys.argv)>1 else 3000
+    size = sys.argv[1] if len(sys.argv)>1 else 20000
 
     modes = [
         'activation-control',
+        'activation2-control',
         'activation-dopamine-depleted',
         'slow-wave-control',
         'slow-wave-dopamine-depleted'

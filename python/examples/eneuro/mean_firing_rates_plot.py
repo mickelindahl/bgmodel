@@ -46,10 +46,10 @@ def main(mode, size):
         isi = data[key]['isi']
 
         rm = float(rate['mean'])
-        rm = rm if math.isnan(rm) else 0
+        rm = rm if not math.isnan(rm) else 0
 
         CV = float(isi['CV'])
-        CV = CV if math.isnan(CV) else 0
+        CV = CV if not math.isnan(CV) else 0
 
         rates.append(rm)
         CVs.append(CV)
@@ -83,7 +83,8 @@ def main(mode, size):
 
 
 if __name__ == '__main__':
+    mode = 'activation-control'
     mode = 'activation-dopamine-depleted'
-    size = 20000
+    size = 5000
 
     main(mode, size)

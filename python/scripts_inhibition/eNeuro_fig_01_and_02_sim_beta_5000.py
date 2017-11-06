@@ -30,7 +30,7 @@ pp=pprint.pprint
 
 path_rate_runs=get_path_rate_runs('eNeuro_fig_01_and_02_sim_inh/')
 FILE_NAME=__file__.split('/')[-1][0:-3]
-FROM_DISK_0=int(sys.argv[1]) if len(sys.argv)>1 else 0
+FROM_DISK_0=1 #int(sys.argv[1]) if len(sys.argv)>1 else 0
 LOAD_MILNER_ON_SUPERMICRO=False
 
 NUM_NETS=2

@@ -48,9 +48,9 @@ num_runs=len(freqs)*len(STN_amp_mod)*len(ops)
 num_sims=NUM_NETS*num_runs
 
 dc=my_socket.determine_computer
-CORES=40*4 if dc()=='milner' else 10
+CORES=40*4 if dc()=='milner' else 4
 JOB_ADMIN=config.Ja_milner if dc()=='milner' else config.Ja_else
-LOCAL_NUM_THREADS= 20 if dc()=='milner' else 10
+LOCAL_NUM_THREADS= 20 if dc()=='milner' else 4
 WRAPPER_PROCESS=config.Wp_milner if dc()=='milner' else config.Wp_else
 
 kwargs={
@@ -61,9 +61,9 @@ kwargs={
         
         'cores':CORES,
         
-        'debug':True,
+        'debug':False,
         'do_runs':range(num_runs), #A run for each perturbation
-        'do_obj':True,
+        'do_obj':False,
         
         'external_input_mod':[],#['EI','EA'],
         
