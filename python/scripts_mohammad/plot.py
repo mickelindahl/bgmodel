@@ -64,7 +64,8 @@ def main(mode, size):
 
 
 if __name__ == '__main__':
-    mode = 'activation-dopamine-depleted'
+    #mode = 'activation-dopamine-depleted'
+    mode = 'activation-control'
     # mode = 'slow-wave-control'
     size = 3000
 
