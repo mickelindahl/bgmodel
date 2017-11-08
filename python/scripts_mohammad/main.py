@@ -159,7 +159,7 @@ def main(mode, size):
     # Extracting nodes which are going to get the modulatory input
     for node_name in ['C1', 'C2', 'CF']:
         modpop_ids = extra_modulation(pops, 0.3, node_name)
-        stimmod_id = modulatory_stim(2000., 200., 0.0, 2., 10.)
+        stimmod_id = modulatory_stim(4000., 500., 0.0, 0.1, 10.)
         nest.Connect(stimmod_id,modpop_ids)
 
     save_node_random_params(pops,base+'/randomized-params.json')
@@ -170,7 +170,8 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    my_nest.Simulate(3000.)
+    my_nest.Simulate(5000.)
+    my_nest.Simulate(5000.)
     #
     # # Create spike signals
     d = postprocessing(pops)
