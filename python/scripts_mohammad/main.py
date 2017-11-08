@@ -159,7 +159,7 @@ def main(mode, size):
                  'l_rate':0.0,
                  'duration':140.0,
                  'res':10.0}
-    stim_chg_pars = {'value':201.0,
+    stim_chg_pars = {'value':300.0,
                      'res':1.0,
                      'waittime':2000.0}
 
