@@ -154,14 +154,26 @@ def main(mode, size):
     # Create news populations and connections structures
     surfs, pops = build(par)
 
+    stim_pars = {'stim_start':4000.0,
+                 'h_rate':200.0,
+                 'l_rate':0.0,
+                 'duration':140.0,
+                 'res':10.0}
+    stim_chg_pars = {'value':201.0,
+                     'res':1.0,
+                     'waittime':2000.0}
+
     #Example getting C1 nest ids
     # >> pops['C1'].ids
     # Extracting nodes which are going to get the modulatory input
+    stim_times = {'C1':0.0,'C2':0.0,'CF':0.0}
     for node_name in ['C1', 'C2', 'CF']:
         modpop_ids = extra_modulation(pops, 0.3, node_name)
-        stimmod_id = modulatory_stim(2000., 200., 0.0, 2., 10.)
+        [stimmod_id,stim_time] = modulatory_stim(stim_pars,stim_chg_pars)
         nest.Connect(stimmod_id,modpop_ids)
+        stim_times[node_name] = stim_time
 
+    numpy.save(base+'/stimtimes.npy',stim_times)
     save_node_random_params(pops,base+'/randomized-params.json')
 
     # print(pops)
@@ -170,7 +182,7 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    my_nest.Simulate(3000.)
+    my_nest.Simulate(10000.)
     #
     # # Create spike signals
     d = postprocessing(pops)
@@ -188,21 +200,52 @@ def extra_modulation(pops,subpop_ratio,node_name):
     subpop_ids = subpop_ids.tolist()
     return subpop_ids
 
-def modulatory_stim(stim_start,h_rate,l_rate,slope,res):
+def modulatory_stim(stim_params,chg_stim_param):
     mod_inp = nest.Create('poisson_generator_dynamic',1)
+    all_rates = []
+    all_start_times = []
     #h_rate = 200.0
     #l_rate = 0.0
     #slope = 2.       # Hz/ms
     #res = 10.        # ms
     #stim_start = 1000.0
-    rate_step = slope*res
-    ratevec = numpy.arange(l_rate,h_rate+rate_step,rate_step)
-    stim_stop = stim_start + (ratevec.size + 1)*res
+    stim_start = stim_params['stim_start']
+    h_rate = stim_params['h_rate']
+    l_rate = stim_params['l_rate']
+    #slope = stim_params['slope']
+    stim_dur = stim_params['duration']
+    res = stim_params['res']
+    # rate_step = slope*res
+    stim_stop = stim_start + stim_dur + res
     timevec = numpy.arange(stim_start,stim_stop,res)
+    timveclen = timevec.size
+    ratevec = numpy.linspace(l_rate,h_rate,timveclen)
 
-    nest.SetStatus(mod_inp,{'rates': ratevec,'timings': timevec,
+    chg_stim_val = chg_stim_param['value']
+    chg_stim_res = chg_stim_param['res']
+    waittime = chg_stim_param['waittime']
+    all_start_times.append(stim_start)
+    all_rates.append(h_rate)
+    h_rate = h_rate + chg_stim_res
+
+    while h_rate <= chg_stim_val:
+        all_rates.append(h_rate)
+        ratevec = numpy.append(ratevec,0.0)
+        timevec = numpy.append(timevec,timevec[-1]+res)
+
+        ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
+        stim_start = stim_stop + waittime
+        stim_stop = stim_start + stim_dur + res
+        timevec = numpy.append(timevec,numpy.arange(stim_start,stim_stop,res))
+        h_rate = h_rate + chg_stim_res
+        all_start_times.append(stim_start)
+
+    nest.SetStatus(mod_inp,{'rates': ratevec.round(0),'timings': timevec,
                             'start': stim_start, 'stop': stim_stop})
-    return mod_inp
+    stim_vecs = {'rates':all_rates,
+                 'start_times':all_start_times}
+    return mod_inp,stim_vecs
+
 
 # main()
 if __name__ == '__main__':
