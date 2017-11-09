@@ -23,6 +23,7 @@ import mean_firing_rates
 import mean_firing_rates_plot
 import list_parameters
 
+import scipy.io as sio
 import numpy
 import nest
 
@@ -109,7 +110,7 @@ def main(mode, size):
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode )
+    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,'dur-300ms' )
 
     # Configure simulation parameters
     par.set({
@@ -118,8 +119,8 @@ def main(mode, size):
             'path_data': base+'/data',
             'path_figure': base+'/fig',
             'path_nest': base+'/nest/',  # trailing slash important
-            'stop_rec': 10000.,
-            'sim_stop': 10000.,
+            'stop_rec': 1000000.,
+            'sim_stop': 1000000.,
             'print_time': True,
             'sd_params': {
                 'to_file': True,
@@ -157,7 +158,7 @@ def main(mode, size):
     stim_pars = {'stim_start':4000.0,
                  'h_rate':200.0,
                  'l_rate':0.0,
-                 'duration':140.0,
+                 'duration':300.0,
                  'res':10.0}
     stim_chg_pars = {'value':300.0,
                      'res':1.0,
@@ -169,15 +170,11 @@ def main(mode, size):
     stim_times = {'C1':0.0,'C2':0.0,'CF':0.0}
     for node_name in ['C1', 'C2', 'CF']:
         modpop_ids = extra_modulation(pops, 0.3, node_name)
-<<<<<<< HEAD
-        stimmod_id = modulatory_stim(4000., 500., 0.0, 0.1, 10.)
-=======
         [stimmod_id,stim_time] = modulatory_stim(stim_pars,stim_chg_pars)
->>>>>>> c8842a27ca71c43e074505eef9cc45b000f1f67f
         nest.Connect(stimmod_id,modpop_ids)
         stim_times[node_name] = stim_time
 
-    numpy.save(base+'/stimtimes.npy',stim_times)
+    sio.savemat(base+'/stimtimes.mat',stim_times)
     save_node_random_params(pops,base+'/randomized-params.json')
 
     # print(pops)
@@ -186,12 +183,8 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-<<<<<<< HEAD
-    my_nest.Simulate(5000.)
-    my_nest.Simulate(5000.)
-=======
-    my_nest.Simulate(10000.)
->>>>>>> c8842a27ca71c43e074505eef9cc45b000f1f67f
+    my_nest.Simulate(1000000.)
+
     #
     # # Create spike signals
     d = postprocessing(pops)
