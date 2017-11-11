@@ -110,12 +110,12 @@ def main(mode, size):
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,'dur-300ms' )
+    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode)
 
     # Configure simulation parameters
     par.set({
         'simu': {
-            'local_num_threads': 8,
+            'local_num_threads': 4,
             'path_data': base+'/data',
             'path_figure': base+'/fig',
             'path_nest': base+'/nest/',  # trailing slash important
@@ -156,12 +156,12 @@ def main(mode, size):
     surfs, pops = build(par)
 
     stim_pars = {'stim_start':4000.0,
-                 'h_rate':200.0,
+                 'h_rate':600.0,
                  'l_rate':0.0,
-                 'duration':300.0,
+                 'duration':1000.0,
                  'res':10.0}
-    stim_chg_pars = {'value':300.0,
-                     'res':1.0,
+    stim_chg_pars = {'value':700.0,
+                     'res':100.0,
                      'waittime':2000.0}
 
     #Example getting C1 nest ids
@@ -183,7 +183,7 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    my_nest.Simulate(1000000.)
+    my_nest.Simulate(max(stim_times['C1']['start_times'])+5000.0)
 
     #
     # # Create spike signals
@@ -195,6 +195,8 @@ def main(mode, size):
 
 def extra_modulation(pops,subpop_ratio,node_name):
     node_ids = pops[node_name].ids
+    #spkdet = nest.Create('spike_detector')
+    #nest.Connect(node_ids,spkdet)
     perm_ids = numpy.random.permutation(node_ids)
     #subpop_ratio = 0.3
     subpop_num = numpy.int(subpop_ratio*len(node_ids))
@@ -243,7 +245,7 @@ def modulatory_stim(stim_params,chg_stim_param):
         all_start_times.append(stim_start)
 
     nest.SetStatus(mod_inp,{'rates': ratevec.round(0),'timings': timevec,
-                            'start': stim_start, 'stop': stim_stop})
+                            'start': timevec[0], 'stop': stim_stop})
     stim_vecs = {'rates':all_rates,
                  'start_times':all_start_times}
     return mod_inp,stim_vecs
