@@ -167,14 +167,15 @@ def main(mode, size):
     #Example getting C1 nest ids
     # >> pops['C1'].ids
     # Extracting nodes which are going to get the modulatory input
-    stim_times = {'C1':0.0,'C2':0.0,'CF':0.0}
+    stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0}
     for node_name in ['C1', 'C2', 'CF']:
         modpop_ids = extra_modulation(pops, 0.3, node_name)
         [stimmod_id,stim_time] = modulatory_stim(stim_pars,stim_chg_pars)
         nest.Connect(stimmod_id,modpop_ids)
-        stim_times[node_name] = stim_time
+        stim_spec[node_name] = stim_time
+        stim_spec[node_name].update({'stim_subpop':modpop_ids})
 
-    sio.savemat(base+'/stimtimes.mat',stim_times)
+    sio.savemat(base+'/stimspec.mat',stim_spec)
     save_node_random_params(pops,base+'/randomized-params.json')
 
     # print(pops)
@@ -183,7 +184,7 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    my_nest.Simulate(max(stim_times['C1']['start_times'])+5000.0)
+    my_nest.Simulate(max(stim_spec['C1']['start_times'])+5000.0)
 
     #
     # # Create spike signals
