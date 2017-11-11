@@ -110,7 +110,7 @@ def main(mode, size):
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,'dur-300ms' )
+    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode, '200-400-1')
 
     # Configure simulation parameters
     par.set({
@@ -158,9 +158,9 @@ def main(mode, size):
     stim_pars = {'stim_start':4000.0,
                  'h_rate':200.0,
                  'l_rate':0.0,
-                 'duration':300.0,
+                 'duration':140.0,
                  'res':10.0}
-    stim_chg_pars = {'value':300.0,
+    stim_chg_pars = {'value':400.0,
                      'res':1.0,
                      'waittime':2000.0}
 
@@ -183,7 +183,7 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    my_nest.Simulate(1000000.)
+    my_nest.Simulate(max(stim_times['C1']['start_times'])+5000.0)
 
     #
     # # Create spike signals
@@ -243,7 +243,7 @@ def modulatory_stim(stim_params,chg_stim_param):
         all_start_times.append(stim_start)
 
     nest.SetStatus(mod_inp,{'rates': ratevec.round(0),'timings': timevec,
-                            'start': stim_start, 'stop': stim_stop})
+                            'start': timevec[0], 'stop': stim_stop})
     stim_vecs = {'rates':all_rates,
                  'start_times':all_start_times}
     return mod_inp,stim_vecs
