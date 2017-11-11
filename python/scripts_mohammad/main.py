@@ -110,12 +110,12 @@ def main(mode, size):
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode, '200-400-1')
+    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode)
 
     # Configure simulation parameters
     par.set({
         'simu': {
-            'local_num_threads': 8,
+            'local_num_threads': 4,
             'path_data': base+'/data',
             'path_figure': base+'/fig',
             'path_nest': base+'/nest/',  # trailing slash important
@@ -156,25 +156,26 @@ def main(mode, size):
     surfs, pops = build(par)
 
     stim_pars = {'stim_start':4000.0,
-                 'h_rate':200.0,
+                 'h_rate':600.0,
                  'l_rate':0.0,
-                 'duration':140.0,
+                 'duration':1000.0,
                  'res':10.0}
-    stim_chg_pars = {'value':400.0,
-                     'res':1.0,
+    stim_chg_pars = {'value':700.0,
+                     'res':100.0,
                      'waittime':2000.0}
 
     #Example getting C1 nest ids
     # >> pops['C1'].ids
     # Extracting nodes which are going to get the modulatory input
-    stim_times = {'C1':0.0,'C2':0.0,'CF':0.0}
+    stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0}
     for node_name in ['C1', 'C2', 'CF']:
         modpop_ids = extra_modulation(pops, 0.3, node_name)
         [stimmod_id,stim_time] = modulatory_stim(stim_pars,stim_chg_pars)
         nest.Connect(stimmod_id,modpop_ids)
-        stim_times[node_name] = stim_time
+        stim_spec[node_name] = stim_time
+        stim_spec[node_name].update({'stim_subpop':modpop_ids})
 
-    sio.savemat(base+'/stimtimes.mat',stim_times)
+    sio.savemat(base+'/stimspec.mat',stim_spec)
     save_node_random_params(pops,base+'/randomized-params.json')
 
     # print(pops)
@@ -183,7 +184,7 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    my_nest.Simulate(max(stim_times['C1']['start_times'])+5000.0)
+    my_nest.Simulate(max(stim_spec['C1']['start_times'])+5000.0)
 
     #
     # # Create spike signals
@@ -195,6 +196,8 @@ def main(mode, size):
 
 def extra_modulation(pops,subpop_ratio,node_name):
     node_ids = pops[node_name].ids
+    #spkdet = nest.Create('spike_detector')
+    #nest.Connect(node_ids,spkdet)
     perm_ids = numpy.random.permutation(node_ids)
     #subpop_ratio = 0.3
     subpop_num = numpy.int(subpop_ratio*len(node_ids))
