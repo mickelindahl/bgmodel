@@ -186,7 +186,10 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    my_nest.Simulate(max(stim_spec['C1']['start_times'])+5000.0)
+    if stim_pars['do']:
+        my_nest.Simulate(max(stim_spec['C1']['start_times'])+5000.0)
+    else:
+        my_nest.Simulate(10000.0)
 
     #
     # # Create spike signals
