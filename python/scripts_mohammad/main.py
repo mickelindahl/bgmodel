@@ -110,7 +110,7 @@ def main(mode, size):
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode)
+    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,'601-1000-1')
 
     # Configure simulation parameters
     par.set({
@@ -156,7 +156,7 @@ def main(mode, size):
     surfs, pops = build(par)
 
     stim_pars = {'stim_start':4000.0,
-                 'h_rate':600.0,
+                 'h_rate':601.0,
                  'l_rate':0.0,
                  'duration':1000.0,
                  'res':10.0,
