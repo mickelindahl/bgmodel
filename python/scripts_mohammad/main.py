@@ -158,24 +158,27 @@ def main(mode, size):
     stim_pars = {'stim_start':4000.0,
                  'h_rate':601.0,
                  'l_rate':0.0,
-                 'duration':140.0,
-                 'res':10.0}
-    stim_chg_pars = {'value':1000.0,
-                     'res':1.0,
+                 'duration':1000.0,
+                 'res':10.0,
+                 'do':False}
+    stim_chg_pars = {'value':700.0,
+                     'res':100.0,
                      'waittime':2000.0}
 
     #Example getting C1 nest ids
     # >> pops['C1'].ids
     # Extracting nodes which are going to get the modulatory input
-    stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0}
-    for node_name in ['C1', 'C2', 'CF']:
-        modpop_ids = extra_modulation(pops, 0.3, node_name)
-        [stimmod_id,stim_time] = modulatory_stim(stim_pars,stim_chg_pars)
-        nest.Connect(stimmod_id,modpop_ids)
-        stim_spec[node_name] = stim_time
-        stim_spec[node_name].update({'stim_subpop':modpop_ids})
+    if stim_pars['do']:
+        stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0}
+        for node_name in ['C1', 'C2', 'CF']:
+            [modpop_ids,allpop_ids] = extra_modulation(pops, 0.3, node_name)
+            [stimmod_id,stim_time] = modulatory_stim(stim_pars,stim_chg_pars)
+            nest.Connect(stimmod_id,modpop_ids)
+            stim_spec[node_name] = stim_time
+            stim_spec[node_name].update({'stim_subpop':modpop_ids},
+                                        {'allpop':allpop_ids})
 
-    sio.savemat(base+'/stimspec.mat',stim_spec)
+        sio.savemat(base+'/stimspec.mat',stim_spec)
     save_node_random_params(pops,base+'/randomized-params.json')
 
     # print(pops)
@@ -184,7 +187,10 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    my_nest.Simulate(max(stim_spec['C1']['start_times'])+5000.0)
+    if stim_pars['do']:
+        my_nest.Simulate(max(stim_spec['C1']['start_times'])+5000.0)
+    else:
+        my_nest.Simulate(10000.0)
 
     #
     # # Create spike signals
@@ -203,7 +209,7 @@ def extra_modulation(pops,subpop_ratio,node_name):
     subpop_num = numpy.int(subpop_ratio*len(node_ids))
     subpop_ids = perm_ids[range(0,subpop_num)]
     subpop_ids = subpop_ids.tolist()
-    return subpop_ids
+    return subpop_ids,node_ids
 
 def modulatory_stim(stim_params,chg_stim_param):
     mod_inp = nest.Create('poisson_generator_dynamic',1)
