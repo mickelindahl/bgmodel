@@ -110,7 +110,7 @@ def main(mode, size):
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,'200-1000-10-80000')
+    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,'STN-200-210-10')
 
     # Configure simulation parameters
     par.set({
@@ -160,18 +160,41 @@ def main(mode, size):
                  'l_rate':0.0,
                  'duration':140.0,
                  'res':10.0,
-                 'do':True}
+                 'do':False}
     stim_chg_pars = {'value':1000.0,
+                     'res':10.0,
+                     'waittime':2000.0}
+
+    stim_pars_STN = {'stim_start':4000.0,
+                     'h_rate':200.0,
+                     'l_rate':0.0,
+                     'duration':10.0,
+                     'res':10.0,
+                     'do':True}
+    stim_chg_pars_STN = {'value':210.0,
                      'res':10.0,
                      'waittime':2000.0}
 
     #Example getting C1 nest ids
     # >> pops['C1'].ids
     # Extracting nodes which are going to get the modulatory input
+    # STR
     if stim_pars['do']:
         stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0}
         for node_name in ['C1', 'C2', 'CF']:
             [modpop_ids,allpop_ids] = extra_modulation(pops, 0.3, node_name)
+            [stimmod_id,stim_time] = modulatory_stim(stim_pars_STN,stim_chg_pars_STN)
+            nest.Connect(stimmod_id,modpop_ids)
+            stim_spec[node_name] = stim_time
+            stim_spec[node_name].update({'stim_subpop':modpop_ids,
+                                        'allpop':allpop_ids})
+
+        sio.savemat(base+'/stimspec.mat',stim_spec)
+    # STN
+    if stim_pars_STN['do']:
+        stim_spec = {'CS':0.0}
+        for node_name in ['CS']:
+            [modpop_ids,allpop_ids] = extra_modulation(pops, 1.0, node_name)
             [stimmod_id,stim_time] = modulatory_stim(stim_pars,stim_chg_pars)
             nest.Connect(stimmod_id,modpop_ids)
             stim_spec[node_name] = stim_time
@@ -179,6 +202,7 @@ def main(mode, size):
                                         'allpop':allpop_ids})
 
         sio.savemat(base+'/stimspec.mat',stim_spec)
+
     save_node_random_params(pops,base+'/randomized-params.json')
 
     # print(pops)
@@ -262,7 +286,7 @@ def modulatory_stim(stim_params,chg_stim_param):
 if __name__ == '__main__':
 
     #size = sys.argv[1] if len(sys.argv)>1 else 3000
-    size = 80000
+    size = 10000
     modes = ['activation-control']
 
 #    modes = [
