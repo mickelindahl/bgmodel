@@ -110,12 +110,12 @@ def main(mode, size):
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,'601-1000-1')
+    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,'200-1000-10-80000')
 
     # Configure simulation parameters
     par.set({
         'simu': {
-            'local_num_threads': 4,
+            'local_num_threads': 8,
             'path_data': base+'/data',
             'path_figure': base+'/fig',
             'path_nest': base+'/nest/',  # trailing slash important
@@ -156,13 +156,13 @@ def main(mode, size):
     surfs, pops = build(par)
 
     stim_pars = {'stim_start':4000.0,
-                 'h_rate':601.0,
+                 'h_rate':200.0,
                  'l_rate':0.0,
-                 'duration':1000.0,
+                 'duration':140.0,
                  'res':10.0,
-                 'do':False}
-    stim_chg_pars = {'value':700.0,
-                     'res':100.0,
+                 'do':True}
+    stim_chg_pars = {'value':1000.0,
+                     'res':10.0,
                      'waittime':2000.0}
 
     #Example getting C1 nest ids
@@ -175,8 +175,8 @@ def main(mode, size):
             [stimmod_id,stim_time] = modulatory_stim(stim_pars,stim_chg_pars)
             nest.Connect(stimmod_id,modpop_ids)
             stim_spec[node_name] = stim_time
-            stim_spec[node_name].update({'stim_subpop':modpop_ids},
-                                        {'allpop':allpop_ids})
+            stim_spec[node_name].update({'stim_subpop':modpop_ids,
+                                        'allpop':allpop_ids})
 
         sio.savemat(base+'/stimspec.mat',stim_spec)
     save_node_random_params(pops,base+'/randomized-params.json')
@@ -262,7 +262,7 @@ def modulatory_stim(stim_params,chg_stim_param):
 if __name__ == '__main__':
 
     #size = sys.argv[1] if len(sys.argv)>1 else 3000
-    size = 10000
+    size = 80000
     modes = ['activation-control']
 
 #    modes = [
