@@ -127,7 +127,8 @@ class MyMap(object):
      
 def map_local_threads(fun, args, kwargs):
 
-
+    return map(fun, *args)
+    '''
     local_th=int(kwargs.get('local_num_threads', 1))
     if (local_th==1) or my_socket.determine_computer()=='milner':
         return map(fun, *args)
@@ -173,8 +174,9 @@ def map_local_threads(fun, args, kwargs):
         comm.barrier()
         pool.close()
         pool.join()
-       
+
     return r
+    '''
 
                 
 def _fun_worker(fun, chunksize, i, outs, *args, **kwargs):
