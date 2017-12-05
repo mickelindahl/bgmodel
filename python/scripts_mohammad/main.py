@@ -195,7 +195,7 @@ def main(mode, size):
         stim_spec = {'CS':0.0}
         for node_name in ['CS']:
             [modpop_ids,allpop_ids] = extra_modulation(pops, 1.0, node_name)
-            [stimmod_id,stim_time] = modulatory_stim(stim_pars,stim_chg_pars)
+            [stimmod_id,stim_time] = modulatory_stim(stim_pars_STN,stim_chg_pars_STN)
             nest.Connect(stimmod_id,modpop_ids)
             stim_spec[node_name] = stim_time
             stim_spec[node_name].update({'stim_subpop':modpop_ids,
@@ -211,8 +211,8 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    if stim_pars['do']:
-        my_nest.Simulate(max(stim_spec['C1']['start_times'])+5000.0)
+    if stim_pars_STN['do']:
+        my_nest.Simulate(max(stim_spec['CS']['start_times'])+5000.0)
     else:
         my_nest.Simulate(10000.0)
 
