@@ -110,7 +110,51 @@ def main(mode, size):
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,'STN-200-210-10')
+
+    stim_pars = {'STRramp':{'stim_start':4000.0,
+                             'h_rate':400.0,
+                             'l_rate':0.0,
+                             'duration':140.0,
+                             'res':10.0,
+                             'do':True,
+                             'stim_target':['C1','C2','CF'],
+                             'stim_spec':{'C1':0.0,'C2':0.0,'CF':0.0},
+                             'stim_ratio':{'C1':0.3,'C2':0.3,'CF':0.3}},
+                 'STNstop':{'stim_start':4000.0,
+                             'h_rate':1000.0,
+                             'l_rate':0.0,
+                             'duration':10.0,
+                             'res':10.0,
+                             'do':True,
+                             'stim_target':['CS'],
+                             'stim_spec':{'CS':0.0},
+                             'stim_ratio':{'CS':0.15}}}
+    stim_chg_pars = {'STRramp':{'value':500.0,
+                                 'res':50.0,
+                                 'waittime':2000.0},
+                     'STNstop':{'value':2000.0,
+                                 'res':500.0,
+                                 'waittime':2000.0},
+                     'Reltime':{'l_val':0.0,
+                                'h_val':20.0,
+                                'res':10.0}}
+
+    # stim_pars_STN = {'stim_start':4000.0,
+    #                  'h_rate':200.0,
+    #                  'l_rate':0.0,
+    #                  'duration':10.0,
+    #                  'res':10.0,
+    #                  'do':True}
+    # stim_chg_pars_STN = {'value':210.0,
+    #                  'res':10.0,
+    #                  'waittime':2000.0}
+    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,
+                        'STN-dur'+
+                        str(stim_pars['STNstop']['duration'])+ '-'+
+                        str(stim_pars['STNstop']['h_rate'])+ '-'+
+                        str(stim_chg_pars['STNstop']['value'])+ '-'+
+                        str(stim_chg_pars['STNstop']['res']))
+
 
     # Configure simulation parameters
     par.set({
@@ -155,53 +199,65 @@ def main(mode, size):
     # Create news populations and connections structures
     surfs, pops = build(par)
 
-    stim_pars = {'stim_start':4000.0,
-                 'h_rate':200.0,
-                 'l_rate':0.0,
-                 'duration':140.0,
-                 'res':10.0,
-                 'do':False}
-    stim_chg_pars = {'value':1000.0,
-                     'res':10.0,
-                     'waittime':2000.0}
-
-    stim_pars_STN = {'stim_start':4000.0,
-                     'h_rate':200.0,
-                     'l_rate':0.0,
-                     'duration':10.0,
-                     'res':10.0,
-                     'do':True}
-    stim_chg_pars_STN = {'value':210.0,
-                     'res':10.0,
-                     'waittime':2000.0}
-
     #Example getting C1 nest ids
     # >> pops['C1'].ids
     # Extracting nodes which are going to get the modulatory input
     # STR
-    if stim_pars['do']:
-        stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0}
-        for node_name in ['C1', 'C2', 'CF']:
-            [modpop_ids,allpop_ids] = extra_modulation(pops, 0.3, node_name)
-            [stimmod_id,stim_time] = modulatory_stim(stim_pars_STN,stim_chg_pars_STN)
+    stim_combine = []
+    for key in stim_pars.keys():
+        stim_combine.append(stim_pars[key]['do'])
+
+    if sum(stim_combine) == len(stim_combine):
+        ratescomb = []
+        for stim_type in stim_pars.keys():
+            # l_rate = stim_pars[stim_type]['l_rate']
+            h_rate = stim_pars[stim_type]['h_rate']
+            res = stim_chg_pars[stim_type]['res']
+            max_h_rate = stim_chg_pars[stim_type]['value']
+            ratescomb.append(numpy.arange(h_rate,max_h_rate+res,res))
+        if stim_chg_pars.has_key('Reltime'):
+            h_value = stim_chg_pars['Reltime']['h_val']
+            l_value = stim_chg_pars['Reltime']['l_val']
+            res_val = stim_chg_pars['Reltime']['res']
+            reltimes = numpy.arange(l_value,h_value+res_val,res_val)
+        comb = numpy.array(numpy.meshgrid(ratescomb[0],ratescomb[1],reltimes))
+        comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
+        stim_time = modulatory_multiplestim(comb_resh,stim_pars,stim_chg_pars)
+        stim_spec = {}
+        for stim_type in stim_time.keys():
+            for node_name in stim_pars[stim_type]['stim_target']:
+                [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[stim_type]['stim_ratio'][node_name], node_name)
+                nest.Connect(stim_time[stim_type]['stim_pois_id'], modpop_ids)
+                stim_spec.update({node_name:stim_time})
+                stim_spec[node_name].update({'stim_subpop':modpop_ids,
+                                            'allpop':allpop_ids})
+
+    else:
+        dic_keys = numpy.array(stim_pars.keys())
+        whichkey = dic_keys[numpy.array(stim_combine)][0]
+
+        stim_spec = stim_pars[whichkey]['stim_spec']
+        for node_name in stim_pars[whichkey]['stim_target']:
+            [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[whichkey]['stim_ratio'][node_name], node_name)
+            [stimmod_id,stim_time] = modulatory_stim(stim_pars[whichkey],stim_chg_pars[whichkey])
             nest.Connect(stimmod_id,modpop_ids)
             stim_spec[node_name] = stim_time
             stim_spec[node_name].update({'stim_subpop':modpop_ids,
                                         'allpop':allpop_ids})
 
-        sio.savemat(base+'/stimspec.mat',stim_spec)
-    # STN
-    if stim_pars_STN['do']:
-        stim_spec = {'CS':0.0}
-        for node_name in ['CS']:
-            [modpop_ids,allpop_ids] = extra_modulation(pops, 1.0, node_name)
-            [stimmod_id,stim_time] = modulatory_stim(stim_pars_STN,stim_chg_pars_STN)
-            nest.Connect(stimmod_id,modpop_ids)
-            stim_spec[node_name] = stim_time
-            stim_spec[node_name].update({'stim_subpop':modpop_ids,
-                                        'allpop':allpop_ids})
-
-        sio.savemat(base+'/stimspec.mat',stim_spec)
+    sio.savemat(base+'/stimspec.mat',stim_spec)
+    # # STN
+    # if stim_pars_STN['do']:
+    #     stim_spec = {'CS':0.0}
+    #     for node_name in ['CS']:
+    #         [modpop_ids,allpop_ids] = extra_modulation(pops, 1.0, node_name)
+    #         [stimmod_id,stim_time] = modulatory_stim(stim_pars_STN,stim_chg_pars_STN)
+    #         nest.Connect(stimmod_id,modpop_ids)
+    #         stim_spec[node_name] = stim_time
+    #         stim_spec[node_name].update({'stim_subpop':modpop_ids,
+    #                                     'allpop':allpop_ids})
+    #
+    #     sio.savemat(base+'/stimspec.mat',stim_spec)
 
     save_node_random_params(pops,base+'/randomized-params.json')
 
@@ -211,8 +267,8 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
-    if stim_pars_STN['do']:
-        my_nest.Simulate(max(stim_spec['CS']['start_times'])+5000.0)
+    if sum(stim_combine) > 0:
+        my_nest.Simulate(max(stim_spec['C1']['STNstop']['stop_times'])+5000.0)
     else:
         my_nest.Simulate(10000.0)
 
@@ -281,6 +337,77 @@ def modulatory_stim(stim_params,chg_stim_param):
                  'start_times':all_start_times}
     return mod_inp,stim_vecs
 
+
+def modulatory_multiplestim(all_rates,stim_params,chg_stim_param):
+    num_pois_gen = len(stim_params.keys())
+    mod_inp = nest.Create('poisson_generator_dynamic',num_pois_gen)
+    ind = -1
+    stim_vecs = {}
+    for keys in stim_params.keys():
+        ind = ind + 1
+        timevec = numpy.array(0.0)
+        ratevec = numpy.array(0.0)
+        waittime = chg_stim_param[keys]['waittime']
+        stim_start = stim_params[keys]['stim_start']
+        # all_rates = []
+        all_start_times = []
+        all_stop_times = []
+        for rate_ind, rateval in enumerate(all_rates[ind]):
+            #h_rate = 200.0
+            #l_rate = 0.0
+            #slope = 2.       # Hz/ms
+            #res = 10.        # ms
+            #stim_start = 1000.0
+            # stim_start = stim_params[keys]['stim_start']
+            h_rate = rateval
+            l_rate = stim_params[keys]['l_rate']
+            #slope = stim_params['slope']
+            stim_dur = stim_params[keys]['duration']
+            res = stim_params[keys]['res']
+            # rate_step = slope*res
+            if ind == 0:
+                stim_stop = stim_start + stim_dur + res
+            else:
+                stim_start = prev_var_stops[rate_ind] + all_rates[-1][rate_ind]
+                stim_stop = stim_start + stim_dur + res
+            single_timvec = numpy.arange(stim_start,stim_stop,res)
+            timevec = numpy.append(timevec,single_timvec)
+            timveclen = single_timvec.size
+            ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
+
+            # Establishing the pause between the stimulations
+            ratevec = numpy.append(ratevec,0.0)
+            timevec = numpy.append(timevec,timevec[-1]+res)
+
+            # chg_stim_val = chg_stim_param[keys]['value']
+            # chg_stim_res = chg_stim_param[keys]['res']
+            # waittime = chg_stim_param[keys]['waittime']
+            all_start_times.append(stim_start)
+            all_stop_times.append(stim_stop)
+            stim_start = stim_stop + waittime
+            # all_rates.append(h_rate)
+            # h_rate = h_rate + chg_stim_res
+
+            # while h_rate <= chg_stim_val:
+            #     all_rates.append(h_rate)
+            #     ratevec = numpy.append(ratevec,0.0)
+            #     timevec = numpy.append(timevec,timevec[-1]+res)
+
+                # ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
+                # stim_start = stim_stop + waittime
+                # stim_stop = stim_start + stim_dur + res
+                # timevec = numpy.append(timevec,numpy.arange(stim_start,stim_stop,res))
+                # h_rate = h_rate + chg_stim_res
+                # all_start_times.append(stim_start)
+        prev_var_stops = all_stop_times
+
+        nest.SetStatus((mod_inp[ind],),{'rates': ratevec.round(0),'timings': timevec,
+                                'start': timevec[0], 'stop': stim_stop})
+        stim_vecs.update({keys:{'rates':all_rates,
+                                'start_times':all_start_times,
+                                'stop_times':all_stop_times,
+                                'stim_pois_id':(mod_inp[ind],)}})
+    return stim_vecs
 
 # main()
 if __name__ == '__main__':
