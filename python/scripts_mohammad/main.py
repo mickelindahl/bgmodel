@@ -223,14 +223,16 @@ def main(mode, size):
         comb = numpy.array(numpy.meshgrid(ratescomb[0],ratescomb[1],reltimes))
         comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
         stim_time = modulatory_multiplestim(comb_resh,stim_pars,stim_chg_pars)
-        stim_spec = {}
+        stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0,'CS':0.0}
         for stim_type in stim_time.keys():
             for node_name in stim_pars[stim_type]['stim_target']:
                 [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[stim_type]['stim_ratio'][node_name], node_name)
                 nest.Connect(stim_time[stim_type]['stim_pois_id'], modpop_ids)
-                stim_spec.update({node_name:stim_time})
-                stim_spec[node_name].update({'stim_subpop':modpop_ids,
-                                            'allpop':allpop_ids})
+                # stim_spec[node_name] = stim_time
+                stim_spec[node_name] = {'stim_subpop':modpop_ids,
+                                        'allpop':allpop_ids,
+                                        'stim_id':stim_time[stim_type]['stim_pois_id']}
+        stim_spec.update(stim_time)
 
     else:
         dic_keys = numpy.array(stim_pars.keys())
@@ -268,7 +270,7 @@ def main(mode, size):
     #
     # # Simulate
     if sum(stim_combine) > 0:
-        my_nest.Simulate(max(stim_spec['C1']['STNstop']['stop_times'])+5000.0)
+        my_nest.Simulate(max(stim_spec['STNstop']['stop_times'])+5000.0)
     else:
         my_nest.Simulate(10000.0)
 
