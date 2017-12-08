@@ -148,7 +148,7 @@ def main(mode, size):
     # stim_chg_pars_STN = {'value':210.0,
     #                  'res':10.0,
     #                  'waittime':2000.0}
-    base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode,
+    base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
                         'STN-dur'+
                         str(stim_pars['STNstop']['duration'])+ '-'+
                         str(stim_pars['STNstop']['h_rate'])+ '-'+
