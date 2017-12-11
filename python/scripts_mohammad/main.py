@@ -281,13 +281,17 @@ def main(mode, size, trnum):
     connect(par, surfs, pops)
     #
     # # Simulate
-    print 'Simulation\'s just started!'
+    print 'Simulation\'s just started ...'
     if sum(stim_combine) > 0:
         my_nest.Simulate(max(stim_spec['STNstop']['stop_times'])+5000.0)
     else:
         my_nest.Simulate(10000.0)
 
-    sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat('+base+'/nest/,'+str(sim_res)+')\'')
+    print 'Simulation is now finished!\n'
+
+    print 'Contatenating .gdf files to a .mat file for each nucleus ...'
+
+    sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat(\''+base+'/nest/\','+str(sim_res)+')\'')
     if sys_var == 0:
         print 'gdf files are now in .mat files!'
     else:
