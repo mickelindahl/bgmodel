@@ -9,9 +9,9 @@ disp(['Data path is: ',varargin])
 nuclei = {'FS','GA','GF','GI','M1','M2','SN','ST'};
 % data_dir = [pwd,'/'];
 
-if ischar(varargin{1}) && isnumeric(varargin{2})
+if length(varargin) >= 2
     data_dir = varargin{1};
-    res = varargin{2};
+    res = str2double(varargin{2});
 else
     data_dir = ['/Users/Mohammad/Documents/PhD/Projects/BGmodel/bgmodel',...
         '/results/example/eneuro/10000/activation-control/',...
