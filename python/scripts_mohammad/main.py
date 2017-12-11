@@ -84,7 +84,7 @@ def postprocessing(pops):
     return d
 
 
-def main(mode, size):
+def main(mode, size, trnum):
     my_nest.ResetKernel()
 
     # Get parameters
@@ -118,7 +118,7 @@ def main(mode, size):
                              'res':10.0,
                              'do':True,
                              'stim_target':['C1','C2','CF'],
-                             'stim_spec':{'C1':0.0,'C2':0.0,'CF':0.0},
+                             'stim_spdec':{'C1':0.0,'C2':0.0,'CF':0.0},
                              'stim_ratio':{'C1':0.3,'C2':0.3,'CF':0.3}},
                  'STNstop':{'stim_start':4000.0,
                              'h_rate':1000.0,
@@ -153,7 +153,8 @@ def main(mode, size):
                         str(stim_pars['STNstop']['duration'])+ '-'+
                         str(stim_pars['STNstop']['h_rate'])+ '-'+
                         str(stim_chg_pars['STNstop']['value'])+ '-'+
-                        str(stim_chg_pars['STNstop']['res']))
+                        str(stim_chg_pars['STNstop']['res'])+ '-'+
+                        'tr'+ str(trnum))
 
 
     # Configure simulation parameters
@@ -163,8 +164,8 @@ def main(mode, size):
             'path_data': base+'/data',
             'path_figure': base+'/fig',
             'path_nest': base+'/nest/',  # trailing slash important
-            'stop_rec': 1000000.,
-            'sim_stop': 1000000.,
+            'stop_rec': 10000000.,
+            'sim_stop': 10000000.,
             'print_time': True,
             'sd_params': {
                 'to_file': True,
@@ -195,6 +196,16 @@ def main(mode, size):
 
     # Show kernel status
     pp(my_nest.GetKernelStatus())
+
+    sim_res = nest.GetKernelStatus('resolution')
+
+    if trnum != 1:
+        def_rng_seed = nest.GetKernelStatus('rng_seeds')
+        l_def_rng_seed = len(def_rng_seed)
+        b_lim = (trnum - 1)*l_def_rng_seed
+        u_lim = (trnum - 1)*2*l_def_rng_seed + 1
+        nest.GetKernelStatus({'rng_seeds':range(b_lim,u_lim,1)})
+
 
     # Create news populations and connections structures
     surfs, pops = build(par)
@@ -262,6 +273,7 @@ def main(mode, size):
     #     sio.savemat(base+'/stimspec.mat',stim_spec)
 
     save_node_random_params(pops,base+'/randomized-params.json')
+    nest.SetKernelStatus({'print_time':False})
 
     # print(pops)
 
@@ -269,10 +281,17 @@ def main(mode, size):
     connect(par, surfs, pops)
     #
     # # Simulate
+    print 'Simulation\'s just started!'
     if sum(stim_combine) > 0:
         my_nest.Simulate(max(stim_spec['STNstop']['stop_times'])+5000.0)
     else:
         my_nest.Simulate(10000.0)
+
+    sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat('+base+'/nest/,'+str(sim_res)+')\'')
+    if sys_var == 0:
+        print 'gdf files are now in .mat files!'
+    else:
+        print 'Error! No .mat file is produced!'
 
     #
     # # Create spike signals
@@ -415,7 +434,11 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param):
 if __name__ == '__main__':
 
     #size = sys.argv[1] if len(sys.argv)>1 else 3000
-    size = 10000
+    if len(sys.argv) > 1:
+        numtrs = sys.argv[1]
+    else:
+        numtrs = 1
+    size = 3000
     modes = ['activation-control']
 
 #    modes = [
@@ -425,7 +448,7 @@ if __name__ == '__main__':
 #        'slow-wave-dopamine-depleted'
 #    ]
     for mode in modes:
-        main(mode, size)
+        main(mode, size, numtrs)
 
         plot.main(mode, size)
 
