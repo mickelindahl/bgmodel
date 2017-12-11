@@ -291,7 +291,7 @@ def main(mode, size, trnum):
 
     print 'Contatenating .gdf files to a .mat file for each nucleus ...'
 
-    sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat(\''+base+'/nest/\','+str(sim_res)+')\'')
+    sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest '+str(sim_res)+'; exit;\'')
     if sys_var == 0:
         print 'gdf files are now in .mat files!'
     else:
