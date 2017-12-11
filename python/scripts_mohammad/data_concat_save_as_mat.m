@@ -48,3 +48,5 @@ for nc_ind = 1:length(nuclei)
     save([mat_data_dir,nuclei{nc_ind},'-spikedata'],'N_ids','spk_times','res')
     
 end
+
+exit
