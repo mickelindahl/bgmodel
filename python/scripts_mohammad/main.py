@@ -148,13 +148,30 @@ def main(mode, size, trnum):
     # stim_chg_pars_STN = {'value':210.0,
     #                  'res':10.0,
     #                  'waittime':2000.0}
-    base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
-                        'STN-dur'+
-                        str(stim_pars['STNstop']['duration'])+ '-'+
-                        str(stim_pars['STNstop']['h_rate'])+ '-'+
-                        str(stim_chg_pars['STNstop']['value'])+ '-'+
-                        str(stim_chg_pars['STNstop']['res'])+ '-'+
-                        'tr'+ str(trnum))
+    if stim_pars['STRramp']['do'] and stim_pars['STNstop']['do']:
+        base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
+                            'mutlistim-STN-dur'+
+                            str(stim_pars['STNstop']['duration'])+ '-'+
+                            str(stim_pars['STNstop']['h_rate'])+ '-'+
+                            str(stim_chg_pars['STNstop']['value'])+ '-'+
+                            str(stim_chg_pars['STNstop']['res'])+ '-'+
+                            'tr'+ str(trnum))
+    elif stim_pars['STNstop']['do']:
+        base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
+                            'STN-dur'+
+                            str(stim_pars['STNstop']['duration'])+ '-'+
+                            str(stim_pars['STNstop']['h_rate'])+ '-'+
+                            str(stim_chg_pars['STNstop']['value'])+ '-'+
+                            str(stim_chg_pars['STNstop']['res'])+ '-'+
+                            'tr'+ str(trnum))
+    else:
+        base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
+                            'STR-dur'+
+                            str(stim_pars['STRramp']['duration'])+ '-'+
+                            str(stim_pars['STRramp']['h_rate'])+ '-'+
+                            str(stim_chg_pars['STRramp']['value'])+ '-'+
+                            str(stim_chg_pars['STRramp']['res'])+ '-'+
+                            'tr'+ str(trnum))
 
 
     # Configure simulation parameters
@@ -291,7 +308,7 @@ def main(mode, size, trnum):
 
     print 'Contatenating .gdf files to a .mat file for each nucleus ...'
 
-    sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest '+str(sim_res)+'; exit;\'')
+    sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest/ '+str(sim_res)+'; exit;\'')
     if sys_var == 0:
         print 'gdf files are now in .mat files!'
     else:
@@ -442,7 +459,7 @@ if __name__ == '__main__':
         numtrs = int(sys.argv[1])
     else:
         numtrs = 1
-    size = 3000
+    size = 10000
     modes = ['activation-control']
 
 #    modes = [
