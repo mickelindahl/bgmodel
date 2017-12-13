@@ -118,19 +118,19 @@ def main(mode, size, trnum):
                              'res':10.0,
                              'do':True,
                              'stim_target':['C1','C2','CF'],
-                             'stim_spdec':{'C1':0.0,'C2':0.0,'CF':0.0},
+                             'stim_spec':{'C1':0.0,'C2':0.0,'CF':0.0},
                              'stim_ratio':{'C1':0.3,'C2':0.3,'CF':0.3}},
                  'STNstop':{'stim_start':4000.0,
                              'h_rate':1000.0,
                              'l_rate':0.0,
                              'duration':10.0,
                              'res':10.0,
-                             'do':True,
+                             'do':False,
                              'stim_target':['CS'],
                              'stim_spec':{'CS':0.0},
                              'stim_ratio':{'CS':0.15}}}
     stim_chg_pars = {'STRramp':{'value':500.0,
-                                 'res':50.0,
+                                 'res':100.0,
                                  'waittime':2000.0},
                      'STNstop':{'value':2000.0,
                                  'res':500.0,
@@ -271,9 +271,11 @@ def main(mode, size, trnum):
             [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[whichkey]['stim_ratio'][node_name], node_name)
             [stimmod_id,stim_time] = modulatory_stim(stim_pars[whichkey],stim_chg_pars[whichkey])
             nest.Connect(stimmod_id,modpop_ids)
-            stim_spec[node_name] = stim_time
-            stim_spec[node_name].update({'stim_subpop':modpop_ids,
-                                        'allpop':allpop_ids})
+            # stim_spec[node_name] = stim_time
+            stim_spec[node_name] = {'stim_subpop':modpop_ids,
+                                    'allpop':allpop_ids,
+                                    'stim_id':stimmod_id}
+        stim_spec.update({whichkey:stim_time})
 
     sio.savemat(base+'/stimspec.mat',stim_spec)
     # # STN
@@ -300,7 +302,7 @@ def main(mode, size, trnum):
     # # Simulate
     print 'Simulation\'s just started ...'
     if sum(stim_combine) > 0:
-        my_nest.Simulate(max(stim_spec['STNstop']['stop_times'])+5000.0)
+        my_nest.Simulate(max(stim_spec['STRramp']['start_times'])+5000.0)
     else:
         my_nest.Simulate(10000.0)
 
@@ -459,7 +461,7 @@ if __name__ == '__main__':
         numtrs = int(sys.argv[1])
     else:
         numtrs = 1
-    size = 10000
+    size = 3000
     modes = ['activation-control']
 
 #    modes = [
