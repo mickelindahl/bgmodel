@@ -313,16 +313,18 @@ def main(mode, size, trnum):
     sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest/ '+str(sim_res)+'; exit;\'')
     if sys_var == 0:
         print 'gdf files are now in .mat files!'
+        os.system('mv '+base+'/nest/mat_files '+base)
+        os.system('rm -rf '+base+'/nest')
     else:
         print 'Error! No .mat file is produced!'
 
     #
     # # Create spike signals
-    d = postprocessing(pops)
+    # d = postprocessing(pops)
     #
     # # Save
-    sd = data_to_disk.Storage_dic.load(par.dic['simu']['path_data'], ['Net_0'])
-    sd.save_dic({'Net_0': d}, **{'use_hash': False})
+    # sd = data_to_disk.Storage_dic.load(par.dic['simu']['path_data'], ['Net_0'])
+    # sd.save_dic({'Net_0': d}, **{'use_hash': False})
 
 def extra_modulation(pops,subpop_ratio,node_name):
     node_ids = pops[node_name].ids
