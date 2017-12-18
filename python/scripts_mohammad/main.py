@@ -84,7 +84,7 @@ def postprocessing(pops):
     return d
 
 
-def main(mode, size, trnum):
+def main(mode, size, trnum, threads_num):
     my_nest.ResetKernel()
 
     # Get parameters
@@ -139,6 +139,9 @@ def main(mode, size, trnum):
                                 'h_val':20.0,
                                 'res':10.0}}
 
+    pp(stim_pars)
+    pp(stim_chg_pars)
+
     # stim_pars_STN = {'stim_start':4000.0,
     #                  'h_rate':200.0,
     #                  'l_rate':0.0,
@@ -177,7 +180,7 @@ def main(mode, size, trnum):
     # Configure simulation parameters
     par.set({
         'simu': {
-            'local_num_threads': 8,
+            'local_num_threads': threads_num,
             'path_data': base+'/data',
             'path_figure': base+'/fig',
             'path_nest': base+'/nest/',  # trailing slash important
@@ -461,9 +464,12 @@ if __name__ == '__main__':
     #size = sys.argv[1] if len(sys.argv)>1 else 3000
     if len(sys.argv) > 1:
         numtrs = int(sys.argv[1])
+        size = int(sys.argv[2])
+        loc_num_th = int(sys.argv[3])
     else:
         numtrs = 1
-    size = 3000
+        size = 10000
+        loc_num_th = 4
     modes = ['activation-control']
 
 #    modes = [
@@ -473,7 +479,7 @@ if __name__ == '__main__':
 #        'slow-wave-dopamine-depleted'
 #    ]
     for mode in modes:
-        main(mode, size, numtrs)
+        main(mode, size, numtrs, loc_num_th)
 
         plot.main(mode, size)
 
