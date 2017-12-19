@@ -111,12 +111,14 @@ def main(mode, size):
             dop = 0.0
 
     base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode )
+    pathconn = par.get()['simu']['path_conn']
 
     # Configure simulation parameters
     par.set({
         'simu': {
             'local_num_threads': 8,
             'path_data': base+'/data',
+            'path_conn': pathconn+str(1)+'/',
             'path_figure': base+'/fig',
             'path_nest': base+'/nest/',  # trailing slash important
             'stop_rec': 10000.,
@@ -124,7 +126,7 @@ def main(mode, size):
             'print_time': True,
             'sd_params': {
                 'to_file': True,
-                'to_memory': False
+                'to_memory': False,
             },
 
         },
