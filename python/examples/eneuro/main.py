@@ -10,6 +10,7 @@ from core.network.parameters.eneuro_activation2 import EneuroActivation2Par
 from core.network.parameters.eneuro_activation_beta import EneuroActivationBetaPar
 from core.network.parameters.eneuro_sw import EneuroSwPar
 
+from core import parameter_extraction as pe
 from core.network.parameters.eneuro_ramp import EneuroRampPar
 # from core.network.default_params import Beta
 from scripts_inhibition.base_oscillation import add_GI, add_GPe
@@ -28,25 +29,22 @@ pp = pprint.pprint
 
 
 def save_node_random_params(pops, path):
-
     d = {}
 
-    for node in ['FS', 'GI',  'GF', 'GA', 'M1', 'M2', 'ST', 'SN']:
+    for node in ['FS', 'GI', 'GF', 'GA', 'M1', 'M2', 'ST', 'SN']:
 
         d[node] = {}
 
         for param in ['V_th', 'V_m', 'C_m', 'E_L']:
-
             d[node][param] = [s[param] for s in my_nest.GetStatus(pops[node].ids)]
 
-
-        d[node]['V_th-E_L']= [a-b for a,b in zip(d[node]['V_th'], d[node]['E_L'])]
-
+        d[node]['V_th-E_L'] = [a - b for a, b in zip(d[node]['V_th'], d[node]['E_L'])]
 
     if not os.path.isdir(os.path.dirname(path)):
         data_to_disk.mkdir(os.path.dirname(path))
 
-    json.dump( d, open(path, 'w'))
+    json.dump(d, open(path, 'w'))
+
 
 def build(par):
     # ******
@@ -59,8 +57,8 @@ def build(par):
     return surfs, pops
 
 
-def connect(par, surfs, pops):
-    args = [pops, surfs, par.get_nest(), par.get_conn(), True]
+def connect(par, surfs, pops, without_pre_calculation):
+    args = [pops, surfs, par.get_nest(), par.get_conn(), True, without_pre_calculation]
 
     structure.connect(*args)
 
@@ -87,7 +85,7 @@ def main(mode, size):
     # Get parameters
     # par = EneuroBetaPar(other=EneuroPar())
 
-    if mode in ['activation-control', 'activation2-control',  'activation-dopamine-depleted']:
+    if mode in ['activation-control', 'activation2-control', 'activation-dopamine-depleted']:
 
         if mode == 'activation-control':
 
@@ -110,9 +108,10 @@ def main(mode, size):
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
+
     base = os.path.join(os.getenv('BGMODEL_HOME'), 'results/example/eneuro', str(size), mode )
     pathconn = par.get()['simu']['path_conn']
-
+    without_pre_calculation = False
     # Configure simulation parameters
     par.set({
         'simu': {
@@ -131,7 +130,7 @@ def main(mode, size):
 
         },
         'netw': {
-            'tata_dop':dop,
+            'tata_dop': dop,
             'size': size
         },
         # 'node': {
@@ -149,43 +148,64 @@ def main(mode, size):
     list_parameters.main(base, par)
 
     # Clear nest data directory
-    par.nest_clear_data_path({'display': True})
-
-    # Show kernel status
+    # par.nest_clear_data_path({'display': True})
+    #
+    # # Show kernel status
     pp(my_nest.GetKernelStatus())
+
+    # import mpi4py.MPI as MPI
+    # comm = MPI.COMM_WORLD
+
+    # print(comm.rank)
+
 
     # Create news populations and connections structures
     surfs, pops = build(par)
 
-    #Example getting C1 nest ids
+    keys = ['M1', 'M2', 'FS', 'GI', 'GF', 'GA', 'ST', 'SN']
+
+    nodes = {}
+    for k in keys:
+        nodes[k] = pops[k].ids
+
+    file_path = os.path.join(base, 'extracted-params.json')
+    pe.extract_nodes(nodes, file_path)
+
+    # Example getting C1 nest ids
     # >> pops['C1'].ids
 
-    save_node_random_params(pops,base+'/randomized-params.json')
+    save_node_random_params(pops, base + '/randomized-params.json')
 
     # print(pops)
 
     # Connect populations accordingly to connections structure
-    connect(par, surfs, pops)
+    connect(par, surfs, pops, without_pre_calculation)
+
+    file_path = os.path.join(base, 'extracted-conns.json')
+    pe.extract_connections(nodes, file_path)
+
+    # pe.extract_connections()
+
     #
     # # Simulate
-    my_nest.Simulate(10000.)
+    # my_nest.Simulate(10000.)
     #
     # # Create spike signals
-    d = postprocessing(pops)
+    # d = postprocessing(pops)
     #
     # # Save
-    sd = data_to_disk.Storage_dic.load(par.dic['simu']['path_data'], ['Net_0'])
-    sd.save_dic({'Net_0': d}, **{'use_hash': False})
+    # sd = data_to_disk.Storage_dic.load(par.dic['simu']['path_data'], ['Net_0'])
+    # sd.save_dic({'Net_0': d}, **{'use_hash': False})
 
 
 # main()
 if __name__ == '__main__':
 
-    size = sys.argv[1] if len(sys.argv)>1 else 20000
+    size = sys.argv[1] if len(sys.argv) > 1 else 20000
 
     modes = [
         'activation-control',
-        'activation2-control',
+        # 'activation2-control',
         'activation-dopamine-depleted',
         'slow-wave-control',
         'slow-wave-dopamine-depleted'
@@ -194,8 +214,8 @@ if __name__ == '__main__':
     for mode in modes:
         main(mode, size)
 
-        plot.main(mode, size)
-
-        randomized_params_plot.main(mode, size)
-        mean_firing_rates.main(mode, size)
-        mean_firing_rates_plot.main(mode, size)
+        # plot.main(mode, size)
+        #
+        # randomized_params_plot.main(mode, size)
+        # mean_firing_rates.main(mode, size)
+        # mean_firing_rates_plot.main(mode, size)

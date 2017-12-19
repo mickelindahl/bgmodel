@@ -12,7 +12,14 @@ def main(path, par = EneuroPar()):
 
     dic = par.dic
 
-    pickle.dump(dic, open(os.path.join(path, 'parameters.pkl'), 'w'))
+    keys =list(dic.keys())
+
+    for key in keys:
+        if key=='node':
+            for nuc in dic[key].values():
+                del nuc['sets']
+
+        pickle.dump(dic[key], open(os.path.join(path, 'parameters-'+key+'.pkl'), 'w'))
 
     # pp(dic)
 
