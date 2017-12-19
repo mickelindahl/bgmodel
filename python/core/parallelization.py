@@ -219,6 +219,7 @@ def map_parallel(fun, *args, **kwargs):
             data=[out]+[comm.recv(source=i, tag=1) for i in range(1, comm.size())]
             data=reduce(lambda x,y:x+y, data )  
             n=len(data)
+
         else:
             comm.send(out,dest=0, tag=1)
             data=None   
