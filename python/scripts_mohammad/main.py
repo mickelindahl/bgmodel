@@ -468,7 +468,7 @@ if __name__ == '__main__':
         loc_num_th = int(sys.argv[3])
     else:
         numtrs = 1
-        size = 10000
+        size = 30000
         loc_num_th = 4
     modes = ['activation-control']
 
