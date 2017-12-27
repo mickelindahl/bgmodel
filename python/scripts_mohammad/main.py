@@ -176,6 +176,12 @@ def main(mode, size, trnum, threads_num):
                             str(stim_chg_pars['STRramp']['res'])+ '-'+
                             'tr'+ str(trnum))
 
+    rand_conn = False
+
+    if rand_conn:
+        pathconn = par.get()['simu']['path_conn']+ str(trnum)+ '/'
+    else:
+        pathconn = par.get()['simu']['path_conn']
 
     # Configure simulation parameters
     par.set({
@@ -184,6 +190,7 @@ def main(mode, size, trnum, threads_num):
             'path_data': base+'/data',
             'path_figure': base+'/fig',
             'path_nest': base+'/nest/',  # trailing slash important
+            'path_conn': pathconn,
             'stop_rec': 10000000.,
             'sim_stop': 10000000.,
             'print_time': True,
