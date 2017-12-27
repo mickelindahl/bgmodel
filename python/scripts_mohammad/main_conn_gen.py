@@ -213,6 +213,9 @@ def main(mode, size, trnum, threads_num, rand_conn):
         # },
     })
 
+    print(par.get()['simu']['path_conn'])
+    print(par.get()['simu']['path_nest'])
+
     par.nest_set_kernel_status()
 
     # Save parametesr
