@@ -84,7 +84,7 @@ def postprocessing(pops):
     return d
 
 
-def main(mode, size, trnum, threads_num):
+def main(mode, size, trnum, threads_num, les_src,les_trg):
     my_nest.ResetKernel()
 
     # Get parameters
@@ -182,6 +182,12 @@ def main(mode, size, trnum, threads_num):
         pathconn = par.get()['simu']['path_conn']+ str(trnum)+ '/'
     else:
         pathconn = par.get()['simu']['path_conn']
+
+    if len(les_src) > 0:
+        print 'Lesion will be applied to source(s): ',les_src,' projecting to ',les_trg
+        lesion(par,les_src,les_trg)
+    else:
+        print 'No lesion!'
 
     # Configure simulation parameters
     par.set({
@@ -465,6 +471,15 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param):
                                 'stim_pois_id':(mod_inp[ind],)}})
     return stim_vecs
 
+def lesion(params,source,target):
+    connlist = params.get()['conn']
+    connkeys = connlist.keys()
+    for keys in connkeys:
+        str_temp = keys.split('_')
+        if str_temp[0] in source and str_temp[1] in target:
+            params.set({'conn':{keys:{'lesion':True}}})
+    return params
+
 # main()
 if __name__ == '__main__':
 
@@ -477,6 +492,17 @@ if __name__ == '__main__':
         numtrs = 1
         size = 30000
         loc_num_th = 4
+        lesion_source = []
+        lesion_target = []
+
+    if len(sys.argv) >= 4:
+        les_s_tmp = sys.argv[4]
+        lesion_source = les_s_tmp.split(',')
+        les_t_tmp = sys.argv[5]
+        lesion_target = les_t_tmp.split(',')
+    else:
+        lesion_source = []
+        lesion_target = []
     modes = ['activation-control']
 
 #    modes = [
@@ -486,7 +512,7 @@ if __name__ == '__main__':
 #        'slow-wave-dopamine-depleted'
 #    ]
     for mode in modes:
-        main(mode, size, numtrs, loc_num_th)
+        main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target)
 
         plot.main(mode, size)
 
