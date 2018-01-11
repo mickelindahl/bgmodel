@@ -329,7 +329,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest/ '+str(sim_res)+'; exit;\'')
     if sys_var == 0:
         print 'gdf files are now in .mat files!'
-        os.system('mv '+base+'/nest/mat_files '+base)
+        os.system('mv '+base+'/nest/mat_data '+base)
         os.system('rm -rf '+base+'/nest')
     else:
         print 'Error! No .mat file is produced!'
