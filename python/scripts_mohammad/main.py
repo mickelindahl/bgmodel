@@ -125,7 +125,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                              'l_rate':0.0,
                              'duration':10.0,
                              'res':10.0,
-                             'do':False,
+                             'do':True,
                              'stim_target':['CS'],
                              'stim_spec':{'CS':0.0},
                              'stim_ratio':{'CS':0.15}}}
@@ -490,12 +490,12 @@ if __name__ == '__main__':
         loc_num_th = int(sys.argv[3])
     else:
         numtrs = 1
-        size = 30000
+        size = 3000
         loc_num_th = 4
         lesion_source = []
         lesion_target = []
 
-    if len(sys.argv) >= 4:
+    if len(sys.argv) > 4:
         les_s_tmp = sys.argv[4]
         lesion_source = les_s_tmp.split(',')
         les_t_tmp = sys.argv[5]
