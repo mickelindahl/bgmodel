@@ -118,6 +118,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                              'res':10.0,
                              'do':True,
                              'stim_target':['C1','C2','CF'],
+                             'target_name':'STR',
                              'stim_spec':{'C1':0.0,'C2':0.0,'CF':0.0},
                              'stim_ratio':{'C1':0.3,'C2':0.3,'CF':0.3}},
                  'STNstop':{'stim_start':4000.0,
@@ -127,6 +128,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                              'res':10.0,
                              'do':True,
                              'stim_target':['CS'],
+                             'target_name':'STN',
                              'stim_spec':{'CS':0.0},
                              'stim_ratio':{'CS':0.15}}}
     stim_chg_pars = {'STRramp':{'value':500.0,
@@ -151,30 +153,53 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     # stim_chg_pars_STN = {'value':210.0,
     #                  'res':10.0,
     #                  'waittime':2000.0}
-    if stim_pars['STRramp']['do'] and stim_pars['STNstop']['do']:
-        base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
-                            'mutlistim-STN-dur'+
-                            str(stim_pars['STNstop']['duration'])+ '-'+
-                            str(stim_pars['STNstop']['h_rate'])+ '-'+
-                            str(stim_chg_pars['STNstop']['value'])+ '-'+
-                            str(stim_chg_pars['STNstop']['res'])+ '-'+
-                            'tr'+ str(trnum))
-    elif stim_pars['STNstop']['do']:
-        base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
-                            'STN-dur'+
-                            str(stim_pars['STNstop']['duration'])+ '-'+
-                            str(stim_pars['STNstop']['h_rate'])+ '-'+
-                            str(stim_chg_pars['STNstop']['value'])+ '-'+
-                            str(stim_chg_pars['STNstop']['res'])+ '-'+
-                            'tr'+ str(trnum))
-    else:
-        base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
-                            'STR-dur'+
-                            str(stim_pars['STRramp']['duration'])+ '-'+
-                            str(stim_pars['STRramp']['h_rate'])+ '-'+
-                            str(stim_chg_pars['STRramp']['value'])+ '-'+
-                            str(stim_chg_pars['STRramp']['res'])+ '-'+
-                            'tr'+ str(trnum))
+
+    '''
+        The naming of the result directory has the following order:
+        1st number: stimulation duration
+        2nd number: maximum rate increase
+        3rd number: maximum change of rate increase
+        4th number: steps of increase
+    '''
+
+    dir_name = ''
+
+    for keys in stim_pars:
+        if stim_pars[keys]['do']:
+            dir_name = dir_name + \
+                       stim_pars[keys]['target_name']+'-'+\
+                       str(stim_pars[keys]['duration'])+ '-'+\
+                       str(stim_pars[keys]['h_rate'])+ '-'+\
+                       str(stim_chg_pars[keys]['value'])+ '-'+\
+                       str(stim_chg_pars[keys]['res'])+ '-'
+    dir_name = dir_name + 'tr'+ str(trnum)
+
+    base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode, dir_name)
+
+    # if stim_pars['STRramp']['do'] and stim_pars['STNstop']['do']:
+    #     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
+    #                         'mutlistim-STN-dur'+
+    #                         str(stim_pars['STNstop']['duration'])+ '-'+
+    #                         str(stim_pars['STNstop']['h_rate'])+ '-'+
+    #                         str(stim_chg_pars['STNstop']['value'])+ '-'+
+    #                         str(stim_chg_pars['STNstop']['res'])+ '-'+
+    #                         'tr'+ str(trnum))
+    # elif stim_pars['STNstop']['do']:
+    #     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
+    #                         'STN-dur'+
+    #                         str(stim_pars['STNstop']['duration'])+ '-'+
+    #                         str(stim_pars['STNstop']['h_rate'])+ '-'+
+    #                         str(stim_chg_pars['STNstop']['value'])+ '-'+
+    #                         str(stim_chg_pars['STNstop']['res'])+ '-'+
+    #                         'tr'+ str(trnum))
+    # else:
+    #     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
+    #                         'STR-dur'+
+    #                         str(stim_pars['STRramp']['duration'])+ '-'+
+    #                         str(stim_pars['STRramp']['h_rate'])+ '-'+
+    #                         str(stim_chg_pars['STRramp']['value'])+ '-'+
+    #                         str(stim_chg_pars['STRramp']['res'])+ '-'+
+    #                         'tr'+ str(trnum))
 
     rand_conn = False
 
