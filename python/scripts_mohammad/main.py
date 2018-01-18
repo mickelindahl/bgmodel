@@ -190,6 +190,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                        str(stim_pars[keys]['h_rate'])+ '-'+\
                        str(stim_chg_pars[keys]['value'])+ '-'+\
                        str(stim_chg_pars[keys]['res'])+ '-'
+        last_stimpars = keys
     dir_name = dir_name + 'tr'+ str(trnum)
 
     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode, dir_name)
@@ -373,7 +374,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     # # Simulate
     print 'Simulation\'s just started ...'
     if sum(stim_combine) > 0:
-        my_nest.Simulate(max(stim_spec['STRramp']['start_times'])+5000.0)
+        my_nest.Simulate(max(stim_spec[last_stimpars]['start_times'])+5000.0)
     else:
         my_nest.Simulate(10000.0)
 
