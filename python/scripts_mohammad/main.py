@@ -130,16 +130,34 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                              'stim_target':['CS'],
                              'target_name':'STN',
                              'stim_spec':{'CS':0.0},
-                             'stim_ratio':{'CS':0.15}}}
+                             'stim_ratio':{'CS':1.0}},
+                 'GPAstop':{'stim_start':4000.0,
+                             'h_rate':1000.0,
+                             'l_rate':0.0,
+                             'duration':40.0,
+                             'res':10.0,
+                             'do':True,
+                             'stim_target':['EA'],
+                             'target_name':'GPA',
+                             'stim_spec':{'EA':0.0},
+                             'stim_ratio':{'EA':1.0}}}
     stim_chg_pars = {'STRramp':{'value':500.0,
                                  'res':100.0,
                                  'waittime':2000.0},
                      'STNstop':{'value':2000.0,
                                  'res':500.0,
                                  'waittime':2000.0},
-                     'Reltime':{'l_val':0.0,
-                                'h_val':20.0,
-                                'res':10.0}}
+                     'GPAstop':{'value':2000.0,
+                                 'res':500.0,
+                                 'waittime':2000.0},
+                     'Reltime':{'STNstop':{'l_val':0.0,
+                                       'h_val':20.0,
+                                       'res':10.0,
+                                       'ref':'STRramp'},
+                                'GPAstop':{'l_val':0.0,
+                                       'h_val':20.0,
+                                       'res':10.0,
+                                       'ref':'STRramp'}}}
 
     pp(stim_pars)
     pp(stim_chg_pars)
@@ -276,23 +294,35 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     for key in stim_pars.keys():
         stim_combine.append(stim_pars[key]['do'])
 
+    ind_comb = -1
+    comb_dic = {}
+
     if sum(stim_combine) == len(stim_combine):
         ratescomb = []
         for stim_type in stim_pars.keys():
+            ind_comb = ind_comb + 1
             # l_rate = stim_pars[stim_type]['l_rate']
             h_rate = stim_pars[stim_type]['h_rate']
             res = stim_chg_pars[stim_type]['res']
             max_h_rate = stim_chg_pars[stim_type]['value']
             ratescomb.append(numpy.arange(h_rate,max_h_rate+res,res))
+            comb_dic.update({stim_type:ind_comb})
+        reltimecomb = []
         if stim_chg_pars.has_key('Reltime'):
-            h_value = stim_chg_pars['Reltime']['h_val']
-            l_value = stim_chg_pars['Reltime']['l_val']
-            res_val = stim_chg_pars['Reltime']['res']
-            reltimes = numpy.arange(l_value,h_value+res_val,res_val)
-        comb = numpy.array(numpy.meshgrid(ratescomb[0],ratescomb[1],reltimes))
+            for rel_type in stim_chg_pars['Reltime'].keys():
+                ind_comb = ind_comb + 1
+                h_value = stim_chg_pars['Reltime'][rel_type]['h_val']
+                l_value = stim_chg_pars['Reltime'][rel_type]['l_val']
+                res_val = stim_chg_pars['Reltime'][rel_type]['res']
+                reltimecomb.append(numpy.arange(l_value,h_value+res_val,res_val))
+                if comb_dic.has_key('reltime'):
+                    comb_dic['reltime'].update({rel_type:ind_comb})
+                else:
+                    comb_dic.update({'reltime':{rel_type:ind_comb}})
+            comb = numpy.array(numpy.meshgrid(ratescomb[0],ratescomb[1],ratescomb[2],reltimecomb[0],reltimecomb[1]))
         comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
-        stim_time = modulatory_multiplestim(comb_resh,stim_pars,stim_chg_pars)
-        stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0,'CS':0.0}
+        stim_time = modulatory_multiplestim(comb_resh,stim_pars,stim_chg_pars,comb_dic)
+        stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0,'CS':0.0,'EA':0.0}
         for stim_type in stim_time.keys():
             for node_name in stim_pars[stim_type]['stim_target']:
                 [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[stim_type]['stim_ratio'][node_name], node_name)
@@ -425,13 +455,25 @@ def modulatory_stim(stim_params,chg_stim_param):
     return mod_inp,stim_vecs
 
 
-def modulatory_multiplestim(all_rates,stim_params,chg_stim_param):
+def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic):
     num_pois_gen = len(stim_params.keys())
     mod_inp = nest.Create('poisson_generator_dynamic',num_pois_gen)
     ind = -1
+    ind_dic = {}
     stim_vecs = {}
+    refchgkey = list(find('ref',chg_stim_param))
+    u_refchgkey = numpy.unique(refchgkey)[0]
+    if type(u_refchgkey) is not list:
+        ordered_keys = [u_refchgkey]
     for keys in stim_params.keys():
         ind = ind + 1
+        ind_dic.update({keys:ind})
+        if not keys in u_refchgkey:
+            ordered_keys.append(keys)
+
+
+    for keys in ordered_keys:
+        ind = ind_dic[keys]
         timevec = numpy.array(0.0)
         ratevec = numpy.array(0.0)
         waittime = chg_stim_param[keys]['waittime']
@@ -452,10 +494,10 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param):
             stim_dur = stim_params[keys]['duration']
             res = stim_params[keys]['res']
             # rate_step = slope*res
-            if ind == 0:
+            if keys in refchgkey:
                 stim_stop = stim_start + stim_dur + res
             else:
-                stim_start = prev_var_stops[rate_ind] + all_rates[-1][rate_ind]
+                stim_start = prev_var_stops[rate_ind] + all_rates[comb_dic['reltime'][keys]][rate_ind]
                 stim_stop = stim_start + stim_dur + res
             single_timvec = numpy.arange(stim_start,stim_stop,res)
             timevec = numpy.append(timevec,single_timvec)
@@ -486,7 +528,8 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param):
                 # timevec = numpy.append(timevec,numpy.arange(stim_start,stim_stop,res))
                 # h_rate = h_rate + chg_stim_res
                 # all_start_times.append(stim_start)
-        prev_var_stops = all_stop_times
+        if keys in refchgkey:
+            prev_var_stops = all_stop_times
 
         nest.SetStatus((mod_inp[ind],),{'rates': ratevec.round(0),'timings': timevec,
                                 'start': timevec[0], 'stop': stim_stop})
@@ -504,6 +547,18 @@ def lesion(params,source,target):
         if str_temp[0] in source and str_temp[1] in target:
             params.set({'conn':{keys:{'lesion':True}}})
     return params
+
+def find(key, dictionary):
+    for k, v in dictionary.iteritems():
+        if k == key:
+            yield v
+        elif isinstance(v, dict):
+            for result in find(key, v):
+                yield result
+        elif isinstance(v, list):
+            for d in v:
+                for result in find(key, d):
+                    yield result
 
 # main()
 if __name__ == '__main__':
