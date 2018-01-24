@@ -117,6 +117,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                              'duration':140.0,
                              'res':10.0,
                              'do':True,
+                             'w-form':'ramp',
                              'stim_target':['C1','C2','CF'],
                              'target_name':'STR',
                              'stim_spec':{'C1':0.0,'C2':0.0,'CF':0.0},
@@ -127,6 +128,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                              'duration':10.0,
                              'res':10.0,
                              'do':True,
+                             'w-form':'pulse',
                              'stim_target':['CS'],
                              'target_name':'STN',
                              'stim_spec':{'CS':0.0},
@@ -137,6 +139,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                              'duration':40.0,
                              'res':10.0,
                              'do':True,
+                             'w-form':'pulse',
                              'stim_target':['EA'],
                              'target_name':'GPA',
                              'stim_spec':{'EA':0.0},
@@ -442,7 +445,14 @@ def modulatory_stim(stim_params,chg_stim_param):
         ratevec = numpy.append(ratevec,0.0)
         timevec = numpy.append(timevec,timevec[-1]+res)
 
-        ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
+        if stim_params['w-form'] == 'ramp':
+            ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
+        elif stim_params['w-form'] == 'pulse':
+            ratevec_tmp = []
+            ratevec_tmp.append(l_rate)
+            ratevec_tmp = numpy.append(ratevec_tmp,h_rate*numpy.ones(timveclen - 1))
+            ratevec = numpy.append(ratevec,ratevec_tmp)
+
         stim_start = stim_stop + waittime
         stim_stop = stim_start + stim_dur + res
         timevec = numpy.append(timevec,numpy.arange(stim_start,stim_stop,res))
@@ -503,7 +513,15 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic):
             single_timvec = numpy.arange(stim_start,stim_stop,res)
             timevec = numpy.append(timevec,single_timvec)
             timveclen = single_timvec.size
-            ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
+            # ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
+
+            if stim_params[keys]['w-form'] == 'ramp':
+                ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
+            elif stim_params[keys]['w-form'] == 'pulse':
+                ratevec_tmp = []
+                ratevec_tmp.append(l_rate)
+                ratevec_tmp = numpy.append(ratevec_tmp,h_rate*numpy.ones(timveclen - 1))
+                ratevec = numpy.append(ratevec,ratevec_tmp)
 
             # Establishing the pause between the stimulations
             ratevec = numpy.append(ratevec,0.0)
