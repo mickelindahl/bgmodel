@@ -266,8 +266,8 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
         # },
         # 'conn':{'GA_M1_gaba':{'weight':{'params':{'max':1.0,'min':0.6}}},   # Default: min = 0.02; max = 0.06
         #         'GA_M2_gaba':{'weight':{'params':{'max':2.0,'min':1.2}}}}, # Default: min = 0.04; max = 0.12
-        'conn':{'GA_M1_gaba':{'fan_in':100.0},
-                'GA_M2_gaba':{'fan_in':100.0}}
+        'conn':{'GA_M1_gaba':{'fan_in':100.0},                                  # Default value = 10
+                'GA_M2_gaba':{'fan_in':100.0}}                                  # Default value = 10
     })
 
     par.nest_set_kernel_status()
