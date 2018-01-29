@@ -193,7 +193,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                        str(stim_pars[keys]['h_rate'])+ '-'+\
                        str(stim_chg_pars[keys]['value'])+ '-'+\
                        str(stim_chg_pars[keys]['res'])+ '-'
-        last_stimpars = keys
+            last_stimpars = keys
     dir_name = dir_name + 'tr'+ str(trnum)
 
     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode, dir_name)
