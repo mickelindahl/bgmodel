@@ -84,7 +84,7 @@ def postprocessing(pops):
     return d
 
 
-def main(mode, size, trnum, threads_num, les_src,les_trg):
+def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_trs):
     my_nest.ResetKernel()
 
     # Get parameters
@@ -165,6 +165,23 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     pp(stim_pars)
     pp(stim_chg_pars)
 
+    # Changing GPA to STR connection weight leading to prominent response in STR
+
+    if chg_gpastr:
+        div_var = trnum/total_num_trs
+        trnum = ((trnum-1)%total_num_trs) + 1
+
+        weight_coef_base = 0.5
+
+        # residual_temp = div_var%2
+        if (div_var%2) == 0:
+            weight_coef = weight_coef_base + weight_coef_base/(2**(div_var/2))
+        else:
+            weight_coef = weight_coef_base - weight_coef_base/(2**(div_var+1)/2)
+
+        par.set({'nest':{'GA_M1_gaba':{'weight':weight_coef}}})
+        par.set({'nest':{'GA_M2_gaba':{'weight':weight_coef*2.0}}})
+
     # stim_pars_STN = {'stim_start':4000.0,
     #                  'h_rate':200.0,
     #                  'l_rate':0.0,
@@ -183,7 +200,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
         4th number: steps of increase
     '''
 
-    dir_name = ''
+    dir_name = 'GPASTR-Wmod',str(int(weight_coef_base*10)),'-' + str(div_var) + '-'
 
     for keys in stim_pars:
         if stim_pars[keys]['do']:
@@ -236,6 +253,8 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     else:
         print 'No lesion!'
 
+
+
     # Configure simulation parameters
     par.set({
         'simu': {
@@ -264,9 +283,12 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
         #     'CS': {'rate': 250.},
         #     'ES': {'rate': 1530.}
         # },
-        'conn':{'GA_M1_gaba':{'weight':{'params':{'max':1.0,'min':0.6}}},   # Default: min = 0.02; max = 0.06
-                'GA_M2_gaba':{'weight':{'params':{'max':2.0,'min':1.2}}}}, # Default: min = 0.04; max = 0.12
+        # 'conn':{'GA_M1_gaba':{'weight':{'params':{'max':1.0,'min':0.6}}},   # Default: min = 0.02; max = 0.06
+        #         'GA_M2_gaba':{'weight':{'params':{'max':2.0,'min':1.2}}}}, # Default: min = 0.04; max = 0.12
     })
+
+    mod_GPASTR_weights = {'GA_M1':par.dic['conn']['GA_M1_gaba']['weight']['params'],
+                          'GA_M2':par.dic['conn']['GA_M2_gaba']['weight']['params']}
 
     par.nest_set_kernel_status()
 
@@ -355,6 +377,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
         stim_spec.update({whichkey:stim_time})
 
     sio.savemat(base+'/stimspec.mat',stim_spec)
+    sio.savemat(base+'/modifiedweights.mat',mod_GPASTR_weights)
     # # STN
     # if stim_pars_STN['do']:
     #     stim_spec = {'CS':0.0}
@@ -590,11 +613,13 @@ if __name__ == '__main__':
         size = int(sys.argv[2])
         loc_num_th = int(sys.argv[3])
     else:
-        numtrs = 1
+        numtrs = 40
         size = 10000
         loc_num_th = 4
         lesion_source = []
         lesion_target = []
+        tot_num_trs = 10
+        chg_GPASTR = True
 
     if len(sys.argv) > 4:
         les_s_tmp = sys.argv[4]
@@ -604,6 +629,16 @@ if __name__ == '__main__':
     else:
         lesion_source = []
         lesion_target = []
+
+    if len(sys.argv) > 6:                       # GPA to STR connections get strengthen so that they can affect ramping
+        tot_num_trs = int(sys.argv[6])          # response in MSN D1 and D2
+        chg_GPASTR = True
+    else:
+        tot_num_trs = 0
+        chg_GPASTR = False
+
+
+
     modes = ['activation-control']
 
 #    modes = [
@@ -613,7 +648,7 @@ if __name__ == '__main__':
 #        'slow-wave-dopamine-depleted'
 #    ]
     for mode in modes:
-        main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target)
+        main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target,chg_GPASTR,tot_num_trs)
 
         plot.main(mode, size)
 
