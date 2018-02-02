@@ -116,7 +116,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                              'l_rate':0.0,
                              'duration':140.0,
                              'res':10.0,
-                             'do':True,
+                             'do':False,
                              'w-form':'ramp',
                              'stim_target':['C1','C2','CF'],
                              'target_name':'STR',
@@ -138,7 +138,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                              'l_rate':0.0,
                              'duration':40.0,
                              'res':10.0,
-                             'do':True,
+                             'do':False,
                              'w-form':'pulse',
                              'stim_target':['EA'],
                              'target_name':'GPA',
@@ -200,7 +200,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         4th number: steps of increase
     '''
 
-    dir_name = 'GPASTR-Wmod',str(int(weight_coef_base*10)),'-' + str(div_var) + '-'
+    dir_name = 'GPASTR-Wmod'+str(int(weight_coef_base*10))+'-' + str(div_var) + '-'
 
     for keys in stim_pars:
         if stim_pars[keys]['do']:
@@ -360,8 +360,9 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                                         'allpop':allpop_ids,
                                         'stim_id':stim_time[stim_type]['stim_pois_id']}
         stim_spec.update(stim_time)
+        sio.savemat(base+'/stimspec.mat',stim_spec)
 
-    else:
+    elif sum(stim_combine) > 0:
         dic_keys = numpy.array(stim_pars.keys())
         whichkey = dic_keys[numpy.array(stim_combine)][0]
 
@@ -376,7 +377,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                                     'stim_id':stimmod_id}
         stim_spec.update({whichkey:stim_time})
 
-    sio.savemat(base+'/stimspec.mat',stim_spec)
+        sio.savemat(base+'/stimspec.mat',stim_spec)
     sio.savemat(base+'/modifiedweights.mat',mod_GPASTR_weights)
     # # STN
     # if stim_pars_STN['do']:
@@ -634,8 +635,8 @@ if __name__ == '__main__':
         tot_num_trs = int(sys.argv[6])          # response in MSN D1 and D2
         chg_GPASTR = True
     else:
-        tot_num_trs = 0
-        chg_GPASTR = False
+        tot_num_trs = 10
+        chg_GPASTR = True
 
 
 
