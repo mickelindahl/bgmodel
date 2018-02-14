@@ -167,17 +167,24 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
     # Changing GPA to STR connection weight leading to prominent response in STR
 
+    binalg = False
+
     if chg_gpastr:
         div_var = trnum/total_num_trs
         trnum = ((trnum-1)%total_num_trs) + 1
+        if binalg:
+            weight_coef_base = 0.5
 
-        weight_coef_base = 0.5
-
-        # residual_temp = div_var%2
-        if (div_var%2) == 0:
-            weight_coef = weight_coef_base + weight_coef_base/(2**(div_var/2))
+            # residual_temp = div_var%2
+            if (div_var%2) == 0:
+                weight_coef = weight_coef_base + weight_coef_base/(2**(div_var/2))
+            else:
+                weight_coef = weight_coef_base - weight_coef_base/(2**(div_var+1)/2)
         else:
-            weight_coef = weight_coef_base - weight_coef_base/(2**(div_var+1)/2)
+            weight_coef_base = 0.2
+            weight_coef_inc_rate = 0.05
+
+            weight_coef = weight_coef_base + weight_coef_inc_rate * div_var
 
         par.set({'nest':{'GA_M1_gaba':{'weight':weight_coef}}})
         par.set({'nest':{'GA_M2_gaba':{'weight':weight_coef*2.0}}})
