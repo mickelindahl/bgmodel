@@ -167,20 +167,30 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
     # Changing GPA to STR connection weight leading to prominent response in STR
 
+    binalg = False
+
     if chg_gpastr:
         div_var = trnum/total_num_trs
         trnum = ((trnum-1)%total_num_trs) + 1
+        if binalg:
+            weight_coef_base = 0.5
 
-        weight_coef_base = 0.5
-
-        # residual_temp = div_var%2
-        if (div_var%2) == 0:
-            weight_coef = weight_coef_base + weight_coef_base/(2**(div_var/2))
+            # residual_temp = div_var%2
+            if (div_var%2) == 0:
+                weight_coef = weight_coef_base + weight_coef_base/(2**(div_var/2))
+            else:
+                weight_coef = weight_coef_base - weight_coef_base/(2**(div_var+1)/2)
         else:
-            weight_coef = weight_coef_base - weight_coef_base/(2**(div_var+1)/2)
+            weight_coef_base = 0.2
+            weight_coef_inc_rate = 0.05
+
+            weight_coef = weight_coef_base + weight_coef_inc_rate * div_var
 
         par.set({'nest':{'GA_M1_gaba':{'weight':weight_coef}}})
         par.set({'nest':{'GA_M2_gaba':{'weight':weight_coef*2.0}}})
+    else:
+        weight_coef = par.dic['nest']['GA_M1_gaba']['weight']
+        div_var = 0
 
     # stim_pars_STN = {'stim_start':4000.0,
     #                  'h_rate':200.0,
@@ -200,7 +210,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         4th number: steps of increase
     '''
 
-    dir_name = 'GPASTR-Wmod'+str(int(weight_coef_base*10))+'-' + str(div_var) + '-'
+    dir_name = 'GPASTR-Wmod'+str(int(weight_coef*100))+'-' + str(div_var) + '-'
 
     for keys in stim_pars:
         if stim_pars[keys]['do']:
@@ -620,7 +630,7 @@ if __name__ == '__main__':
         lesion_source = []
         lesion_target = []
         tot_num_trs = 10
-        chg_GPASTR = True
+        chg_GPASTR = False
 
     if len(sys.argv) > 4:
         les_s_tmp = sys.argv[4]
@@ -636,7 +646,7 @@ if __name__ == '__main__':
         chg_GPASTR = True
     else:
         tot_num_trs = 10
-        chg_GPASTR = True
+        chg_GPASTR = False
 
 
 
