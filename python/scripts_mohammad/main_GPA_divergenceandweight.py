@@ -188,6 +188,9 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
         par.set({'nest':{'GA_M1_gaba':{'weight':weight_coef}}})
         par.set({'nest':{'GA_M2_gaba':{'weight':weight_coef*2.0}}})
+    else:
+        weight_coef = par.dic['nest']['GA_M1_gaba']['weight']
+        div_var = 0
 
     # stim_pars_STN = {'stim_start':4000.0,
     #                  'h_rate':200.0,
@@ -207,7 +210,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         4th number: steps of increase
     '''
 
-    dir_name = 'GPASTR-Wmod'+str(int(weight_coef_base*10))+'-' + str(div_var) + '-'
+    dir_name = 'GPASTR-Wmod'+str(int(weight_coef*100))+'-' + str(div_var) + '-'
 
     for keys in stim_pars:
         if stim_pars[keys]['do']:
@@ -627,7 +630,7 @@ if __name__ == '__main__':
         lesion_source = []
         lesion_target = []
         tot_num_trs = 10
-        chg_GPASTR = True
+        chg_GPASTR = False
 
     if len(sys.argv) > 4:
         les_s_tmp = sys.argv[4]
@@ -643,7 +646,7 @@ if __name__ == '__main__':
         chg_GPASTR = True
     else:
         tot_num_trs = 10
-        chg_GPASTR = True
+        chg_GPASTR = False
 
 
 
