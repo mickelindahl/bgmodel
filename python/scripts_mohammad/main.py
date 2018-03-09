@@ -302,6 +302,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     comb_dic = {}
 
     if sum(stim_combine) == len(stim_combine):
+    # if sum(stim_combine) > 1:
         ratescomb = []
         for stim_type in stim_pars.keys():
             ind_comb = ind_comb + 1
@@ -327,6 +328,48 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
         comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
         stim_time = modulatory_multiplestim(comb_resh,stim_pars,stim_chg_pars,comb_dic)
         stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0,'CS':0.0,'EA':0.0}
+        for stim_type in stim_time.keys():
+            for node_name in stim_pars[stim_type]['stim_target']:
+                [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[stim_type]['stim_ratio'][node_name], node_name)
+                nest.Connect(stim_time[stim_type]['stim_pois_id'], modpop_ids)
+                # stim_spec[node_name] = stim_time
+                stim_spec[node_name] = {'stim_subpop':modpop_ids,
+                                        'allpop':allpop_ids,
+                                        'stim_id':stim_time[stim_type]['stim_pois_id']}
+        stim_spec.update(stim_time)
+
+    elif sum(stim_combine) > 1 and sum(stim_combine) != len(stim_combine):
+        ratescomb = []
+        for stim_type in stim_pars.keys():
+            if stim_pars[stim_type]['do']:
+                ind_comb = ind_comb + 1
+                # l_rate = stim_pars[stim_type]['l_rate']
+                h_rate = stim_pars[stim_type]['h_rate']
+                res = stim_chg_pars[stim_type]['res']
+                max_h_rate = stim_chg_pars[stim_type]['value']
+                ratescomb.append(numpy.arange(h_rate,max_h_rate+res,res))
+                comb_dic.update({stim_type:ind_comb})
+            else:
+                stim_pars.pop(stim_type)
+                stim_chg_pars.pop(stim_type)
+                stim_chg_pars['Reltime'].pop(stim_type)
+        reltimecomb = []
+        if stim_chg_pars.has_key('Reltime'):
+            for rel_type in stim_chg_pars['Reltime'].keys():
+                if stim_pars[rel_type]['do']:
+                    ind_comb = ind_comb + 1
+                    h_value = stim_chg_pars['Reltime'][rel_type]['h_val']
+                    l_value = stim_chg_pars['Reltime'][rel_type]['l_val']
+                    res_val = stim_chg_pars['Reltime'][rel_type]['res']
+                    reltimecomb.append(numpy.arange(l_value,h_value+res_val,res_val))
+                    if comb_dic.has_key('reltime'):
+                        comb_dic['reltime'].update({rel_type:ind_comb})
+                    else:
+                        comb_dic.update({'reltime':{rel_type:ind_comb}})
+            comb = numpy.array(numpy.meshgrid(ratescomb[0],ratescomb[1],reltimecomb[0]))
+        comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
+        stim_time = modulatory_multiplestim(comb_resh,stim_pars,stim_chg_pars,comb_dic)
+        stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0,'CS':0.0}
         for stim_type in stim_time.keys():
             for node_name in stim_pars[stim_type]['stim_target']:
                 [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[stim_type]['stim_ratio'][node_name], node_name)
@@ -367,7 +410,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     #     sio.savemat(base+'/stimspec.mat',stim_spec)
 
     save_node_random_params(pops,base+'/randomized-params.json')
-    nest.SetKernelStatus({'print_time':False})
+    nest.SetKernelStatus({'print_time':True})
 
     # print(pops)
 
@@ -589,7 +632,7 @@ if __name__ == '__main__':
         loc_num_th = int(sys.argv[3])
     else:
         numtrs = 1
-        size = 3000
+        size = 10000
         loc_num_th = 4
         lesion_source = []
         lesion_target = []
