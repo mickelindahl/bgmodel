@@ -413,6 +413,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                                         'allpop':allpop_ids,
                                         'stim_id':stim_time[stim_type]['stim_pois_id']}
         stim_spec.update(stim_time)
+        sio.savemat(base+'/stimspec.mat',stim_spec)
 
     elif sum(stim_combine) > 0:
         dic_keys = numpy.array(stim_pars.keys())
