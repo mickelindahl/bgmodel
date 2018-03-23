@@ -196,7 +196,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
             last_stimpars = keys
     dir_name = dir_name + 'tr'+ str(trnum)
 
-    baseconn = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode, dir_name)
+    base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode, dir_name)
 
     rand_conn = False
 
@@ -405,6 +405,9 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
     else:
         print 'Error! No .mat file is produced!'
 
+
+    return par.get()['simu']['path_nest']
+
     #
     # # Create spike signals
     # d = postprocessing(pops)
@@ -597,6 +600,8 @@ def find(key, dictionary):
 # main()
 if __name__ == '__main__':
 
+    dir_list = []
+
     stim_pars = {'STRramp':{'stim_start':4000.0,
                              'h_rate':400.0,
                              'l_rate':0.0,
@@ -700,7 +705,20 @@ if __name__ == '__main__':
 
     # for mode in modes:
         mode = modes[0]
-        main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target, stim_pars, stim_chg_pars)
+        nest_data_dir = main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target, stim_pars, stim_chg_pars)
+
+        print 'nest directory \"'+ nest_data_dir +'\" finished processing!'
+
+        dir_list.append(nest_data_dir)
+
+    main_dir_flname = nest_data_dir.rsplit('/',3)
+    main_dir_flname += '/dir-data'
+
+    print 'directories path are stored in: '+ main_dir_flname
+
+    sio.savemat(main_dir_flname,{'dirs':dir_list})
+
+    # sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest/ '+str(sim_res)+'; exit;\'')
 
         # plot.main(mode, size)
 
