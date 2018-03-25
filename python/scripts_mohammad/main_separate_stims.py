@@ -84,7 +84,7 @@ def postprocessing(pops):
     return d
 
 
-def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars,tmpdir=False):
+def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars, tmpdir, chg_gpastr, total_num_trs):
     my_nest.ResetKernel()
 
     # Get parameters
@@ -110,60 +110,84 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-
-    # stim_pars = {'STRramp':{'stim_start':4000.0,
-    #                          'h_rate':400.0,
-    #                          'l_rate':0.0,
-    #                          'duration':140.0,
-    #                          'res':10.0,
-    #                          'do':True,
-    #                          'w-form':'ramp',
-    #                          'stim_target':['C1','C2','CF'],
-    #                          'target_name':'STR',
-    #                          'stim_spec':{'C1':0.0,'C2':0.0,'CF':0.0},
-    #                          'stim_ratio':{'C1':0.3,'C2':0.3,'CF':0.3}},
-    #              'STNstop':{'stim_start':4000.0,
-    #                          'h_rate':1000.0,
-    #                          'l_rate':0.0,
-    #                          'duration':10.0,
-    #                          'res':10.0,
-    #                          'do':True,
-    #                          'w-form':'pulse',
-    #                          'stim_target':['CS'],
-    #                          'target_name':'STN',
-    #                          'stim_spec':{'CS':0.0},
-    #                          'stim_ratio':{'CS':1.0}},
-    #              'GPAstop':{'stim_start':4000.0,
-    #                          'h_rate':1000.0,
-    #                          'l_rate':0.0,
-    #                          'duration':40.0,
-    #                          'res':10.0,
-    #                          'do':True,
-    #                          'w-form':'pulse',
-    #                          'stim_target':['EA'],
-    #                          'target_name':'GPA',
-    #                          'stim_spec':{'EA':0.0},
-    #                          'stim_ratio':{'EA':1.0}}}
-    # stim_chg_pars = {'STRramp':{'value':500.0,
-    #                              'res':100.0,
-    #                              'waittime':2000.0},
-    #                  'STNstop':{'value':2000.0,
-    #                              'res':500.0,
-    #                              'waittime':2000.0},
-    #                  'GPAstop':{'value':2000.0,
-    #                              'res':500.0,
-    #                              'waittime':2000.0},
-    #                  'Reltime':{'STNstop':{'l_val':0.0,
-    #                                    'h_val':20.0,
-    #                                    'res':10.0,
-    #                                    'ref':'STRramp'},
-    #                             'GPAstop':{'l_val':0.0,
-    #                                    'h_val':20.0,
-    #                                    'res':10.0,
-    #                                    'ref':'STRramp'}}}
-
     pp(stim_pars)
     pp(stim_chg_pars)
+
+    # Changing GPA to STR connection weight leading to prominent response in STR
+
+    binalg = False
+
+    if chg_gpastr:
+        div_var = trnum/total_num_trs
+        trnum = ((trnum-1)%total_num_trs) + 1
+        if binalg:
+            weight_coef_base = 0.5
+
+            # residual_temp = div_var%2
+            if (div_var%2) == 0:
+                weight_coef = weight_coef_base + weight_coef_base/(2**(div_var/2))
+            else:
+                weight_coef = weight_coef_base - weight_coef_base/(2**(div_var+1)/2)
+        else:
+            weight_coef_base = 0.2
+            weight_coef_inc_rate = 0.05
+
+            weight_coef = weight_coef_base + weight_coef_inc_rate * div_var
+
+        par.set({'nest':{'GA_M1_gaba':{'weight':weight_coef}}})
+        par.set({'nest':{'GA_M2_gaba':{'weight':weight_coef*2.0}}})
+    else:
+        weight_coef = par.dic['nest']['GA_M1_gaba']['weight']
+        div_var = 0
+
+    mod_GPASTR_weights = {'GA_M1':par.dic['conn']['GA_M1_gaba']['weight']['params'],
+                          'GA_M2':par.dic['conn']['GA_M2_gaba']['weight']['params']}
+    # stim_pars_STN = {'stim_start':4000.0,
+    #                  'h_rate':200.0,
+    #                  'l_rate':0.0,
+    #                  'duration':10.0,
+    #                  'res':10.0,
+    #                  'do':True}
+    # stim_chg_pars_STN = {'value':210.0,
+    #                  'res':10.0,
+    #                  'waittime':2000.0}
+
+    '''
+        The naming of the result directory has the following order:
+        1st number: stimulation duration
+        2nd number: maximum rate increase
+        3rd number: maximum change of rate increase
+        4th number: steps of increase
+    '''
+
+    dir_name = 'GPASTR-Wmod'+str(int(weight_coef*100))+'-' + str(div_var) + '-'
+
+    # for keys in stim_pars:
+    #     if stim_pars[keys]['do']:
+    #         dir_name = dir_name + \
+    #                    stim_pars[keys]['target_name']+'-'+\
+    #                    str(stim_pars[keys]['duration'])+ '-'+\
+    #                    str(stim_pars[keys]['h_rate'])+ '-'+\
+    #                    str(stim_chg_pars[keys]['value'])+ '-'+\
+    #                    str(stim_chg_pars[keys]['res'])+ '-'
+    #         last_stimpars = keys
+    # dir_name = dir_name + 'tr'+ str(trnum)
+
+    # base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode, dir_name)
+
+
+    rand_conn = False
+
+    if rand_conn:
+        pathconn = par.get()['simu']['path_conn']+ str(trnum)+ '/'
+    else:
+        pathconn = par.get()['simu']['path_conn']
+
+    if len(les_src) > 0:
+        print 'Lesion will be applied to source(s): ',les_src,' projecting to ',les_trg
+        lesion(par,les_src,les_trg)
+    else:
+        print 'No lesion!'
 
     # stim_pars_STN = {'stim_start':4000.0,
     #                  'h_rate':200.0,
@@ -183,7 +207,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
         4th number: steps of increase
     '''
 
-    dir_name = ''
+    # dir_name = ''
 
     for keys in stim_pars:
         if stim_pars[keys]['do']:
@@ -377,6 +401,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
         stim_spec.update({whichkey:stim_time})
 
     sio.savemat(base+'/stimspec.mat',stim_spec)
+    sio.savemat(base+'/modifiedweights.mat',mod_GPASTR_weights)
 
     save_node_random_params(pops,base+'/randomized-params.json')
     nest.SetKernelStatus({'print_time':True})
@@ -395,15 +420,15 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
 
     print 'Simulation is now finished!\n'
 
-    print 'Contatenating .gdf files to a .mat file for each nucleus ...'
-
-    sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest/ '+str(sim_res)+'; exit;\'')
-    if sys_var == 0:
-        print 'gdf files are now in .mat files!'
-        os.system('mv '+base+'/nest/mat_data '+base)
-        os.system('rm -rf '+base+'/nest')
-    else:
-        print 'Error! No .mat file is produced!'
+    # print 'Contatenating .gdf files to a .mat file for each nucleus ...'
+    #
+    # sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest/ '+str(sim_res)+'; exit;\'')
+    # if sys_var == 0:
+    #     print 'gdf files are now in .mat files!'
+    #     os.system('mv '+base+'/nest/mat_data '+base)
+    #     os.system('rm -rf '+base+'/nest')
+    # else:
+    #     print 'Error! No .mat file is produced!'
 
 
     return par.get()['simu']['path_nest']
@@ -601,6 +626,7 @@ def find(key, dictionary):
 if __name__ == '__main__':
 
     dir_list = []
+    sim_res = 0.1
 
     stim_pars = {'STRramp':{'stim_start':4000.0,
                              'h_rate':400.0,
@@ -653,27 +679,27 @@ if __name__ == '__main__':
                                        'res':10.0,
                                        'ref':'STRramp'}}}
 
-    str_f = numpy.arange(600.,900.,100.)
+    str_f = numpy.arange(600.,700.,100.)
     gpa_f = numpy.arange(500.,1000.,500.)
     stn_f = numpy.arange(500.,1000.,500.)
-    relss = numpy.arange(-100.,-20.,10.)
-    relsg = numpy.arange(-100.,-20.,10.)
+    relss = numpy.arange(-100.,-80.,10.)
+    relsg = numpy.arange(-100.,-80.,10.)
 
     comb = numpy.array(numpy.meshgrid(str_f,stn_f,gpa_f,relss,relsg))
     comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
 
-
-    #size = sys.argv[1] if len(sys.argv)>1 else 3000
     if len(sys.argv) > 1:
         numtrs = int(sys.argv[1])
         size = int(sys.argv[2])
         loc_num_th = int(sys.argv[3])
     else:
-        numtrs = 1
+        numtrs = 40
         size = 3000
         loc_num_th = 4
         lesion_source = []
         lesion_target = []
+        tot_num_trs = 10
+        chg_GPASTR = False
 
     if len(sys.argv) > 4:
         les_s_tmp = sys.argv[4]
@@ -683,6 +709,34 @@ if __name__ == '__main__':
     else:
         lesion_source = []
         lesion_target = []
+
+    if len(sys.argv) > 6:                       # GPA to STR connections get strengthen so that they can affect ramping
+        tot_num_trs = int(sys.argv[6])          # response in MSN D1 and D2
+        chg_GPASTR = True
+    else:
+        tot_num_trs = 10
+        chg_GPASTR = True
+        tmpdir = False
+    #size = sys.argv[1] if len(sys.argv)>1 else 3000
+    # if len(sys.argv) > 1:
+    #     numtrs = int(sys.argv[1])
+    #     size = int(sys.argv[2])
+    #     loc_num_th = int(sys.argv[3])
+    # else:
+    #     numtrs = 1
+    #     size = 3000
+    #     loc_num_th = 4
+    #     lesion_source = []
+    #     lesion_target = []
+    #
+    # if len(sys.argv) > 4:
+    #     les_s_tmp = sys.argv[4]
+    #     lesion_source = les_s_tmp.split(',')
+    #     les_t_tmp = sys.argv[5]
+    #     lesion_target = les_t_tmp.split(',')
+    # else:
+    #     lesion_source = []
+    #     lesion_target = []
     modes = ['activation-control']
 
 #    modes = [
@@ -705,18 +759,20 @@ if __name__ == '__main__':
 
     # for mode in modes:
         mode = modes[0]
-        nest_data_dir = main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target, stim_pars, stim_chg_pars)
+        nest_data_dir = main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target, stim_pars, stim_chg_pars, tmpdir,chg_GPASTR,tot_num_trs)
 
         print 'nest directory \"'+ nest_data_dir +'\" finished processing!'
 
         dir_list.append(nest_data_dir)
 
-    main_dir_flname = nest_data_dir.rsplit('/',3)
-    main_dir_flname += '/dir-data'
+    main_dir = nest_data_dir.rsplit('/',3)[0]
+    main_dir_flname = main_dir+ '/dir-data'
 
     print 'directories path are stored in: '+ main_dir_flname
 
     sio.savemat(main_dir_flname,{'dirs':dir_list})
+
+    os.system('matlab -nodisplay -r \'data_concat_save_as_mat_sep_stim '+ nest_data_dir+ '/ '+ str(sim_res)+ '; exit;\'')
 
     # sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest/ '+str(sim_res)+'; exit;\'')
 
