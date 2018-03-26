@@ -772,7 +772,7 @@ if __name__ == '__main__':
 
     sio.savemat(main_dir_flname,{'dirs':dir_list})
 
-    os.system('matlab -nodisplay -r \'data_concat_save_as_mat_sep_stim '+ nest_data_dir+ '/ '+ str(sim_res)+ '; exit;\'')
+    os.system('matlab -nodisplay -r \'data_concat_save_as_mat_sep_stim '+ main_dir_flname+ '/ '+ str(sim_res)+ '; exit;\'')
 
     # sys_var = os.system('matlab -nodisplay -r \'data_concat_save_as_mat '+base+'/nest/ '+str(sim_res)+'; exit;\'')
 
