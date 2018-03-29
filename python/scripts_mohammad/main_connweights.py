@@ -243,6 +243,11 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     # Create news populations and connections structures
     surfs, pops = build(par)
 
+    # Connecting voltmeter to SNr population
+    voltmeter = nest.Create("voltmeter")
+    nest.SetStatus(voltmeter,{'to_file':True,'to_memory':False})
+    nest.Connect(voltmeter,pops['SN'].ids)
+
     #Example getting C1 nest ids
     # >> pops['C1'].ids
     # Extracting nodes which are going to get the modulatory input
@@ -322,7 +327,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
         sim_time = max(stim_spec['STRramp']['start_times'])+5000.0
         start_wr = 0.0
         end_wr = sim_time
-        res_wr = 50.0
+        res_wr = end_wr
         source_wr = ['ST','M1','M2','GI']
         target_wr = ['SN']
         weight_dic = {'SN':{'ST':[],
@@ -355,7 +360,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     if sys_var == 0:
         print 'gdf files are now in .mat files!'
         os.system('mv '+base+'/nest/mat_data '+base)
-        os.system('rm -rf '+base+'/nest')
+        #os.system('rm -rf '+base+'/nest')
     else:
         print 'Error! No .mat file is produced!'
 
@@ -507,7 +512,6 @@ def lesion(params,source,target):
 
 # main()
 if __name__ == '__main__':
-
     #size = sys.argv[1] if len(sys.argv)>1 else 3000
     if len(sys.argv) > 1:
         numtrs = int(sys.argv[1])
@@ -520,7 +524,7 @@ if __name__ == '__main__':
         lesion_source = []
         lesion_target = []
 
-    if len(sys.argv) >= 4:
+    if len(sys.argv) > 4:
         les_s_tmp = sys.argv[4]
         lesion_source = les_s_tmp.split(',')
         les_t_tmp = sys.argv[5]

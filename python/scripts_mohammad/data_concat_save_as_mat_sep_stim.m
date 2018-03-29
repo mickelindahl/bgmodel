@@ -114,5 +114,11 @@ end
 
 save(mat_fl_name,'data','nuclei')
 
-% exit
+if length(varargin) >= 3
+    if strcmpi(varargin{3},'tmpdir')
+        system(['cp ',mat_fl_name,' ',getenv('WORK')])
+    end
+end
+
+exit
 % pause()
