@@ -1,4 +1,4 @@
-# Create by Mikael Lindahl on 4/12/17.
+# Create by Mikael Lindahl on 4/12/17. Modified to add stimulations for sensory and movement signals by M. Mohagheghi
 
 from core.network import structure
 from core.network import engine
