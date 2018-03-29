@@ -9,6 +9,8 @@
 *.png
 *.dat
 *.gdf
+*.mat
+*.bak
 log
 .idea*
 
