@@ -5,6 +5,7 @@ from core.network import engine
 from core import my_nest, data_to_disk
 from core.network.parameters.eneuro import EneuroPar
 
+# from core.network.parameters.eneuro_activation_NoDynSyn import EneuroActivationPar
 from core.network.parameters.eneuro_activation import EneuroActivationPar
 from core.network.parameters.eneuro_activation_beta import EneuroActivationBetaPar
 from core.network.parameters.eneuro_sw import EneuroSwPar
@@ -84,7 +85,7 @@ def postprocessing(pops):
     return d
 
 
-def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_trs):
+def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_trs,stat_syn):
     my_nest.ResetKernel()
 
     # Get parameters
@@ -694,6 +695,7 @@ if __name__ == '__main__':
 
 
     modes = ['activation-control']
+    all_static_syns = True
 
 #    modes = [
 #        'activation-control',
@@ -702,7 +704,7 @@ if __name__ == '__main__':
 #        'slow-wave-dopamine-depleted'
 #    ]
     for mode in modes:
-        main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target,chg_GPASTR,tot_num_trs)
+        main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target,chg_GPASTR,tot_num_trs,all_static_syns)
 
         plot.main(mode, size)
 

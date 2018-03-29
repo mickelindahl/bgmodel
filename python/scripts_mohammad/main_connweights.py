@@ -532,7 +532,8 @@ if __name__ == '__main__':
     else:
         lesion_source = []
         lesion_target = []
-    modes = ['activation-control']
+#    modes = ['activation-control']
+    modes = ['activation-dopamine-depleted']
 
 #    modes = [
 #        'activation-control',
