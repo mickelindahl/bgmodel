@@ -68,7 +68,7 @@ function [stim_pars,nc_trs,avg_frs,...
             
             data = data.data;
             
-            for nc_ind = 1:length(nuclei)
+            parfor nc_ind = 1:length(nuclei)
                 
                 for st_ind = 1:size(data,2)
                     
