@@ -36,8 +36,8 @@ mat_datadir = data_dir;
 % 
 % ref_time = stimdata.STRramp.stop_times;
 % 
-all_dirs_data = load([data_dir,'dir-data.mat']);
-all_dirs = all_dirs_data.dirs;
+% all_dirs_data = load([data_dir,'dir-data.mat']);
+% all_dirs = all_dirs_data.dirs;
 Gs = [];
 
 for nc_ind = 1:length(nuclei)

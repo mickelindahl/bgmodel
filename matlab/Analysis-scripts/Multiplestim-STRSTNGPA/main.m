@@ -20,11 +20,11 @@ function [] = main(data_path,data_dir,weights,numtrs)
                                    'offtime',offt,...
                                    'stim_param_ISI',stimISI,...
                                    'nuclei_trials_ISI',nctrISI,...
-                                   'nuclei',nc,...
+                                   'nuclei',struct('nc_names',nc),...
                                    'data_dir',[data_path,'/',data_dir{dir_ind}]);
     
     end
-
+    save([data_path,'/all_proc_data'],'procdata')
 end
 
 function [stim_pars,nc_trs,avg_frs,...
@@ -40,9 +40,25 @@ function [stim_pars,nc_trs,avg_frs,...
     stim_pars_ISI = [];
     nc_trs_ISI = [];
     
+    % Averaging window 
+
+    win_width = 10; %ms
+    overlap = 1;    %ms
+
+    win_width_no_ov = 1;    %ms
+
+    % Averaging start and end times
+
+    avg_st = -500;
+    avg_end = 500;
+    
+    t_samples = (avg_st + win_width/2):overlap:(avg_end - win_width/2);
+    t_samples_no_ov = (avg_st + win_width_no_ov/2):(avg_end - win_width_no_ov/2);
+    
 
     for w_ind = 1:length(weights)
-        
+        disp(['W = ',num2str(weights(w_ind))])
+        tic
         for tr_ind = 1:numtrs
             
             data = load([data_dir,'W',num2str(weights(w_ind)*100,2),...
@@ -56,7 +72,7 @@ function [stim_pars,nc_trs,avg_frs,...
                 
                 for st_ind = 1:size(data,2)
                     
-                    disp(['w',num2str(w_ind),'-st',num2str(st_ind),'-nc',num2str(nc_ind),'-tr',num2str(tr_ind)])
+                    %disp(['w',num2str(w_ind),'-st',num2str(st_ind),'-nc',num2str(nc_ind),'-tr',num2str(tr_ind)])
                     
                     spk_data = getfield(data{nc_ind,st_ind},nuclei{nc_ind});
                     spktimes = double(spk_data.spktimes)/10;
@@ -69,26 +85,14 @@ function [stim_pars,nc_trs,avg_frs,...
 
                         reftime = data{nc_ind,st_ind}.timerefs.STRstim;
 
-                        % Averaging window 
-
-                        win_width = 10; %ms
-                        overlap = 1;    %ms
-
-                        win_width_no_ov = 1;    %ms
-
-                        % Averaging start and end times
-
-                        avg_st = -500;
-                        avg_end = 500;
-
                         % Average firing rate of single trials
 
-                        t_samples = (avg_st + win_width/2):overlap:(avg_end - win_width/2);
+                        
                         cnttmp = average_firingrate(spktimes,reftime,N_ids,win_width,...
                                                    overlap,avg_st,avg_end);
                         avg_frs = [avg_frs;cnttmp];
 
-                        t_samples_no_ov = (avg_st + win_width_no_ov/2):(avg_end - win_width_no_ov/2);
+                        
                         cnttmp = average_firingrate_hist(spktimes,reftime,N_ids,win_width_no_ov,...
                                                          avg_st,avg_end);
 
@@ -114,8 +118,9 @@ function [stim_pars,nc_trs,avg_frs,...
 %                 data_nc = data
             end
             
+            
         end
-        
+        toc
     end
     
     disp('finished')
