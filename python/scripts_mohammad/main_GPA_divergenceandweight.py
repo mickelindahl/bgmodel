@@ -3,6 +3,8 @@
 from core.network import structure
 from core.network import engine
 from core import my_nest, data_to_disk
+# from core.network.parameters.eneuro import EneuroPar
+from core.network.parameters.eneuro_NoDynSyn import EneuroPar as Eneuropar_NDS
 from core.network.parameters.eneuro import EneuroPar
 
 # from core.network.parameters.eneuro_activation_NoDynSyn import EneuroActivationPar
@@ -94,8 +96,10 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
     if mode in ['activation-control',  'activation-dopamine-depleted']:
 
         if mode == 'activation-control':
-
-            par = EneuroActivationPar(other=EneuroPar())
+            if stat_syn:
+                par = EneuroActivationPar(other=Eneuropar_NDS())
+            else:
+                par = EneuroActivationPar(other=EneuroPar())
             dop = 0.8
 
         elif mode == 'activation-dopamine-depleted':
@@ -117,7 +121,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                              'l_rate':0.0,
                              'duration':140.0,
                              'res':10.0,
-                             'do':True,
+                             'do':False,
                              'w-form':'ramp',
                              'stim_target':['C1','C2','CF'],
                              'target_name':'STR',
@@ -128,7 +132,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                              'l_rate':0.0,
                              'duration':10.0,
                              'res':10.0,
-                             'do':True,
+                             'do':False,
                              'w-form':'pulse',
                              'stim_target':['CS'],
                              'target_name':'STN',
