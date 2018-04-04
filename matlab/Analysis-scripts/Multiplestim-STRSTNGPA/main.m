@@ -24,7 +24,7 @@ function [] = main(data_path,data_dir,weights,numtrs)
                                    'data_dir',[data_path,'/',data_dir{dir_ind}]);
     
     end
-    save([data_path,'/all_proc_data'],'procdata')
+    save([data_path,'/all_proc_data'],'procdata','-v7.3')
 end
 
 function [stim_pars,nc_trs,avg_frs,...
@@ -127,7 +127,7 @@ function [stim_pars,nc_trs,avg_frs,...
     save([data_dir,'procdata_avg_ISI'],'off_time','stim_pars_ISI','nc_trs_ISI',...
                                        'avg_frs','stim_pars','nc_trs','t_samples',...
                                        'avg_frs_no_ov','t_samples_no_ov',...
-                                       'nuclei')
+                                       'nuclei','-v7.3')
 
 end
 
