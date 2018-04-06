@@ -116,7 +116,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                              'l_rate':0.0,
                              'duration':140.0,
                              'res':10.0,
-                             'do':True,
+                             'do':False,
                              'stim_target':['C1','C2','CF'],
                              'stim_spec':{'C1':0.0,'C2':0.0,'CF':0.0},
                              'stim_ratio':{'C1':0.3,'C2':0.3,'CF':0.3}},
@@ -174,7 +174,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
                             str(stim_pars['STRramp']['h_rate'])+ '-'+
                             str(stim_chg_pars['STRramp']['value'])+ '-'+
                             str(stim_chg_pars['STRramp']['res'])+ '-'+
-                            'tr'+ str(trnum))
+                            'tr2'+ str(trnum))
 
     rand_conn = False
 
@@ -201,8 +201,8 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
             'sim_stop': 10000000.,
             'print_time': True,
             'sd_params': {
-                'to_file': True,
-                'to_memory': False
+                'to_file': False,
+                'to_memory': True
             },
 
         },
@@ -244,9 +244,9 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     surfs, pops = build(par)
 
     # Connecting voltmeter to SNr population
-    voltmeter = nest.Create("voltmeter")
-    nest.SetStatus(voltmeter,{'to_file':True,'to_memory':False})
-    nest.Connect(voltmeter,pops['SN'].ids)
+    # voltmeter = nest.Create("voltmeter")
+    # nest.SetStatus(voltmeter,{'to_file':True,'to_memory':False})
+    # nest.Connect(voltmeter,pops['SN'].ids)
 
     #Example getting C1 nest ids
     # >> pops['C1'].ids
@@ -323,11 +323,12 @@ def main(mode, size, trnum, threads_num, les_src,les_trg):
     #
     # # Simulate
     print 'Simulation\'s just started ...'
-    if sum(stim_combine) > 0:
-        sim_time = max(stim_spec['STRramp']['start_times'])+5000.0
+    if sum(stim_combine) == 0:
+        # sim_time = max(stim_spec['STRramp']['start_times'])+5000.0
+        sim_time = 10000.0
         start_wr = 0.0
         end_wr = sim_time
-        res_wr = end_wr
+        res_wr = 10.0
         source_wr = ['ST','M1','M2','GI']
         target_wr = ['SN']
         weight_dic = {'SN':{'ST':[],
@@ -532,8 +533,8 @@ if __name__ == '__main__':
     else:
         lesion_source = []
         lesion_target = []
-#    modes = ['activation-control']
-    modes = ['activation-dopamine-depleted']
+    modes = ['activation-control']
+#     modes = ['activation-dopamine-depleted']
 
 #    modes = [
 #        'activation-control',

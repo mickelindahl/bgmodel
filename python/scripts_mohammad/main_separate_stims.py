@@ -350,9 +350,9 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
                 ind_comb = ind_comb + 1
                 # l_rate = stim_pars[stim_type]['l_rate']
                 h_rate = stim_pars[stim_type]['h_rate']
-                res = stim_chg_pars[stim_type]['res']
-                max_h_rate = stim_chg_pars[stim_type]['value']
-                ratescomb.append(numpy.arange(h_rate,max_h_rate+res,res))
+                # res = stim_chg_pars[stim_type]['res']
+                # max_h_rate = stim_chg_pars[stim_type]['value']
+                ratescomb.append(numpy.array(h_rate))
                 comb_dic.update({stim_type:ind_comb})
             else:
                 stim_pars.pop(stim_type)
@@ -363,17 +363,18 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
             for rel_type in stim_chg_pars['Reltime'].keys():
                 if stim_pars[rel_type]['do']:
                     ind_comb = ind_comb + 1
-                    h_value = stim_chg_pars['Reltime'][rel_type]['h_val']
-                    l_value = stim_chg_pars['Reltime'][rel_type]['l_val']
-                    res_val = stim_chg_pars['Reltime'][rel_type]['res']
-                    reltimecomb.append(numpy.arange(l_value,h_value+res_val,res_val))
+                    # h_value = stim_chg_pars['Reltime'][rel_type]['h_val']
+                    l_value = stim_chg_pars['Reltime'][rel_type]['h_val']
+                    # res_val = stim_chg_pars['Reltime'][rel_type]['res']
+                    reltimecomb.append(numpy.array(l_value))
                     if comb_dic.has_key('reltime'):
                         comb_dic['reltime'].update({rel_type:ind_comb})
                     else:
                         comb_dic.update({'reltime':{rel_type:ind_comb}})
             # comb = numpy.array(numpy.meshgrid(ratescomb[0],ratescomb[1],reltimecomb[0]))
         # comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
-        # comb_resh =
+        comb = numpy.append(ratescomb, reltimecomb)
+        comb_resh = comb
         stim_time = modulatory_multiplestim(comb_resh,stim_pars,stim_chg_pars,comb_dic)
         stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0,'CS':0.0}
         for stim_type in stim_time.keys():
@@ -456,6 +457,7 @@ def modulatory_stim(stim_params,chg_stim_param):
     mod_inp = nest.Create('poisson_generator_dynamic',1)
     all_rates = []
     all_start_times = []
+    all_stop_times = []
     #h_rate = 200.0
     #l_rate = 0.0
     #slope = 2.       # Hz/ms
@@ -477,6 +479,7 @@ def modulatory_stim(stim_params,chg_stim_param):
     chg_stim_res = chg_stim_param['res']
     waittime = chg_stim_param['waittime']
     all_start_times.append(stim_start)
+    all_stop_times.append(stim_stop)
     all_rates.append(h_rate)
     h_rate = h_rate + chg_stim_res
 
@@ -498,11 +501,13 @@ def modulatory_stim(stim_params,chg_stim_param):
         timevec = numpy.append(timevec,numpy.arange(stim_start,stim_stop,res))
         h_rate = h_rate + chg_stim_res
         all_start_times.append(stim_start)
+        all_stop_times.append(stim_stop)
 
     nest.SetStatus(mod_inp,{'rates': ratevec.round(0),'timings': timevec,
                             'start': timevec[0], 'stop': stim_stop})
     stim_vecs = {'rates':all_rates,
-                 'start_times':all_start_times}
+                 'start_times':all_start_times,
+                 'stop_times':all_stop_times}
     return mod_inp,stim_vecs
 
 
@@ -655,7 +660,7 @@ if __name__ == '__main__':
                              'l_rate':0.0,
                              'duration':40.0,
                              'res':10.0,
-                             'do':True,
+                             'do':False,
                              'w-form':'pulse',
                              'stim_target':['EA'],
                              'target_name':'GPA',
@@ -679,11 +684,15 @@ if __name__ == '__main__':
                                        'res':10.0,
                                        'ref':'STRramp'}}}
 
-    str_f = numpy.arange(600.,700.,100.)
-    gpa_f = numpy.arange(500.,1000.,500.)
+    str_f = numpy.arange(600.,800.,100.)
+    # gpa_f = numpy.arange(500.,1000.,500.)
+    gpa_f = numpy.array([0.0])
     stn_f = numpy.arange(500.,1000.,500.)
+    # stn_f = numpy.array([0.0])
     relss = numpy.arange(-100.,-80.,10.)
-    relsg = numpy.arange(-100.,-80.,10.)
+    # relss = numpy.array([0.0])
+    # relsg = numpy.arange(-100.,-80.,10.)
+    relsg = numpy.array([0.0])
 
     comb = numpy.array(numpy.meshgrid(str_f,stn_f,gpa_f,relss,relsg))
     comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
@@ -695,7 +704,7 @@ if __name__ == '__main__':
     else:
         numtrs = 40
         size = 3000
-        loc_num_th = 4
+        loc_num_th = 1
         lesion_source = []
         lesion_target = []
         tot_num_trs = 10

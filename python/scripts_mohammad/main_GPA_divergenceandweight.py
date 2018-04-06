@@ -98,8 +98,10 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         if mode == 'activation-control':
             if stat_syn:
                 par = EneuroActivationPar(other=Eneuropar_NDS())
+                print 'All synapses are static!'
             else:
                 par = EneuroActivationPar(other=EneuroPar())
+                print 'Default synaptic configuration!'
             dop = 0.8
 
         elif mode == 'activation-dopamine-depleted':
