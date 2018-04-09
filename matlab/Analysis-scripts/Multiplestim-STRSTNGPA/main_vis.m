@@ -418,6 +418,14 @@ function SPDA_data = supp_prom_del_adv(STR,STN,GPA)
     suppdec_par_gpa = GPA.stim_param_ISI(tmp_ind,:);
     suppdec_tw_gpa  = GPA.nuclei_trials_ISI(tmp_ind,:);
     
+    % How many of decreases in SNr were not suppressed
+    
+    tmp_ind = ~isnan(off_str) & ~isnan(GPA.offtime);
+    dec_dec_gpa = sum(tmp_ind);
+    dec_dec_par_gpa = GPA.stim_param_ISI(tmp_ind,:);
+    dec_dec_tw_gpa  = GPA.nuclei_trials_ISI(tmp_ind,:);
+   
+    
     % Promoted suppresses GPA & STN
     
     tmp_ind = isnan(off_str) & ~isnan(GPA.offtime);
@@ -440,17 +448,28 @@ function SPDA_data = supp_prom_del_adv(STR,STN,GPA)
     promdec_par_stn = STN.stim_param_ISI(tmp_ind,:);
     promdec_tw_stn  = STN.nuclei_trials_ISI(tmp_ind,:);
     
+    % How many of decreases in SNr were not suppressed
+    
+    tmp_ind = ~isnan(off_str_stn) & ~isnan(STN.offtime);
+    dec_dec_stn = sum(tmp_ind);
+    dec_dec_par_stn = GPA.stim_param_ISI(tmp_ind,:);
+    dec_dec_tw_stn  = GPA.nuclei_trials_ISI(tmp_ind,:);
+    
     % Negative delay STN & GPA
     
     neg_ind = delay_gpastn < 0;
-    neg_del_par_gpa = GPA.stim_param_ISI(neg_ind,:);
-    neg_del_tw_gpa  = GPA.nuclei_trials_ISI(neg_ind,:);
+    neg_del_par_gpa     = GPA.stim_param_ISI(neg_ind,:);
+    neg_del_tw_gpa      = GPA.nuclei_trials_ISI(neg_ind,:);
+%     rat_neg_del_gpa     = sum(neg_ind)/sum(~isnan(delay_gpastn));
+%     rat_neg_del_gpa_atr = sum(neg_ind)/numel(delay_gpastn);
     
     % Positive delay STN & GPA
     
     pos_ind = delay_gpastn >= 0;
-    pos_del_par_gpa = GPA.stim_param_ISI(pos_ind,:);
-    pos_del_tw_gpa = GPA.nuclei_trials_ISI(pos_ind,:);
+    pos_del_par_gpa     = GPA.stim_param_ISI(pos_ind,:);
+    pos_del_tw_gpa      = GPA.nuclei_trials_ISI(pos_ind,:);
+%     rat_pos_del_gpa     = sum(pos_ind)/sum(~isnan(delay_gpastn));
+%     rat_pos_del_gpa_atr = sum(neg_ind)/numel(delay_gpastn);
     
     % Negative delay STN
     
@@ -464,12 +483,19 @@ function SPDA_data = supp_prom_del_adv(STR,STN,GPA)
     pos_del_par_stn = STN.stim_param_ISI(pos_ind,:);
     pos_del_tw_stn  = STN.nuclei_trials_ISI(pos_ind,:);
     
+    
     SPDA_data = struct('no_decrease',struct('count',no_nodec_str,...
                                             'stim_par',nodec_par,...
                                             'del_w',nodec_tw),...
                        'suppressed_gp',struct('count',no_supp_dec_gpa,...
                                               'stim_par',suppdec_par_gpa,...
                                               'del_w',suppdec_tw_gpa),...
+                       'nosupp_noprom_gp',struct('count',dec_dec_gpa,...
+                                              'stim_par',dec_dec_par_gpa,...
+                                              'del_w',dec_dec_tw_gpa),...
+                       'nosupp_noprom_st',struct('count',dec_dec_stn,...
+                                              'stim_par',dec_dec_par_stn,...
+                                              'del_w',dec_dec_tw_stn),...
                        'suppressed_st',struct('count',no_supp_dec_stn,...
                                               'stim_par',suppdec_par_stn,...
                                               'del_w',suppdec_tw_stn),...
