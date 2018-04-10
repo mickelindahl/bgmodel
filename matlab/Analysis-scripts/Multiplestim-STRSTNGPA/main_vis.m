@@ -58,7 +58,7 @@ function [] = main_vis()
  
     % Counting number of suppressed, delayed, advanced decrease
     disp('Processing delays, suppresses and ...')
-    spda_data = supp_prom_del_adv(str,strstn,strstngpa);
+    [spda_data,delays] = supp_prom_del_adv(str,strstn,strstngpa);
     
     % Decrease Failed Bar plot
     disp('Visualizing no suppression data ...')
@@ -73,6 +73,8 @@ function [] = main_vis()
         delayvis(spda_data.neg_delay_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'NegativeDelay-GPASTN')
         delayvis(spda_data.suppressed_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'Supp-GPASTN')
         delayvis(spda_data.promoted_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'Prom-GPASTN')
+        delayvis(spda_data.pos_delay_gp,spda_data.nosupp_noprom_gp,Figdir,str_f(str_ind),'PositiveDelay-GPASTN-correcttr')
+        delayvis_avgval(delays,Figdir,str_f(str_ind),'AverageDelay-GPASTN')
     end
     
     disp('Positive delays for STN ...')
@@ -83,19 +85,12 @@ function [] = main_vis()
         delayvis_stn(spda_data.neg_delay_st,numtrs,Figdir,str_f(str_ind),'NegativeDelay-STN')
         delayvis_stn(spda_data.suppressed_st,numtrs,Figdir,str_f(str_ind),'Supp-STN')
         delayvis_stn(spda_data.promoted_st,numtrs,Figdir,str_f(str_ind),'Prom-STN')
+        delayvis_stn(spda_data.promoted_st,spda_data.nosupp_noprom_st,Figdir,str_f(str_ind),'PositiveDelay-STN-correcttr')
+        delayvis_avgval(delays,Figdir,str_f(str_ind),'AverageDelay-STN')
     end
     % Distribution of off times in SNr for each individual rate
     
     dist_offtime_each_w(str,strstn,strstngpa,Figdir)
-    
-%     figure;
-%     edges = -100:10;
-%     histogram(str.offtime,edges,'Normalization','probability')
-%     hold on
-%     histogram(strstn.offtime,edges,'Normalization','probability')
-%     histogram(strstngpa.offtime,edges,'Normalization','probability')
-    
-    
     
 end
 
@@ -147,21 +142,21 @@ function [gpa_str_delay,stn_str_delay,gpa_stn_delay] = delay_measure_average(STR
                       STN.stim_param_ISI(:,2) == all_stim_params(2,asp_ind) & ...
                       STN.stim_param_ISI(:,3) == all_stim_params(5,asp_ind) & ...
                       STN.nuclei_trials_ISI(:,3) == Ws(w_ind);
-            sel_str = STR.stim_param_ISI      == all_stim_params(2,asp_ind) & ...
+            sel_str = STR.stim_param_ISI      == all_stim_params(1,asp_ind) & ...
                       STR.nuclei_trials_ISI(:,3) == Ws(w_ind);
                   
             tmp_offgpa = GPA.offtime(sel_gpa);
             tmp_offstn = GPA.offtime(sel_stn);
             tmp_offstr = GPA.offtime(sel_str);
             
-            gpa_str_delay = mean(tmp_offgpa(~isnan(tmp_offgpa))) - ...
-                            mean(tmp_offstr(~isnan(tmp_offstr)));
+            gpa_str_delay(w_ind,asp_ind) = mean(tmp_offgpa(~isnan(tmp_offgpa))) - ...
+                                           mean(tmp_offstr(~isnan(tmp_offstr)));
                         
-            stn_str_delay = mean(tmp_offstn(~isnan(tmp_offstn))) - ...
-                            mean(tmp_offstn(~isnan(tmp_offstn)));
+            stn_str_delay(w_ind,asp_ind) = mean(tmp_offstn(~isnan(tmp_offstn))) - ...
+                                           mean(tmp_offstr(~isnan(tmp_offstr)));
                         
-            gpa_stn_delay = mean(tmp_offgpa(~isnan(tmp_offgpa))) - ...
-                            mean(tmp_offstn(~isnan(tmp_offstn)));
+            gpa_stn_delay(w_ind,asp_ind) = mean(tmp_offgpa(~isnan(tmp_offgpa))) - ...
+                                           mean(tmp_offstn(~isnan(tmp_offstn)));
         end
     end
 end
@@ -243,7 +238,8 @@ function [] = nodecinSN(data_in,numtr,data_path)
     GCA.TickDir = 'out';
     GCA.XTick = Ws;
     GCA.YTick = stim;
-    ylabel('W_{GP_{Arky}\rightarrow STR}')
+%     ylabel('W_{GP_{Arky}\rightarrow STR}')
+    ylabel('W')
     xlabel('STR stim')
     fig_print(gcf,fullfile(fig_dir,'DecRatio-heatmap'))
     close(gcf)
@@ -252,7 +248,14 @@ function [] = nodecinSN(data_in,numtr,data_path)
 end
 
 function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
-    fig_dir = fullfile(data_path,'Delay');
+    
+    num_flag = isnumeric(numtr);
+    
+    if num_flag
+        fig_dir = fullfile(data_path,'Delay');
+    else
+        fig_dir = fullfile(data_path,'Delay-CorrectTr');
+    end
     
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
@@ -269,7 +272,13 @@ function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
             for s_ind = 1:size(stim,1)
                 sel = data_in.del_w(:,3) == Ws(w_ind) & data_in.stim_par(:,1) == stim(s_ind,1) & ...
                       data_in.stim_par(:,2) == strf & data_in.stim_par(:,4) == rel(r_ind);
-                pos_delay_ratio(w_ind,s_ind) = sum(sel)/numtr;
+                if num_flag  
+                    pos_delay_ratio(w_ind,s_ind) = sum(sel)/numtr;
+                else
+                    sel_tr = numtr.del_w(:,3) == Ws(w_ind) & numtr.stim_par(:,1) == stim(s_ind,1) & ...
+                             numtr.stim_par(:,2) == strf & numtr.stim_par(:,4) == rel(r_ind);
+                    pos_delay_ratio(w_ind,s_ind) = sum(sel)/sum(sel_tr);
+                end
             end
         end
         
@@ -302,7 +311,8 @@ function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
         GCA.FontSize = 14;
         box off
         GCA.TickDir = 'out';
-        ylabel('W_{GP_{Arky}\rightarrow STR}')
+%         ylabel('W_{GP_{Arky}\rightarrow STR}')
+        ylabel('W')
         xlabel('GPA Stim')
         title(['REL=',num2str(rel(r_ind))])
 %         xlim([min(Ws)-0.1,max(Ws)+0.1])
@@ -311,13 +321,18 @@ function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
         
     end
 %     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
-    fig_print(f2,fullfile(fig_dir,[num2str(strf),flname_str,'-heatmap']))
+    fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf),'-heatmap']))
     close(gcf)
 end
 
 function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
-    fig_dir = fullfile(data_path,'Delay');
+    num_flag = isnumeric(numtr);
     
+    if num_flag
+        fig_dir = fullfile(data_path,'Delay');
+    else
+        fig_dir = fullfile(data_path,'Delay-CorrectTr');
+    end
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
@@ -333,27 +348,16 @@ function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
             for s_ind = 1:size(stim,1)
                 sel = data_in.del_w(:,3) == Ws(w_ind) & data_in.stim_par(:,2) == stim(s_ind) & ...
                       data_in.stim_par(:,1) == strf & data_in.stim_par(:,3) == rel(r_ind);
-                pos_delay_ratio(w_ind,s_ind) = sum(sel)/numtr;
+                  
+                if num_flag
+                    pos_delay_ratio(w_ind,s_ind) = sum(sel)/numtr;
+                else
+                    sel_tr = numtr.del_w(:,3) == Ws(w_ind) & numtr.stim_par(:,2) == stim(s_ind) & ...
+                             numtr.stim_par(:,1) == strf & numtr.stim_par(:,3) == rel(r_ind);
+                    pos_delay_ratio(w_ind,s_ind) = sum(sel)/sum(sel_tr);
+                end
             end
         end
-        
-%         % Barplot
-%         figure(f1);
-%         subplot(2,ceil(length(rel)/2),r_ind)
-%         h = bar(Ws,pos_delay_ratio);
-%         if r_ind == 1
-%             legend(h,num2str(stim),'Location','northeast')
-%         end
-%         GCA = gca;
-%         GCA.FontSize = 14;
-%         box off
-%         GCA.TickDir = 'out';
-%         xlabel('W_{GP_{Arky}\rightarrow STR}')
-%         ylabel('Ratio')
-%         title(['REL=',num2str(rel(r_ind))])
-%         xlim([min(Ws)-0.1,max(Ws)+0.1])
-%         ylim([0,1])
-%         GCA.XTick = Ws;
         
         % Heatmap
         
@@ -365,7 +369,8 @@ function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
         GCA.FontSize = 14;
         box off
         GCA.TickDir = 'out';
-        ylabel('W_{GP_{Arky}\rightarrow STR}')
+%         ylabel('W_{GP_{Arky}\rightarrow STR}')
+        ylabel('W')
         xlabel('STN Stim')
         title(['REL=',num2str(rel(r_ind))])
 %         xlim([min(Ws)-0.1,max(Ws)+0.1])
@@ -374,7 +379,103 @@ function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
         
     end
 %     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
-    fig_print(f2,fullfile(fig_dir,[num2str(strf),flname_str,'-heatmap']))
+    fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf),'-heatmap']))
+    close(gcf)
+end
+
+function [] = delayvis_avgval(data_in,data_path,strf,flname_str)
+    
+    
+    fig_dir = fullfile(data_path,'Delay-val');
+    
+    if exist(fig_dir,'dir') ~= 7
+        mkdir(fig_dir)
+    end
+    
+    Ws = unique(data_in.GPASTN.del_w(:,3));
+    stim = unique(data_in.GPASTN.stim_par(:,1));
+    rel = unique(data_in.GPASTN.stim_par(:,4));
+    del_val = zeros(length(Ws),length(stim));
+%     f1 = figure;
+    f2 = figure;
+    for r_ind = 1:length(rel)
+        for w_ind = 1:length(Ws)
+            for s_ind = 1:size(stim,1)
+                sel = data_in.GPASTN.del_w(:,3) == Ws(w_ind) & data_in.GPASTN.stim_par(:,1) == stim(s_ind,1) & ...
+                      data_in.GPASTN.stim_par(:,2) == strf & data_in.GPASTN.stim_par(:,4) == rel(r_ind);
+                tmp_val = data_in.GPASTN.delay(sel);
+                del_val(w_ind,s_ind) = mean(tmp_val(~isnan(tmp_val)));
+            end
+        end
+        % Heatmap
+        
+        figure(f2);
+        subplot(2,ceil(length(rel)/2),r_ind)
+        imagesc(stim,Ws,del_val)
+        colorbar()
+        GCA = gca;
+        GCA.FontSize = 14;
+        box off
+        GCA.TickDir = 'out';
+%         ylabel('W_{GP_{Arky}\rightarrow STR}')
+        ylabel('W')
+        xlabel('GPA Stim')
+        title(['REL=',num2str(rel(r_ind))])
+%         xlim([min(Ws)-0.1,max(Ws)+0.1])
+%         ylim([0,1])
+%         GCA.XTick = Ws;
+        
+    end
+%     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
+    fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf),'-heatmap']))
+    close(gcf)
+end
+
+function [] = delayvis_stn_avgval(data_in,data_path,strf,flname_str)
+    
+    
+    fig_dir = fullfile(data_path,'Delay-val');
+    
+    if exist(fig_dir,'dir') ~= 7
+        mkdir(fig_dir)
+    end
+    
+    Ws = unique(data_in.STN.del_w(:,3));
+    stim = unique(data_in.STN.stim_par(:,2));
+    rel = unique(data_in.STN.stim_par(:,3));
+    del_val = zeros(length(Ws),length(stim));
+%     f1 = figure;
+    f2 = figure;
+    for r_ind = 1:length(rel)
+        for w_ind = 1:length(Ws)
+            for s_ind = 1:size(stim,1)
+                sel = data_in.STN.del_w(:,3) == Ws(w_ind) & data_in.STN.stim_par(:,2) == stim(s_ind,1) & ...
+                      data_in.STN.stim_par(:,1) == strf & data_in.STN.stim_par(:,3) == rel(r_ind);
+                tmp_val = data_in.STN.delay(sel);
+                del_val(w_ind,s_ind) = mean(tmp_val(~isnan(tmp_val)));
+            end
+        end
+        % Heatmap
+        
+        figure(f2);
+        subplot(2,ceil(length(rel)/2),r_ind)
+        imagesc(stim,Ws,del_val)
+        colorbar()
+        GCA = gca;
+        GCA.FontSize = 14;
+        box off
+        GCA.TickDir = 'out';
+%         ylabel('W_{GP_{Arky}\rightarrow STR}')
+        ylabel('W')
+        xlabel('GPA Stim')
+        title(['REL=',num2str(rel(r_ind))])
+%         xlim([min(Ws)-0.1,max(Ws)+0.1])
+%         ylim([0,1])
+%         GCA.XTick = Ws;
+        
+    end
+%     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
+    fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf),'-heatmap']))
     close(gcf)
 end
 
@@ -403,7 +504,7 @@ function [] = dist_offtime_each_w(str_d,stn_d,gpa_d,dir_path)
     end
 end
 
-function SPDA_data = supp_prom_del_adv(STR,STN,GPA)
+function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA)
 
     disp('Measuring delays ...')
     [delay_gpastn,delay_stn,diffdelay_stnvsgpa,...
@@ -512,4 +613,13 @@ function SPDA_data = supp_prom_del_adv(STR,STN,GPA)
                                              'del_w',pos_del_tw_stn),...
                        'neg_delay_st',struct('stim_par',neg_del_par_stn,...
                                              'del_w',neg_del_tw_stn));
+    delay_data  = struct('GPASTN',struct('delay',delay_gpastn,...
+                                         'delay_stn',delay_stn,...
+                                         'delay_vsstn',diffdelay_stnvsgpa,...
+                                         'off_str',off_str,...
+                                         'off_stn',off_stn,...
+                                         'stim_par',GPA.stim_param_ISI,...
+                                         'del_w',GPA.nuclei_trials_ISI),...
+                         'STN',struct('delay',delay_str_stn,...
+                                      'off_str',off_str_stn));
 end
