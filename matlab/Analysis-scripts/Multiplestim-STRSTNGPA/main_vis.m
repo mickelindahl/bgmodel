@@ -6,11 +6,12 @@
 function [] = main_vis()
     
     base_ind = 2;
-    adding_ind = [3,4];
+    adding_ind = 3:4;
+    thre = 0.95;
     
     dir_name = '/home/mohaghegh-data/temp-storage/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR/';
-    Figdir   = fullfile(dir_name,'Figs2');
-    fl_name = [dir_name,'all_proc_data.mat'];
+    Figdir   = fullfile(dir_name,'Figsold');
+    fl_name = [dir_name,'all_proc_data18-03-28.mat'];
     if exist('procdata','var') ~= 1
         load(fl_name);
     end
@@ -18,7 +19,7 @@ function [] = main_vis()
     strstn = procdata{1,1};
     strstn.stim_param(:,[1,4]) = [];
     strstn.stim_param_ISI(:,[1,4]) = [];
-    str = procdata{1,5};
+    str = procdata{1,end};
     
     disp('Combining all related data in structure to one ...')
     strstngpa = struct_conc(procdata,base_ind,adding_ind);
@@ -68,30 +69,40 @@ function [] = main_vis()
     disp('Computing the average delays NOT tr-by-tr')
     Avg_dels = delay_measure_average(str,strstn,strstngpa,all_stim_par,Ws);
     
+    % Finding parameter combinations where GPA stimulation was
+    % significantly effective (> 0.95)
+    
+    disp('Finding significant paramters with respect to delay ...')
+    effective_params(spda_data.pos_delay_gpvsst,all_stim_par,Ws,numtrs,Figdir,thre,'EffcPosDelay-GPAvsSTN')
+    
+    disp('Finding significant paramters with respect to suppression ...')
+    effective_params(spda_data.suppressed_gp_vs_st,all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
+    
+    
     disp('Visualizing delays ...')
     disp('Positive delays for GPA & STN...')
     disp('Negative delays for GPA & STN...')
     
-%     for str_ind = 1:length(str_f)
-%         delayvis(spda_data.pos_delay_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'PositiveDelay-GPASTN')
-%         delayvis(spda_data.neg_delay_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'NegativeDelay-GPASTN')
-%         delayvis(spda_data.suppressed_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'Supp-GPASTN')
-%         delayvis(spda_data.promoted_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'Prom-GPASTN')
-%         delayvis(spda_data.pos_delay_gp,spda_data.nosupp_noprom_gp,Figdir,str_f(str_ind),'PositiveDelay-GPASTN-correcttr')
-%         delayvis_avgval(delays.GPASTN,Figdir,str_f(str_ind),'AverageDelay-trbytr-GPASTN')
-%         avgdelayvis(Avg_dels,Figdir,str_f(str_ind),'AverageDelay-GPA')
-%     end
+    for str_ind = 1:length(str_f)
+        delayvis(spda_data.pos_delay_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'PositiveDelay-GPASTN')
+        delayvis(spda_data.neg_delay_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'NegativeDelay-GPASTN')
+        delayvis(spda_data.suppressed_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'Supp-GPASTN')
+        delayvis(spda_data.promoted_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'Prom-GPASTN')
+        delayvis(spda_data.pos_delay_gp,spda_data.nosupp_noprom_gp,Figdir,str_f(str_ind),'PositiveDelay-GPASTN-correcttr')
+        delayvis_avgval(delays.GPASTN,Figdir,str_f(str_ind),'AverageDelay-trbytr-GPASTN')
+        avgdelayvis(Avg_dels,Figdir,str_f(str_ind),'AverageDelay-GPA')
+    end
     
     disp('Positive delays for STN ...')
     disp('Negative delays for STN ...')
     
     for str_ind = 1:length(str_f)
-%         delayvis_stn(spda_data.pos_delay_st,numtrs,Figdir,str_f(str_ind),'PositiveDelay-STN')
-%         delayvis_stn(spda_data.neg_delay_st,numtrs,Figdir,str_f(str_ind),'NegativeDelay-STN')
-%         delayvis_stn(spda_data.suppressed_st,numtrs,Figdir,str_f(str_ind),'Supp-STN')
-%         delayvis_stn(spda_data.promoted_st,numtrs,Figdir,str_f(str_ind),'Prom-STN')
-%         delayvis_stn(spda_data.promoted_st,spda_data.nosupp_noprom_st,Figdir,str_f(str_ind),'PositiveDelay-STN-correcttr')
-%         delayvis_avgval_stn(delays.STN,Figdir,str_f(str_ind),'AverageDelay-trbytr-STN')
+        delayvis_stn(spda_data.pos_delay_st,numtrs,Figdir,str_f(str_ind),'PositiveDelay-STN')
+        delayvis_stn(spda_data.neg_delay_st,numtrs,Figdir,str_f(str_ind),'NegativeDelay-STN')
+        delayvis_stn(spda_data.suppressed_st,numtrs,Figdir,str_f(str_ind),'Supp-STN')
+        delayvis_stn(spda_data.promoted_st,numtrs,Figdir,str_f(str_ind),'Prom-STN')
+        delayvis_stn(spda_data.promoted_st,spda_data.nosupp_noprom_st,Figdir,str_f(str_ind),'PositiveDelay-STN-correcttr')
+        delayvis_avgval_stn(delays.STN,Figdir,str_f(str_ind),'AverageDelay-trbytr-STN')
         avgdelayvis_stn(Avg_dels,Figdir,str_f(str_ind),'AverageDelay-STNSTR')
     end
     % Distribution of off times in SNr for each individual rate
@@ -189,6 +200,7 @@ function [gpa_str_delay,stn_str_delay,gpa_stn_delay,...
         
         offtime_str(ind) = STR.offtime(str_ind);
         offtime_stn(ind) = STN.offtime(stn_ind);
+%         ind
 
     end
     gpa_str_delay = GPA.offtime - offtime_str;
@@ -256,6 +268,46 @@ function [] = nodecinSN(data_in,numtr,data_path)
     close(gcf)
     
 %     GCA
+end
+
+function sig_params = effective_params(data_in,all_pars,weight_vec,numtr,data_path,thr,flname_str)
+    
+    strf = [];
+    stnf = [];
+    gpaf = [];
+    rlss = [];
+    rlsg = [];
+    wght = [];
+    
+    Ws = data_in.del_w(:,3);
+    stim = data_in.stim_par;
+    for w_ind = 1:length(weight_vec)
+        for p_ind = 1:size(all_pars,2)
+            inds = stim(:,2) == all_pars(1,p_ind) & ...
+                   stim(:,3) == all_pars(2,p_ind) & ...
+                   stim(:,1) == all_pars(3,p_ind) & ...
+                   stim(:,5) == all_pars(4,p_ind) & ...
+                   stim(:,4) == all_pars(5,p_ind) & ...
+                   Ws        == weight_vec(w_ind);
+               
+            if sum(inds)/numtr >= thr
+                strf = [strf,all_pars(1,p_ind)];
+                stnf = [stnf,all_pars(2,p_ind)];
+                gpaf = [gpaf,all_pars(3,p_ind)];
+                rlss = [rlss,all_pars(4,p_ind)];
+                rlsg = [rlsg,all_pars(5,p_ind)];
+                wght = [wght,weight_vec(w_ind)];
+            end
+            if sum(inds)/numtr > 1
+                disp('weird!')
+            end
+        end
+    end
+    sel_params = [strf;stnf;gpaf;rlss;rlsg;wght];
+    str_params = {'str','stn','gpa','rlss','rlsg','weight'};
+    
+    sig_params = struct('par',sel_params,...
+                        'str',str_params);
 end
 
 function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
@@ -713,6 +765,19 @@ function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA)
     pos_del_par_stn = STN.stim_param_ISI(pos_ind,:);
     pos_del_tw_stn  = STN.nuclei_trials_ISI(pos_ind,:);
     
+    % Positive delay GPA+STN vs. STN
+    
+    pos_ind = diffdelay_stnvsgpa >= 0;
+    pos_del_par_gpa_vs_stn = GPA.stim_param_ISI(pos_ind,:);
+    pos_del_tw_gpa_vs_stn  = GPA.nuclei_trials_ISI(pos_ind,:);
+    
+    % Additional suppresses in GPA+STN than STN
+    
+    add_ind = ~isnan(off_str) & ~isnan(off_stn) & isnan(GPA.offtime);
+    suppdec_par_gp_vs_stn = GPA.stim_param_ISI(add_ind,:);
+    suppdec_tw_gp_vs_stn = GPA.nuclei_trials_ISI(add_ind,:);
+    
+    
     SPDA_data = struct('no_decrease',struct('count',no_nodec_str,...
                                             'stim_par',nodec_par,...
                                             'del_w',nodec_tw),...
@@ -741,7 +806,17 @@ function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA)
                        'pos_delay_st',struct('stim_par',pos_del_par_stn,...
                                              'del_w',pos_del_tw_stn),...
                        'neg_delay_st',struct('stim_par',neg_del_par_stn,...
-                                             'del_w',neg_del_tw_stn));
+                                             'del_w',neg_del_tw_stn),...
+                       'pos_delay_gpvsst',struct('stim_par',pos_del_par_gpa_vs_stn,...
+                                                 'del_w',pos_del_tw_gpa_vs_stn),...
+                       'suppressed_gp_vs_st',struct('stim_par',suppdec_par_gp_vs_stn,...
+                                                    'del_w',suppdec_tw_gp_vs_stn),...
+                       'stimstr',struct('par',STR.stim_param_ISI,...
+                                        'trw',STR.nuclei_trials_ISI),...
+                       'stimstn',struct('par',STN.stim_param_ISI,...
+                                        'trw',STN.nuclei_trials_ISI),...
+                       'stimgpa',struct('par',GPA.stim_param_ISI,...
+                                        'trw',GPA.nuclei_trials_ISI));
     delay_data  = struct('GPASTN',struct('delay',delay_gpastn,...
                                          'delay_stn',delay_stn,...
                                          'delay_vsstn',diffdelay_stnvsgpa,...
