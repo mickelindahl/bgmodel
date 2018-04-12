@@ -303,7 +303,7 @@ function sig_params = effective_params(data_in,all_pars,weight_vec,numtr,data_pa
             end
         end
     end
-    sel_params = [strf;stnf;gpaf;rlss;rlsg;wght];
+sel_params = [strf;stnf;gpaf;rlss;rlsg;wght];
     str_params = {'str','stn','gpa','rlss','rlsg','weight'};
     
     sig_params = struct('par',sel_params,...
