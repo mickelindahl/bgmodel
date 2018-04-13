@@ -9,6 +9,7 @@ function [] = main(data_path,weights,numtrs)
     compress_flag = true;
     data_dir = directory_extract(data_path);
     if exist(fullfile(data_path,'all_proc_data.mat'),'file') ~= 2
+        disp('Concatenated data does not exist!')
         for dir_ind = 1:length(data_dir)
 
             [st_par,nctr,avgfr,...
@@ -30,6 +31,7 @@ function [] = main(data_path,weights,numtrs)
         end
         save(fullfile(data_path,'all_proc_data'),'procdata','nc','-v7.3')
     else
+        disp('Concatenated data exists!')
 %         indir = dir(data_path);
         for dir_ind = 1:length(data_dir)
 %             mat_flname = '/procdata_avg_ISI.mat';
@@ -57,8 +59,10 @@ function [stim_pars,nc_trs,avg_frs,...
           avg_frs_no_ov,off_time,...
           stim_pars_ISI,nc_trs_ISI,...
           nuclei,t_samples_no_ov,num_units] = main_postproc(data_dir, weights, numtrs, comp_flag)
+    disp(['Processing data in directory ',data_dir])
     file_path = fullfile(data_dir,'procdata_avg_ISI.mat');
     if exist(file_path,'file') ~= 2
+        disp('Data for this directory does not exist!')
       
         stim_pars = [];
         nc_trs = [];
@@ -86,6 +90,8 @@ function [stim_pars,nc_trs,avg_frs,...
 
 
         for w_ind = 1:length(weights)
+            
+            disp(['Processing data for weight ',num2str(weights(w_ind))])
 
             for tr_ind = 1:numtrs
 
@@ -96,7 +102,7 @@ function [stim_pars,nc_trs,avg_frs,...
 
                 data = data.data;
 
-                parfor nc_ind = 1:length(nuclei)
+                for nc_ind = 1:length(nuclei)
 
                     for st_ind = 1:size(data,2)
 
@@ -170,6 +176,7 @@ function [stim_pars,nc_trs,avg_frs,...
                                            'nuclei','num_units','-v7.3')
                                        
     else
+        disp('Data for this directory exist!')
         load(file_path)
     end
 
