@@ -90,7 +90,7 @@ function [] = main_vis()
     disp('Visualizing delays ...')
     disp('Positive delays for GPA & STN...')
     disp('Negative delays for GPA & STN...')
-    matlab/Analysis-scripts/Multiplestim-STRSTNGPA/main.m
+    
     for str_ind = 1:length(str_f)
         delayvis(spda_data.pos_delay_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'PositiveDelay-GPASTN')
         delayvis(spda_data.neg_delay_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'NegativeDelay-GPASTN')
