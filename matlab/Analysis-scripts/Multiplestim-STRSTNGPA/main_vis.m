@@ -9,9 +9,10 @@ function [] = main_vis()
     adding_ind = 3:4;
     thre = 0.95;
     
-    dir_name = '/home/mohaghegh-data/temp-storage/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR/';
+%     dir_name = '/home/mohaghegh-data/temp-storage/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR/';
+    dir_name = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/MATLAB-data-analysis/Analysis/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR';
     Figdir   = fullfile(dir_name,'Figsold');
-    fl_name = [dir_name,'all_proc_data18-03-28.mat'];
+    fl_name = fullfile(dir_name,'all_proc_data');
     if exist('procdata','var') ~= 1
         load(fl_name);
     end
@@ -52,6 +53,7 @@ function [] = main_vis()
     % Putting all stim parameters together
     
     all_stim_par = combvec(str_f',stn_f',gpa_f',relss',relsg');
+    all_stim_par_stn = combvec(str_f',stn_f',relss');
     
     % Measuring delays
 %     [delay_gpastn,delay_stn,diffdelay_stnvsgpa,...
@@ -72,11 +74,17 @@ function [] = main_vis()
     % Finding parameter combinations where GPA stimulation was
     % significantly effective (> 0.95)
     
-    disp('Finding significant paramters with respect to delay ...')
-    effective_params(spda_data.pos_delay_gpvsst,all_stim_par,Ws,numtrs,Figdir,thre,'EffcPosDelay-GPAvsSTN')
+    disp('Finding significant paramters with respect to delay GPA+STN ...')
+    effective_params(spda_data.pos_delay_gpvsst,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcPosDelay-GPAvsSTN')
     
-    disp('Finding significant paramters with respect to suppression ...')
-    effective_params(spda_data.suppressed_gp_vs_st,all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
+    disp('Finding significant paramters with respect to suppression GPA+STN ...')
+    effective_params(spda_data.suppressed_gp_vs_st,[],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
+    
+    disp('Finding significant paramters with respect to delay STN ...')
+    effective_params_stn(spda_data.pos_delay_st,delays,all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcPosDelay-STN')
+    
+    disp('Finding significant paramters with respect to suppression STN ...')
+    effective_params_stn(spda_data.suppressed_st,[],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcSupp-STN')
     
     
     disp('Visualizing delays ...')
@@ -270,7 +278,7 @@ function [] = nodecinSN(data_in,numtr,data_path)
 %     GCA
 end
 
-function sig_params = effective_params(data_in,all_pars,weight_vec,numtr,data_path,thr,flname_str)
+function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight_vec,numtr,data_path,thr,flname_str)
     
     strf = [];
     stnf = [];
@@ -278,10 +286,27 @@ function sig_params = effective_params(data_in,all_pars,weight_vec,numtr,data_pa
     rlss = [];
     rlsg = [];
     wght = [];
+    trlv = [];
     
-    sprintf('STR \t STN \t GPA \t RELSS \t RELSG \t W')
+    fig_dir = fullfile(data_path,flname_str);
+    
+    if exist(fig_dir,'dir') ~= 7
+        mkdir(fig_dir)
+    end
+    
+    avg_win = 10;
+    
+    if ~isempty(data_del)
+        stim_del = data_del.GPASTN.stim_par;
+        stim_w   = data_del.GPASTN.del_w(:,3);
+
+        sprintf('STR \tSTN \tGPA \tRELSS \tRELSG \tW \tdelsg')
+    end
+    
+    sprintf('STR \tSTN \tGPA \tRELSS \tRELSG \tW \tdelg \tdelsg')
     
     Ws = data_in.del_w(:,3);
+    TR = data_in.del_w(:,2);
     stim = data_in.stim_par;
     for w_ind = 1:length(weight_vec)
         for p_ind = 1:size(all_pars,2)
@@ -299,12 +324,58 @@ function sig_params = effective_params(data_in,all_pars,weight_vec,numtr,data_pa
                 rlss = [rlss,all_pars(4,p_ind)];
                 rlsg = [rlsg,all_pars(5,p_ind)];
                 wght = [wght,weight_vec(w_ind)];
+                
+                avg_fr_par = [all_pars(1,p_ind),...
+                              all_pars(2,p_ind),...
+                              all_pars(3,p_ind),...
+                              all_pars(4,p_ind),...
+                              all_pars(5,p_ind),...
+                              weight_vec(w_ind)];
+                
+                % Plotting corresponding average firing rates
+                if ~isempty(all_data)
+                    [f_c,f_t] = main_avgfr(avg_fr_par,TR(inds),all_data(1),all_data(2),all_data(3),avg_win);
+                    fig_print(f_c,fullfile(fig_dir,['Colorplot-',num2str(avg_fr_par(1),'%.0f'),...
+                                                  num2str(avg_fr_par(2),'%.0f'),...
+                                                  num2str(avg_fr_par(3),'%.0f'),...
+                                                  num2str(avg_fr_par(4),'%.0f'),...
+                                                  num2str(avg_fr_par(5),'%.0f'),...
+                                                  num2str(avg_fr_par(6)*100,'%.0f')]))
+                    close(f_c)
+                    fig_print(f_t,fullfile(fig_dir,['Trace-',num2str(avg_fr_par(1),'%.0f'),...
+                                                  num2str(avg_fr_par(2),'%.0f'),...
+                                                  num2str(avg_fr_par(3),'%.0f'),...
+                                                  num2str(avg_fr_par(4),'%.0f'),...
+                                                  num2str(avg_fr_par(5),'%.0f'),...
+                                                  num2str(avg_fr_par(6)*100,'%.0f')]))
+                    close(f_t)
+                end
+                
+                if ~isempty(data_del)
+                    sel_del = stim_del(:,2) == all_pars(1,p_ind) & ...
+                              stim_del(:,3) == all_pars(2,p_ind) & ...
+                              stim_del(:,1) == all_pars(3,p_ind) & ...
+                              stim_del(:,5) == all_pars(4,p_ind) & ...
+                              stim_del(:,4) == all_pars(5,p_ind) & ...
+                              stim_w        == weight_vec(w_ind);
+                    del_tmp = data_del.GPASTN.delay(sel_del);
+                    avg_del = mean(del_tmp(~isnan(del_tmp)));
+                    
+                    del_tmp = data_del.GPASTN.delay_vsstn(sel_del);
+                    avg_del_stn = mean(del_tmp(~isnan(del_tmp)));
+                else
+                    avg_del = 0;
+                    avg_del_stn = 0;
+                end
+                
                 sprintf([num2str(all_pars(1,p_ind)),' \t',...
                          num2str(all_pars(2,p_ind)),' \t',...
                          num2str(all_pars(3,p_ind)),' \t',...
                          num2str(all_pars(4,p_ind)),' \t',...
                          num2str(all_pars(5,p_ind)),' \t',...
-                         num2str(weight_vec(w_ind))])
+                         num2str(weight_vec(w_ind)),' \t',...
+                         num2str(avg_del),' \t',...
+                         num2str(avg_del_stn)])
             end
             if sum(inds)/numtr > 1
                 disp('weird!')
@@ -313,6 +384,69 @@ function sig_params = effective_params(data_in,all_pars,weight_vec,numtr,data_pa
     end
     sel_params = [strf;stnf;gpaf;rlss;rlsg;wght];
     str_params = {'str','stn','gpa','rlss','rlsg','weight'};
+    
+    sig_params = struct('par',sel_params,...
+                        'str',str_params);
+end
+
+function sig_params = effective_params_stn(data_in,data_del,all_pars,weight_vec,numtr,data_path,thr,flname_str)
+    
+    strf = [];
+    stnf = [];
+    gpaf = [];
+    rlss = [];
+    rlsg = [];
+    wght = [];
+    
+    if ~isempty(data_del)
+        stim_del = data_del.STN.stim_par;
+        stim_w   = data_del.STN.del_w(:,3);
+
+%         sprintf('STR \tSTN \tGPA \tRELSS \tRELSG \tW \tdelsg')
+    end
+    
+    sprintf('STR \tSTN \tRELSS \tW \tdels')
+    
+    Ws = data_in.del_w(:,3);
+    stim = data_in.stim_par;
+    for w_ind = 1:length(weight_vec)
+        for p_ind = 1:size(all_pars,2)
+            inds = stim(:,1) == all_pars(1,p_ind) & ...
+                   stim(:,2) == all_pars(2,p_ind) & ...
+                   stim(:,3) == all_pars(3,p_ind) & ...
+                   Ws        == weight_vec(w_ind);
+               
+            if sum(inds)/numtr >= thr
+                strf = [strf,all_pars(1,p_ind)];
+                stnf = [stnf,all_pars(2,p_ind)];
+                rlss = [rlss,all_pars(3,p_ind)];
+                wght = [wght,weight_vec(w_ind)];
+                
+                if ~isempty(data_del)
+                    sel_del = stim_del(:,1) == all_pars(1,p_ind) & ...
+                              stim_del(:,2) == all_pars(2,p_ind) & ...
+                              stim_del(:,3) == all_pars(3,p_ind) & ...
+                              stim_w        == weight_vec(w_ind);
+                    del_tmp = data_del.STN.delay(sel_del);
+                    avg_del = mean(del_tmp(~isnan(del_tmp)));
+                    
+                else
+                    avg_del = 0;
+                end
+                
+                sprintf([num2str(all_pars(1,p_ind)),' \t',...
+                         num2str(all_pars(2,p_ind)),' \t',...
+                         num2str(all_pars(3,p_ind)),' \t',...
+                         num2str(weight_vec(w_ind)),' \t',...
+                         num2str(avg_del)])
+            end
+            if sum(inds)/numtr > 1
+                disp('weird!')
+            end
+        end
+    end
+    sel_params = [strf;stnf;gpaf;rlss;rlsg;wght];
+    str_params = {'str','stn','rlss','weight'};
     
     sig_params = struct('par',sel_params,...
                         'str',str_params);
