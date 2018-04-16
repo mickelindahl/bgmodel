@@ -102,7 +102,7 @@ function [stim_pars,nc_trs,avg_frs,...
 
                 data = data.data;
 
-                for nc_ind = 1:length(nuclei)
+                parfor nc_ind = 1:length(nuclei)
 
                     for st_ind = 1:size(data,2)
 
@@ -159,6 +159,11 @@ function [stim_pars,nc_trs,avg_frs,...
                                 nc_trs_ISI = [nc_trs_ISI;[nc_ind,tr_ind,weights(w_ind)]];
 
                             end
+                        else
+%                             disp('Weird!')
+                            disp(['Path: ',fullfile(data_dir,['W',num2str(weights(w_ind)*100,2),...
+                                     '-tr',num2str(tr_ind,2)])])
+                            disp(['Nuclei: ',nuclei{nc_ind},' - stim ind: ',num2str(st_ind)])
                         end
 
                     end
@@ -219,7 +224,7 @@ function dirs = directory_extract(data_path)
     for ind = 1:length(indir)
         name_str = indir(ind).name;
         if indir(ind).isdir && ~strcmpi(name_str,'.') && ~strcmpi(name_str,'..') && ...
-           ~strcmpi(name_str,'Figs') && ~strcmpi(name_str,'Figs2')
+           ~strcmpi(name_str,'Figs') && ~strcmpi(name_str,'Figs2') && ~strcmpi(name_str,'Figsold')
             cnt_tmp = cnt_tmp + 1;
             dirs{cnt_tmp} = name_str;
         end
