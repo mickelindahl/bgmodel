@@ -118,7 +118,7 @@ if exist(mat_datadir,'dir') ~= 7
 end
 
 if length(unique(Gs)) == 1
-    mat_fl_name = [mat_datadir,'/W',num2str(unique(Gs*100),'%i'),'-tr',str_tmp(1:end-1)];
+    mat_fl_name = [mat_datadir,'/W',num2str(unique(Gs*100),'%.0f'),'-tr',str_tmp(1:end-1)];
     disp(['All weights are equal. They are store in: ',mat_fl_name])
 else
     mat_fl_name = [mat_datadir,'/tr',str_tmp(1:end-1)];

@@ -703,7 +703,7 @@ if __name__ == '__main__':
         loc_num_th = int(sys.argv[3])
     else:
         numtrs = 40
-        size = 3000
+        size = 10000
         loc_num_th = 1
         lesion_source = []
         lesion_target = []
