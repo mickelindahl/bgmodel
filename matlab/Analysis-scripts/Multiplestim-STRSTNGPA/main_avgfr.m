@@ -22,8 +22,8 @@ function [f_color,f_trace] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width)
         NC{nc_ind} = STR.nuclei(nc_ind).nc_names;
     end
     nc_ids = unique(STR.nuclei_trials(:,1));
-    order_vis_ncs = {'FS','M2','GI','GA','M1','SN','ST'};
-    numunits = [200,4767,111,41,4746,94,49];
+    order_vis_ncs = {'GA','M2','M1','FS','SN','GI','ST'};%{'FS','M2','GI','GA','M1','SN','ST'};
+    numunits = [41,4746,4746,200,94,111,49];%[200,4767,111,41,4746,94,49];
     
     for stim_ind = 1:size(stim_w_pars,1)
         f_trace = figure;
@@ -40,10 +40,13 @@ function [f_color,f_trace] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width)
             bindat_tmp = GPA.average_fr_no_overlap(bindat_id,:);
 %             numunits = unique(GPA.num_units(bindat_id));
             trials_m = missing_tr_find(bindat_tmp,trials,GPA.nuclei_trials(bindat_id,2));
-
-            [gpa_avgfr,gpa_avgfr_z(nc_ind,:)] = average_fr(bindat_tmp(trials_m,:),numunits(nc_ind),w_width);
-            size(trials_m)
-            size(bindat_tmp)
+            if isempty(trials_m)
+                bindat_tmp = zeros(1,size(bindat_tmp,2));
+                trials_m = 1;
+            end
+                [gpa_avgfr,gpa_avgfr_z(nc_ind,:)] = average_fr(bindat_tmp(trials_m,:),numunits(nc_ind),w_width);
+%             size(trials_m)
+%             size(bindat_tmp)
             
             bindat_id = STN.stim_param(:,1) == stim_w_pars(stim_ind,1) & ...
                         STN.stim_param(:,2) == stim_w_pars(stim_ind,2) & ...
@@ -98,8 +101,8 @@ function [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width)
         NC{nc_ind} = STR.nuclei(nc_ind).nc_names;
     end
     nc_ids = unique(STR.nuclei_trials(:,1));
-    order_vis_ncs = {'FS','M2','GI','GA','M1','SN','ST'};
-    numunits = [200,4767,111,41,4746,94,49];
+    order_vis_ncs = {'GA','M2','M1','FS','SN','GI','ST'};%{'FS','M2','GI','GA','M1','SN','ST'};
+    numunits = [41,4746,4746,200,94,111,49];%[200,4767,111,41,4746,94,49];
     
     for stim_ind = 1:size(stim_w_pars,1)
         f_trace = figure;
@@ -152,9 +155,15 @@ function [mov_win_avgfr,z_score] = average_fr(all_bindata,NU,win_w)
     all_bindata = double(all_bindata);
     if size(all_bindata,1) > 1
         all_bindata = mean(all_bindata);
+        mov_win_avgfr = overlap_square(all_bindata,win_w)/double(NU);
+        z_score = zscore(mov_win_avgfr);
+    elseif isempty(all_bindata)
+        mov_win_avgfr = 0;
+        z_score = 0;
+    else
+        mov_win_avgfr = overlap_square(all_bindata,win_w)/double(NU);
+        z_score = zscore(mov_win_avgfr);
     end
-    mov_win_avgfr = overlap_square(all_bindata,win_w)/double(NU);
-    z_score = zscore(mov_win_avgfr);
 end
 
 function smoothed_data = overlap_square(binned_data,win_width)
