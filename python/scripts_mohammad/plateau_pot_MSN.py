@@ -137,15 +137,15 @@ def test_plateau_pot(mode):
     stim_spktr_stop = 0.0
 
     spiketimes = numpy.array(500.)
-    spikeweights = numpy.array(6.5)
+    spikeweights = numpy.array(1.0)
 
     # times = numpy.arange(510.,600.,100.)
     # spiketimes = numpy.append(spiketimes,times)
-    spikeweights = numpy.append(spikeweights,2.5*numpy.ones(times.size))
+    spikeweights = numpy.append(spikeweights,1.0*numpy.ones(times.size))
 
 
 
-    dc_amp = 100.0
+    dc_amp = 0.0
 
     # Current to MSN D1
 
@@ -394,7 +394,7 @@ def GA_M1_IPSC(mode):
 
 
 
-    dc_amp = 260.0
+    dc_amp = 270.0
 
     # Current to MSN D1
 
@@ -509,7 +509,7 @@ def GA_M1_IPSC(mode):
     if not os.path.isdir(base):
         os.mkdir(base)
     plt.show()
-    # plt.savefig(base+ '/nest-IPSC_M1M2.pdf',format='pdf')
+    # plt.savefig(base+ '/nest-IPSC_M2.pdf',format='pdf')
 
 def find(key, dictionary):
     for k, v in dictionary.iteritems():
