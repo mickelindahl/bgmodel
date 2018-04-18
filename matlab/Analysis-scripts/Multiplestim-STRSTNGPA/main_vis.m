@@ -12,9 +12,13 @@ function [] = main_vis()
     
     dir_name = '/home/mohaghegh-data/temp-storage/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR/';
 %     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
+%     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
 %     dir_name = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/MATLAB-data-analysis/Analysis/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR';
     Figdir   = fullfile(dir_name,['Figs28Mardata']);
+%     Figdir = fullfile(dir_name,['Figs16Aprdata']);
+%     Figdir = fullfile(dir_name,['Figs17Aprdata']);
     fl_name = fullfile(dir_name,'all_proc_data18-03-28.mat');
+%     fl_name = fullfile(dir_name,'all_proc_data18-04-16.mat');
 %     fl_name = fullfile(dir_name,'all_proc_data.mat');
     if exist('procdata','var') ~= 1
         load(fl_name);
@@ -24,12 +28,12 @@ function [] = main_vis()
     strstn = procdata{1,1};
     strstn.stim_param(:,[1,4]) = [];
     strstn.stim_param_ISI(:,[1,4]) = [];
-    str = procdata{1,end};
 %     str = procdata{1,2};
+    str = procdata{1,end};
     
     disp('Combining all related data in structure to one ...')
 %     base_ind = 3;
-%     adding_ind = 4:8;
+%     adding_ind = 4:9;
     strstngpa = struct_conc(procdata,base_ind,adding_ind);
 %     strstngpa = procdata{1,end};
     
@@ -82,26 +86,30 @@ function [] = main_vis()
     % Finding parameter combinations where GPA stimulation was
     % significantly effective (> 0.95)
     
-    disp('Finding significant paramters with respect to delay GPA+STN ...')
-    effective_params(spda_data.pos_delay_gpvsst,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcPosDelay-GPAvsSTN')
+%     disp('Finding parameters with respect to advancing the decrease GPA ...')
+%     effective_params(spda_data.neg_delay10_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.1,'EffcNegDelay10-GPAvsSTN')
+
     
-    disp('Finding significant paramters with respect to suppression GPA+STN ...')
-    effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
-    
-    disp('Finding significant paramters with respect to delay GPA+STN while relative times are constrained ...')
-    effective_params(spda_data.pos_delay_gpvsst_relcon,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcPosDelay-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
-    
-    disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
-    effective_params(spda_data.suppressed_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSupp-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
-    
-    disp('Finding significant paramters with respect to suppression GPA+STN ...')
-    effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
-    
-    disp('Finding significant parameters with respect to suppression or delay GPA+STN')
-    effective_params(spda_data.delORsupp_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSuppORDel-GPAvsSTN')
-    
-    disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
-    effective_params(spda_data.delORsupp_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSuppORDel-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
+%     disp('Finding significant paramters with respect to delay GPA+STN ...')
+%     effective_params(spda_data.pos_delay_gpvsst,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcPosDelay-GPAvsSTN')
+%     
+%     disp('Finding significant paramters with respect to suppression GPA+STN ...')
+%     effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
+%     
+%     disp('Finding significant paramters with respect to delay GPA+STN while relative times are constrained ...')
+%     effective_params(spda_data.pos_delay_gpvsst_relcon,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcPosDelay-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
+%     
+%     disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
+%     effective_params(spda_data.suppressed_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSupp-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
+%     
+%     disp('Finding significant paramters with respect to suppression GPA+STN ...')
+%     effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
+%     
+%     disp('Finding significant parameters with respect to suppression or delay GPA+STN')
+%     effective_params(spda_data.delORsupp_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSuppORDel-GPAvsSTN')
+%     
+%     disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
+%     effective_params(spda_data.delORsupp_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSuppORDel-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
     
     disp('Finding significant paramters with respect to delay STN ...')
     effective_params_stn(spda_data.pos_delay_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcPosDelay-STN')
@@ -109,9 +117,20 @@ function [] = main_vis()
     disp('Finding significant paramters with respect to suppression STN ...')
     effective_params_stn(spda_data.suppressed_st,[],[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcSupp-STN')
     
-    disp('Finding significant paramters with respect to suppression or delay STN ...')
-    effective_params_stn(spda_data.delORsupp_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcSuppORDel-STN')
-    
+%     disp('Finding significant paramters with respect to suppression or delay STN ...')
+%     effective_params_stn(spda_data.delORsupp_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcSuppORDel-STN')
+%     
+%     disp('Finding parameters with respect to advancing the decrease GPA ...')
+%     effective_params(spda_data.neg_delay_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.5,'EffcNegDelay-GPAvsSTN')
+%     
+%     disp('Finding parameters with respect to promotion the decrease GPA ...')
+%     effective_params(spda_data.promoted_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.5,'EffcPromDelay-GPAvsSTN')
+%     
+%     disp('Finding parameters with respect to advancing the decrease STN ...')
+%     effective_params_stn(spda_data.neg_delay_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,0.5,'EffcNegDelay-STN')
+%     
+%     disp('Finding parameters with respect to promotion the decrease STN ...')
+%     effective_params_stn(spda_data.promoted_gp,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,0.5,'EffcPromDelay-STN')
     
     disp('Visualizing delays ...')
     disp('Positive delays for GPA & STN...')
@@ -351,6 +370,23 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
                    stim(:,4) == all_pars(5,p_ind) & ...
                    Ws        == weight_vec(w_ind);
                
+            %%% This part should be written to work more efficiently e.g.
+            %%% in the delay part where all logical operations are already
+            %%% implemented.
+               
+            ind_for_trs = all_data(3).stim_param_ISI(:,2) == all_pars(1,p_ind) & ...
+                           all_data(3).stim_param_ISI(:,3) == all_pars(2,p_ind) & ...
+                           all_data(3).stim_param_ISI(:,1) == all_pars(3,p_ind) & ...
+                           all_data(3).stim_param_ISI(:,5) == all_pars(4,p_ind) & ...
+                           all_data(3).stim_param_ISI(:,4) == all_pars(5,p_ind) & ...
+                           all_data(3).nuclei_trials_ISI(:,3) == weight_vec(w_ind);
+                       
+            numtr = sum(ind_for_trs) ;
+            
+            %%%
+            %%%
+            %%%
+               
             if sum(inds)/numtr >= thr
                 strf = [strf;all_pars(1,p_ind)];
                 stnf = [stnf;all_pars(2,p_ind)];
@@ -417,9 +453,10 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
                          num2str(weight_vec(w_ind)),' \t',...
                          num2str(avg_del),' \t',...
                          num2str(avg_del_stn)])
-            end
-            if sum(inds)/numtr > 1
+%             end
+            elseif sum(inds)/numtr > 1
                 disp('weird!')
+                
             end
         end
     end
@@ -479,6 +516,21 @@ function sig_params = effective_params_stn(data_in,data_del,all_data,all_pars,we
                    stim(:,2) == all_pars(2,p_ind) & ...
                    stim(:,3) == all_pars(3,p_ind) & ...
                    Ws        == weight_vec(w_ind);
+               
+            %%% This part should be written to work more efficiently e.g.
+            %%% in the delay part where all logical operations are already
+            %%% implemented.
+               
+            ind_for_trs = all_data(2).stim_param_ISI(:,1) == all_pars(1,p_ind) & ...
+                           all_data(2).stim_param_ISI(:,2) == all_pars(2,p_ind) & ...
+                           all_data(2).stim_param_ISI(:,3) == all_pars(3,p_ind) & ...
+                           all_data(2).nuclei_trials_ISI(:,3) == weight_vec(w_ind);
+                       
+            numtr = sum(ind_for_trs) ;
+            
+            %%%
+            %%%
+            %%%
                
             if sum(inds)/numtr >= thr
                 strf = [strf;all_pars(1,p_ind)];
@@ -1072,6 +1124,12 @@ function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA,rel_th)
     neg_del_par_gpa = GPA.stim_param_ISI(neg_ind,:);
     neg_del_tw_gpa  = GPA.nuclei_trials_ISI(neg_ind,:);
     
+    % Negative delay STN & GPA
+    
+    neg_ind = delay_gpastn < 10;
+    neg_del10_par_gpa = GPA.stim_param_ISI(neg_ind,:);
+    neg_del10_tw_gpa  = GPA.nuclei_trials_ISI(neg_ind,:);
+    
     % Positive delay STN & GPA
     
     pos_ind = delay_gpastn >= 0;
@@ -1093,8 +1151,8 @@ function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA,rel_th)
     % Positive delay or suppresses STN;
     
     pos_supp_ind = pos_ind | (~isnan(off_str_stn) & isnan(STN.offtime));
-    suppdec_par_stn = STN.stim_param_ISI(pos_supp_ind,:);
-    suppdec_tw_stn  = STN.nuclei_trials_ISI(pos_supp_ind,:);
+    delORsupp_par_stn = STN.stim_param_ISI(pos_supp_ind,:);
+    delORsupp_tw_stn  = STN.nuclei_trials_ISI(pos_supp_ind,:);
     
     % Positive delay GPA+STN vs. STN
     
@@ -1161,12 +1219,14 @@ function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA,rel_th)
                                              'del_w',pos_del_tw_gpa),...
                        'neg_delay_gp',struct('stim_par',neg_del_par_gpa,...
                                              'del_w',neg_del_tw_gpa),...
+                       'neg_delay10_gp',struct('stim_par',neg_del10_par_gpa,...
+                                             'del_w',neg_del10_tw_gpa),...
                        'pos_delay_st',struct('stim_par',pos_del_par_stn,...
                                              'del_w',pos_del_tw_stn),...
                        'neg_delay_st',struct('stim_par',neg_del_par_stn,...
                                              'del_w',neg_del_tw_stn),...
-                       'delORsupp_st',struct('stim_par',suppdec_par_stn,...
-                                             'del_w',suppdec_tw_stn),...                      
+                       'delORsupp_st',struct('stim_par',delORsupp_par_stn,...
+                                             'del_w',delORsupp_tw_stn),...                      
                        'pos_delay_gpvsst',struct('stim_par',pos_del_par_gpa_vs_stn,...
                                                  'del_w',pos_del_tw_gpa_vs_stn),...
                        'suppressed_gpvsst',struct('stim_par',suppdec_par_gp_vs_stn,...
