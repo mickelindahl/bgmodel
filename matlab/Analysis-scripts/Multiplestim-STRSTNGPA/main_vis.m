@@ -86,30 +86,30 @@ function [] = main_vis()
     % Finding parameter combinations where GPA stimulation was
     % significantly effective (> 0.95)
     
-%     disp('Finding parameters with respect to advancing the decrease GPA ...')
-%     effective_params(spda_data.neg_delay10_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.1,'EffcNegDelay10-GPAvsSTN')
+    disp('Finding parameters with respect to advancing the decrease GPA ...')
+    effective_params(spda_data.neg_delay10_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.1,'EffcNegDelay10-GPAvsSTN')
 
     
-%     disp('Finding significant paramters with respect to delay GPA+STN ...')
-%     effective_params(spda_data.pos_delay_gpvsst,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcPosDelay-GPAvsSTN')
-%     
-%     disp('Finding significant paramters with respect to suppression GPA+STN ...')
-%     effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
-%     
-%     disp('Finding significant paramters with respect to delay GPA+STN while relative times are constrained ...')
-%     effective_params(spda_data.pos_delay_gpvsst_relcon,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcPosDelay-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
-%     
-%     disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
-%     effective_params(spda_data.suppressed_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSupp-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
-%     
-%     disp('Finding significant paramters with respect to suppression GPA+STN ...')
-%     effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
-%     
-%     disp('Finding significant parameters with respect to suppression or delay GPA+STN')
-%     effective_params(spda_data.delORsupp_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSuppORDel-GPAvsSTN')
-%     
-%     disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
-%     effective_params(spda_data.delORsupp_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSuppORDel-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
+    disp('Finding significant paramters with respect to delay GPA+STN ...')
+    effective_params(spda_data.pos_delay_gpvsst,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcPosDelay-GPAvsSTN')
+    
+    disp('Finding significant paramters with respect to suppression GPA+STN ...')
+    effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
+    
+    disp('Finding significant paramters with respect to delay GPA+STN while relative times are constrained ...')
+    effective_params(spda_data.pos_delay_gpvsst_relcon,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcPosDelay-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
+    
+    disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
+    effective_params(spda_data.suppressed_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSupp-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
+    
+    disp('Finding significant paramters with respect to suppression GPA+STN ...')
+    effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
+    
+    disp('Finding significant parameters with respect to suppression or delay GPA+STN')
+    effective_params(spda_data.delORsupp_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSuppORDel-GPAvsSTN')
+    
+    disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
+    effective_params(spda_data.delORsupp_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSuppORDel-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
     
     disp('Finding significant paramters with respect to delay STN ...')
     effective_params_stn(spda_data.pos_delay_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcPosDelay-STN')
@@ -117,20 +117,20 @@ function [] = main_vis()
     disp('Finding significant paramters with respect to suppression STN ...')
     effective_params_stn(spda_data.suppressed_st,[],[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcSupp-STN')
     
-%     disp('Finding significant paramters with respect to suppression or delay STN ...')
-%     effective_params_stn(spda_data.delORsupp_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcSuppORDel-STN')
-%     
-%     disp('Finding parameters with respect to advancing the decrease GPA ...')
-%     effective_params(spda_data.neg_delay_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.5,'EffcNegDelay-GPAvsSTN')
-%     
-%     disp('Finding parameters with respect to promotion the decrease GPA ...')
-%     effective_params(spda_data.promoted_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.5,'EffcPromDelay-GPAvsSTN')
-%     
-%     disp('Finding parameters with respect to advancing the decrease STN ...')
-%     effective_params_stn(spda_data.neg_delay_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,0.5,'EffcNegDelay-STN')
-%     
-%     disp('Finding parameters with respect to promotion the decrease STN ...')
-%     effective_params_stn(spda_data.promoted_gp,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,0.5,'EffcPromDelay-STN')
+    disp('Finding significant paramters with respect to suppression or delay STN ...')
+    effective_params_stn(spda_data.delORsupp_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcSuppORDel-STN')
+    
+    disp('Finding parameters with respect to advancing the decrease GPA ...')
+    effective_params(spda_data.neg_delay_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.5,'EffcNegDelay-GPAvsSTN')
+    
+    disp('Finding parameters with respect to promotion the decrease GPA ...')
+    effective_params(spda_data.promoted_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.5,'EffcPromDelay-GPAvsSTN')
+    
+    disp('Finding parameters with respect to advancing the decrease STN ...')
+    effective_params_stn(spda_data.neg_delay_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,0.5,'EffcNegDelay-STN')
+    
+    disp('Finding parameters with respect to promotion the decrease STN ...')
+    effective_params_stn(spda_data.promoted_gp,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,0.5,'EffcPromDelay-STN')
     
     disp('Visualizing delays ...')
     disp('Positive delays for GPA & STN...')
