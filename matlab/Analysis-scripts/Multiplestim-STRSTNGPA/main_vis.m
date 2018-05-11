@@ -11,10 +11,17 @@ function [] = main_vis()
     gs_rel_lim = 0;
     
 %     dir_name = '/home/mohaghegh-data/temp-storage/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR/';
+<<<<<<< HEAD
 %     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
     dir_name = '/home/mohaghegh-data/temp-storage/18-05-09-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
 %     dir_name = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/MATLAB-data-analysis/Analysis/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR';
 %     Figdir   = fullfile(dir_name,['Figs28Mardata']);
+=======
+%     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
+%     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
+    dir_name = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/MATLAB-data-analysis/Analysis/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR';
+    Figdir   = fullfile(dir_name,['Figs10Maydata']);
+>>>>>>> 1781eefc8e07db433bb18176ea45af96d45be056
 %     Figdir = fullfile(dir_name,['Figs16Aprdata']);
     Figdir = fullfile(dir_name,['Figs09Maydata']);
 %     fl_name = fullfile(dir_name,'all_proc_data18-03-28.mat');
@@ -406,7 +413,7 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
                 
                 % Plotting corresponding average firing rates
                 if ~isempty(all_data)
-                    [f_c,f_t] = main_avgfr(avg_fr_par,TR(inds),all_data(1),all_data(2),all_data(3),avg_win);
+                    [f_c,f_t,f_s] = main_avgfr(avg_fr_par,TR(inds),all_data(1),all_data(2),all_data(3),avg_win);
                     fig_print(f_c,fullfile(fig_dir,['Colorplot-',num2str(avg_fr_par(1),'%.0f'),...
                                                   num2str(avg_fr_par(2),'%.0f'),...
                                                   num2str(avg_fr_par(3),'%.0f'),...
@@ -421,6 +428,13 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
                                                   num2str(avg_fr_par(5),'%.0f'),...
                                                   num2str(avg_fr_par(6)*100,'%.0f')]))
                     close(f_t)
+                    fig_print(f_s,fullfile(fig_dir,['Spectrum-',num2str(avg_fr_par(1),'%.0f'),...
+                                                  num2str(avg_fr_par(2),'%.0f'),...
+                                                  num2str(avg_fr_par(3),'%.0f'),...
+                                                  num2str(avg_fr_par(4),'%.0f'),...
+                                                  num2str(avg_fr_par(5),'%.0f'),...
+                                                  num2str(avg_fr_par(6)*100,'%.0f')]))
+                    close(f_s)
                 end
                 
                 if ~isempty(data_del)

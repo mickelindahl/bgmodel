@@ -63,7 +63,7 @@ function [stim_pars,nc_trs,avg_frs,...
     file_path = fullfile(data_dir,'procdata_avg_ISI.mat');
     if exist(file_path,'file') ~= 2
         disp('Data for this directory does not exist!')
-      
+
         stim_pars = [];
         nc_trs = [];
         avg_frs = [];
@@ -72,8 +72,8 @@ function [stim_pars,nc_trs,avg_frs,...
         stim_pars_ISI = [];
         nc_trs_ISI = [];
         num_units = [];
-        
-        % Averaging window 
+
+        % Averaging window
 
         win_width = 10; %ms
         overlap = 1;    %ms
@@ -85,12 +85,12 @@ function [stim_pars,nc_trs,avg_frs,...
         avg_st = -500;
         avg_end = 500;
 
-        
+
         t_samples_no_ov = (avg_st + win_width_no_ov/2):(avg_end - win_width_no_ov/2);
 
 
         for w_ind = 1:length(weights)
-            
+
             disp(['Processing data for weight ',num2str(weights(w_ind))])
 
             for tr_ind = 1:numtrs
@@ -137,7 +137,7 @@ function [stim_pars,nc_trs,avg_frs,...
                                                            overlap,avg_st,avg_end);
                                 avg_frs = [avg_frs;cnttmp];
 
-                                
+
                                 cnttmp = average_firingrate_hist(spktimes,reftime,N_ids,win_width_no_ov,...
                                                                  avg_st,avg_end);
 
@@ -179,7 +179,7 @@ function [stim_pars,nc_trs,avg_frs,...
                                            'avg_frs','stim_pars','nc_trs',...
                                            'avg_frs_no_ov','t_samples_no_ov',...
                                            'nuclei','num_units','-v7.3')
-                                       
+
     else
         disp('Data for this directory exist!')
         load(file_path)
@@ -189,16 +189,16 @@ end
 
 function cnt = average_firingrate(spk_times,reftime,N_ids,win_width,...
                                     overlap,avg_st,avg_end)
-    
+
     numunits = max(N_ids) - min(N_ids) + 1;
-    
+
     [cnt,~] = PSTH_mov_win(spk_times-reftime,...
                            win_width,overlap,avg_st,avg_end,numunits,1);
 end
 
 function [cnt,numunits] = average_firingrate_hist(spk_times,reftime,N_ids,win_width,...
                                        avg_st,avg_end)
-    
+
     numunits = max(N_ids) - min(N_ids) + 1;
     spk_times = spk_times - reftime;
     spk_times_sel = spk_times(spk_times >= avg_st & spk_times <= avg_end);
