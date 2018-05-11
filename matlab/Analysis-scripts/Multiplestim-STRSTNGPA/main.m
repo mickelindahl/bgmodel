@@ -82,8 +82,8 @@ function [stim_pars,nc_trs,avg_frs,...
 
         % Averaging start and end times
 
-        avg_st = -500;
-        avg_end = 500;
+        avg_st = -1000;
+        avg_end = 1000;
 
 
         t_samples_no_ov = (avg_st + win_width_no_ov/2):(avg_end - win_width_no_ov/2);
@@ -123,7 +123,7 @@ function [stim_pars,nc_trs,avg_frs,...
 
                             if comp_flag
 
-                                t_samples_no_ov = (avg_st + win_width_no_ov/2):(avg_end - win_width_no_ov/2);
+%                                 t_samples_no_ov = (avg_st + win_width_no_ov/2):(avg_end - win_width_no_ov/2);
                                 [cnttmp,numu] = average_firingrate_hist(spktimes,reftime,N_ids,win_width_no_ov,...
                                                                  avg_st,avg_end);
 
