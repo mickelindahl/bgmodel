@@ -95,8 +95,8 @@ function [stim_pars,nc_trs,avg_frs,...
 
             for tr_ind = 1:numtrs
 
-                data = load(fullfile(data_dir,['W',num2str(weights(w_ind)*100,2),...
-                                     '-tr',num2str(tr_ind,2)]));
+                data = load(fullfile(data_dir,['W',num2str(weights(w_ind)*100,'%.0f'),...
+                                     '-tr',num2str(tr_ind,'%.0f')]));
 
                 nuclei = data.nuclei;
 

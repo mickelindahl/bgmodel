@@ -10,16 +10,16 @@ function [] = main_vis()
     thre = 0.95;
     gs_rel_lim = 0;
     
-    dir_name = '/home/mohaghegh-data/temp-storage/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR/';
+%     dir_name = '/home/mohaghegh-data/temp-storage/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR/';
 %     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
-%     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
+    dir_name = '/home/mohaghegh-data/temp-storage/18-05-09-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
 %     dir_name = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/MATLAB-data-analysis/Analysis/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR';
-    Figdir   = fullfile(dir_name,['Figs28Mardata']);
+%     Figdir   = fullfile(dir_name,['Figs28Mardata']);
 %     Figdir = fullfile(dir_name,['Figs16Aprdata']);
-%     Figdir = fullfile(dir_name,['Figs17Aprdata']);
-    fl_name = fullfile(dir_name,'all_proc_data18-03-28.mat');
+    Figdir = fullfile(dir_name,['Figs09Maydata']);
+%     fl_name = fullfile(dir_name,'all_proc_data18-03-28.mat');
 %     fl_name = fullfile(dir_name,'all_proc_data18-04-16.mat');
-%     fl_name = fullfile(dir_name,'all_proc_data.mat');
+    fl_name = fullfile(dir_name,'all_proc_data.mat');
     if exist('procdata','var') ~= 1
         load(fl_name);
     end
@@ -28,12 +28,14 @@ function [] = main_vis()
     strstn = procdata{1,1};
     strstn.stim_param(:,[1,4]) = [];
     strstn.stim_param_ISI(:,[1,4]) = [];
-%     str = procdata{1,2};
-    str = procdata{1,end};
+    str = procdata{1,2};
+%     str = procdata{1,end};
     
     disp('Combining all related data in structure to one ...')
 %     base_ind = 3;
 %     adding_ind = 4:9;
+    base_ind = 3;
+    adding_ind = 4:5;
     strstngpa = struct_conc(procdata,base_ind,adding_ind);
 %     strstngpa = procdata{1,end};
     
@@ -86,8 +88,8 @@ function [] = main_vis()
     % Finding parameter combinations where GPA stimulation was
     % significantly effective (> 0.95)
     
-    disp('Finding parameters with respect to advancing the decrease GPA ...')
-    effective_params(spda_data.neg_delay10_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.1,'EffcNegDelay10-GPAvsSTN')
+%     disp('Finding parameters with respect to advancing the decrease GPA ...')
+%     effective_params(spda_data.neg_delay10_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.1,'EffcNegDelay10-GPAvsSTN')
 
     
     disp('Finding significant paramters with respect to delay GPA+STN ...')
@@ -240,7 +242,7 @@ function [gpa_str_delay,stn_str_delay,gpa_stn_delay,...
           offtime_str,offtime_stn] = trbytr_delay_measure(STR,STN,GPA)
     offtime_str = zeros(size(GPA.offtime));
     offtime_stn = zeros(size(GPA.offtime));
-    for ind = 1:size(GPA.offtime,1)
+    for ind = 7129:size(GPA.offtime,1)
         str_ind = STR.stim_param_ISI == GPA.stim_param_ISI(ind,2) & ...
                   STR.nuclei_trials_ISI(:,2) == GPA.nuclei_trials_ISI(ind,2) & ...
                   STR.nuclei_trials_ISI(:,3) == GPA.nuclei_trials_ISI(ind,3);
@@ -250,7 +252,7 @@ function [gpa_str_delay,stn_str_delay,gpa_stn_delay,...
                   STN.stim_param_ISI(:,3) == GPA.stim_param_ISI(ind,5) & ...
                   STN.nuclei_trials_ISI(:,2) == GPA.nuclei_trials_ISI(ind,2) & ...
                   STN.nuclei_trials_ISI(:,3) == GPA.nuclei_trials_ISI(ind,3);
-        
+%         ind
         offtime_str(ind) = STR.offtime(str_ind);
         offtime_stn(ind) = STN.offtime(stn_ind);
 %         disp(ind)

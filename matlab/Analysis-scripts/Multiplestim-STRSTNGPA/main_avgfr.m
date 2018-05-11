@@ -23,6 +23,7 @@ function [f_color,f_trace] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width)
     end
     nc_ids = unique(STR.nuclei_trials(:,1));
     order_vis_ncs = {'GA','M2','M1','FS','SN','GI','ST'};%{'FS','M2','GI','GA','M1','SN','ST'};
+    nuclei_names  = {'GPe Arky','MSN D2','MSN D1','FSI','SNr','GPe Proto','STN'};
     numunits = [41,4746,4746,200,94,111,49];%[200,4767,111,41,4746,94,49];
     
     for stim_ind = 1:size(stim_w_pars,1)
@@ -69,7 +70,7 @@ function [f_color,f_trace] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width)
             hold on
             avgfr_vis_trace(f_trace,nc_ind,stn_avgfr,[-495:495],order_vis_ncs,'blue');
             [CA] = avgfr_vis_trace(f_trace,nc_ind,str_avgfr,[-495:495],order_vis_ncs,'green');
-            CA.Title.String = order_vis_ncs{nc_ind};
+            CA.Title.String = nuclei_names{nc_ind};
             
                         
         end
@@ -79,15 +80,15 @@ function [f_color,f_trace] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width)
         f_color = figure;
 %         subplot(3,1,1)
         numsub = 3;
-        CA = avgfr_vis_color(f_color,numsub,1,gpa_avgfr_z,[-495:495],order_vis_ncs);
+        CA = avgfr_vis_color(f_color,numsub,1,gpa_avgfr_z,[-495:495],nuclei_names);
         CA.Title.String =   ['W='   ,num2str(stim_w_pars(stim_ind,6)),' ;',...
                              'STR=' ,num2str(stim_w_pars(stim_ind,1)),' ;',...
                              'STN=' ,num2str(stim_w_pars(stim_ind,2)),' ;',...
                              'GPA=' ,num2str(stim_w_pars(stim_ind,3)),' ;',...
                              'RSS=' ,num2str(stim_w_pars(stim_ind,4)),' ;',...
                              'RSG=' ,num2str(stim_w_pars(stim_ind,5))];
-        CA = avgfr_vis_color(f_color,numsub,2,stn_avgfr_z,[-495:495],order_vis_ncs);
-        CA = avgfr_vis_color(f_color,numsub,3,str_avgfr_z,[-495:495],order_vis_ncs);
+        CA = avgfr_vis_color(f_color,numsub,2,stn_avgfr_z,[-495:495],nuclei_names);
+        CA = avgfr_vis_color(f_color,numsub,3,str_avgfr_z,[-495:495],nuclei_names);
 %         CA = avgfr_vis_color(f_color,2,stn_avgfr_z,[-495:495],order_vis_ncs);
 %         CA = avgfr_vis_color(f_color,3,str_avgfr_z,[-495:495],order_vis_ncs);
         CA.XLabel.String = 'Time from ramp offset (ms)';
@@ -102,6 +103,7 @@ function [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width)
     end
     nc_ids = unique(STR.nuclei_trials(:,1));
     order_vis_ncs = {'GA','M2','M1','FS','SN','GI','ST'};%{'FS','M2','GI','GA','M1','SN','ST'};
+    nuclei_names  = {'GPe Arky','MSN D2','MSN D1','FSI','SNr','GPe Proto','STN'};
     numunits = [41,4746,4746,200,94,111,49];%[200,4767,111,41,4746,94,49];
     
     for stim_ind = 1:size(stim_w_pars,1)
@@ -129,7 +131,7 @@ function [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width)
             avgfr_vis_trace(f_trace,nc_ind,stn_avgfr,[-495:495],order_vis_ncs,'blue');
             hold on
             [CA] = avgfr_vis_trace(f_trace,nc_ind,str_avgfr,[-495:495],order_vis_ncs,'green');
-            CA.Title.String = order_vis_ncs{nc_ind};
+            CA.Title.String = nuclei_names{nc_ind};
             
                         
         end
@@ -139,12 +141,12 @@ function [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width)
         f_color = figure;
 %         subplot(3,1,1)
         numsub = 2;
-        CA = avgfr_vis_color(f_color,numsub,1,stn_avgfr_z,[-495:495],order_vis_ncs);
+        CA = avgfr_vis_color(f_color,numsub,1,stn_avgfr_z,[-495:495],nuclei_names);
         CA.Title.String =   ['W='   ,num2str(stim_w_pars(stim_ind,4)),' ;',...
                              'STR=' ,num2str(stim_w_pars(stim_ind,1)),' ;',...
                              'STN=' ,num2str(stim_w_pars(stim_ind,2)),' ;',...
                              'RSS=' ,num2str(stim_w_pars(stim_ind,3)),' ;'];
-        CA = avgfr_vis_color(f_color,numsub,2,str_avgfr_z,[-495:495],order_vis_ncs);
+        CA = avgfr_vis_color(f_color,numsub,2,str_avgfr_z,[-495:495],nuclei_names);
 %         CA = avgfr_vis_color(f_color,2,stn_avgfr_z,[-495:495],order_vis_ncs);
 %         CA = avgfr_vis_color(f_color,3,str_avgfr_z,[-495:495],order_vis_ncs);
         CA.XLabel.String = 'Time from ramp offset (ms)';
