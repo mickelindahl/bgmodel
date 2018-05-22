@@ -4,26 +4,19 @@
 % time when disinhibition happened and also the population average firing
 % rate of all nuclei.
 function [] = main_vis()
-    
+
     base_ind = 2;
-    adding_ind = 3:4;
-    thre = 0.95;
+    adding_ind = 3:5;
+    thre = 0.9;
     gs_rel_lim = 0;
-    
+
 %     dir_name = '/home/mohaghegh-data/temp-storage/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR/';
-<<<<<<< HEAD
 %     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
     dir_name = '/home/mohaghegh-data/temp-storage/18-05-09-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
 %     dir_name = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/MATLAB-data-analysis/Analysis/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR';
-%     Figdir   = fullfile(dir_name,['Figs28Mardata']);
-=======
-%     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
-%     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
-    dir_name = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/MATLAB-data-analysis/Analysis/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR';
     Figdir   = fullfile(dir_name,['Figs10Maydata']);
->>>>>>> 1781eefc8e07db433bb18176ea45af96d45be056
 %     Figdir = fullfile(dir_name,['Figs16Aprdata']);
-    Figdir = fullfile(dir_name,['Figs09Maydata']);
+%     Figdir = fullfile(dir_name,['Figs09Maydata']);
 %     fl_name = fullfile(dir_name,'all_proc_data18-03-28.mat');
 %     fl_name = fullfile(dir_name,'all_proc_data18-04-16.mat');
     fl_name = fullfile(dir_name,'all_proc_data.mat');
@@ -35,17 +28,18 @@ function [] = main_vis()
     strstn = procdata{1,1};
     strstn.stim_param(:,[1,4]) = [];
     strstn.stim_param_ISI(:,[1,4]) = [];
-    str = procdata{1,2};
-%     str = procdata{1,end};
-    
+%     str = procdata{1,2};
+    str = procdata{1,end};
+
     disp('Combining all related data in structure to one ...')
 %     base_ind = 3;
 %     adding_ind = 4:9;
-    base_ind = 3;
-    adding_ind = 4:5;
+    base_ind = 2;
+    adding_ind = 3:5;
     strstngpa = struct_conc(procdata,base_ind,adding_ind);
 %     strstngpa = procdata{1,end};
-    
+    time_vec = strstn.time_vec;
+
     % All stimuli parameters
     disp('Separating all stimulus parameters ...')
     str_f = unique(strstngpa.stim_param(:,2));
@@ -53,98 +47,98 @@ function [] = main_vis()
     gpa_f = unique(strstngpa.stim_param(:,1));
     relsg = unique(strstngpa.stim_param(:,4));
     relss = unique(strstngpa.stim_param(:,5));
-    
+
     Ws = unique(strstngpa.nuclei_trials_ISI(:,3));
-    
+
     numtrs = max(str.nuclei_trials_ISI(:,2));
-    
+
     % Choosing which nucleus to process
     disp('Choosing which nucleus to process ...')
     ncs_sel = 'SN';
     ncs = {'FS','GA','GF','GI','M1','M2','SN','ST'};
 %     ncs = str.nuclei.nc_names;
     nc_ind = find(strcmpi(ncs,ncs_sel));
-    
+
     % Taking all relevant data to the nucleus
-    
+
 %     str = NOI_data(str,nc_ind);
 %     strstn = NOI_data(strstn,nc_ind);
 %     strstngpa = NOI_data(strstngpa,nc_ind);
-    
+
     % Putting all stim parameters together
-    
+
     all_stim_par = combvec(str_f',stn_f',gpa_f',relss',relsg');
     all_stim_par_stn = combvec(str_f',stn_f',relss');
-    
+
     % Measuring delays
 %     [delay_gpastn,delay_stn,diffdelay_stnvsgpa,...
 %      off_str,off_stn] = trbytr_delay_measure(str,strstn,strstngpa);
- 
+
     % Counting number of suppressed, delayed, advanced decrease
     disp('Processing delays, suppresses and ...')
     [spda_data,delays] = supp_prom_del_adv(str,strstn,strstngpa,gs_rel_lim);
-    
+
     % Decrease Failed Bar plot
     disp('Visualizing no suppression data ...')
     nodecinSN(spda_data.no_decrease,numtrs,Figdir)
-    
+
     % Delays of averages
     disp('Computing the average delays NOT tr-by-tr')
     Avg_dels = delay_measure_average(str,strstn,strstngpa,all_stim_par,Ws);
-    
+
     % Finding parameter combinations where GPA stimulation was
     % significantly effective (> 0.95)
-    
+
 %     disp('Finding parameters with respect to advancing the decrease GPA ...')
 %     effective_params(spda_data.neg_delay10_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.1,'EffcNegDelay10-GPAvsSTN')
 
-    
-    disp('Finding significant paramters with respect to delay GPA+STN ...')
-    effective_params(spda_data.pos_delay_gpvsst,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcPosDelay-GPAvsSTN')
-    
-    disp('Finding significant paramters with respect to suppression GPA+STN ...')
-    effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
-    
-    disp('Finding significant paramters with respect to delay GPA+STN while relative times are constrained ...')
-    effective_params(spda_data.pos_delay_gpvsst_relcon,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcPosDelay-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
-    
-    disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
-    effective_params(spda_data.suppressed_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSupp-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
-    
-    disp('Finding significant paramters with respect to suppression GPA+STN ...')
-    effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
-    
-    disp('Finding significant parameters with respect to suppression or delay GPA+STN')
-    effective_params(spda_data.delORsupp_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSuppORDel-GPAvsSTN')
-    
-    disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
-    effective_params(spda_data.delORsupp_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSuppORDel-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
-    
+
+%     disp('Finding significant paramters with respect to delay GPA+STN ...')
+%     effective_params(spda_data.pos_delay_gpvsst,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcPosDelay-GPAvsSTN')
+% 
+%     disp('Finding significant paramters with respect to suppression GPA+STN ...')
+%     effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
+% 
+%     disp('Finding significant paramters with respect to delay GPA+STN while relative times are constrained ...')
+%     effective_params(spda_data.pos_delay_gpvsst_relcon,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcPosDelay-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
+% 
+%     disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
+%     effective_params(spda_data.suppressed_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSupp-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
+% 
+%     disp('Finding significant paramters with respect to suppression GPA+STN ...')
+%     effective_params(spda_data.suppressed_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSupp-GPAvsSTN')
+% 
+%     disp('Finding significant parameters with respect to suppression or delay GPA+STN')
+%     effective_params(spda_data.delORsupp_gpvsst,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,'EffcSuppORDel-GPAvsSTN')
+% 
+%     disp('Finding significant paramters with respect to suppression GPA+STN while relative times are constrained ...')
+%     effective_params(spda_data.delORsupp_gpvsst_relcon,[],[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,thre,['EffcSuppORDel-GPAvsSTN-RELTH',num2str(gs_rel_lim,'%.0f')])
+
     disp('Finding significant paramters with respect to delay STN ...')
     effective_params_stn(spda_data.pos_delay_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcPosDelay-STN')
-    
+
     disp('Finding significant paramters with respect to suppression STN ...')
     effective_params_stn(spda_data.suppressed_st,[],[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcSupp-STN')
-    
+
     disp('Finding significant paramters with respect to suppression or delay STN ...')
     effective_params_stn(spda_data.delORsupp_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,thre,'EffcSuppORDel-STN')
-    
+
     disp('Finding parameters with respect to advancing the decrease GPA ...')
     effective_params(spda_data.neg_delay_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.5,'EffcNegDelay-GPAvsSTN')
-    
+
     disp('Finding parameters with respect to promotion the decrease GPA ...')
     effective_params(spda_data.promoted_gp,delays,[str,strstn,strstngpa],all_stim_par,Ws,numtrs,Figdir,0.5,'EffcPromDelay-GPAvsSTN')
-    
+
     disp('Finding parameters with respect to advancing the decrease STN ...')
     effective_params_stn(spda_data.neg_delay_st,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,0.5,'EffcNegDelay-STN')
-    
+
     disp('Finding parameters with respect to promotion the decrease STN ...')
     effective_params_stn(spda_data.promoted_gp,delays,[str,strstn,strstngpa],all_stim_par_stn,Ws,numtrs,Figdir,0.5,'EffcPromDelay-STN')
-    
+
     disp('Visualizing delays ...')
     disp('Positive delays for GPA & STN...')
     disp('Negative delays for GPA & STN...')
-    
+
     for str_ind = 1:length(str_f)
         delayvis(spda_data.pos_delay_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'PositiveDelay-GPASTN')
         delayvis(spda_data.neg_delay_gp,numtrs*length(stn_f)*length(relss),Figdir,str_f(str_ind),'NegativeDelay-GPASTN')
@@ -154,10 +148,10 @@ function [] = main_vis()
         delayvis_avgval(delays.GPASTN,Figdir,str_f(str_ind),'AverageDelay-trbytr-GPASTN')
         avgdelayvis(Avg_dels,Figdir,str_f(str_ind),'AverageDelay-GPA')
     end
-    
+
     disp('Positive delays for STN ...')
     disp('Negative delays for STN ...')
-    
+
     for str_ind = 1:length(str_f)
         delayvis_stn(spda_data.pos_delay_st,numtrs,Figdir,str_f(str_ind),'PositiveDelay-STN')
         delayvis_stn(spda_data.neg_delay_st,numtrs,Figdir,str_f(str_ind),'NegativeDelay-STN')
@@ -168,9 +162,9 @@ function [] = main_vis()
         avgdelayvis_stn(Avg_dels,Figdir,str_f(str_ind),'AverageDelay-STNSTR')
     end
     % Distribution of off times in SNr for each individual rate
-    
+
     dist_offtime_each_w(str,strstn,strstngpa,Figdir)
-    
+
 end
 
 function data_struct_out = struct_conc(data,base_ind,adding_ind)
@@ -223,17 +217,17 @@ function avg_delays = delay_measure_average(STR,STN,GPA,all_stim_params,Ws)
                       STN.nuclei_trials_ISI(:,3) == Ws(w_ind);
             sel_str = STR.stim_param_ISI      == all_stim_params(1,asp_ind) & ...
                       STR.nuclei_trials_ISI(:,3) == Ws(w_ind);
-                  
+
             tmp_offgpa = GPA.offtime(sel_gpa);
             tmp_offstn = GPA.offtime(sel_stn);
             tmp_offstr = GPA.offtime(sel_str);
-            
+
             gpa_str_delay(w_ind,asp_ind) = mean(tmp_offgpa(~isnan(tmp_offgpa))) - ...
                                            mean(tmp_offstr(~isnan(tmp_offstr)));
-                        
+
             stn_str_delay(w_ind,asp_ind) = mean(tmp_offstn(~isnan(tmp_offstn))) - ...
                                            mean(tmp_offstr(~isnan(tmp_offstr)));
-                        
+
             gpa_stn_delay(w_ind,asp_ind) = mean(tmp_offgpa(~isnan(tmp_offgpa))) - ...
                                            mean(tmp_offstn(~isnan(tmp_offstn)));
         end
@@ -253,7 +247,7 @@ function [gpa_str_delay,stn_str_delay,gpa_stn_delay,...
         str_ind = STR.stim_param_ISI == GPA.stim_param_ISI(ind,2) & ...
                   STR.nuclei_trials_ISI(:,2) == GPA.nuclei_trials_ISI(ind,2) & ...
                   STR.nuclei_trials_ISI(:,3) == GPA.nuclei_trials_ISI(ind,3);
-                   
+
         stn_ind = STN.stim_param_ISI(:,1) == GPA.stim_param_ISI(ind,2) & ...
                   STN.stim_param_ISI(:,2) == GPA.stim_param_ISI(ind,3) & ...
                   STN.stim_param_ISI(:,3) == GPA.stim_param_ISI(ind,5) & ...
@@ -277,7 +271,7 @@ function [stn_str_delay,offtime_str] = trbytr_delay_measure_stn(STR,STN)
         str_ind = STR.stim_param_ISI == STN.stim_param_ISI(ind,1) & ...
                   STR.nuclei_trials_ISI(:,2) == STN.nuclei_trials_ISI(ind,2) & ...
                   STR.nuclei_trials_ISI(:,3) == STN.nuclei_trials_ISI(ind,3);
-        
+
         offtime_str(ind) = STR.offtime(str_ind);
 
     end
@@ -287,17 +281,17 @@ end
 function [] = nodecinSN(data_in,numtr,data_path)
 %     Ws = unique(data_in)
 %     disp(data_in)
-    
+
     fig_dir = fullfile(data_path,'NoDecreaseinSN');
-    
+
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
-    
+
     Ws = unique(data_in.del_w(:,3));
     stim = unique(data_in.stim_par);
     nodec_ratio = zeros(length(Ws),length(stim));
-    
+
     for w_ind = 1:length(Ws)
         for s_ind = 1:length(stim)
             sel = data_in.del_w(:,3) == Ws(w_ind) & data_in.stim_par == stim(s_ind);
@@ -329,12 +323,12 @@ function [] = nodecinSN(data_in,numtr,data_path)
     xlabel('STR stim')
     fig_print(gcf,fullfile(fig_dir,'DecRatio-heatmap'))
     close(gcf)
-    
+
 %     GCA
 end
 
 function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight_vec,numtr,data_path,thr,flname_str)
-    
+
     strf = [];
     stnf = [];
     gpaf = [];
@@ -344,29 +338,31 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
     trlv = [];
     all_del = [];
     all_supp = [];
-    
+
     fig_dir = fullfile(data_path,flname_str);
-    
+
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
-    
+
     avg_win = 10;
     
+    time_vec = all_data(1).time_vec;
+
     if ~isempty(data_del)
         stim_del = data_del.GPASTN.stim_par;
         stim_w   = data_del.GPASTN.del_w(:,3);
 
         sprintf('STR \tSTN \tGPA \tRELSS \tRELSG \tW \tdelg \tdelsg \tsuppressed')
-        
+
         txtfile_strpattern = '%i \t%i \t%i \t%i \t%i \t%.2f \t%.2f \t%.2f \t%.0f\n';
     else
-    
+
         sprintf('STR \tSTN \tGPA \tRELSS \tRELSG \tW')
-    
+
         txtfile_strpattern = '%i \t%i \t%i \t%i \t%i \t%.2f\n';
     end
-    
+
     Ws = data_in.del_w(:,3);
     TR = data_in.del_w(:,2);
     stim = data_in.stim_par;
@@ -378,24 +374,24 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
                    stim(:,5) == all_pars(4,p_ind) & ...
                    stim(:,4) == all_pars(5,p_ind) & ...
                    Ws        == weight_vec(w_ind);
-               
+
             %%% This part should be written to work more efficiently e.g.
             %%% in the delay part where all logical operations are already
             %%% implemented.
-               
+
             ind_for_trs = all_data(3).stim_param_ISI(:,2) == all_pars(1,p_ind) & ...
                            all_data(3).stim_param_ISI(:,3) == all_pars(2,p_ind) & ...
                            all_data(3).stim_param_ISI(:,1) == all_pars(3,p_ind) & ...
                            all_data(3).stim_param_ISI(:,5) == all_pars(4,p_ind) & ...
                            all_data(3).stim_param_ISI(:,4) == all_pars(5,p_ind) & ...
                            all_data(3).nuclei_trials_ISI(:,3) == weight_vec(w_ind);
-                       
+
             numtr = sum(ind_for_trs) ;
-            
+
             %%%
             %%%
             %%%
-               
+
             if sum(inds)/numtr >= thr
                 strf = [strf;all_pars(1,p_ind)];
                 stnf = [stnf;all_pars(2,p_ind)];
@@ -403,40 +399,40 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
                 rlss = [rlss;all_pars(4,p_ind)];
                 rlsg = [rlsg;all_pars(5,p_ind)];
                 wght = [wght;weight_vec(w_ind)];
-                
+
                 avg_fr_par = [all_pars(1,p_ind),...
                               all_pars(2,p_ind),...
                               all_pars(3,p_ind),...
                               all_pars(4,p_ind),...
                               all_pars(5,p_ind),...
                               weight_vec(w_ind)];
-                
+
                 % Plotting corresponding average firing rates
                 if ~isempty(all_data)
-                    [f_c,f_t,f_s] = main_avgfr(avg_fr_par,TR(inds),all_data(1),all_data(2),all_data(3),avg_win);
-                    fig_print(f_c,fullfile(fig_dir,['Colorplot-',num2str(avg_fr_par(1),'%.0f'),...
+                    [f_c,f_t,f_s] = main_avgfr(avg_fr_par,TR(inds),all_data(1),all_data(2),all_data(3),time_vec,avg_win);
+                    fig_print(f_c,fullfile(fig_dir,['Colorplot-',num2str(avg_fr_par(6)*100,'%.0f'),'-',...
+                                                  num2str(avg_fr_par(1),'%.0f'),...
                                                   num2str(avg_fr_par(2),'%.0f'),...
                                                   num2str(avg_fr_par(3),'%.0f'),...
                                                   num2str(avg_fr_par(4),'%.0f'),...
-                                                  num2str(avg_fr_par(5),'%.0f'),...
-                                                  num2str(avg_fr_par(6)*100,'%.0f')]))
+                                                  num2str(avg_fr_par(5),'%.0f')]))
                     close(f_c)
-                    fig_print(f_t,fullfile(fig_dir,['Trace-',num2str(avg_fr_par(1),'%.0f'),...
+                    fig_print(f_t,fullfile(fig_dir,['Trace-',num2str(avg_fr_par(6)*100,'%.0f'),'-',...
+                                                  num2str(avg_fr_par(1),'%.0f'),...
                                                   num2str(avg_fr_par(2),'%.0f'),...
                                                   num2str(avg_fr_par(3),'%.0f'),...
                                                   num2str(avg_fr_par(4),'%.0f'),...
-                                                  num2str(avg_fr_par(5),'%.0f'),...
-                                                  num2str(avg_fr_par(6)*100,'%.0f')]))
+                                                  num2str(avg_fr_par(5),'%.0f')]))
                     close(f_t)
-                    fig_print(f_s,fullfile(fig_dir,['Spectrum-',num2str(avg_fr_par(1),'%.0f'),...
+                    fig_print(f_s,fullfile(fig_dir,['Spectrum-',num2str(avg_fr_par(6)*100,'%.0f'),'-',...
+                                                  num2str(avg_fr_par(1),'%.0f'),...
                                                   num2str(avg_fr_par(2),'%.0f'),...
                                                   num2str(avg_fr_par(3),'%.0f'),...
                                                   num2str(avg_fr_par(4),'%.0f'),...
-                                                  num2str(avg_fr_par(5),'%.0f'),...
-                                                  num2str(avg_fr_par(6)*100,'%.0f')]))
+                                                  num2str(avg_fr_par(5),'%.0f')]))
                     close(f_s)
                 end
-                
+
                 if ~isempty(data_del)
                     sel_del = stim_del(:,2) == all_pars(1,p_ind) & ...
                               stim_del(:,3) == all_pars(2,p_ind) & ...
@@ -446,9 +442,9 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
                               stim_w        == weight_vec(w_ind);
                     del_tmp = data_del.GPASTN.delay(sel_del);
                     avg_del = mean(del_tmp(~isnan(del_tmp)));
-                    
+
                     num_supp = sum(inds) - sum(~isnan(del_tmp));
-                    
+
                     del_tmp = data_del.GPASTN.delay_vsstn(sel_del);
                     avg_del_stn = mean(del_tmp(~isnan(del_tmp)));
                     all_del = [all_del;[avg_del,avg_del_stn]];
@@ -457,10 +453,10 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
                 else
                     avg_del = 0;
                     avg_del_stn = 0;
-                    num_supp = sum(inds); 
+                    num_supp = sum(inds);
 %                     txtfile_strpattern = '%i \t%i \t%i \t%i \t%i \t%.2f\n';
                 end
-                
+
                 sprintf([num2str(all_pars(1,p_ind)),' \t',...
                          num2str(all_pars(2,p_ind)),' \t',...
                          num2str(all_pars(3,p_ind)),' \t',...
@@ -472,17 +468,17 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
 %             end
             elseif sum(inds)/numtr > 1
                 disp('weird!')
-                
+
             end
         end
     end
     sel_params = [strf,stnf,gpaf,rlss,rlsg,wght];
     str_params = {'str','stn','gpa','rlss','rlsg','weight'};
-    
+
     sig_params = struct('par',sel_params,...
                         'str',str_params);
 %     save(fullfile(fig_dir,'outputdata'),sig_params)
-                    
+
     fileID = fopen(fullfile(fig_dir,'outputdata1.txt'),'w');
     fprintf(fileID, 'str    stn     gpa     rlss    rlsg    weight  delay   del_stn     suppressed\n\n');
     fprintf(fileID,txtfile_strpattern,[sel_params,all_del,all_supp]');
@@ -490,7 +486,7 @@ function sig_params = effective_params(data_in,data_del,all_data,all_pars,weight
 end
 
 function sig_params = effective_params_stn(data_in,data_del,all_data,all_pars,weight_vec,numtr,data_path,thr,flname_str)
-    
+
     strf = [];
     stnf = [];
 %     gpaf = [];
@@ -500,29 +496,30 @@ function sig_params = effective_params_stn(data_in,data_del,all_data,all_pars,we
     trlv = [];
     all_del = [];
     all_supp = [];
-    
+
     fig_dir = fullfile(data_path,flname_str);
-    
+
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
-    
+
     avg_win = 10;
-    
+    time_vec = all_data(1).time_vec;
+
     if ~isempty(data_del)
         stim_del = data_del.STN.stim_par;
         stim_w   = data_del.STN.del_w(:,3);
 
         sprintf('STR \tSTN \tRELSS \tW \tdels \tsuppressed')
         txtfile_strpattern = '%i \t%i \t%i \t%.2f \t%.2f \t%.0f\n';
-        
+
     else
-    
+
         sprintf('STR \tSTN \tRELSS \tW')
         txtfile_strpattern = '%i \t%i \t%i \t%.2f\n';
-        
+
     end
-    
+
     Ws = data_in.del_w(:,3);
     TR = data_in.del_w(:,2);
     stim = data_in.stim_par;
@@ -532,28 +529,28 @@ function sig_params = effective_params_stn(data_in,data_del,all_data,all_pars,we
                    stim(:,2) == all_pars(2,p_ind) & ...
                    stim(:,3) == all_pars(3,p_ind) & ...
                    Ws        == weight_vec(w_ind);
-               
+
             %%% This part should be written to work more efficiently e.g.
             %%% in the delay part where all logical operations are already
             %%% implemented.
-               
+
             ind_for_trs = all_data(2).stim_param_ISI(:,1) == all_pars(1,p_ind) & ...
                            all_data(2).stim_param_ISI(:,2) == all_pars(2,p_ind) & ...
                            all_data(2).stim_param_ISI(:,3) == all_pars(3,p_ind) & ...
                            all_data(2).nuclei_trials_ISI(:,3) == weight_vec(w_ind);
-                       
+
             numtr = sum(ind_for_trs) ;
-            
+
             %%%
             %%%
             %%%
-               
+
             if sum(inds)/numtr >= thr
                 strf = [strf;all_pars(1,p_ind)];
                 stnf = [stnf;all_pars(2,p_ind)];
                 rlss = [rlss;all_pars(3,p_ind)];
                 wght = [wght;weight_vec(w_ind)];
-                
+
                 if ~isempty(data_del)
                     sel_del = stim_del(:,1) == all_pars(1,p_ind) & ...
                               stim_del(:,2) == all_pars(2,p_ind) & ...
@@ -561,41 +558,46 @@ function sig_params = effective_params_stn(data_in,data_del,all_data,all_pars,we
                               stim_w        == weight_vec(w_ind);
                     del_tmp = data_del.STN.delay(sel_del);
                     avg_del = mean(del_tmp(~isnan(del_tmp)));
-                    
+
                     num_supp = sum(inds) - sum(~isnan(del_tmp));
-                    
+
                 else
                     avg_del = 0;
                     num_supp = sum(inds);
                 end
-                
+
                 sprintf([num2str(all_pars(1,p_ind)),' \t',...
                          num2str(all_pars(2,p_ind)),' \t',...
                          num2str(all_pars(3,p_ind)),' \t',...
                          num2str(weight_vec(w_ind)),' \t',...
                          num2str(avg_del),          ' \t',...
                          num2str(num_supp,'%.0f')])
-                
+
                 avg_fr_par = [all_pars(1,p_ind),...
                               all_pars(2,p_ind),...
                               all_pars(3,p_ind),...
                               weight_vec(w_ind)];
-                
+
                 % Plotting corresponding average firing rates
                 if ~isempty(all_data)
-                    [f_c,f_t] = main_avgfr(avg_fr_par,TR(inds),all_data(1),all_data(2),[],avg_win);
-                    fig_print(f_c,fullfile(fig_dir,['Colorplot-',num2str(avg_fr_par(1),'%.0f'),...
+                    [f_c,f_t,f_s] = main_avgfr(avg_fr_par,TR(inds),all_data(1),all_data(2),[],time_vec,avg_win);
+                    fig_print(f_c,fullfile(fig_dir,['Colorplot-',num2str(avg_fr_par(4)*100,'%.0f'),'-',...
+                                                  num2str(avg_fr_par(1),'%.0f'),...
                                                   num2str(avg_fr_par(2),'%.0f'),...
-                                                  num2str(avg_fr_par(3),'%.0f'),...
-                                                  num2str(avg_fr_par(4)*100,'%.0f')]))
+                                                  num2str(avg_fr_par(3),'%.0f')]))
                     close(f_c)
-                    fig_print(f_t,fullfile(fig_dir,['Trace-',num2str(avg_fr_par(1),'%.0f'),...
+                    fig_print(f_t,fullfile(fig_dir,['Trace-',num2str(avg_fr_par(4)*100,'%.0f'),'-',...
+                                                  num2str(avg_fr_par(1),'%.0f'),...
                                                   num2str(avg_fr_par(2),'%.0f'),...
-                                                  num2str(avg_fr_par(3),'%.0f'),...
-                                                  num2str(avg_fr_par(4)*100,'%.0f')]))
+                                                  num2str(avg_fr_par(3),'%.0f')]))
                     close(f_t)
+                    fig_print(f_s,fullfile(fig_dir,['Spectrum-',num2str(avg_fr_par(4)*100,'%.0f'),'-',...
+                                                  num2str(avg_fr_par(1),'%.0f'),...
+                                                  num2str(avg_fr_par(2),'%.0f'),...
+                                                  num2str(avg_fr_par(3),'%.0f')]))
+                    close(f_s)
                 end
-                
+
                 if ~isempty(data_del)
                     sel_del = stim_del(:,1) == all_pars(1,p_ind) & ...
                               stim_del(:,2) == all_pars(2,p_ind) & ...
@@ -603,7 +605,7 @@ function sig_params = effective_params_stn(data_in,data_del,all_data,all_pars,we
                               stim_w        == weight_vec(w_ind);
                     del_tmp = data_del.STN.delay(sel_del);
                     avg_del = mean(del_tmp(~isnan(del_tmp)));
-                    
+
                     all_del = [all_del;avg_del];
                     all_supp = [all_supp;num_supp];
 %                     txtfile_strpattern = '%i \t%i \t%i \t%.2f \t%.2f \t%.2f\n';
@@ -613,7 +615,7 @@ function sig_params = effective_params_stn(data_in,data_del,all_data,all_pars,we
                     num_supp = sum(inds);
 %                     txtfile_strpattern = '%i \t%i \t%i \t%.2f\n';
                 end
-                
+
                 sprintf([num2str(all_pars(1,p_ind)),' \t',...
                          num2str(all_pars(2,p_ind)),' \t',...
                          num2str(all_pars(3,p_ind)),' \t',...
@@ -627,11 +629,11 @@ function sig_params = effective_params_stn(data_in,data_del,all_data,all_pars,we
     end
     sel_params = [strf,stnf,rlss,wght];
     str_params = {'str','stn','rlss','weight'};
-    
+
     sig_params = struct('par',sel_params,...
                         'str',str_params);
 %     save(fullfile(fig_dir,'outputdata'),sig_params)
-                    
+
     fileID = fopen(fullfile(fig_dir,'outputdata1.txt'),'w');
     fprintf(fileID, 'str    stn    rlss    weight  delay   del_stn  suppressed\n\n');
     fprintf(fileID,txtfile_strpattern,[sel_params,all_del,all_supp]');
@@ -639,23 +641,23 @@ function sig_params = effective_params_stn(data_in,data_del,all_data,all_pars,we
 end
 
 % function sig_params = effective_params_stn(data_in,data_del,all_pars,weight_vec,numtr,data_path,thr,flname_str)
-%     
+%
 %     strf = [];
 %     stnf = [];
 %     gpaf = [];
 %     rlss = [];
 %     rlsg = [];
 %     wght = [];
-%     
+%
 %     if ~isempty(data_del)
 %         stim_del = data_del.STN.stim_par;
 %         stim_w   = data_del.STN.del_w(:,3);
-% 
+%
 % %         sprintf('STR \tSTN \tGPA \tRELSS \tRELSG \tW \tdelsg')
 %     end
-%     
+%
 %     sprintf('STR \tSTN \tRELSS \tW \tdels')
-%     
+%
 %     Ws = data_in.del_w(:,3);
 %     stim = data_in.stim_par;
 %     for w_ind = 1:length(weight_vec)
@@ -664,13 +666,13 @@ end
 %                    stim(:,2) == all_pars(2,p_ind) & ...
 %                    stim(:,3) == all_pars(3,p_ind) & ...
 %                    Ws        == weight_vec(w_ind);
-%                
+%
 %             if sum(inds)/numtr >= thr
 %                 strf = [strf,all_pars(1,p_ind)];
 %                 stnf = [stnf,all_pars(2,p_ind)];
 %                 rlss = [rlss,all_pars(3,p_ind)];
 %                 wght = [wght,weight_vec(w_ind)];
-%                 
+%
 %                 if ~isempty(data_del)
 %                     sel_del = stim_del(:,1) == all_pars(1,p_ind) & ...
 %                               stim_del(:,2) == all_pars(2,p_ind) & ...
@@ -678,11 +680,11 @@ end
 %                               stim_w        == weight_vec(w_ind);
 %                     del_tmp = data_del.STN.delay(sel_del);
 %                     avg_del = mean(del_tmp(~isnan(del_tmp)));
-%                     
+%
 %                 else
 %                     avg_del = 0;
 %                 end
-%                 
+%
 %                 sprintf([num2str(all_pars(1,p_ind)),' \t',...
 %                          num2str(all_pars(2,p_ind)),' \t',...
 %                          num2str(all_pars(3,p_ind)),' \t',...
@@ -696,25 +698,25 @@ end
 %     end
 %     sel_params = [strf;stnf;gpaf;rlss;rlsg;wght];
 %     str_params = {'str','stn','rlss','weight'};
-%     
+%
 %     sig_params = struct('par',sel_params,...
 %                         'str',str_params);
 % end
 
 function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
-    
+
     num_flag = isnumeric(numtr);
-    
+
     if num_flag
         fig_dir = fullfile(data_path,'Delay');
     else
         fig_dir = fullfile(data_path,'Delay-CorrectTr');
     end
-    
+
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
-    
+
     Ws = unique(data_in.del_w(:,3));
     stim = unique(data_in.stim_par(:,1));
     rel = unique(data_in.stim_par(:,4));
@@ -726,7 +728,7 @@ function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
             for s_ind = 1:size(stim,1)
                 sel = data_in.del_w(:,3) == Ws(w_ind) & data_in.stim_par(:,1) == stim(s_ind,1) & ...
                       data_in.stim_par(:,2) == strf & data_in.stim_par(:,4) == rel(r_ind);
-                if num_flag  
+                if num_flag
                     pos_delay_ratio(w_ind,s_ind) = sum(sel)/numtr;
                 else
                     sel_tr = numtr.del_w(:,3) == Ws(w_ind) & numtr.stim_par(:,1) == stim(s_ind,1) & ...
@@ -735,9 +737,9 @@ function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
                 end
             end
         end
-        
+
 %         % Barplot
-%         
+%
 %         figure(f1);
 %         subplot(2,ceil(length(rel)/2),r_ind)
 %         h = bar(Ws,pos_delay_ratio);
@@ -754,9 +756,9 @@ function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
 %         xlim([min(Ws)-0.1,max(Ws)+0.1])
 %         ylim([0,1])
 %         GCA.XTick = Ws;
-        
+
         % Heatmap
-        
+
         figure(f2);
         subplot(2,ceil(length(rel)/2),r_ind)
         imagesc(stim,Ws,pos_delay_ratio,[0,1])
@@ -772,7 +774,7 @@ function [] = delayvis(data_in,numtr,data_path,strf,flname_str)
 %         xlim([min(Ws)-0.1,max(Ws)+0.1])
 %         ylim([0,1])
 %         GCA.XTick = Ws;
-        
+
     end
 %     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
     fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf),'-heatmap']))
@@ -781,7 +783,7 @@ end
 
 function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
     num_flag = isnumeric(numtr);
-    
+
     if num_flag
         fig_dir = fullfile(data_path,'Delay');
     else
@@ -790,7 +792,7 @@ function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
-    
+
     Ws = unique(data_in.del_w(:,3));
     stim = unique(data_in.stim_par(:,2));
     rel = unique(data_in.stim_par(:,3));
@@ -802,7 +804,7 @@ function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
             for s_ind = 1:size(stim,1)
                 sel = data_in.del_w(:,3) == Ws(w_ind) & data_in.stim_par(:,2) == stim(s_ind) & ...
                       data_in.stim_par(:,1) == strf & data_in.stim_par(:,3) == rel(r_ind);
-                  
+
                 if num_flag
                     pos_delay_ratio(w_ind,s_ind) = sum(sel)/numtr;
                 else
@@ -812,9 +814,9 @@ function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
                 end
             end
         end
-        
+
         % Heatmap
-        
+
         figure(f2);
         subplot(2,ceil(length(rel)/2),r_ind)
         imagesc(stim,Ws,pos_delay_ratio,[0,1])
@@ -830,7 +832,7 @@ function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
 %         xlim([min(Ws)-0.1,max(Ws)+0.1])
 %         ylim([0,1])
 %         GCA.XTick = Ws;
-        
+
     end
 %     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
     fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf),'-heatmap']))
@@ -838,14 +840,14 @@ function [] = delayvis_stn(data_in,numtr,data_path,strf,flname_str)
 end
 
 function [] = delayvis_avgval(data_in,data_path,strf,flname_str)
-    
-    
+
+
     fig_dir = fullfile(data_path,'Delay-val');
-    
+
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
-    
+
     Ws = unique(data_in.del_w(:,3));
     stim = unique(data_in.stim_par(:,1));
     rel = unique(data_in.stim_par(:,4));
@@ -862,7 +864,7 @@ function [] = delayvis_avgval(data_in,data_path,strf,flname_str)
             end
         end
         % Heatmap
-        
+
         figure(f2);
         subplot(2,ceil(length(rel)/2),r_ind)
         imagesc(stim,Ws,del_val)
@@ -878,7 +880,7 @@ function [] = delayvis_avgval(data_in,data_path,strf,flname_str)
 %         xlim([min(Ws)-0.1,max(Ws)+0.1])
 %         ylim([0,1])
 %         GCA.XTick = Ws;
-        
+
     end
 %     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
     fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf)]))
@@ -886,14 +888,14 @@ function [] = delayvis_avgval(data_in,data_path,strf,flname_str)
 end
 
 function [] = delayvis_avgval_stn(data_in,data_path,strf,flname_str)
-    
-    
+
+
     fig_dir = fullfile(data_path,'Delay-val');
-    
+
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
-    
+
     Ws = unique(data_in.del_w(:,3));
     stim = unique(data_in.stim_par(:,2));
     rel = unique(data_in.stim_par(:,3));
@@ -910,7 +912,7 @@ function [] = delayvis_avgval_stn(data_in,data_path,strf,flname_str)
             end
         end
         % Heatmap
-        
+
         figure(f2);
         subplot(2,ceil(length(rel)/2),r_ind)
         imagesc(stim,Ws,del_val)
@@ -926,7 +928,7 @@ function [] = delayvis_avgval_stn(data_in,data_path,strf,flname_str)
 %         xlim([min(Ws)-0.1,max(Ws)+0.1])
 %         ylim([0,1])
 %         GCA.XTick = Ws;
-        
+
     end
 %     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
     fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf)]))
@@ -935,19 +937,19 @@ end
 
 
 function [] = avgdelayvis_stn(data_in,data_path,strf,flname_str)
-    
-    
+
+
     fig_dir = fullfile(data_path,'Avg-delay-val');
-    
+
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
-    
+
     Ws = data_in.weights;
     stim = unique(data_in.stim_pars(2,:));
     rel = unique(data_in.stim_pars(4,:));
     del_val = zeros(length(Ws),length(stim));
-    
+
 %     f1 = figure;
     f2 = figure;
     for r_ind = 1:length(rel)
@@ -960,7 +962,7 @@ function [] = avgdelayvis_stn(data_in,data_path,strf,flname_str)
             end
         end
         % Heatmap
-        
+
         figure(f2);
         subplot(2,ceil(length(rel)/2),r_ind)
         imagesc(stim,Ws,del_val)
@@ -976,7 +978,7 @@ function [] = avgdelayvis_stn(data_in,data_path,strf,flname_str)
 %         xlim([min(Ws)-0.1,max(Ws)+0.1])
 %         ylim([0,1])
 %         GCA.XTick = Ws;
-        
+
     end
 %     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
     fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf)]))
@@ -984,20 +986,20 @@ function [] = avgdelayvis_stn(data_in,data_path,strf,flname_str)
 end
 
 function [] = avgdelayvis(data_in,data_path,strf,flname_str)
-    
-    
+
+
     fig_dir = fullfile(data_path,'Avg-delay-val');
-    
+
     if exist(fig_dir,'dir') ~= 7
         mkdir(fig_dir)
     end
-    
+
     Ws = data_in.weights;
     stim = unique(data_in.stim_pars(3,:));
     rel = unique(data_in.stim_pars(5,:));
     del_val = zeros(length(Ws),length(stim));
     del_val_gs = zeros(length(Ws),length(stim));
-    
+
     f1 = figure;
     f2 = figure;
     for r_ind = 1:length(rel)
@@ -1011,9 +1013,9 @@ function [] = avgdelayvis(data_in,data_path,strf,flname_str)
                 del_val_gs(w_ind,s_ind) = mean(tmp_val(~isnan(tmp_val)));
             end
         end
-        
+
         % Heatmap
-        
+
         figure(f1);
         subplot(2,ceil(length(rel)/2),r_ind)
         imagesc(stim,Ws,del_val_gs)
@@ -1026,9 +1028,9 @@ function [] = avgdelayvis(data_in,data_path,strf,flname_str)
         ylabel('W')
         xlabel('GPA Stim')
         title(['REL=',num2str(rel(r_ind))])
-        
+
         % Heatmap
-        
+
         figure(f2);
         subplot(2,ceil(length(rel)/2),r_ind)
         imagesc(stim,Ws,del_val)
@@ -1044,7 +1046,7 @@ function [] = avgdelayvis(data_in,data_path,strf,flname_str)
 %         xlim([min(Ws)-0.1,max(Ws)+0.1])
 %         ylim([0,1])
 %         GCA.XTick = Ws;
-        
+
     end
     fig_print(f1,fullfile(fig_dir,[flname_str,'STN',num2str(strf)]))
     fig_print(f2,fullfile(fig_dir,[flname_str,'STR',num2str(strf)]))
@@ -1067,7 +1069,7 @@ function [] = dist_offtime_each_w(str_d,stn_d,gpa_d,dir_path)
                   edges,'Normalization','probability')
         histogram(gpa_d.offtime(gpa_d.nuclei_trials_ISI(:,3) == Ws(w_ind)),...
                   edges,'Normalization','probability')
-              
+
         legend({'NoSen','STN-Sen','STNGPA-Sen'},'Location','northwest')
         title(['GPe_{Arky}\rightarrow STR = ',num2str(Ws(w_ind))])
         xlabel('Off time relative to STR stimulation offset')
@@ -1077,139 +1079,139 @@ function [] = dist_offtime_each_w(str_d,stn_d,gpa_d,dir_path)
 end
 
 function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA,rel_th)
-    
+
 %     rel_th = 0;
     disp(['Rel threshold = ',num2str(rel_th)])
     disp('Measuring delays ...')
     [delay_gpastn,delay_stn,diffdelay_stnvsgpa,...
      off_str,off_stn] = trbytr_delay_measure(STR,STN,GPA);
-    
+
     % How many and for which parameters SNr does not decrease to 0
- 
+
     NDC_ind = isnan(STR.offtime);
     no_nodec_str = sum(NDC_ind);
     nodec_par = STR.stim_param_ISI(NDC_ind);
     nodec_tw  = STR.nuclei_trials_ISI(NDC_ind,:);
-    
+
     % How many of decreases in SNr are suppressed due to stim in GPA & STN
-    
+
     tmp_ind = ~isnan(off_str) & isnan(GPA.offtime);
     no_supp_dec_gpa = sum(tmp_ind);
     suppdec_par_gpa = GPA.stim_param_ISI(tmp_ind,:);
     suppdec_tw_gpa  = GPA.nuclei_trials_ISI(tmp_ind,:);
-    
+
     % How many of decreases in SNr were not suppressed
-    
+
     tmp_ind = ~isnan(off_str) & ~isnan(GPA.offtime);
     dec_dec_gpa = sum(tmp_ind);
     dec_dec_par_gpa = GPA.stim_param_ISI(tmp_ind,:);
     dec_dec_tw_gpa  = GPA.nuclei_trials_ISI(tmp_ind,:);
-    
+
     % Promoted suppresses GPA & STN
-    
+
     tmp_ind = isnan(off_str) & ~isnan(GPA.offtime);
     no_prom_dec_gpa = sum(tmp_ind);
     promdec_par_gpa = GPA.stim_param_ISI(tmp_ind,:);
     promdec_tw_gpa  = GPA.nuclei_trials_ISI(tmp_ind,:);
-    
+
     % How many of decreases in SNr are suppressed due to stim in STN
-    
+
     [delay_str_stn,off_str_stn] = trbytr_delay_measure_stn(STR,STN);
     tmp_ind = ~isnan(off_str_stn) & isnan(STN.offtime);
     no_supp_dec_stn = sum(tmp_ind);
     suppdec_par_stn = STN.stim_param_ISI(tmp_ind,:);
     suppdec_tw_stn  = STN.nuclei_trials_ISI(tmp_ind,:);
-    
+
     % How many of decreases in SNr were not suppressed
-    
+
     tmp_ind = ~isnan(off_str_stn) & ~isnan(STN.offtime);
     dec_dec_stn = sum(tmp_ind);
     dec_dec_par_stn = GPA.stim_param_ISI(tmp_ind,:);
     dec_dec_tw_stn  = GPA.nuclei_trials_ISI(tmp_ind,:);
-    
+
     % Promoted suppresses STN
-    
+
     tmp_ind = isnan(off_str_stn) & ~isnan(STN.offtime);
     no_prom_dec_stn = sum(tmp_ind);
     promdec_par_stn = STN.stim_param_ISI(tmp_ind,:);
     promdec_tw_stn  = STN.nuclei_trials_ISI(tmp_ind,:);
-    
+
     % Negative delay STN & GPA
-    
+
     neg_ind = delay_gpastn < 0;
     neg_del_par_gpa = GPA.stim_param_ISI(neg_ind,:);
     neg_del_tw_gpa  = GPA.nuclei_trials_ISI(neg_ind,:);
-    
+
     % Negative delay STN & GPA
-    
+
     neg_ind = delay_gpastn < 10;
     neg_del10_par_gpa = GPA.stim_param_ISI(neg_ind,:);
     neg_del10_tw_gpa  = GPA.nuclei_trials_ISI(neg_ind,:);
-    
+
     % Positive delay STN & GPA
-    
+
     pos_ind = delay_gpastn >= 0;
     pos_del_par_gpa = GPA.stim_param_ISI(pos_ind,:);
     pos_del_tw_gpa = GPA.nuclei_trials_ISI(pos_ind,:);
-    
+
     % Negative delay STN
-    
+
     neg_ind = delay_str_stn < 0;
     neg_del_par_stn = STN.stim_param_ISI(neg_ind,:);
     neg_del_tw_stn  = STN.nuclei_trials_ISI(neg_ind,:);
-    
+
     % Positive delay STN
-    
+
     pos_ind = delay_str_stn >= 0;
     pos_del_par_stn = STN.stim_param_ISI(pos_ind,:);
     pos_del_tw_stn  = STN.nuclei_trials_ISI(pos_ind,:);
-    
+
     % Positive delay or suppresses STN;
-    
+
     pos_supp_ind = pos_ind | (~isnan(off_str_stn) & isnan(STN.offtime));
     delORsupp_par_stn = STN.stim_param_ISI(pos_supp_ind,:);
     delORsupp_tw_stn  = STN.nuclei_trials_ISI(pos_supp_ind,:);
-    
+
     % Positive delay GPA+STN vs. STN
-    
+
     pos_ind = diffdelay_stnvsgpa >= 0;
     pos_del_par_gpa_vs_stn = GPA.stim_param_ISI(pos_ind,:);
     pos_del_tw_gpa_vs_stn  = GPA.nuclei_trials_ISI(pos_ind,:);
-    
+
     % Additional suppresses in GPA+STN than STN
-    
+
     add_ind = ~isnan(off_str) & ~isnan(off_stn) & isnan(GPA.offtime);
     suppdec_par_gp_vs_stn   = GPA.stim_param_ISI(add_ind,:);
     suppdec_tw_gp_vs_stn    = GPA.nuclei_trials_ISI(add_ind,:);
-    
+
     % Positive delay or suppresses GPA+STN vs. STN
-    
+
     add_pos_ind = pos_ind | add_ind;
     delORsupp_par_gp_vs_stn = GPA.stim_param_ISI(add_pos_ind,:);
     delORsupp_tw_gp_vs_stn  = GPA.nuclei_trials_ISI(add_pos_ind,:);
-    
+
     % Positive delay GPA+STN vs. STN; Constraining relative times
-    
+
     pos_ind = diffdelay_stnvsgpa >= 0 & ...
               (GPA.stim_param_ISI(:,4) > GPA.stim_param_ISI(:,5) + rel_th);
     pos_del_par_gpa_vs_stn_relcon = GPA.stim_param_ISI(pos_ind,:);
     pos_del_tw_gpa_vs_stn_relcon  = GPA.nuclei_trials_ISI(pos_ind,:);
-    
+
     % Additional suppresses in GPA+STN than STN; Constraining relative times
-    
+
     add_ind = ~isnan(off_str) & ~isnan(off_stn) & isnan(GPA.offtime) & ...
               (GPA.stim_param_ISI(:,4) > GPA.stim_param_ISI(:,5) + rel_th);
     suppdec_par_gp_vs_stn_relcon    = GPA.stim_param_ISI(add_ind,:);
     suppdec_tw_gp_vs_stn_relcon     = GPA.nuclei_trials_ISI(add_ind,:);
-    
+
     % Positive delay or suppresses GPA+STN vs. STN; Constraining relative
     % times
-    
+
     add_pos_ind = pos_ind | add_ind;
     delORsupp_par_gp_vs_stn_relcon  = GPA.stim_param_ISI(add_pos_ind,:);
     delORsupp_tw_gp_vs_stn_relcon   = GPA.nuclei_trials_ISI(add_pos_ind,:);
-    
-    
+
+
     SPDA_data = struct('no_decrease',struct('count',no_nodec_str,...
                                             'stim_par',nodec_par,...
                                             'del_w',nodec_tw),...
@@ -1224,7 +1226,7 @@ function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA,rel_th)
                                               'del_w',dec_dec_tw_gpa),...
                        'nosupp_noprom_st',struct('count',dec_dec_stn,...
                                               'stim_par',dec_dec_par_stn,...
-                                              'del_w',dec_dec_tw_stn),...                                              
+                                              'del_w',dec_dec_tw_stn),...
                        'promoted_gp',struct('count',no_prom_dec_gpa,...
                                             'stim_par',promdec_par_gpa,...
                                             'del_w',promdec_tw_gpa),...
@@ -1242,7 +1244,7 @@ function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA,rel_th)
                        'neg_delay_st',struct('stim_par',neg_del_par_stn,...
                                              'del_w',neg_del_tw_stn),...
                        'delORsupp_st',struct('stim_par',delORsupp_par_stn,...
-                                             'del_w',delORsupp_tw_stn),...                      
+                                             'del_w',delORsupp_tw_stn),...
                        'pos_delay_gpvsst',struct('stim_par',pos_del_par_gpa_vs_stn,...
                                                  'del_w',pos_del_tw_gpa_vs_stn),...
                        'suppressed_gpvsst',struct('stim_par',suppdec_par_gp_vs_stn,...
@@ -1275,19 +1277,19 @@ function [SPDA_data,delay_data] = supp_prom_del_adv(STR,STN,GPA,rel_th)
 end
 
 % function [] = avgdelayvis(data_in,data_path,strf,flname_str)
-%     
-%     
+%
+%
 %     fig_dir = fullfile(data_path,'Avg-delay-val');
-%     
+%
 %     if exist(fig_dir,'dir') ~= 7
 %         mkdir(fig_dir)
 %     end
-%     
+%
 %     Ws = data_in.weights;
 %     stim = unique(data_in.stim_pars(:,3));
 %     rel = unique(data_in.stim_pars(:,5));
 %     del_val = zeros(length(Ws),length(stim));
-%     
+%
 % %     f1 = figure;
 %     f2 = figure;
 %     for r_ind = 1:length(rel)
@@ -1300,7 +1302,7 @@ end
 %             end
 %         end
 %         % Heatmap
-%         
+%
 %         figure(f2);
 %         subplot(2,ceil(length(rel)/2),r_ind)
 %         imagesc(stim,Ws,del_val)
@@ -1316,7 +1318,7 @@ end
 % %         xlim([min(Ws)-0.1,max(Ws)+0.1])
 % %         ylim([0,1])
 % %         GCA.XTick = Ws;
-%         
+%
 %     end
 % %     fig_print(f1,fullfile(fig_dir,[num2str(strf),flname_str]))
 %     fig_print(f2,fullfile(fig_dir,[flname_str,num2str(strf)]))

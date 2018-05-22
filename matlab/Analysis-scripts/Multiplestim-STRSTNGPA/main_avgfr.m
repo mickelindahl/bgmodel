@@ -7,17 +7,17 @@
 % stored after preprocessing is the binned version of spike times without
 % any overlap.
 
-function [f_color,f_trace,f_spec] = main_avgfr(stim_w_pars,trials,STR,STN,GPA,w_width)
+function [f_color,f_trace,f_spec] = main_avgfr(stim_w_pars,trials,STR,STN,GPA,t_vec,w_width)
     if ~isempty(GPA)
-        [f_color,f_trace,f_spec] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width);
+        [f_color,f_trace,f_spec] = avgfr(stim_w_pars,trials,STR,STN,GPA,t_vec,w_width);
     else
-        [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width);
+        [f_color,f_trace,f_spec] = avgfr_stn(stim_w_pars,trials,STR,STN,t_vec,w_width);
     end
 end
 
-function [f_color,f_trace,f_spec] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width)
+function [f_color,f_trace,f_spec] = avgfr(stim_w_pars,trials,STR,STN,GPA,time_vec,w_width)
 
-    fs = 1000;
+    fs = 100;
     [wav_kernel,freqs] = mor_wav_gen_intfreq(fs);
 
     disp(stim_w_pars)
@@ -26,8 +26,8 @@ function [f_color,f_trace,f_spec] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width
         NC{nc_ind} = STR.nuclei(nc_ind).nc_names;
     end
     nc_ids = unique(STR.nuclei_trials(:,1));
-    order_vis_ncs = {'GA','M2','M1','FS','SN','GI','ST'};%{'FS','M2','GI','GA','M1','SN','ST'};
-    nuclei_names  = {'GPe Arky','MSN D2','MSN D1','FSI','SNr','GPe Proto','STN'};
+    order_vis_ncs = {'GA','M1','M1','FS','SN','GI','ST'};%{'FS','M2','GI','GA','M1','SN','ST'};
+    nuclei_names  = {'GPe Arky','MSN D1','MSN D1','FSI','SNr','GPe Proto','STN'};
     numunits = [41,4746,4746,200,94,111,49];%[200,4767,111,41,4746,94,49];
 
     for stim_ind = 1:size(stim_w_pars,1)
@@ -61,6 +61,7 @@ function [f_color,f_trace,f_spec] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width
                         STN.nuclei_trials(:,3) == stim_w_pars(stim_ind,6) & ...
                         STN.nuclei_trials(:,1) == region_id;
             bindat_tmp = STN.average_fr_no_overlap(bindat_id,:);
+            
             trials_m = missing_tr_find(bindat_tmp,trials,GPA.nuclei_trials(bindat_id,2));
             [stn_avgfr,stn_avgfr_z(nc_ind,:)] = average_fr(bindat_tmp(trials_m,:),numunits(nc_ind),w_width);
 
@@ -71,43 +72,46 @@ function [f_color,f_trace,f_spec] = avgfr(stim_w_pars,trials,STR,STN,GPA,w_width
             trials_m = missing_tr_find(bindat_tmp,trials,GPA.nuclei_trials(bindat_id,2));
             [str_avgfr,str_avgfr_z(nc_ind,:)] = average_fr(bindat_tmp(trials_m,:),numunits(nc_ind),w_width);
 
+            if nc_ind ~= 2
+                figure(f_spec)
+                subplot(4,2,nc_ind)
+                S = avgfr_spectrogram(avg_fr_noovr,numunits(nc_ind),wav_kernel,w_width);
+                [CA] = spec_vis(S,time_vec,freqs);
+                CA.Title.String = order_vis_ncs{nc_ind};
+            end
+
             figure(f_trace)
             subplot(4,2,nc_ind)
-            avgfr_vis_trace(f_trace,nc_ind,gpa_avgfr,[-495:495],order_vis_ncs,'red');
+            avgfr_vis_trace(f_trace,nc_ind,gpa_avgfr,time_vec,order_vis_ncs,'red');
             hold on
-            avgfr_vis_trace(f_trace,nc_ind,stn_avgfr,[-495:495],order_vis_ncs,'blue');
-            [CA] = avgfr_vis_trace(f_trace,nc_ind,str_avgfr,[-495:495],order_vis_ncs,'green');
+            avgfr_vis_trace(f_trace,nc_ind,stn_avgfr,time_vec,order_vis_ncs,'blue');
+            [CA] = avgfr_vis_trace(f_trace,nc_ind,str_avgfr,time_vec,order_vis_ncs,'green');
             CA.Title.String = nuclei_names{nc_ind};
-
-
-            figure(f_spec)
-            subplot(4,2,nc_ind)
-            S = avgfr_spectrogram(avg_fr_noovr,wav_kernel);
-            [CA] = spec_vis(S,[-499.5:1:499.5],freqs);
-            CA.Title.String = order_vis_ncs{nc_ind};
+            
         end
         LH = legend({'GPA+STN','STN','No Sen.'});
         LH.Box = 'off';
         f_trace.Position = f_trace.Position .* [1,1,2,2];
+        f_spec.Position = f_spec.Position .* [1,1,2,2];
         f_color = figure;
 %         subplot(3,1,1)
         numsub = 3;
-        CA = avgfr_vis_color(f_color,numsub,1,gpa_avgfr_z,[-495:495],nuclei_names);
+        CA = avgfr_vis_color(f_color,numsub,1,gpa_avgfr_z,time_vec,nuclei_names);
         CA.Title.String =   ['W='   ,num2str(stim_w_pars(stim_ind,6)),' ;',...
                              'STR=' ,num2str(stim_w_pars(stim_ind,1)),' ;',...
                              'STN=' ,num2str(stim_w_pars(stim_ind,2)),' ;',...
                              'GPA=' ,num2str(stim_w_pars(stim_ind,3)),' ;',...
                              'RSS=' ,num2str(stim_w_pars(stim_ind,4)),' ;',...
                              'RSG=' ,num2str(stim_w_pars(stim_ind,5))];
-        CA = avgfr_vis_color(f_color,numsub,2,stn_avgfr_z,[-495:495],nuclei_names);
-        CA = avgfr_vis_color(f_color,numsub,3,str_avgfr_z,[-495:495],nuclei_names);
+        CA = avgfr_vis_color(f_color,numsub,2,stn_avgfr_z,time_vec,nuclei_names);
+        CA = avgfr_vis_color(f_color,numsub,3,str_avgfr_z,time_vec,nuclei_names);
 %         CA = avgfr_vis_color(f_color,2,stn_avgfr_z,[-495:495],order_vis_ncs);
 %         CA = avgfr_vis_color(f_color,3,str_avgfr_z,[-495:495],order_vis_ncs);
         CA.XLabel.String = 'Time from ramp offset (ms)';
         f_color.Position = f_color.Position .* [1,1,2,2];
     end
 end
-function [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width)
+function [f_color,f_trace,f_spec] = avgfr_stn(stim_w_pars,trials,STR,STN,time_vec,w_width)
     disp(stim_w_pars)
 
     fs = 1000;
@@ -124,6 +128,7 @@ function [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width)
     for stim_ind = 1:size(stim_w_pars,1)
         f_trace = figure;
         subplot(4,2,1)
+        f_spec  = figure;
         for nc_ind = 1:length(order_vis_ncs)
             region_id = nc_ids(strcmpi(NC,order_vis_ncs{nc_ind}));
             bindat_id = STN.stim_param(:,1) == stim_w_pars(stim_ind,1) & ...
@@ -132,6 +137,8 @@ function [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width)
                         STN.nuclei_trials(:,3) == stim_w_pars(stim_ind,4) & ...
                         STN.nuclei_trials(:,1) == region_id;
             bindat_tmp = STN.average_fr_no_overlap(bindat_id,:);
+            avg_fr_noovr = STN.average_fr_no_overlap(bindat_id,:);
+            
             trials_m = missing_tr_find(bindat_tmp,trials,STN.nuclei_trials(bindat_id,2));
             [stn_avgfr,stn_avgfr_z(nc_ind,:)] = average_fr(bindat_tmp(trials_m,:),numunits(nc_ind),w_width);
 
@@ -142,26 +149,35 @@ function [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width)
             trials_m = missing_tr_find(bindat_tmp,trials,STN.nuclei_trials(bindat_id,2));
             [str_avgfr,str_avgfr_z(nc_ind,:)] = average_fr(bindat_tmp(trials_m,:),numunits(nc_ind),w_width);
 
+            if nc_ind ~= 2
+                figure(f_spec)
+                subplot(4,2,nc_ind)
+                S = avgfr_spectrogram(avg_fr_noovr,numunits(nc_ind),wav_kernel,w_width);
+                [CA] = spec_vis(S,time_vec,freqs);
+                CA.Title.String = order_vis_ncs{nc_ind};
+            end
+
+            figure(f_trace)
             subplot(4,2,nc_ind)
-            avgfr_vis_trace(f_trace,nc_ind,stn_avgfr,[-495:495],order_vis_ncs,'blue');
+            avgfr_vis_trace(f_trace,nc_ind,stn_avgfr,time_vec,order_vis_ncs,'blue');
             hold on
-            [CA] = avgfr_vis_trace(f_trace,nc_ind,str_avgfr,[-495:495],order_vis_ncs,'green');
+            [CA] = avgfr_vis_trace(f_trace,nc_ind,str_avgfr,time_vec,order_vis_ncs,'green');
             CA.Title.String = nuclei_names{nc_ind};
-
-
+           
         end
         LH = legend({'STN','No Sen.'});
         LH.Box = 'off';
         f_trace.Position = f_trace.Position .* [1,1,2,2];
+        f_spec.Position = f_spec.Position .* [1,1,2,2];
         f_color = figure;
 %         subplot(3,1,1)
         numsub = 2;
-        CA = avgfr_vis_color(f_color,numsub,1,stn_avgfr_z,[-495:495],nuclei_names);
+        CA = avgfr_vis_color(f_color,numsub,1,stn_avgfr_z,time_vec,nuclei_names);
         CA.Title.String =   ['W='   ,num2str(stim_w_pars(stim_ind,4)),' ;',...
                              'STR=' ,num2str(stim_w_pars(stim_ind,1)),' ;',...
                              'STN=' ,num2str(stim_w_pars(stim_ind,2)),' ;',...
                              'RSS=' ,num2str(stim_w_pars(stim_ind,3)),' ;'];
-        CA = avgfr_vis_color(f_color,numsub,2,str_avgfr_z,[-495:495],nuclei_names);
+        CA = avgfr_vis_color(f_color,numsub,2,str_avgfr_z,time_vec,nuclei_names);
 %         CA = avgfr_vis_color(f_color,2,stn_avgfr_z,[-495:495],order_vis_ncs);
 %         CA = avgfr_vis_color(f_color,3,str_avgfr_z,[-495:495],order_vis_ncs);
         CA.XLabel.String = 'Time from ramp offset (ms)';
@@ -169,9 +185,11 @@ function [f_color,f_trace] = avgfr_stn(stim_w_pars,trials,STR,STN,w_width)
     end
 end
 
-function [SPEC] = avgfr_spectrogram(binned_dat,wavlt)
+function [SPEC] = avgfr_spectrogram(binned_dat,NU,wavlt,win_w)
     binned_dat = double(binned_dat);
     binned_dat = mean(binned_dat);
+    mov_win_avgfr = overlap_hamming(binned_dat,win_w)/double(NU);
+    z_score = zscore(mov_win_avgfr);
     S = spectrogram_int_freqs(binned_dat,wavlt);
     SPEC = 10*log10(abs(S));
 end
@@ -190,8 +208,16 @@ function [mov_win_avgfr,z_score] = average_fr(all_bindata,NU,win_w)
         z_score = zscore(mov_win_avgfr);
     end
 end
+
 function smoothed_data = overlap_square(binned_data,win_width)
     win = ones(1,win_width)/win_width;
+    tmp_smth = conv(binned_data,win,'same');
+    smoothed_data = tmp_smth(win_width/2:end-(win_width/2));
+end
+
+function smoothed_data = overlap_hamming(binned_data,win_width)
+    win = hamming(win_width);
+    win = win/sum(win);
     tmp_smth = conv(binned_data,win,'same');
     smoothed_data = tmp_smth(win_width/2:end-(win_width/2));
 end
@@ -219,14 +245,15 @@ function [GCA] = avgfr_vis_color(figid,n_subp,subid,avg_data,t_vec,ord_ncs)
 end
 
 function [GCA] = spec_vis(spctr,t_vec,freqs)
-%     IND = t_vec>=-150 & t_vec<=100;
+    IND = t_vec>=-200 & t_vec<=100;
 %     t_vec = t_vec(IND);
 %     avg_data = avg_data(:,IND);
 %     xlim([-150,100])
 %     figure(figid);
 %     subplot(4,2,subid)
-    imagesc(t_vec,freqs,spctr,[0,max(spctr(:))])
-    ylim([0,100])
+    imagesc(t_vec,freqs,spctr,[20,max(spctr(:))])
+    ylim([0,50])
+    xlim([-200,100])
     GCA = gca;
     GCA.TickDir = 'out';
     GCA.Box = 'off';
