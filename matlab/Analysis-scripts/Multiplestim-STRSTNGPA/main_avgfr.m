@@ -121,8 +121,8 @@ function [f_color,f_trace,f_spec] = avgfr_stn(stim_w_pars,trials,STR,STN,time_ve
         NC{nc_ind} = STR.nuclei(nc_ind).nc_names;
     end
     nc_ids = unique(STR.nuclei_trials(:,1));
-    order_vis_ncs = {'GA','M2','M1','FS','SN','GI','ST'};%{'FS','M2','GI','GA','M1','SN','ST'};
-    nuclei_names  = {'GPe Arky','MSN D2','MSN D1','FSI','SNr','GPe Proto','STN'};
+    order_vis_ncs = {'GA','M1','M1','FS','SN','GI','ST'};%{'FS','M2','GI','GA','M1','SN','ST'};
+    nuclei_names  = {'GPe Arky','MSN D1','MSN D1','FSI','SNr','GPe Proto','STN'};
     numunits = [41,4746,4746,200,94,111,49];%[200,4767,111,41,4746,94,49];
 
     for stim_ind = 1:size(stim_w_pars,1)
