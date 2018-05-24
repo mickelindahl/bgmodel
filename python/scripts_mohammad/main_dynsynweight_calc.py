@@ -461,9 +461,41 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
     connect(par, surfs, pops)
     #
     # # Simulate
+
     print 'Simulation\'s just started ...'
-    if sum(stim_combine) > 0:
-        my_nest.Simulate(max(stim_spec[last_stimpars]['start_times'])+5000.0)
+    if sum(stim_combine) == 0:
+        # sim_time = max(stim_spec['STRramp']['start_times'])+5000.0
+        sim_time = 10000.0
+        start_wr = 0.0
+        end_wr = sim_time
+        res_wr = 10.0   #end_wr
+        # source_wr = ['FS','M1','M2','GI']
+        # target_wr = ['SN']
+        weight_dic = {'FS':{'M1':[],
+                            'M2':[],
+                            'FS':[]},
+                      'GI':{'SN':[]},
+                      'M1':{'SN':[]},
+                      'M2':{'SN':[]},
+                      'ST':{'SN':[]},
+                      'GA':{'FS':[]},
+                      'GI':{'FS':[]},
+                      'time':[]}
+        while start_wr <= end_wr:
+
+            my_nest.Simulate(res_wr)
+            start_wr = start_wr + res_wr
+            weight_dic['time'].append(start_wr)
+
+            for sour_key in weight_dic.keys():
+                if sour_key != 'time':
+                    for tar_key in weight_dic[sour_key].keys():
+                        conns = nest.GetConnections(pops[sour_key].ids,pops[tar_key].ids)
+                        weights = nest.GetStatus(conns,'weight')
+                        weight_dic[sour_key][tar_key].append(weights)
+
+            #my_nest.Simulate(max(stim_spec['STRramp']['start_times'])+5000.0)
+        sio.savemat(base+'/weights.mat',weight_dic)
     else:
         my_nest.Simulate(10000.0)
 
