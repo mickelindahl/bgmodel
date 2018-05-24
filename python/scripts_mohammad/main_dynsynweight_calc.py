@@ -459,7 +459,12 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
     # Connect populations accordingly to connections structure
     connect(par, surfs, pops)
-    #
+
+    # Connecting voltmeter to the targets.
+
+    trgs = ['M1', 'M2', 'FS', 'SN']
+    voltmeter = voltmeter_connect(pops, trgs)
+
     # # Simulate
 
     print 'Simulation\'s just started ...'
@@ -481,6 +486,12 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                       'GA':{'FS':[]},
                       'GI':{'FS':[]},
                       'time':[]}
+
+        volt_dic = {'M1':{'voltage':[], 'ids':[]},
+                    'M2':{'voltage':[], 'ids':[]},
+                    'SN':{'voltage':[], 'ids':[]},
+                    'FS':{'voltage':[], 'ids':[]}}
+
         while start_wr <= end_wr:
 
             my_nest.Simulate(res_wr)
@@ -494,8 +505,15 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                         weights = nest.GetStatus(conns,'weight')
                         weight_dic[sour_key][tar_key].append(weights)
 
+            for trg in trgs:
+                times = nest.GetStatus(voltmeter)[0]['events']['times']
+                idx = times == max(times)
+                volt_dic[trg]['voltage'].append(nest.GetStatus(voltmeter)[0]['events']['V_m'][idx])
+                volt_dic[trg]['ids'].append(nest.GetStatus(voltmeter)[0]['events']['senders'][idx])
+
             #my_nest.Simulate(max(stim_spec['STRramp']['start_times'])+5000.0)
         sio.savemat(base+'/weights.mat',weight_dic)
+        sio.savemat(base+'/voltages.mat',volt_dic)
     else:
         my_nest.Simulate(10000.0)
 
@@ -518,6 +536,13 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
     # # Save
     # sd = data_to_disk.Storage_dic.load(par.dic['simu']['path_data'], ['Net_0'])
     # sd.save_dic({'Net_0': d}, **{'use_hash': False})
+
+def voltmeter_connect(pops, targets):
+    vol_id = nest.Create('voltmeter', 1, {'to_file':False, 'to_memory':True})
+    for tr in targets:
+        nest.Connect(vol_id, pops[tr].ids)
+
+    return vol_id
 
 def extra_modulation(pops,subpop_ratio,node_name):
     node_ids = pops[node_name].ids
