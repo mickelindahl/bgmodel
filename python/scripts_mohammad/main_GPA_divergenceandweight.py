@@ -675,7 +675,7 @@ if __name__ == '__main__':
         loc_num_th = int(sys.argv[3])
     else:
         numtrs = 40
-        size = 10000
+        size = 3000
         loc_num_th = 4
         lesion_source = []
         lesion_target = []
@@ -701,7 +701,7 @@ if __name__ == '__main__':
 
 
     modes = ['activation-control']
-    all_static_syns = True
+    all_static_syns = False
 
 #    modes = [
 #        'activation-control',
