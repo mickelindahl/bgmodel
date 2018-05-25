@@ -460,31 +460,38 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
     # Connect populations accordingly to connections structure
     connect(par, surfs, pops)
 
+    # Sampling paramteres
+
+    sim_time = 6000.0
+    start_wr = 0.0
+    end_wr = sim_time
+    res_wr = 10.0
+
     # Connecting voltmeter to the targets.
 
     trgs = ['M1', 'M2', 'FS', 'SN']
-    voltmeter = voltmeter_connect(pops, trgs)
+    voltmeter = voltmeter_connect(pops, trgs, 1.0)
 
     # # Simulate
 
     print 'Simulation\'s just started ...'
     if sum(stim_combine) == 0:
         # sim_time = max(stim_spec['STRramp']['start_times'])+5000.0
-        sim_time = 10000.0
-        start_wr = 0.0
-        end_wr = sim_time
-        res_wr = 10.0   #end_wr
+        # sim_time = 6000.0
+        # start_wr = 0.0
+        # end_wr = sim_time
+        # res_wr = 10.0   #end_wr
         # source_wr = ['FS','M1','M2','GI']
         # target_wr = ['SN']
-        weight_dic = {'FS':{'M1':[],
-                            'M2':[],
-                            'FS':[]},
-                      'GI':{'SN':[]},
-                      'M1':{'SN':[]},
-                      'M2':{'SN':[]},
-                      'ST':{'SN':[]},
-                      'GA':{'FS':[]},
-                      'GI':{'FS':[]},
+        weight_dic = {'FS':{'M1':{'s':[], 't':[], 'w':[]},
+                            'M2':{'s':[], 't':[], 'w':[]},
+                            'FS':{'s':[], 't':[], 'w':[]}},
+                      'GI':{'SN':{'s':[], 't':[], 'w':[]}},
+                      'M1':{'SN':{'s':[], 't':[], 'w':[]}},
+                      'M2':{'SN':{'s':[], 't':[], 'w':[]}},
+                      'ST':{'SN':{'s':[], 't':[], 'w':[]}},
+                      'GA':{'FS':{'s':[], 't':[], 'w':[]}},
+                      'GI':{'FS':{'s':[], 't':[], 'w':[]}},
                       'time':[]}
 
         volt_dic = {'M1':{'voltage':[], 'ids':[]},
@@ -503,17 +510,21 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                     for tar_key in weight_dic[sour_key].keys():
                         conns = nest.GetConnections(pops[sour_key].ids,pops[tar_key].ids)
                         weights = nest.GetStatus(conns,'weight')
-                        weight_dic[sour_key][tar_key].append(weights)
+                        weight_dic[sour_key][tar_key]['w'].append(weights)
+                        s_ids = [conns[i][0] for i in xrange(len(conns))]
+                        weight_dic[sour_key][tar_key]['s'].append(s_ids)
+                        t_ids = [conns[i][1] for i in xrange(len(conns))]
+                        weight_dic[sour_key][tar_key]['t'].append(t_ids)
 
-            for trg in trgs:
-                times = nest.GetStatus(voltmeter)[0]['events']['times']
-                idx = times == max(times)
-                volt_dic[trg]['voltage'].append(nest.GetStatus(voltmeter)[0]['events']['V_m'][idx])
-                volt_dic[trg]['ids'].append(nest.GetStatus(voltmeter)[0]['events']['senders'][idx])
+            # for trg in trgs:
+            #     times = nest.GetStatus(voltmeter)[0]['events']['times']
+            #     idx = times == max(times)
+            #     volt_dic[trg]['voltage'].append(nest.GetStatus(voltmeter)[0]['events']['V_m'][idx])
+            #     volt_dic[trg]['ids'].append(nest.GetStatus(voltmeter)[0]['events']['senders'][idx])
 
             #my_nest.Simulate(max(stim_spec['STRramp']['start_times'])+5000.0)
-        sio.savemat(base+'/weights.mat',weight_dic)
-        sio.savemat(base+'/voltages.mat',volt_dic)
+        sio.savemat(base+'/weights.mat', weight_dic)
+        sio.savemat(base+'/voltages.mat', volt_dic)
     else:
         my_nest.Simulate(10000.0)
 
@@ -537,8 +548,8 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
     # sd = data_to_disk.Storage_dic.load(par.dic['simu']['path_data'], ['Net_0'])
     # sd.save_dic({'Net_0': d}, **{'use_hash': False})
 
-def voltmeter_connect(pops, targets):
-    vol_id = nest.Create('voltmeter', 1, {'to_file':False, 'to_memory':True})
+def voltmeter_connect(pops, targets, interval):
+    vol_id = nest.Create('voltmeter', 1, {'to_file':True, 'to_memory':False, 'interval':interval})
     for tr in targets:
         nest.Connect(vol_id, pops[tr].ids)
 
@@ -733,7 +744,7 @@ if __name__ == '__main__':
     else:
         numtrs = 40
         size = 3000
-        loc_num_th = 4
+        loc_num_th = 1
         lesion_source = []
         lesion_target = []
         tot_num_trs = 10
