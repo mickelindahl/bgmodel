@@ -483,15 +483,15 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         # res_wr = 10.0   #end_wr
         # source_wr = ['FS','M1','M2','GI']
         # target_wr = ['SN']
-        weight_dic = {'FS':{'M1':{'s':[], 't':[], 'w':[]},
-                            'M2':{'s':[], 't':[], 'w':[]},
-                            'FS':{'s':[], 't':[], 'w':[]}},
-                      'GI':{'SN':{'s':[], 't':[], 'w':[]}},
-                      'M1':{'SN':{'s':[], 't':[], 'w':[]}},
-                      'M2':{'SN':{'s':[], 't':[], 'w':[]}},
-                      'ST':{'SN':{'s':[], 't':[], 'w':[]}},
-                      'GA':{'FS':{'s':[], 't':[], 'w':[]}},
-                      'GI':{'FS':{'s':[], 't':[], 'w':[]}},
+        weight_dic = {'FS':{'M1':{'s':[], 't':[], 'w':[], 'y':[]},
+                            'M2':{'s':[], 't':[], 'w':[], 'y':[]},
+                            'FS':{'s':[], 't':[], 'w':[], 'y':[]}},
+                      'GI':{'SN':{'s':[], 't':[], 'w':[], 'y':[]}},
+                      'M1':{'SN':{'s':[], 't':[], 'w':[], 'y':[]}},
+                      'M2':{'SN':{'s':[], 't':[], 'w':[], 'y':[]}},
+                      'ST':{'SN':{'s':[], 't':[], 'w':[], 'y':[]}},
+                      'GA':{'FS':{'s':[], 't':[], 'w':[], 'y':[]}},
+                      'GI':{'FS':{'s':[], 't':[], 'w':[], 'y':[]}},
                       'time':[]}
 
         volt_dic = {'M1':{'voltage':[], 'ids':[]},
@@ -510,7 +510,10 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                     for tar_key in weight_dic[sour_key].keys():
                         conns = nest.GetConnections(pops[sour_key].ids,pops[tar_key].ids)
                         weights = nest.GetStatus(conns,'weight')
+                        y_coef = nest.GetStatus(conns,'y')
+                        # weights = original_weights*y_coef
                         weight_dic[sour_key][tar_key]['w'].append(weights)
+                        weight_dic[sour_key][tar_key]['y'].append(y_coef)
                         s_ids = [conns[i][0] for i in xrange(len(conns))]
                         weight_dic[sour_key][tar_key]['s'].append(s_ids)
                         t_ids = [conns[i][1] for i in xrange(len(conns))]
