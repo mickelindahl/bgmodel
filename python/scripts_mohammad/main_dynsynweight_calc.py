@@ -228,7 +228,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                        str(stim_chg_pars[keys]['value'])+ '-'+\
                        str(stim_chg_pars[keys]['res'])+ '-'
             last_stimpars = keys
-    dir_name = dir_name + 'tr'+ str(trnum)
+    dir_name = dir_name + 'stst-tr'+ str(trnum)
 
     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode, dir_name)
 
@@ -539,7 +539,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
     if sys_var == 0:
         print 'gdf files are now in .mat files!'
         os.system('mv '+base+'/nest/mat_data '+base)
-        os.system('rm -rf '+base+'/nest')
+        # os.system('rm -rf '+base+'/nest')
     else:
         print 'Error! No .mat file is produced!'
 
@@ -746,7 +746,7 @@ if __name__ == '__main__':
         loc_num_th = int(sys.argv[3])
     else:
         numtrs = 40
-        size = 3000
+        size = 10000
         loc_num_th = 1
         lesion_source = []
         lesion_target = []
@@ -772,7 +772,7 @@ if __name__ == '__main__':
 
 
     modes = ['activation-control']
-    all_static_syns = False
+    all_static_syns = True
 
 #    modes = [
 #        'activation-control',
