@@ -1,7 +1,7 @@
 #!/bin/sh
 
 NEST_VERSION=2.12.0
-NEST_FOLDER_NAME=nest-simulator-2.12.0
+NEST_FOLDER_NAME=nest-2.12.0
 NEST_TAR=nest-$NEST_VERSION.tar.gz
 
 echo ""
