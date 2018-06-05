@@ -14,7 +14,7 @@ nc_names = {'FSI','GPe Arky','GPe Proto',...
             'MSN D1','MSN D2','SNr','STN'};
         
         
-time_win_start = 0;
+time_win_start = 5000;
 time_win_stop = 10000;
 
 % fr_vec = 0:100;
@@ -47,7 +47,7 @@ for nc_id = 1:length(nuclei)
     end
     if plot_id == 1
         figure;
-        histogram(FRs,num_hist_points)
+        histogram(FRs,50)
         GCA = gca;
         GCA.FontSize = 14;
         GCA.Box = 'off';
