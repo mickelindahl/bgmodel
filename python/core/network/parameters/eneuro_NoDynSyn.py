@@ -128,7 +128,7 @@ class EneuroParBase( object ):
 
         # FSN-FSN
         dic['nest']['FS_FS_gaba'] = {}
-        dic['nest']['FS_FS_gaba']['weight'] = 1. / 0.29  # five times weaker than FSN-MSN, Gittis 2010
+        dic['nest']['FS_FS_gaba']['weight'] = .24 #1. / 0.29  # five times weaker than FSN-MSN, Gittis 2010
         dic['nest']['FS_FS_gaba']['delay'] = 1.7  # n.d.same asfor FSN to MSN
         # dic['nest']['FS_FS_gaba']['U'] = 0.29
         # dic['nest']['FS_FS_gaba']['tau_fac'] = 53.
@@ -140,7 +140,7 @@ class EneuroParBase( object ):
 
         # GPE-FSN
         dic['nest']['GA_FS_gaba'] = {}
-        dic['nest']['GA_FS_gaba']['weight'] = 2. / 0.29 * (17. / 66.)  # n.d. inbetween MSN and FSN GABAergic synapses
+        dic['nest']['GA_FS_gaba']['weight'] = 0.09 #2. / 0.29 * (17. / 66.)  # n.d. inbetween MSN and FSN GABAergic synapses
         dic['nest']['GA_FS_gaba']['delay'] = 7.  # n.d. same as MSN to GPE Park 1982
         # dic['nest']['GA_FS_gaba']['type_id'] = 'tsodyks_synapse'
         dic['nest']['GA_FS_gaba']['type_id'] = 'static_synapse'
@@ -158,7 +158,7 @@ class EneuroParBase( object ):
         dic['nest']['GI_FS_gaba']['receptor_type'] = self.rec['izh']['GABAA_2']
 
         dic['nest']['GF_FS_gaba'] = {}
-        dic['nest']['GF_FS_gaba']['weight'] = 2. / 0.29  # n.d. inbetween MSN and FSN GABAergic synapses
+        dic['nest']['GF_FS_gaba']['weight'] = .11 #2. / 0.29  # n.d. inbetween MSN and FSN GABAergic synapses
         dic['nest']['GF_FS_gaba']['delay'] = 7.  # n.d. same as MSN to GPE Park 1982
         # dic['nest']['GF_FS_gaba']['type_id'] = 'tsodyks_synapse'
         dic['nest']['GF_FS_gaba']['type_id'] = 'static_synapse'
@@ -205,8 +205,8 @@ class EneuroParBase( object ):
 
         # FSN-MSN
         dic['nest']['FS_M1_gaba'] = {}
-        dic['nest']['FS_M1_gaba']['weight'] = round(6. / 0.29,
-                                                    1)  # Gittie #3.8    # (Koos, Tepper, and Charles J Wilson 2004)
+        dic['nest']['FS_M1_gaba']['weight'] = 1.42 #round(6. / 0.29,
+                                              #    1)  # Gittie #3.8    # (Koos, Tepper, and Charles J Wilson 2004)
         dic['nest']['FS_M1_gaba']['delay'] = 1.7  # Taverna 2004
         # dic['nest']['FS_M1_gaba']['U'] = 0.29  # GABAA plastic
         # dic['nest']['FS_M1_gaba']['tau_fac'] = 53.0
@@ -316,7 +316,7 @@ class EneuroParBase( object ):
 
         # MSN D2-GPe I
         dic['nest']['M2_GI_gaba'] = {}
-        dic['nest']['M2_GI_gaba']['weight'] = 2. / 0.24  # constrained by (Sims et al. 2008)
+        dic['nest']['M2_GI_gaba']['weight'] = .65 #2. / 0.24  # constrained by (Sims et al. 2008)
         dic['nest']['M2_GI_gaba']['delay'] = 7.  # Park 1982
         # dic['nest']['M2_GI_gaba']['U'] = 0.24  # GABAA plastic
         # dic['nest']['M2_GI_gaba']['tau_fac'] = 13.0
@@ -362,7 +362,7 @@ class EneuroParBase( object ):
         # MSN D1-SNr
         dic['nest']['M1_SN_gaba'] = {}
         dic['nest']['M1_SN_gaba'][
-            'weight'] = 2. / 0.0192  # Lower based on (Connelly et al. 2010) = [4.7, 24.], 50 Hz model = [5.8, 23.5]
+            'weight'] = 0.94 #2. / 0.0192  # Lower based on (Connelly et al. 2010) = [4.7, 24.], 50 Hz model = [5.8, 23.5]
         dic['nest']['M1_SN_gaba']['delay'] = 7.3
         # dic['nest']['M1_SN_gaba']['U'] = 0.0192
         # dic['nest']['M1_SN_gaba']['tau_fac'] = 623.
@@ -374,7 +374,7 @@ class EneuroParBase( object ):
 
         # STN-SNr
         dic['nest']['ST_SN_ampa'] = {}
-        dic['nest']['ST_SN_ampa']['weight'] = 0.91 * 3.8 / 0.35  # (Shen and Johnson 2006)
+        dic['nest']['ST_SN_ampa']['weight'] = 0.65# 0.91 * 3.8 / 0.35  # (Shen and Johnson 2006)
         dic['nest']['ST_SN_ampa']['delay'] = 4.6
         # dic['nest']['ST_SN_ampa']['U'] = 0.35  # AMPA plastic 2
         # dic['nest']['ST_SN_ampa']['tau_fac'] = 0.0
@@ -386,7 +386,7 @@ class EneuroParBase( object ):
 
         # GPe TI-SNr
         dic['nest']['GI_SN_gaba'] = {}
-        dic['nest']['GI_SN_gaba']['weight'] = 76. / 0.196  # 0.152*76., (Connelly et al. 2010)
+        dic['nest']['GI_SN_gaba']['weight'] = 7.97 # 76. / 0.196  # 0.152*76., (Connelly et al. 2010)
         dic['nest']['GI_SN_gaba']['delay'] = 3.
         # dic['nest']['GI_SN_gaba']['U'] = 0.196  # GABAA plastic,
         # dic['nest']['GI_SN_gaba']['tau_fac'] = 0.0
@@ -943,4 +943,3 @@ class EneuroParBase( object ):
 
 class EneuroPar(Par_base, EneuroParBase, Par_base_mixin):
     pass
-

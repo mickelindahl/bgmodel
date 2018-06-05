@@ -228,7 +228,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                        str(stim_chg_pars[keys]['value'])+ '-'+\
                        str(stim_chg_pars[keys]['res'])+ '-'
             last_stimpars = keys
-    dir_name = dir_name + 'stst-tr'+ str(trnum)
+    dir_name = dir_name + 'dynsyn-tr'+ str(trnum)
 
     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode, dir_name)
 
@@ -462,15 +462,15 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
     # Sampling paramteres
 
-    sim_time = 6000.0
+    sim_time = 20000.0
     start_wr = 0.0
     end_wr = sim_time
-    res_wr = 10.0
+    res_wr = 100.0
 
     # Connecting voltmeter to the targets.
 
-    trgs = ['M1', 'M2', 'FS', 'SN']
-    voltmeter = voltmeter_connect(pops, trgs, 1.0)
+    # trgs = ['M1', 'M2', 'FS', 'SN']
+    # voltmeter = voltmeter_connect(pops, trgs, 1.0)
 
     # # Simulate
 
@@ -483,22 +483,24 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         # res_wr = 10.0   #end_wr
         # source_wr = ['FS','M1','M2','GI']
         # target_wr = ['SN']
-        weight_dic = {'FS':{'M1':{'s':[], 't':[], 'w':[], 'y':[]},
-                            'M2':{'s':[], 't':[], 'w':[], 'y':[]},
-                            'FS':{'s':[], 't':[], 'w':[], 'y':[]}},
-                      'GI':{'SN':{'s':[], 't':[], 'w':[], 'y':[]}},
-                      'M1':{'SN':{'s':[], 't':[], 'w':[], 'y':[]}},
-                      'M2':{'SN':{'s':[], 't':[], 'w':[], 'y':[]}},
-                      'ST':{'SN':{'s':[], 't':[], 'w':[], 'y':[]}},
-                      'GA':{'FS':{'s':[], 't':[], 'w':[], 'y':[]}},
-                      'GI':{'FS':{'s':[], 't':[], 'w':[], 'y':[]}},
+        weight_dic = {'FS':{'M1':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]},
+                            'M2':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]},
+                            'FS':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]}},
+                      'GI':{'SN':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]}},
+                      'M1':{'SN':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]}},
+                      'M2':{'GA':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]},
+                            'GI':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]}},
+                      'ST':{'SN':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]}},
+                      'GA':{'FS':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]}},
+                      'GI':{'SN':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]}},
+                      'GF':{'FS':{'s':[], 't':[], 'w':[], 'y':[], 'u':[], 'x':[]}},
                       'time':[]}
-
+        '''
         volt_dic = {'M1':{'voltage':[], 'ids':[]},
                     'M2':{'voltage':[], 'ids':[]},
                     'SN':{'voltage':[], 'ids':[]},
                     'FS':{'voltage':[], 'ids':[]}}
-
+        '''
         while start_wr <= end_wr:
 
             my_nest.Simulate(res_wr)
@@ -511,9 +513,13 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                         conns = nest.GetConnections(pops[sour_key].ids,pops[tar_key].ids)
                         weights = nest.GetStatus(conns,'weight')
                         y_coef = nest.GetStatus(conns,'y')
+			x_coef = nest.GetStatus(conns,'x')
+			u_coef = nest.GetStatus(conns,'u')
                         # weights = original_weights*y_coef
                         weight_dic[sour_key][tar_key]['w'].append(weights)
                         weight_dic[sour_key][tar_key]['y'].append(y_coef)
+			weight_dic[sour_key][tar_key]['x'].append(x_coef)
+			weight_dic[sour_key][tar_key]['u'].append(u_coef)
                         s_ids = [conns[i][0] for i in xrange(len(conns))]
                         weight_dic[sour_key][tar_key]['s'].append(s_ids)
                         t_ids = [conns[i][1] for i in xrange(len(conns))]
@@ -527,9 +533,9 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
             #my_nest.Simulate(max(stim_spec['STRramp']['start_times'])+5000.0)
         sio.savemat(base+'/weights.mat', weight_dic)
-        sio.savemat(base+'/voltages.mat', volt_dic)
+        # sio.savemat(base+'/voltages.mat', volt_dic)
     else:
-        my_nest.Simulate(10000.0)
+        my_nest.Simulate(20000.0)
 
     print 'Simulation is now finished!\n'
 
@@ -550,14 +556,14 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
     # # Save
     # sd = data_to_disk.Storage_dic.load(par.dic['simu']['path_data'], ['Net_0'])
     # sd.save_dic({'Net_0': d}, **{'use_hash': False})
-
+'''
 def voltmeter_connect(pops, targets, interval):
     vol_id = nest.Create('voltmeter', 1, {'to_file':True, 'to_memory':False, 'interval':interval})
     for tr in targets:
         nest.Connect(vol_id, pops[tr].ids)
 
     return vol_id
-
+'''
 def extra_modulation(pops,subpop_ratio,node_name):
     node_ids = pops[node_name].ids
     #spkdet = nest.Create('spike_detector')
