@@ -267,6 +267,8 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         pathconn = par.get()['simu']['path_conn']+ str(trnum)+ '/'
     else:
         pathconn = par.get()['simu']['path_conn']
+        #Setting python random number generator
+        rng_py = numpy.random.RandomState(seed=1000)
 
     if len(les_src) > 0:
         print 'Lesion will be applied to source(s): ',les_src,' projecting to ',les_trg
@@ -374,7 +376,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0,'CS':0.0,'EA':0.0}
         for stim_type in stim_time.keys():
             for node_name in stim_pars[stim_type]['stim_target']:
-                [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[stim_type]['stim_ratio'][node_name], node_name)
+                [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[stim_type]['stim_ratio'][node_name], node_name, rng_py)
                 nest.Connect(stim_time[stim_type]['stim_pois_id'], modpop_ids)
                 # stim_spec[node_name] = stim_time
                 stim_spec[node_name] = {'stim_subpop':modpop_ids,
@@ -417,7 +419,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0,'CS':0.0}
         for stim_type in stim_time.keys():
             for node_name in stim_pars[stim_type]['stim_target']:
-                [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[stim_type]['stim_ratio'][node_name], node_name)
+                [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[stim_type]['stim_ratio'][node_name], node_name, rng_py)
                 nest.Connect(stim_time[stim_type]['stim_pois_id'], modpop_ids)
                 # stim_spec[node_name] = stim_time
                 stim_spec[node_name] = {'stim_subpop':modpop_ids,
@@ -432,7 +434,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
         stim_spec = stim_pars[whichkey]['stim_spec']
         for node_name in stim_pars[whichkey]['stim_target']:
-            [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[whichkey]['stim_ratio'][node_name], node_name)
+            [modpop_ids,allpop_ids] = extra_modulation(pops, stim_pars[whichkey]['stim_ratio'][node_name], node_name, rng_py)
             [stimmod_id,stim_time] = modulatory_stim(stim_pars[whichkey],stim_chg_pars[whichkey])
             nest.Connect(stimmod_id,modpop_ids)
             # stim_spec[node_name] = stim_time
@@ -491,11 +493,12 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
     # sd = data_to_disk.Storage_dic.load(par.dic['simu']['path_data'], ['Net_0'])
     # sd.save_dic({'Net_0': d}, **{'use_hash': False})
 
-def extra_modulation(pops,subpop_ratio,node_name):
+def extra_modulation(pops,subpop_ratio,node_name,rand_gen):
     node_ids = pops[node_name].ids
     #spkdet = nest.Create('spike_detector')
     #nest.Connect(node_ids,spkdet)
-    perm_ids = numpy.random.permutation(node_ids)
+    # perm_ids = numpy.random.permutation(node_ids)
+    perm_ids = rand_gen.permutation(node_ids)
     #subpop_ratio = 0.3
     subpop_num = numpy.int(subpop_ratio*len(node_ids))
     subpop_ids = perm_ids[range(0,subpop_num)]
@@ -668,6 +671,13 @@ def find(key, dictionary):
             for d in v:
                 for result in find(key, d):
                     yield result
+
+def nest_rng_set(tr):
+    def_rng_seed = nest.GetKernelStatus('rng_seeds')
+    l_def_rng_seed = len(def_rng_seed)
+    l_lim = (tr - 1)*l_def_rng_seed + 1
+    u_lim = l_lim + l_def_rng_seed
+    nest.SetKernelStatus({'rng_seeds':range(l_lim,u_lim,1)})
 
 # main()
 if __name__ == '__main__':
