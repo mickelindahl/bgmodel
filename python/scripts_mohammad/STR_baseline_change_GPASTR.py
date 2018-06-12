@@ -189,7 +189,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                 weight_coef = weight_coef_base - weight_coef_base/(2**(div_var+1)/2)
         else:
             weight_coef_base = 0.2
-            weight_coef_inc_rate = 0.05
+            weight_coef_inc_rate = 0.1
 
             weight_coef = weight_coef_base + weight_coef_inc_rate * div_var
 
@@ -326,12 +326,22 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
     sim_res = nest.GetKernelStatus('resolution')
 
-    if trnum != 1:
-        def_rng_seed = nest.GetKernelStatus('rng_seeds')
-        l_def_rng_seed = len(def_rng_seed)
-        b_lim = (trnum - 1)*l_def_rng_seed
-        u_lim = (trnum - 1)*2*l_def_rng_seed + 1
-        nest.GetKernelStatus({'rng_seeds':range(b_lim,u_lim,1)})
+    # if trnum != 1:
+    #     def_rng_seed = nest.GetKernelStatus('rng_seeds')
+    #     l_def_rng_seed = len(def_rng_seed)
+    #     b_lim = (trnum - 1)*l_def_rng_seed
+    #     u_lim = (trnum - 1)*2*l_def_rng_seed + 1
+    #     nest.GetKernelStatus({'rng_seeds':range(b_lim,u_lim,1)})
+    '''
+    #Setting nest random number generator
+    nest_rng_set(trnum)
+    '''
+    # Changing the firing rate of MSNs
+    C1_rate = par.get()['node']['C1']['rate']
+    par.set({'node':{'C1':{'rate':C1_rate*(1+trnum*0.1)}}})
+
+    C2_rate = par.get()['node']['C2']['rate']
+    par.set({'node':{'C2':{'rate':C2_rate*(1+trnum*0.1)}}})
 
 
     # Create news populations and connections structures
@@ -689,7 +699,7 @@ if __name__ == '__main__':
         loc_num_th = int(sys.argv[3])
     else:
         numtrs = 40
-        size = 3000
+        size = 10000
         loc_num_th = 4
         lesion_source = []
         lesion_target = []
@@ -710,7 +720,7 @@ if __name__ == '__main__':
         chg_GPASTR = True
     else:
         tot_num_trs = 10
-        chg_GPASTR = False
+        chg_GPASTR = True
 
 
 
@@ -725,9 +735,10 @@ if __name__ == '__main__':
 #    ]
     for mode in modes:
         main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target,chg_GPASTR,tot_num_trs,all_static_syns)
-
+        '''
         plot.main(mode, size)
 
         randomized_params_plot.main(mode, size)
         mean_firing_rates.main(mode, size)
         mean_firing_rates_plot.main(mode, size)
+        '''
