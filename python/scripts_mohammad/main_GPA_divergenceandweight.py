@@ -326,12 +326,15 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
     sim_res = nest.GetKernelStatus('resolution')
 
-    if trnum != 1:
-        def_rng_seed = nest.GetKernelStatus('rng_seeds')
-        l_def_rng_seed = len(def_rng_seed)
-        b_lim = (trnum - 1)*l_def_rng_seed
-        u_lim = (trnum - 1)*2*l_def_rng_seed + 1
-        nest.GetKernelStatus({'rng_seeds':range(b_lim,u_lim,1)})
+    # if trnum != 1:
+    #     def_rng_seed = nest.GetKernelStatus('rng_seeds')
+    #     l_def_rng_seed = len(def_rng_seed)
+    #     b_lim = (trnum - 1)*l_def_rng_seed
+    #     u_lim = (trnum - 1)*2*l_def_rng_seed + 1
+    #     nest.GetKernelStatus({'rng_seeds':range(b_lim,u_lim,1)})
+
+    #Setting nest random number generator
+    nest_rng_set(trnum)
 
 
     # Create news populations and connections structures
