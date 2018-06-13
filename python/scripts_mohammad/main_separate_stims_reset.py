@@ -152,14 +152,20 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                              'stim_spec':{'EA':0.0},
                              'stim_ratio':{'EA':1.0}}}
     stim_chg_pars = {'STRramp':{'value':500.0,
-                                 'res':100.0,
-                                 'waittime':2000.0},
+                                'res':100.0,
+                                'waittime':2000.0,
+                                'preptime':2000.0,
+                                'deadtime':1000.0},
                      'STNstop':{'value':2000.0,
-                                 'res':500.0,
-                                 'waittime':2000.0},
+                                'res':500.0,
+                                'waittime':2000.0,
+                                'preptime':2000.0,
+                                'deadtime':1000.0},
                      'GPAstop':{'value':2000.0,
-                                 'res':500.0,
-                                 'waittime':2000.0},
+                                'res':500.0,
+                                'waittime':2000.0,
+                                'preptime':2000.0,
+                                'deadtime':1000.0},
                      'Reltime':{'STNstop':{'l_val':0.0,
                                        'h_val':20.0,
                                        'res':10.0,
@@ -388,7 +394,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                     comb_dic.update({'reltime':{rel_type:ind_comb}})
             comb = numpy.array(numpy.meshgrid(ratescomb[0],ratescomb[1],ratescomb[2],reltimecomb[0],reltimecomb[1]))
         comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
-        stim_time = modulatory_multiplestim(comb_resh,stim_pars,stim_chg_pars,comb_dic)
+        stim_time = modulatory_multiplestim(comb_resh,stim_pars,stim_chg_pars,comb_dic,tot_num_trs)
         stim_spec = {'C1':0.0,'C2':0.0,'CF':0.0,'CS':0.0,'EA':0.0}
         for stim_type in stim_time.keys():
             for node_name in stim_pars[stim_type]['stim_target']:
@@ -485,7 +491,16 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
     # # Simulate
     print 'Simulation\'s just started ...'
     if sum(stim_combine) > 0:
-        my_nest.Simulate(max(stim_spec[last_stimpars]['start_times'])+5000.0)
+        # my_nest.Simulate(max(stim_spec[last_stimpars]['start_times'])+5000.0)
+        nest.SetKernelStatus({'overwrite_files':True})
+        resettimes = stim_spec['STRramp']['reset_times']
+        simtime = numpy.unique(numpy.diff(resettimes))[0]
+        for tr in range(tot_num_trs):
+            my_nest.Simulate(simtime)
+            nest.ResetNetwork()
+            rep_dir = os.path.join(base, str(tr+1))
+            ensure_dir(rep_dir)
+            os.system('mv '+base+'/nest/*.gdf '+rep_dir)
     else:
         my_nest.Simulate(10000.0)
 
@@ -575,7 +590,7 @@ def modulatory_stim(stim_params,chg_stim_param):
     return mod_inp,stim_vecs
 
 
-def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic):
+def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic,tot_numtr):
     num_pois_gen = len(stim_params.keys())
     mod_inp = nest.Create('poisson_generator_dynamic',num_pois_gen)
     ind = -1
@@ -597,18 +612,24 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic):
         timevec = numpy.array(0.0)
         ratevec = numpy.array(0.0)
         waittime = chg_stim_param[keys]['waittime']
-        stim_start = stim_params[keys]['stim_start']
+        dead_time = chg_stim_param[keys]['deadtime']
+        prep_time = chg_stim_param[keys]['preptime']
+        # stim_start = stim_params[keys]['stim_start']
+        stim_start = dead_time + prep_time
         # all_rates = []
         all_start_times = []
         all_stop_times = []
-        for rate_ind, rateval in enumerate(all_rates[ind]):
+        all_reset_times = []
+        # for rate_ind, rateval in enumerate(all_rates[ind]):
+        for dum in range(tot_numtr):
+            rate_ind = 0
             #h_rate = 200.0
             #l_rate = 0.0
             #slope = 2.       # Hz/ms
             #res = 10.        # ms
             #stim_start = 1000.0
             # stim_start = stim_params[keys]['stim_start']
-            h_rate = rateval
+            h_rate = all_rates[ind][rate_ind]
             l_rate = stim_params[keys]['l_rate']
             #slope = stim_params['slope']
             stim_dur = stim_params[keys]['duration']
@@ -636,26 +657,15 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic):
             ratevec = numpy.append(ratevec,0.0)
             timevec = numpy.append(timevec,timevec[-1]+res)
 
-            # chg_stim_val = chg_stim_param[keys]['value']
-            # chg_stim_res = chg_stim_param[keys]['res']
-            # waittime = chg_stim_param[keys]['waittime']
+            # stim_start = stim_stop + waittime
+            reset_times = stim_start + waittime
+
             all_start_times.append(stim_start)
             all_stop_times.append(stim_stop)
-            stim_start = stim_stop + waittime
-            # all_rates.append(h_rate)
-            # h_rate = h_rate + chg_stim_res
+            all_reset_times.append(reset_times)
 
-            # while h_rate <= chg_stim_val:
-            #     all_rates.append(h_rate)
-            #     ratevec = numpy.append(ratevec,0.0)
-            #     timevec = numpy.append(timevec,timevec[-1]+res)
+            stim_start = stim_start + waittime + dead_time + prep_time
 
-                # ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
-                # stim_start = stim_stop + waittime
-                # stim_stop = stim_start + stim_dur + res
-                # timevec = numpy.append(timevec,numpy.arange(stim_start,stim_stop,res))
-                # h_rate = h_rate + chg_stim_res
-                # all_start_times.append(stim_start)
         if keys in refchgkey:
             prev_var_stops = all_stop_times
 
@@ -664,6 +674,7 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic):
         stim_vecs.update({keys:{'rates':all_rates,
                                 'start_times':all_start_times,
                                 'stop_times':all_stop_times,
+                                'reset_times':all_reset_times,
                                 'stim_pois_id':(mod_inp[ind],)}})
     return stim_vecs
 
@@ -694,6 +705,11 @@ def nest_rng_set(tr):
     l_lim = (tr - 1)*l_def_rng_seed + 1
     u_lim = l_lim + l_def_rng_seed
     nest.SetKernelStatus({'rng_seeds':range(l_lim,u_lim,1)})
+
+def ensure_dir(directory):
+    # directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 # main()
 if __name__ == '__main__':
