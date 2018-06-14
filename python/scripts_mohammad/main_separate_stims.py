@@ -716,7 +716,7 @@ if __name__ == '__main__':
         loc_num_th = int(sys.argv[3])
     else:
         numtrs = 2
-        size = 10000
+        size = 3000
         loc_num_th = 4
         lesion_source = []
         lesion_target = []
@@ -783,9 +783,9 @@ if __name__ == '__main__':
         mode = modes[0]
         nest_data_dir = main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target, stim_pars, stim_chg_pars, tmpdir,chg_GPASTR,tot_num_trs)
 
-        print 'nest directory \"'+ nest_data_dir +'\" finished processing!'
+        print 'matlab directory \"'+ nest_data_dir +'\" finished processing!'
 
-        dir_list.append(nest_data_dir)
+        # dir_list.append(nest_data_dir)
 
     main_dir = nest_data_dir.rsplit('/',3)[0]
     main_dir_flname = main_dir+ '/dir-data'
