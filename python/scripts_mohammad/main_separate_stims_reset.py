@@ -87,7 +87,8 @@ def postprocessing(pops):
     return d
 
 
-def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_trs,stat_syn):
+# def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_trs,stat_syn):
+def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars, tmpdir, chg_gpastr, total_num_trs, stat_syn):
     my_nest.ResetKernel()
 
     # Get parameters
@@ -117,63 +118,6 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         elif mode == 'slow-wave-dopamine-depleted':
             dop = 0.0
 
-
-    stim_pars = {'STRramp':{'stim_start':4000.0,
-                             'h_rate':400.0,
-                             'l_rate':0.0,
-                             'duration':140.0,
-                             'res':10.0,
-                             'do':True,
-                             'w-form':'ramp',
-                             'stim_target':['C1','C2','CF'],
-                             'target_name':'STR',
-                             'stim_spec':{'C1':0.0,'C2':0.0,'CF':0.0},
-                             'stim_ratio':{'C1':0.3,'C2':0.3,'CF':0.3}},
-                 'STNstop':{'stim_start':4000.0,
-                             'h_rate':1000.0,
-                             'l_rate':0.0,
-                             'duration':10.0,
-                             'res':10.0,
-                             'do':True,
-                             'w-form':'pulse',
-                             'stim_target':['CS'],
-                             'target_name':'STN',
-                             'stim_spec':{'CS':0.0},
-                             'stim_ratio':{'CS':1.0}},
-                 'GPAstop':{'stim_start':4000.0,
-                             'h_rate':1000.0,
-                             'l_rate':0.0,
-                             'duration':40.0,
-                             'res':10.0,
-                             'do':True,
-                             'w-form':'pulse',
-                             'stim_target':['EA'],
-                             'target_name':'GPA',
-                             'stim_spec':{'EA':0.0},
-                             'stim_ratio':{'EA':1.0}}}
-    stim_chg_pars = {'STRramp':{'value':500.0,
-                                'res':100.0,
-                                'waittime':2000.0,
-                                'preptime':2000.0,
-                                'deadtime':1000.0},
-                     'STNstop':{'value':2000.0,
-                                'res':500.0,
-                                'waittime':2000.0,
-                                'preptime':2000.0,
-                                'deadtime':1000.0},
-                     'GPAstop':{'value':2000.0,
-                                'res':500.0,
-                                'waittime':2000.0,
-                                'preptime':2000.0,
-                                'deadtime':1000.0},
-                     'Reltime':{'STNstop':{'l_val':0.0,
-                                       'h_val':20.0,
-                                       'res':10.0,
-                                       'ref':'STRramp'},
-                                'GPAstop':{'l_val':0.0,
-                                       'h_val':20.0,
-                                       'res':10.0,
-                                       'ref':'STRramp'}}}
 
     pp(stim_pars)
     pp(stim_chg_pars)
@@ -294,6 +238,9 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
         lesion(par,les_src,les_trg)
     else:
         print 'No lesion!'
+
+    if tmpdir:
+        base = os.path.join(os.getenv('TMPDIR'), 'example/eneuro', str(size), mode, dir_name)
 
 
 
@@ -714,6 +661,150 @@ def ensure_dir(directory):
 # main()
 if __name__ == '__main__':
 
+
+    dir_list = []
+    sim_res = 0.1
+
+    stim_pars = {'STRramp':{'stim_start':4000.0,
+                             'h_rate':400.0,
+                             'l_rate':350.0,
+                             'duration':140.0,
+                             'res':10.0,
+                             'do':True,
+                             'w-form':'ramp',
+                             'stim_target':['C1','C2','CF'],
+                             'target_name':'STR',
+                             'stim_spec':{'C1':0.0,'C2':0.0,'CF':0.0},
+                             'stim_ratio':{'C1':0.3,'C2':0.3,'CF':0.3}},
+                 'STNstop':{'stim_start':4000.0,
+                             'h_rate':1000.0,
+                             'l_rate':0.0,
+                             'duration':10.0,
+                             'res':2.0,
+                             'do':True,
+                             'w-form':'pulse',
+                             'stim_target':['CS'],
+                             'target_name':'STN',
+                             'stim_spec':{'CS':0.0},
+                             'stim_ratio':{'CS':1.0}},
+                 'GPAstop':{'stim_start':4000.0,
+                             'h_rate':1000.0,
+                             'l_rate':0.0,
+                             'duration':40.0,
+                             'res':2.0,
+                             'do':True,
+                             'w-form':'pulse',
+                             'stim_target':['EA'],
+                             'target_name':'GPA',
+                             'stim_spec':{'EA':0.0},
+                             'stim_ratio':{'EA':1.0}}}
+    stim_chg_pars = {'STRramp':{'value':500.0,
+                                'res':100.0,
+                                'waittime':2000.0,
+                                'deadtime':1000.0,
+                                'preptime':2000.0},
+                     'STNstop':{'value':2000.0,
+                                'res':500.0,
+                                'waittime':2000.0,
+                                'deadtime':1000.0,
+                                'preptime':2000.0},
+                     'GPAstop':{'value':2000.0,
+                                'res':500.0,
+                                'waittime':2000.0,
+                                'deadtime':1000.0,
+                                'preptime':2000.0},
+                     'Reltime':{'STNstop':{'l_val':0.0,
+                                       'h_val':20.0,
+                                       'res':10.0,
+                                       'ref':'STRramp'},
+                                'GPAstop':{'l_val':0.0,
+                                       'h_val':20.0,
+                                       'res':10.0,
+                                       'ref':'STRramp'}}}
+
+    str_f = numpy.arange(600.,800.,100.)
+    # gpa_f = numpy.arange(500.,1000.,500.)
+    gpa_f = numpy.array([0.0])
+    stn_f = numpy.arange(500.,1000.,500.)
+    # stn_f = numpy.array([0.0])
+    relss = numpy.arange(-100.,-80.,10.)
+    # relss = numpy.array([0.0])
+    # relsg = numpy.arange(-100.,-80.,10.)
+    relsg = numpy.array([0.0])
+
+    comb = numpy.array(numpy.meshgrid(str_f,stn_f,gpa_f,relss,relsg))
+    comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
+
+    if len(sys.argv) > 1:
+        numtrs = int(sys.argv[1])
+        size = int(sys.argv[2])
+        loc_num_th = int(sys.argv[3])
+    else:
+        numtrs = 2
+        size = 10000
+        loc_num_th = 4
+        lesion_source = []
+        lesion_target = []
+        tot_num_trs = 10
+        chg_GPASTR = False
+
+    if len(sys.argv) > 4:
+        les_s_tmp = sys.argv[4]
+        lesion_source = les_s_tmp.split(',')
+        les_t_tmp = sys.argv[5]
+        lesion_target = les_t_tmp.split(',')
+    else:
+        lesion_source = []
+        lesion_target = []
+
+    if len(sys.argv) > 6:                       # GPA to STR connections get strengthen so that they can affect ramping
+        tot_num_trs = int(sys.argv[6])          # response in MSN D1 and D2
+        chg_GPASTR = True
+    else:
+        tot_num_trs = 10
+        chg_GPASTR = True
+        tmpdir = False
+
+    modes = ['activation-control']
+
+    all_static_syns = False
+
+#    modes = [
+#        'activation-control',
+#        'activation-dopamine-depleted',
+#        'slow-wave-control',
+#        'slow-wave-dopamine-depleted'
+#    ]
+
+    # for ind in range(0,comb_resh.shape[1]):
+    ind = numtrs
+    stim_pars['STRramp']['h_rate'] = comb_resh[0][ind]
+    stim_pars['STNstop']['h_rate'] = comb_resh[1][ind]
+    stim_pars['GPAstop']['h_rate'] = comb_resh[2][ind]
+    stim_chg_pars['Reltime']['STNstop']['h_val'] = comb_resh[3][ind]
+    stim_chg_pars['Reltime']['GPAstop']['h_val'] = comb_resh[4][ind]
+
+    print 'STR = ', str(int(comb_resh[0][ind])), ', STN = ', str(int(comb_resh[1][ind])),\
+          ', GPA = ', str(int(comb_resh[2][ind])), ', RSS = ', str(int(comb_resh[3][ind])),\
+          ', RSG = ', str(int(comb_resh[4][ind]))
+
+    # for mode in modes:
+    mode = modes[0]
+    nest_data_dir = main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target, stim_pars, stim_chg_pars, tmpdir,chg_GPASTR,tot_num_trs,all_static_syns)
+
+    print 'nest directory \"'+ nest_data_dir +'\" finished processing!'
+
+    dir_list.append(nest_data_dir)
+
+    main_dir = nest_data_dir.rsplit('/',3)[0]
+    main_dir_flname = main_dir+ '/dir-data'
+
+    print 'directories path are stored in: '+ main_dir_flname
+
+    sio.savemat(main_dir_flname,{'dirs':dir_list})
+
+    os.system('matlab -nodisplay -r \'data_concat_save_as_mat_sep_stim '+ main_dir_flname+ ' '+ str(sim_res)+ '; exit;\'')
+    '''
     #size = sys.argv[1] if len(sys.argv)>1 else 3000
     if len(sys.argv) > 1:
         numtrs = int(sys.argv[1])
@@ -763,3 +854,4 @@ if __name__ == '__main__':
         randomized_params_plot.main(mode, size)
         mean_firing_rates.main(mode, size)
         mean_firing_rates_plot.main(mode, size)
+    '''
