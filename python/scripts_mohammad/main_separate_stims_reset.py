@@ -898,7 +898,7 @@ if __name__ == '__main__':
     sio.savemat(main_dir_flname,{'dirs':nest_data_dir,
                                  'wsdir':weight_stim_dir})
 
-    os.system('matlab -nodisplay -r \'data_concat_save_as_mat_sep_stim '+ main_dir_flname+ ' '+ str(sim_res)+ '; exit;\'')
+    os.system('matlab -nodisplay -r \'data_concat_save_as_mat_sep_stim_reset '+ main_dir_flname+ ' '+ str(sim_res)+ '; exit;\'')
     '''
     #size = sys.argv[1] if len(sys.argv)>1 else 3000
     if len(sys.argv) > 1:
