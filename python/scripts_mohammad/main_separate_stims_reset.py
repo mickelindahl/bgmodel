@@ -29,6 +29,7 @@ import list_parameters
 import scipy.io as sio
 import numpy
 import nest
+import time
 
 pp = pprint.pprint
 
@@ -88,7 +89,7 @@ def postprocessing(pops):
 
 
 # def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_trs,stat_syn):
-def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars, tmpdir, chg_gpastr, total_num_trs, stat_syn):
+def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars, tmpdir, chg_gpastr, w_gpastr, total_num_trs, stat_syn):
     my_nest.ResetKernel()
 
     # Get parameters
@@ -127,21 +128,23 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
     binalg = False
 
     if chg_gpastr:
-        div_var = trnum/total_num_trs
-        trnum = ((trnum-1)%total_num_trs) + 1
-        if binalg:
-            weight_coef_base = 0.5
+        # div_var = trnum/total_num_trs
+        # trnum = ((trnum-1)%total_num_trs) + 1
+        # if binalg:
+        #     weight_coef_base = 0.5
+        #
+        #     # residual_temp = div_var%2
+        #     if (div_var%2) == 0:
+        #         weight_coef = weight_coef_base + weight_coef_base/(2**(div_var/2))
+        #     else:
+        #         weight_coef = weight_coef_base - weight_coef_base/(2**(div_var+1)/2)
+        # else:
+        #     weight_coef_base = 0.2
+        #     weight_coef_inc_rate = 0.05
+        #
+        #     weight_coef = weight_coef_base + weight_coef_inc_rate * div_var
 
-            # residual_temp = div_var%2
-            if (div_var%2) == 0:
-                weight_coef = weight_coef_base + weight_coef_base/(2**(div_var/2))
-            else:
-                weight_coef = weight_coef_base - weight_coef_base/(2**(div_var+1)/2)
-        else:
-            weight_coef_base = 0.2
-            weight_coef_inc_rate = 0.05
-
-            weight_coef = weight_coef_base + weight_coef_inc_rate * div_var
+        weight_coef = w_gpastr
 
         par.set({'nest':{'GA_M1_gaba':{'weight':weight_coef}}})
         par.set({'nest':{'GA_M2_gaba':{'weight':weight_coef*2.0}}})
@@ -149,15 +152,6 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
         weight_coef = par.dic['nest']['GA_M1_gaba']['weight']
         div_var = 0
 
-    # stim_pars_STN = {'stim_start':4000.0,
-    #                  'h_rate':200.0,
-    #                  'l_rate':0.0,
-    #                  'duration':10.0,
-    #                  'res':10.0,
-    #                  'do':True}
-    # stim_chg_pars_STN = {'value':210.0,
-    #                  'res':10.0,
-    #                  'waittime':2000.0}
 
     '''
         The naming of the result directory has the following order:
@@ -168,17 +162,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
     '''
 
     # dir_name = 'GPASTR-Wmod'+str(int(weight_coef*100))+'-' + str(div_var) + '-'
-    #
-    # for keys in stim_pars:
-    #     if stim_pars[keys]['do']:
-    #         dir_name = dir_name + \
-    #                    stim_pars[keys]['target_name']+'-'+\
-    #                    str(stim_pars[keys]['duration'])+ '-'+\
-    #                    str(stim_pars[keys]['h_rate'])+ '-'+\
-    #                    str(stim_chg_pars[keys]['value'])+ '-'+\
-    #                    str(stim_chg_pars[keys]['res'])+ '-'
-    #         last_stimpars = keys
-    dir_name = 'GPASTR-Wmod'+str(int(weight_coef*100))+'-' + str(div_var) + '-'
+    dir_name = 'GPASTR-Wmod'+str(int(weight_coef*100))+'-'
 
     for keys in stim_pars:
         if stim_pars[keys]['do']:
@@ -191,38 +175,15 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
             last_stimpars = keys
 
     if stat_syn:
-        dir_name = dir_name + 'static-'
+        dir_name = dir_name + '-static-'
     else:
-        dir_name = dir_name + 'tsodyks-'
+        dir_name = dir_name + '-tsodyks-'
 
     dir_name = dir_name + 'tr'+ str(trnum)
 
     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode, dir_name)
 
-    # if stim_pars['STRramp']['do'] and stim_pars['STNstop']['do']:
-    #     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
-    #                         'mutlistim-STN-dur'+
-    #                         str(stim_pars['STNstop']['duration'])+ '-'+
-    #                         str(stim_pars['STNstop']['h_rate'])+ '-'+
-    #                         str(stim_chg_pars['STNstop']['value'])+ '-'+
-    #                         str(stim_chg_pars['STNstop']['res'])+ '-'+
-    #                         'tr'+ str(trnum))
-    # elif stim_pars['STNstop']['do']:
-    #     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
-    #                         'STN-dur'+
-    #                         str(stim_pars['STNstop']['duration'])+ '-'+
-    #                         str(stim_pars['STNstop']['h_rate'])+ '-'+
-    #                         str(stim_chg_pars['STNstop']['value'])+ '-'+
-    #                         str(stim_chg_pars['STNstop']['res'])+ '-'+
-    #                         'tr'+ str(trnum))
-    # else:
-    #     base = os.path.join(os.getenv('BGMODEL_HOME_DATA'), 'example/eneuro', str(size), mode,
-    #                         'STR-dur'+
-    #                         str(stim_pars['STRramp']['duration'])+ '-'+
-    #                         str(stim_pars['STRramp']['h_rate'])+ '-'+
-    #                         str(stim_chg_pars['STRramp']['value'])+ '-'+
-    #                         str(stim_chg_pars['STRramp']['res'])+ '-'+
-    #                         'tr'+ str(trnum))
+
 
     rand_conn = False
 
@@ -292,13 +253,6 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
 
     sim_res = nest.GetKernelStatus('resolution')
 
-    # if trnum != 1:
-    #     def_rng_seed = nest.GetKernelStatus('rng_seeds')
-    #     l_def_rng_seed = len(def_rng_seed)
-    #     b_lim = (trnum - 1)*l_def_rng_seed
-    #     u_lim = (trnum - 1)*2*l_def_rng_seed + 1
-    #     nest.GetKernelStatus({'rng_seeds':range(b_lim,u_lim,1)})
-
     #Setting nest random number generator
     nest_rng_set(trnum)
 
@@ -324,8 +278,6 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
             ind_comb = ind_comb + 1
             # l_rate = stim_pars[stim_type]['l_rate']
             h_rate = stim_pars[stim_type]['h_rate']
-            # res = stim_chg_pars[stim_type]['res']
-            # max_h_rate = stim_chg_pars[stim_type]['value']
             ratescomb.append(numpy.array(h_rate))
             comb_dic.update({stim_type:ind_comb})
         reltimecomb = []
@@ -416,18 +368,6 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
 
     sio.savemat(base+'/stimspec.mat',stim_spec)
     sio.savemat(base+'/modifiedweights.mat',mod_GPASTR_weights)
-    # # STN
-    # if stim_pars_STN['do']:
-    #     stim_spec = {'CS':0.0}
-    #     for node_name in ['CS']:
-    #         [modpop_ids,allpop_ids] = extra_modulation(pops, 1.0, node_name)
-    #         [stimmod_id,stim_time] = modulatory_stim(stim_pars_STN,stim_chg_pars_STN)
-    #         nest.Connect(stimmod_id,modpop_ids)
-    #         stim_spec[node_name] = stim_time
-    #         stim_spec[node_name].update({'stim_subpop':modpop_ids,
-    #                                     'allpop':allpop_ids})
-    #
-    #     sio.savemat(base+'/stimspec.mat',stim_spec)
 
     save_node_random_params(pops,base+'/randomized-params.json')
     nest.SetKernelStatus({'print_time':True})
@@ -449,13 +389,15 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
         resettimes = stim_spec['STRramp']['reset_times']
         simtime = numpy.unique(numpy.diff(resettimes))[0]
         for tr in range(tot_num_trs):
+            print 'Simulation trial #', str(tr+1)
             my_nest.Simulate(simtime)
             nest.ResetNetwork()
             rep_dir = os.path.join(base, str(tr+1))
             gdfdatadirs.append(rep_dir)
             ensure_dir(rep_dir)
             print 'Moving gdf files to ', rep_dir, '...'
-            os.system('mv '+base+'/nest/*.gdf '+rep_dir)
+            os.system('cp -r '+base+'/nest '+rep_dir+'/')
+            time.sleep(10.0)
     else:
         my_nest.Simulate(10000.0)
 
@@ -465,9 +407,6 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,stim_pars,stim_chg_pars
 
 def extra_modulation(pops,subpop_ratio,node_name,rand_gen):
     node_ids = pops[node_name].ids
-    #spkdet = nest.Create('spike_detector')
-    #nest.Connect(node_ids,spkdet)
-    # perm_ids = numpy.random.permutation(node_ids)
     perm_ids = rand_gen.permutation(node_ids)
     #subpop_ratio = 0.3
     subpop_num = numpy.int(subpop_ratio*len(node_ids))
@@ -479,11 +418,6 @@ def modulatory_stim(stim_params,chg_stim_param):
     mod_inp = nest.Create('poisson_generator_dynamic',1)
     all_rates = []
     all_start_times = []
-    #h_rate = 200.0
-    #l_rate = 0.0
-    #slope = 2.       # Hz/ms
-    #res = 10.        # ms
-    #stim_start = 1000.0
     stim_start = stim_params['stim_start']
     h_rate = stim_params['h_rate']
     l_rate = stim_params['l_rate']
@@ -562,12 +496,6 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic,tot_nu
         for dum in range(tot_numtr):
             rate_ind = 0
             rateval = all_rates[ind]
-            #h_rate = 200.0
-            #l_rate = 0.0
-            #slope = 2.       # Hz/ms
-            #res = 10.        # ms
-            #stim_start = 1000.0
-            # stim_start = stim_params[keys]['stim_start']
             h_rate = rateval
             l_rate = stim_params[keys]['l_rate']
             #slope = stim_params['slope']
@@ -597,105 +525,6 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic,tot_nu
             ratevec = numpy.append(ratevec,0.0)
             timevec = numpy.append(timevec,timevec[-1]+res)
 
-        # chg_stim_val = chg_stim_param[keys]['value']
-        # chg_stim_res = chg_stim_param[keys]['res']
-        # waittime = chg_stim_param[keys]['waittime']
-            reset_times = stim_start + waittime
-
-            all_start_times.append(stim_start)
-            all_stop_times.append(stim_stop)
-            all_reset_times.append(reset_times)
-
-            stim_start = stim_start + waittime + dead_time + prep_time
-        # all_rates.append(h_rate)
-        # h_rate = h_rate + chg_stim_res
-
-        # while h_rate <= chg_stim_val:
-        #     all_rates.append(h_rate)
-        #     ratevec = numpy.append(ratevec,0.0)
-        #     timevec = numpy.append(timevec,timevec[-1]+res)
-
-            # ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
-            # stim_start = stim_stop + waittime
-            # stim_stop = stim_start + stim_dur + res
-            # timevec = numpy.append(timevec,numpy.arange(stim_start,stim_stop,res))
-            # h_rate = h_rate + chg_stim_res
-            # all_start_times.append(stim_start)
-        if keys in refchgkey:
-            prev_var_stops = all_stop_times
-
-        nest.SetStatus((mod_inp[ind],),{'rates': ratevec.round(0),'timings': timevec,
-                                'start': timevec[0], 'stop': stim_stop})
-        stim_vecs.update({keys:{'rates':all_rates,
-                                'start_times':all_start_times,
-                                'stop_times':all_stop_times,
-                                'reset_times':all_reset_times,
-                                'stim_pois_id':(mod_inp[ind],)}})
-    return stim_vecs
-
-'''
-def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic,tot_numtr):
-    num_pois_gen = len(stim_params.keys())
-    mod_inp = nest.Create('poisson_generator_dynamic',num_pois_gen)
-    ind = -1
-    ind_dic = {}
-    stim_vecs = {}
-    refchgkey = list(find('ref',chg_stim_param))
-    u_refchgkey = numpy.unique(refchgkey)[0]
-    if type(u_refchgkey) is not list:
-        ordered_keys = [u_refchgkey]
-    for keys in stim_params.keys():
-        ind = ind + 1
-        ind_dic.update({keys:ind})
-        if not keys in u_refchgkey:
-            ordered_keys.append(keys)
-
-
-    for keys in ordered_keys:
-        ind = ind_dic[keys]
-        timevec = numpy.array(0.0)
-        ratevec = numpy.array(0.0)
-        waittime = chg_stim_param[keys]['waittime']
-        dead_time = chg_stim_param[keys]['deadtime']
-        prep_time = chg_stim_param[keys]['preptime']
-        # stim_start = stim_params[keys]['stim_start']
-        stim_start = dead_time + prep_time
-        # all_rates = []
-        all_start_times = []
-        all_stop_times = []
-        all_reset_times = []
-        # for rate_ind, rateval in enumerate(all_rates[ind]):
-        for dum in range(tot_numtr):
-            rate_ind = 0
-            h_rate = all_rates[ind]
-            l_rate = stim_params[keys]['l_rate']
-            #slope = stim_params['slope']
-            stim_dur = stim_params[keys]['duration']
-            res = stim_params[keys]['res']
-            # rate_step = slope*res
-            if keys in refchgkey:
-                stim_stop = stim_start + stim_dur + res
-            else:
-                stim_start = prev_var_stops + all_rates[comb_dic['reltime'][keys]]
-                stim_stop = stim_start + stim_dur + res
-            single_timvec = numpy.arange(stim_start,stim_stop,res)
-            timevec = numpy.append(timevec,single_timvec)
-            timveclen = single_timvec.size
-            # ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
-
-            if stim_params[keys]['w-form'] == 'ramp':
-                ratevec = numpy.append(ratevec,numpy.linspace(l_rate,h_rate,timveclen))
-            elif stim_params[keys]['w-form'] == 'pulse':
-                ratevec_tmp = []
-                ratevec_tmp.append(l_rate)
-                ratevec_tmp = numpy.append(ratevec_tmp,h_rate*numpy.ones(timveclen - 1))
-                ratevec = numpy.append(ratevec,ratevec_tmp)
-
-            # Establishing the pause between the stimulations
-            ratevec = numpy.append(ratevec,0.0)
-            timevec = numpy.append(timevec,timevec[-1]+res)
-
-            # stim_start = stim_stop + waittime
             reset_times = stim_start + waittime
 
             all_start_times.append(stim_start)
@@ -715,7 +544,6 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic,tot_nu
                                 'reset_times':all_reset_times,
                                 'stim_pois_id':(mod_inp[ind],)}})
     return stim_vecs
-'''
 
 def lesion(params,source,target):
     connlist = params.get()['conn']
@@ -752,7 +580,6 @@ def ensure_dir(directory):
 
 # main()
 if __name__ == '__main__':
-
 
     dir_list = []
     sim_res = 0.1
@@ -814,48 +641,60 @@ if __name__ == '__main__':
                                        'res':10.0,
                                        'ref':'STRramp'}}}
 
-    str_f = numpy.arange(600.,800.,100.)
-    # gpa_f = numpy.arange(500.,1000.,500.)
-    gpa_f = numpy.array([0.0])
-    stn_f = numpy.arange(500.,1000.,500.)
+    str_f = numpy.arange(600.,1000.,100.)
+    gpa_f = numpy.arange(500.,2000.,500.)
+#     gpa_f = numpy.array([0.0])
+    stn_f = numpy.arange(500.,2000.,500.)
     # stn_f = numpy.array([0.0])
-    relss = numpy.arange(-100.,-80.,10.)
-    # relss = numpy.array([0.0])
+#     relss = numpy.arange(-100.,-80.,10.)
+    relss = numpy.array([-120.0])
+    relsgss = 20.0
+    relsgwid = 40.0
+    relsgres = 10.0
     # relsg = numpy.arange(-100.,-80.,10.)
-    relsg = numpy.array([0.0])
+    # weivec = numpy.arange(0.2,0.7,0.1)
 
-    comb = numpy.array(numpy.meshgrid(str_f,stn_f,gpa_f,relss,relsg))
+#     relsg = numpy.array([0.0])
+
+    comb = numpy.array(numpy.meshgrid(str_f,stn_f,gpa_f,relss))
     comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
 
     if len(sys.argv) > 1:
         numtrs = int(sys.argv[1])
         size = int(sys.argv[2])
         loc_num_th = int(sys.argv[3])
+        W_GPASTR = float(sys.argv[4])
+        tot_num_trs = int(sys.argv[5])
     else:
-        numtrs = 2
+        numtrs = 100
         size = 3000
         loc_num_th = 4
         lesion_source = []
         lesion_target = []
-        tot_num_trs = 10
         chg_GPASTR = False
+        # W_GPASTR = []
 
-    if len(sys.argv) > 4:
-        les_s_tmp = sys.argv[4]
+    if len(sys.argv) > 6:
+        les_s_tmp = sys.argv[6]
         lesion_source = les_s_tmp.split(',')
-        les_t_tmp = sys.argv[5]
+        les_t_tmp = sys.argv[7]
         lesion_target = les_t_tmp.split(',')
     else:
         lesion_source = []
         lesion_target = []
 
-    if len(sys.argv) > 6:                       # GPA to STR connections get strengthen so that they can affect ramping
-        tot_num_trs = int(sys.argv[6])          # response in MSN D1 and D2
-        chg_GPASTR = True
+    # if len(sys.argv) > 7:                       # GPA to STR connections get strengthen so that they can affect ramping
+    #     tot_num_trs = int(sys.argv[7])          # response in MSN D1 and D2
+    #     chg_GPASTR = True
+    # else:
+    #     # tot_num_trs = 100
+    #     # chg_GPASTR = True
+    tmpdir = True
+
+    if not W_GPASTR:
+        chg_GPASTR = False
     else:
-        tot_num_trs = 2
         chg_GPASTR = True
-        tmpdir = False
 
     modes = ['activation-control']
 
@@ -867,86 +706,37 @@ if __name__ == '__main__':
 #        'slow-wave-control',
 #        'slow-wave-dopamine-depleted'
 #    ]
-
-    # for ind in range(0,comb_resh.shape[1]):
     ind = numtrs
-    stim_pars['STRramp']['h_rate'] = comb_resh[0][ind]
-    stim_pars['STNstop']['h_rate'] = comb_resh[1][ind]
-    stim_pars['GPAstop']['h_rate'] = comb_resh[2][ind]
-    stim_chg_pars['Reltime']['STNstop']['h_val'] = comb_resh[3][ind]
-    stim_chg_pars['Reltime']['GPAstop']['h_val'] = comb_resh[4][ind]
+    STNreltime = comb_resh[3][ind]
+    GPAreltime = numpy.arange(STNreltime+relsgss,STNreltime+relsgss+relsgwid+relsgres,relsgres)
+    for gprt in GPAreltime:
 
-    print 'STR = ', str(int(comb_resh[0][ind])), ', STN = ', str(int(comb_resh[1][ind])),\
-          ', GPA = ', str(int(comb_resh[2][ind])), ', RSS = ', str(int(comb_resh[3][ind])),\
-          ', RSG = ', str(int(comb_resh[4][ind]))
+        stim_pars['STRramp']['h_rate'] = comb_resh[0][ind]
+        stim_pars['STNstop']['h_rate'] = comb_resh[1][ind]
+        stim_pars['GPAstop']['h_rate'] = comb_resh[2][ind]
+        stim_chg_pars['Reltime']['STNstop']['h_val'] = comb_resh[3][ind]
+        stim_chg_pars['Reltime']['GPAstop']['h_val'] = gprt
 
-    # for mode in modes:
-    mode = modes[0]
-    nest_data_dir = main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target, stim_pars, stim_chg_pars, tmpdir,chg_GPASTR,tot_num_trs,all_static_syns)
+        print 'STR = ', str(int(comb_resh[0][ind])), ', STN = ', str(int(comb_resh[1][ind])),\
+              ', GPA = ', str(int(comb_resh[2][ind])), ', RSS = ', str(int(comb_resh[3][ind])),\
+              ', RSG = ', str(int(gprt))
 
-    # print 'nest directory \"'+ nest_data_dir +'\" finished processing!'
-    print 'Processing finished! data stored in '
-    print nest_data_dir
+        # for mode in modes:
+        mode = modes[0]
+        nest_data_dir = main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target, stim_pars, stim_chg_pars, tmpdir,chg_GPASTR,W_GPASTR,tot_num_trs,all_static_syns)
 
-    main_dir = nest_data_dir[0].rsplit('/',3)[0]
-    weight_stim_dir = nest_data_dir[0].rsplit('/',1)[0]
-    trialnum = int(nest_data_dir[0].rsplit('/',1)[1])
-    main_dir_flname = main_dir+ '/dir-data'
+        # print 'nest directory \"'+ nest_data_dir +'\" finished processing!'
+        print 'Processing finished! data stored in '
+        print nest_data_dir
 
-    print 'directories path are stored in: '+ main_dir_flname
+        main_dir = nest_data_dir[0].rsplit('/',3)[0]
+        weight_stim_dir = nest_data_dir[0].rsplit('/',1)[0]
+        trialnum = int(nest_data_dir[0].rsplit('/',1)[1])
+        main_dir_flname = main_dir + '/dir-data'
 
-    sio.savemat(main_dir_flname,{'dirs':nest_data_dir,
-                                 'wsdir':weight_stim_dir})
+        print 'directories path are stored in: '+ main_dir_flname
 
-    os.system('matlab -nodisplay -r \'data_concat_save_as_mat_sep_stim_reset '+ main_dir_flname+ ' '+ str(sim_res)+ '; exit;\'')
-    '''
-    #size = sys.argv[1] if len(sys.argv)>1 else 3000
-    if len(sys.argv) > 1:
-        numtrs = int(sys.argv[1])
-        size = int(sys.argv[2])
-        loc_num_th = int(sys.argv[3])
-    else:
-        numtrs = 40
-        size = 3000
-        loc_num_th = 4
-        lesion_source = []
-        lesion_target = []
-        tot_num_trs = 10
-        chg_GPASTR = False
+        sio.savemat(main_dir_flname,{'dirs':nest_data_dir,
+                                     'wsdir':weight_stim_dir})
 
-    if len(sys.argv) > 4:
-        les_s_tmp = sys.argv[4]
-        lesion_source = les_s_tmp.split(',')
-        les_t_tmp = sys.argv[5]
-        lesion_target = les_t_tmp.split(',')
-    else:
-        lesion_source = []
-        lesion_target = []
-
-    if len(sys.argv) > 6:                       # GPA to STR connections get strengthen so that they can affect ramping
-        tot_num_trs = int(sys.argv[6])          # response in MSN D1 and D2
-        chg_GPASTR = True
-    else:
-        tot_num_trs = 10
-        chg_GPASTR = False
-
-
-
-    modes = ['activation-control']
-    all_static_syns = False
-
-#    modes = [
-#        'activation-control',
-#        'activation-dopamine-depleted',
-#        'slow-wave-control',
-#        'slow-wave-dopamine-depleted'
-#    ]
-    for mode in modes:
-        main(mode, size, numtrs, loc_num_th, lesion_source, lesion_target,chg_GPASTR,tot_num_trs,all_static_syns)
-
-        plot.main(mode, size)
-
-        randomized_params_plot.main(mode, size)
-        mean_firing_rates.main(mode, size)
-        mean_firing_rates_plot.main(mode, size)
-    '''
+        os.system('matlab -nodisplay -r \'data_concat_save_as_mat_sep_stim_reset '+ main_dir_flname+ ' '+ str(sim_res)+ '; exit;\'')
