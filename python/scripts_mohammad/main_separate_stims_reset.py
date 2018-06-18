@@ -506,7 +506,7 @@ def modulatory_multiplestim(all_rates,stim_params,chg_stim_param,comb_dic,tot_nu
                 stim_stop = stim_start + stim_dur + res
             else:
                 # stim_start = prev_var_stops[rate_ind] + all_rates[comb_dic['reltime'][keys]][rate_ind]
-                stim_start = prev_var_stops[rate_ind] + all_rates[comb_dic['reltime'][keys]]
+                stim_start = prev_var_stops[dum] + all_rates[comb_dic['reltime'][keys]]
                 stim_stop = stim_start + stim_dur + res
             single_timvec = numpy.arange(stim_start,stim_stop,res)
             timevec = numpy.append(timevec,single_timvec)
@@ -646,10 +646,10 @@ if __name__ == '__main__':
 #     gpa_f = numpy.array([0.0])
     stn_f = numpy.arange(500.,2000.,500.)
     # stn_f = numpy.array([0.0])
-#     relss = numpy.arange(-100.,-80.,10.)
-    relss = numpy.array([-120.0])
-    relsgss = 20.0
-    relsgwid = 40.0
+    relss = numpy.arange(-120.,-50.,10.)
+#    relss = numpy.array([-120.0])
+    relsgss = 10.0
+    relsgwid = 50.0
     relsgres = 10.0
     # relsg = numpy.arange(-100.,-80.,10.)
     # weivec = numpy.arange(0.2,0.7,0.1)
@@ -660,7 +660,7 @@ if __name__ == '__main__':
     comb_resh = comb.reshape(comb.shape[0],numpy.prod(comb.shape[1:]))
 
     if len(sys.argv) > 1:
-        numtrs = int(sys.argv[1])
+        numtrs = int(sys.argv[1]) - 1
         size = int(sys.argv[2])
         loc_num_th = int(sys.argv[3])
         W_GPASTR = float(sys.argv[4])
@@ -668,11 +668,12 @@ if __name__ == '__main__':
     else:
         numtrs = 100
         size = 3000
-        loc_num_th = 4
+        loc_num_th = 1
         lesion_source = []
         lesion_target = []
         chg_GPASTR = False
-        # W_GPASTR = []
+        W_GPASTR = 0.3
+        tot_num_trs = 3
 
     if len(sys.argv) > 6:
         les_s_tmp = sys.argv[6]
@@ -708,7 +709,7 @@ if __name__ == '__main__':
 #    ]
     ind = numtrs
     STNreltime = comb_resh[3][ind]
-    GPAreltime = numpy.arange(STNreltime+relsgss,STNreltime+relsgss+relsgwid+relsgres,relsgres)
+    GPAreltime = numpy.arange(STNreltime+relsgss,STNreltime+relsgss+relsgwid,relsgres)
     for gprt in GPAreltime:
 
         stim_pars['STRramp']['h_rate'] = comb_resh[0][ind]
@@ -729,10 +730,10 @@ if __name__ == '__main__':
         print 'Processing finished! data stored in '
         print nest_data_dir
 
-        main_dir = nest_data_dir[0].rsplit('/',3)[0]
+        main_dir = nest_data_dir[0].rsplit('/',1)[0]
         weight_stim_dir = nest_data_dir[0].rsplit('/',1)[0]
         trialnum = int(nest_data_dir[0].rsplit('/',1)[1])
-        main_dir_flname = main_dir + '/dir-data'
+        main_dir_flname = main_dir + '/dir-data.mat'
 
         print 'directories path are stored in: '+ main_dir_flname
 
