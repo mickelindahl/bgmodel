@@ -224,7 +224,7 @@ function dirs = directory_extract(data_path)
     for ind = 1:length(indir)
         name_str = indir(ind).name;
         if indir(ind).isdir && ~strcmpi(name_str,'.') && ~strcmpi(name_str,'..') && ...
-           ~strcmpi(name_str,'Figs') && ~strcmpi(name_str,'Figs2') && ~strcmpi(name_str,'Figsold')
+           isempty(strfind(name_str,'Figs'))
             cnt_tmp = cnt_tmp + 1;
             dirs{cnt_tmp} = name_str;
         end

@@ -5,7 +5,7 @@
 
 function [counts,fr_vec] = baseline_firingrate(data_dir,fig_dir,nuclei,plot_id,fr_vec)
 % data_dir = [pwd,'/Ramp-dur140-amp200-1000-10/'];%mat_data/'];
-fig_dir = [fig_dir,'/Dist-avg-frs/'];
+fig_dir = fullfile(fig_dir,'Dist-avg-frs');
 if exist(fig_dir,'dir') ~= 7
     mkdir(fig_dir)
 end
@@ -19,17 +19,21 @@ time_win_stop = 10000;
 
 % fr_vec = 0:100;
 
-if exist([data_dir,'modifiedweights.mat'],'file') == 2
-    W = load([data_dir,'modifiedweights.mat']);
+if exist(fullfile(data_dir,'modifiedweights.mat'),'file') == 2
+    W = load(fullfile(data_dir,'modifiedweights.mat'));
     new_w = (W.GA_M1.max + W.GA_M1.min)/2;
 else
     new_w = [];
 end
 % nuclei_fr_hist(nuclei)
 
+if ~iscell(nuclei)
+    nuclei = {nuclei};
+end
+
 for nc_id = 1:length(nuclei)
     
-    data = load([data_dir,'mat_data/',nuclei{nc_id},'-spikedata']);
+    data = load(fullfile(data_dir,'mat_data/',[nuclei{nc_id},'-spikedata']));
     IDsall = double(data.N_ids);
     IDs = IDsall - min(IDsall) + 1;
     IDs_u = unique(IDs);
@@ -60,6 +64,7 @@ for nc_id = 1:length(nuclei)
         counts = [];
     else
         counts(nc_id,:) = histcounts(FRs,fr_vec,'Normalization','probability');
+%         counts(nc_id,:) = histcounts(FRs,fr_vec);
     end
     
             

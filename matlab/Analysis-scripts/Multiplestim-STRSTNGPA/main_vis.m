@@ -12,9 +12,12 @@ function [] = main_vis()
 
 %     dir_name = '/home/mohaghegh-data/temp-storage/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR/';
 %     dir_name = '/home/mohaghegh-data/temp-storage/18-04-16-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
-    dir_name = '/home/mohaghegh-data/temp-storage/18-05-09-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
+%     dir_name = '/home/mohaghegh-data/temp-storage/18-05-09-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/';
 %     dir_name = '/Users/Mohammad/Documents/PhD/Projects/BGmodel/MATLAB-data-analysis/Analysis/18-03-28-separatesims-sensoryinSTNGPA-rampinSTR';
-    Figdir   = fullfile(dir_name,['Figs10Maydata']);
+
+    dir_name = '/home/mohaghegh-data/temp-storage/18-05-09-separatestim-sensoryinSTNGPA-rampinSTR-reltimes/'
+    Figdir = fullfile(dir_name,['Figs12Jundata'])
+%     Figdir   = fullfile(dir_name,['Figs10Maydata']);
 %     Figdir = fullfile(dir_name,['Figs16Aprdata']);
 %     Figdir = fullfile(dir_name,['Figs09Maydata']);
 %     fl_name = fullfile(dir_name,'all_proc_data18-03-28.mat');
@@ -24,8 +27,8 @@ function [] = main_vis()
         load(fl_name);
     end
 
-%     strstn = struct_conc(procdata,1,2);
-    strstn = procdata{1,1};
+    strstn = struct_conc(procdata,1,2);
+%    strstn = procdata{1,1};
     strstn.stim_param(:,[1,4]) = [];
     strstn.stim_param_ISI(:,[1,4]) = [];
 %     str = procdata{1,2};
@@ -34,8 +37,8 @@ function [] = main_vis()
     disp('Combining all related data in structure to one ...')
 %     base_ind = 3;
 %     adding_ind = 4:9;
-    base_ind = 2;
-    adding_ind = 3:5;
+    base_ind = 4;
+adding_ind = [4:11,13];
     strstngpa = struct_conc(procdata,base_ind,adding_ind);
 %     strstngpa = procdata{1,end};
     time_vec = strstn.time_vec;
