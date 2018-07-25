@@ -454,7 +454,7 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
 
     save_node_random_params(pops,base+'/randomized-params.json')
     nest.SetKernelStatus({'print_time':True})
-
+    nest.SetKernelStatus({'overwrite_files':True})
     # print(pops)
 
     # Connect populations accordingly to connections structure
@@ -502,7 +502,8 @@ def main(mode, size, trnum, threads_num, les_src,les_trg,chg_gpastr,total_num_tr
                     'FS':{'voltage':[], 'ids':[]}}
         '''
         while start_wr <= end_wr:
-
+            if start_wr == 10000:
+                nest.ResetNetwork()
             my_nest.Simulate(res_wr)
             start_wr = start_wr + res_wr
             weight_dic['time'].append(start_wr)
