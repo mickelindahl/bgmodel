@@ -46,8 +46,8 @@ for nc_id = 1:length(nuclei)
     IDs_sel = IDs(spk_times >= time_win_start & ...
                   spk_times <= time_win_stop);
     FRs = [];          
-    for id_ind = 1:length(IDs_u)
-        FRs(id_ind) = sum(IDs_sel == IDs_u(id_ind))/(time_win_stop - time_win_start)*1000;
+    for id_ind = 1:numunits
+        FRs(id_ind) = sum(IDs_sel == id_ind)/(time_win_stop - time_win_start)*1000;
     end
     if plot_id == 1
         figure;
@@ -63,8 +63,8 @@ for nc_id = 1:length(nuclei)
         close(gcf)
         counts = [];
     else
-        counts(nc_id,:) = histcounts(FRs,fr_vec,'Normalization','probability');
-%         counts(nc_id,:) = histcounts(FRs,fr_vec);
+%         counts(nc_id,:) = histcounts(FRs,fr_vec,'Normalization','probability');
+        counts(nc_id,:) = histcounts(FRs,fr_vec);
     end
     
             
