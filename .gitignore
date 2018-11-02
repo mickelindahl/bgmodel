@@ -13,6 +13,10 @@
 *.bak
 log
 .idea*
+._*.m
+*DS_Store
+experimentaldata
+data
 
 # No nest source, build, install or log
 nest/dist/source/
