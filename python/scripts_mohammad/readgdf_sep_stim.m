@@ -5,7 +5,7 @@
 % about using the right data format!
 
 function [ids,spk_times] = readgdf_sep_stim(fl_name,sim_res,ref)
-    
+    disp(['reading ',fl_name])
     data = importdata(fl_name);
     
     if isempty(data)
@@ -13,7 +13,7 @@ function [ids,spk_times] = readgdf_sep_stim(fl_name,sim_res,ref)
         spk_times = [];
     else
         
-        data = data(data(:,2) >= ref-1000 & data(:,2) <= ref+1000,:);
+        data = data(data(:,2) >= ref-2000 & data(:,2) <= ref+2000,:);
 
         if max(data(:,1)) > intmax('uint16')
             ids = uint32(data(:,1));

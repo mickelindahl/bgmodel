@@ -33,13 +33,13 @@ end
 for nc_ind = 1:length(nuclei)
     N_ids = [];
     spk_times = [];
-    fls = dir([data_dir,nuclei{nc_ind},'*.gdf']);
+    fls = dir(fullfile(data_dir,[nuclei{nc_ind},'*.gdf']));
     disp(['Reading ',nuclei(nc_ind)])
     
     for fl_ind = 1:length(fls)
         
         fl_name = fls(fl_ind).name;
-        [ids,spks] = readgdf([data_dir,fl_name],res);
+        [ids,spks] = readgdf(fullfile(data_dir,fl_name),res);
         
         N_ids = [N_ids;ids];
         spk_times = [spk_times;spks];
