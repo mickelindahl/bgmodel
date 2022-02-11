@@ -6,7 +6,7 @@ Created on Jun 27, 2013
 import os
 import pylab
 
-from network import show_fr, show_hr
+from base_simulate import show_fr, show_hr
 from core import misc
 from core.data_to_disk import Storage_dic
 from core.network import manager
