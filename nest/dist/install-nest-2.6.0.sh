@@ -27,8 +27,9 @@ else
 fi
 
 
+echo ""
 echo "Proceeding with installation"
-echo
+echo ""
 #Start time watch
 START=$(date +%s)
 

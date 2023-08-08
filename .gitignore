@@ -29,3 +29,6 @@ nest/module/log
 
 # No results in repo
 results
+
+# No conda env
+conda-envs/

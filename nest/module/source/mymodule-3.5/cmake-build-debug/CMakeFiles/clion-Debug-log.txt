@@ -1,0 +1,6 @@
+/home/mikael/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/232.8660.186/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/home/mikael/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/232.8660.186/bin/ninja/linux/x64/ninja -G Ninja -S /home/mikael/git/nest-extension-module -B /home/mikael/git/nest-extension-module/cmake-build-debug
+CMake Error at CMakeLists.txt:50 (message):
+  Cannot find the program `nest-config`.  Specify via -Dwith-nest=...  .
+
+
+-- Configuring incomplete, errors occurred!

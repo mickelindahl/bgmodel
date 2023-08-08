@@ -1,12 +1,11 @@
-
-'''
+"""
 Mikael Lindahl 2010
 
 
 Module:
 misc
 
-'''
+"""
 
 # Imports
 import collections
@@ -23,8 +22,8 @@ import sys
 import time
 import mpi4py
 
-
 from copy import deepcopy
+from functools import reduce
 from NeuroTools.stgen import StGen
 from numpy import array, concatenate
 
@@ -149,12 +148,10 @@ class Stopwatch():
         self.time=time.time()
         if self.only_rank_0_mpi:
             if mpi4py.MPI.COMM_WORLD.rank==0:
-                print self.msg,
-        else: 
-            print self.msg, 'rank',mpi4py.MPI.COMM_WORLD.rank
-        
+                print(self.msg)
+        else:
+            print(self.msg, 'rank', mpi4py.MPI.COMM_WORLD.rank)
 
-        
     def __exit__(self, type, value, traceback):
         t=round(time.time()-self.time,)
         if self.relative_to:
@@ -169,11 +166,11 @@ class Stopwatch():
             msg_out='... finnish {} {} sec '.format(self.msg, t)
             
         if self.only_rank_0_mpi:
-            if mpi4py.MPI.COMM_WORLD.rank==0:            
-                print msg_out
+            if mpi4py.MPI.COMM_WORLD.rank==0:
+                print(msg_out)
         else:
-            print self.msg, 'rank',mpi4py.MPI.COMM_WORLD.rank
-                   
+            print(self.msg, 'rank', mpi4py.MPI.COMM_WORLD.rank)
+
         if len(self.args)>1:
             self.args[1][self.msg]=t
             
@@ -380,8 +377,8 @@ def _convolve(binned_data, bin_extent=1, kernel_type='triangle', axis=0,
         kernel = signal.gaussian(bin_extent, params['std_ms']*params['fs']/1000.0)
         
     if len(kernel)>binned_data.shape[-1]:
-        print 'j'   ,len(kernel),binned_data.shape[-1]
-        
+        print('j', len(kernel), binned_data.shape[-1])
+
     assert len(kernel)<binned_data.shape[-1], 'kernel to big for data set'
     
     conv_data=[]
@@ -389,12 +386,12 @@ def _convolve(binned_data, bin_extent=1, kernel_type='triangle', axis=0,
     if not single:
         if no_mean==True:
           
-            for i in xrange(binned_data.shape[0]):
+            for i in range(binned_data.shape[0]):
                 binned_data[i, :] = np.convolve(binned_data[i,:], kernel/sum(kernel),'same')
                 binned_data[i, :] -= np.mean(binned_data[i, :])
 
         else:
-            for i in xrange(binned_data.shape[0]):
+            for i in range(binned_data.shape[0]):
                 binned_data[i, :] = np.convolve(binned_data[i,:], kernel/sum(kernel),'same')
              
             
@@ -470,10 +467,10 @@ def dict_recursive_get(dic, keys):
         return _dict_recursive_get(dic, keys)
     except Exception as e:
         if e.message:
-            raise type(e)(e.message), None, sys.exc_info()[2]
+            raise type(e)(e.message)(None).with_traceback(sys.exc_info()[2])
         else :
             s=dict_key_error_msg(dic, keys)
-            raise type(e)(e.message+s), None, sys.exc_info()[2]
+            raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
 
 
 def _dict_recursive_get(dic, keys):
@@ -653,13 +650,13 @@ def get_size_in_bytes(data, **kwargs):
 
 #             print d.shape
     if display:     
-        print 'Size of data'
+        print('Size of data')
         if size<10**5:
-            print size, 'bytes'
+            print(size, 'bytes')
         elif size<10**8:
-            print round(float(size)/10**6,2),'MB'
+            print(round(float(size) / 10 ** 6, 2), 'MB')
         else:
-            print round(float(size)/10**9,2),'GB'
+            print(round(float(size) / 10 ** 9, 2), 'GB')
     return size
 
 def sigmoid(p,x):
@@ -765,37 +762,37 @@ def inh_poisson_spikes(rate, t, t_stop, n_rep=1 ,seed=None):
     return spikes   
 
 def kmean_cluster( data, k, iter = 10):
-    '''
-    The k-means algorithm takes as input the number of clusters to generate, 
-    k, and a set of observation vectors to cluster. It returns a set of 
+    """
+    The k-means algorithm takes as input the number of clusters to generate,
+    k, and a set of observation vectors to cluster. It returns a set of
     centroids, one for each of the k clusters. An observation vector is
-    classified with the cluster number or centroid index of the centroid  
+    classified with the cluster number or centroid index of the centroid
     closest to it.
-    
+
     Inputs:
-        data          - A M by N array of M observations in N dimensions or a 
+        data          - A M by N array of M observations in N dimensions or a
                          length M array of M one-dimensional observations.
-        k             - The number of clusters to form as well as the number 
-                         of centroids to generate. If minit initialization 
-                         string is 'matrix', or if a ndarray is given instead, 
+        k             - The number of clusters to form as well as the number
+                         of centroids to generate. If minit initialization
+                         string is 'matrix', or if a ndarray is given instead,
                          it is interpreted as initial cluster to use instead.
-        iter          - Number of iterations of the k-means algrithm to run. 
-                        Note that this differs in meaning from the iters 
+        iter          - Number of iterations of the k-means algrithm to run.
+                        Note that this differs in meaning from the iters
                         parameter to the kmeans function.
-    
-    Returns: 
-        centroids      - A k by N array of k centroids. The i'th centroid 
-                        codebook[i] is represented with the code i. The 
-                        centroids and codes     generated represent the lowest 
+
+    Returns:
+        centroids      - A k by N array of k centroids. The i'th centroid
+                        codebook[i] is represented with the code i. The
+                        centroids and codes     generated represent the lowest
                         distortion seen, not necessarily the globally minimal
                          distortion.
-        distortion    - The distortion between the observations passed and the 
+        distortion    - The distortion between the observations passed and the
                         centroids generated.
-        labels          - A length N array holding the code book index for each 
+        labels          - A length N array holding the code book index for each
                         observation.
-        dist          - The distortion (distance) between the observation and 
+        dist          - The distortion (distance) between the observation and
                         its nearest code.
-                       
+
     Examples:
         >>> from misc import kmean_cluster
         >>> features  = array([[ 1.9,2.3],
@@ -810,7 +807,7 @@ def kmean_cluster( data, k, iter = 10):
         >>> kmean_cluster( features, 2, iter = 10):
         (array([[ 2.3110306 ,  2.86287398],
            [ 0.93218041,  1.24398691]]), 0.85684700941625547)
-    '''
+    """
 
     centroids, labels = clust.kmeans2(data, k, minit ='points', iter = iter)
 
@@ -896,7 +893,7 @@ def make_N_colors(cmap_name, N):
     return cmap(numpy.arange(N))[:, :-1]
 
 
-import copy_reg
+import copyreg as copy_reg
 import types
 
 def _reduce_method(meth):
@@ -946,7 +943,7 @@ def mutual_information(count_sr_list):
                 if p_sr[i,j]>0:
                     tmp+=p_sr[i,j]*numpy.log2(p_sr[i,j]/(p_s[i]*p_r[j]))
                 if numpy.isnan(tmp):
-                    print tmp
+                    print(tmp)
         mi.append(tmp)
     
     return numpy.array(mi)
@@ -1100,7 +1097,7 @@ surface
  
     # Here is where the trains are convolved with the spike trains stored in 2D array spikes
     kernel = signal.gaussian(lenGaussKernel/samplingW, stdGaussKernel/samplingW)
-    for ii in xrange(n_spike_trains):
+    for ii in range(n_spike_trains):
         spikes[ii, :] = np.convolve(spikes[ii,:], kernel/sum(kernel),'same')
 
 
@@ -1117,18 +1114,18 @@ surface
     #Inside this double for the cross correlation matrix is stored in zlxc
     zlxc = np.zeros((n_spike_trains, n_spike_trains))
     
-    for ii in xrange(n_spike_trains):
+    for ii in range(n_spike_trains):
         start=time.time()
-        for jj in xrange(n_spike_trains):
+        for jj in range(n_spike_trains):
             #            aux = np.corrcoef(spikes[ii,:],spikes[jj,:])[0,1]
             norm0 = np.sqrt(numpy.mean(spikes[ii,:]**2)*numpy.mean(spikes[jj, :]**2))
             aux = numpy.mean(spikes[ii,:]*spikes[jj, :])/norm0
             if numpy.isnan(aux): zlxc[ii, jj] = 0.
             else: zlxc[ii, jj] = aux
         stop=time.time()
-        print ii, stop-start
-            
-            #if ii <= jj:
+        print(ii, stop - start)
+
+        #if ii <= jj:
             #    distances[ii, jj] =numpy.sqrt(numpy.sum(numpy.power(numpy.array(positions[ii][:]) -numpy.array(positions[jj][:]), 2.)))
             #    distances[jj, ii] = distances[ii, jj]
     

@@ -23,20 +23,12 @@ clone the repository
 git clone https://github.com/mickelindahl/bgmodel.git
 ```
 
-Got to `dist` director within model
+From root run (built for debian. Might need tweeks to account for other distros and OS)
+
 ```
-cd {path to model}/dist
+cd nest
+source ./install_3.3_debian.sh
 ```
-
-These install scripts are available in `nest/`. 
-Choose one for your system and run it.
-
-* `install_2.12.0_linux.sh`
-* `install_2.6.0_linux.sh`
-* `install_2.2.2_linux.sh`
-* `install_2.12.0_mac.sh`
-
-
 Then copy `sample.env` to `.env`
 ```
 cp sample.env .env

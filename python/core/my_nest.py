@@ -18,10 +18,14 @@ import numpy.random as rand
 
 from nest import *
 import nest
-import nest.pynestkernel as _kernel        
+import nest.pynestkernel as _kernel
 import os
 
 import time
+
+from nest.lib.hl_api_exceptions import NESTError
+from nest.lib.hl_api_helper import broadcast
+
 import core.directories as dr
 from copy import deepcopy
 from core.parallelization import comm, Barrier
@@ -84,7 +88,7 @@ def _Connect_DC_fun(d, r, s, sm, t, tp, w):
      
 def _Connect_DC(pre, post, weights, delays, model, only_local=False):
     
-    from itertools import izip
+    # from zip import izip
     tp, receptor=nest.GetDefaults(model, ['type','receptor_type'])
     if not only_local:
         
@@ -115,7 +119,7 @@ def _Connect_DC(pre, post, weights, delays, model, only_local=False):
             
     
             post_ids=list(numpy.unique(post))
-            status=GetStatus(list(numpy.unique(post)), 'local')
+            status=nest.GetStatus(list(numpy.unique(post)), 'local')
             lock_up=dict(zip(post_ids,status))
             
             step=100000 #n/chunks
@@ -135,13 +139,13 @@ def _Connect_DC(pre, post, weights, delays, model, only_local=False):
                          'synapse_model': model,
                          'target': t,
                          'type': tp,
-                         'weight': w}   for s, t, d, w, in izip(pre[s], 
+                         'weight': w}   for s, t, d, w, in zip(pre[s],
                                                                 post[s], 
                                                                 delays[s], 
                                                                 weights[s]
                                                                  )
                        if lock_up[t]]
-                DataConnect(params)
+                nest.DataConnect(params)
                 del params
                 import gc
                 gc.collect()
@@ -287,7 +291,6 @@ def _Connect_speed_internal(pre, post, params=None, delay=None, model="static_sy
     as list of floats.
     """
 
-
     if len(pre) != len(post):
         raise NESTError("pre and post have to be the same length")
 
@@ -298,7 +301,7 @@ def _Connect_speed_internal(pre, post, params=None, delay=None, model="static_sy
 
     # pre post params Connect
     elif params != None and delay == None:
-        params = broadcast(params, len(pre), (dict,), "params")
+        params = nest.broadcast(params, len(pre), (dict,), "params")
         if len(params) != len(pre):
             raise NESTError("params must be a dict, or list of dicts of length 1 or len(pre).")
 
@@ -403,7 +406,7 @@ def GetKernelTime():
         return kernal_time 
 
 def get_spikes_from_memory(sd_id):
-    e = GetStatus(sd_id)[0]['events'] # get events
+    e = nest.GetStatus(sd_id)[0]['events'] # get events
     s = e['senders'] # get senders
     t = e['times'] # get spike times
 
@@ -509,9 +512,8 @@ def install_module(path, sli_path, model_to_exist='my_aeif_cond_exp'):
             nest.Install(path)#always fails in Nest 2.4.X
         except:
             nest.Install(path)#running twice fixes Nest 2.4.X
-        print '...successful'
+        print('...successful')
 
-        
 
 def GetConnProp(soruces, targets, prop_name, time):
     c=GetConn(soruces, targets)                                        

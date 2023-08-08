@@ -117,7 +117,7 @@ class Call(object):
             s = s.format(self, id(self), self.parent)
             s += self.parent_chain('\n\t')
             s += '\nWith object:' + str(obj.__repr__())
-            raise type(e)(e.message + s), None, sys.exc_info()[2]
+            raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
 
     def parent_chain(self, t):
         if self.parent:
@@ -170,7 +170,7 @@ class Call(object):
                 s += ' and parent {} (id {})'
                 s = s.format(self.op.__doc__, val, val_parent, self, id(self),
                              self.parent, id(self.parent))
-                raise type(e)(e.message + s), None, sys.exc_info()[2]
+                raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
         if self.dtype:
             a = self.dtype(a)
         return a
@@ -439,10 +439,10 @@ class Perturbation_list(object):
                 s = ('\nTrying to apply perturbation {} \n' +
                      'with keys {} with current value\n{}')
                 s = s.format(p, p.keys, misc.dict_recursive_get(dic, p.keys))
-                raise type(e)(e.message + s), None, sys.exc_info()[2]
+                raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
 
         if display:
-            print 'perturbations applied '
+            print('perturbations applied ')
 
         return dic
 
@@ -671,7 +671,7 @@ class Par_base(object):
                     d = misc.dict_recursive_add(d, k2, val.do(self))
                 except Exception as e:
                     s = '\nTrying to add:{}'
-                    raise type(e)(e.message + s.format(str(k2))), None, sys.exc_info()[2]
+                    raise type(e)(e.message + s.format(str(k2)))(None).with_traceback(sys.exc_info()[2])
 
         return d
 
@@ -762,7 +762,7 @@ class Par_base(object):
             if key in d2_reduced.keys():
                 val_old = d2_reduced[key]
                 if val_old != val and val_old != None:
-                    print 'Change ' + s + ' ' + key + ' ' + str(val_old) + '->' + str(val)
+                    print('Change ' + s + ' ' + key + ' ' + str(val_old) + '->' + str(val))
 
     def _get(self, *args):
 
@@ -775,7 +775,7 @@ class Par_base(object):
         except Exception as e:
             s = '\nTrying to do _get for self: {}'
             s = s.format(self)
-            raise type(e)(e.message + s), None, sys.exc_info()[2]
+            raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
 
         v = misc.dict_recursive_get(self.dic_con, args)
         while isinstance(v, Call):
@@ -1014,7 +1014,7 @@ class Par_base(object):
                 s = ('\nTrying to set dic_con at key {} with current' +
                      ' value\n{} to {}')
                 s = s.format(keys, misc.dict_recursive_get(dic, keys), val)
-                raise type(e)(e.message + s), None, sys.exc_info()[2]
+                raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
 
         self.apply_pertubations(dic)
         self.dic_con = dic
@@ -4225,7 +4225,7 @@ def calc_spike_setup(n, params, rate, start, stop, typ, testing=False):
                                  + i * numpy.sum(t) for i in range(rep)])
             times = list(times.ravel())
 
-            print 'Rate:', rate, 'n:', n
+            print('Rate:', rate, 'n:', n)
 
             # remove baseline from rates with -1
             rates = list(rate * (numpy.array(amp) - 1)) * rep
@@ -4855,18 +4855,18 @@ def print_dic_comparison(d1, d2, flag='keys'):
     for i, j in zip(ind1, ind2):
 
         if flag == 'all':
-            print 1, c[i], a[i]
-            print 2, d[j], b[j]
+            print(1, c[i], a[i])
+            print(2, d[j], b[j])
 
         if flag == 'keys':
             if c[i] != d[j]:
-                print 1, c[i], a[i]
-                print 2, d[j], b[j]
+                print(1, c[i], a[i])
+                print(2, d[j], b[j])
         if flag == 'values':
 
             if a[i] != b[j]:
-                print 'Depen data', c[i], a[i]
-                print 'Dummy data', d[j], b[j]
+                print('Depen data', c[i], a[i])
+                print('Dummy data', d[j], b[j])
 
 
 import unittest
@@ -4887,7 +4887,7 @@ class TestModuleFuncions(unittest.TestCase):
             call = getattr(self.m, method)
             for a, o in zip(*dummy_args(method)):
                 #                 pp(call(*a))
-                print a, method
+                print(a, method)
                 self.assertEqual(call(*a), o)
 
 
@@ -5121,7 +5121,7 @@ class TestMixinPar_base(object):
                 s += 'dic_con:{} != dic_dep:{} at {}'.format(val, val2, keys)
 
         if s:
-            print s
+            print(s)
 
         self.assertFalse(s)
 
