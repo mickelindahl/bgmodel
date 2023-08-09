@@ -24,7 +24,7 @@ from core.network import default_params
 # nest.sr('('+MODULE_SLI_PATH+') addpath')
 # nest.Install(MODULE_PATH)
 
-pp(nest.Models())
+pp(nest.node_models+nest.synapse_models)
 
 # nest.GetDefaults(dn['type_id'])
 

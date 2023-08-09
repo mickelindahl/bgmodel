@@ -20,7 +20,7 @@ pp=pprint.pprint
 HOME=default_params.HOME
 
 path, sli_path=my_nest.get_default_module_paths(HOME)
-my_nest.install_module(path, sli_path, model_to_exist='my_aeif_cond_exp' )
+my_nest.install_module(path, sli_path, model_to_exist='izhik_cond_exp' )
 
 
 def default_kwargs_net(n, n_sets=1):

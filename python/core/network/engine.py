@@ -270,7 +270,7 @@ class Network_base(object):
         except Exception as e:
             s='\nparameter class {} do not have single_unit'
             s=s.format(self.par)
-            raise type(e)(e.message + s), None, sys.exc_info()[2]
+            raise type(e)(str(e) + s).with_traceback(sys.exc_info()[2])
 
     def get_single_unit_input(self):
         try:
@@ -278,7 +278,7 @@ class Network_base(object):
         except Exception as e:
             s='\nparameter class {} do not have single_unit'
             s=s.format(self.par)
-            raise type(e)(e.message + s), None, sys.exc_info()[2]
+            raise type(e)(str(e) + s).with_traceback(sys.exc_info()[2])
         
     def get_xopt_length(self):
         return len(self.xopt)
@@ -340,7 +340,7 @@ class Network_base(object):
             
             if self.get_do_reset() and not self.get_to_memory():
                 import gc
-                print 'reseting_kernel in loop'
+                print('reseting_kernel in loop')
                 t=my_nest.GetKernelStatus('time')
                 my_nest.SetKernelTime(t)
                 with Barrier():
@@ -467,7 +467,7 @@ class Network_base(object):
             r=ss.cmp('mean_rate', **{'t_start':self.get_start_rec(),
                                      't_stop':self.get_stop_rec()}).y
 #             print model, ss.cmp('mean_rate', **{'t_start':self.get_start_rec()}).y
-            print r, tr
+            print(r, tr)
             r_list.append(r)
             tr_list.append(tr)
             
@@ -478,17 +478,17 @@ class Network_base(object):
 #        print ss.get_mean_rate_error(**{'t_stop':self.get_start_rec()})
 
         if self.display_opt:
-            print 'x0:',list_to_string(x0,1)
-            print 'f:', list_to_string(r_list,1)
-            print 'tf', list_to_string(tr_list,1),
-            print 'e:', list_to_string(e,2)
+            print('x0:', list_to_string(x0, 1))
+            print('f:', list_to_string(r_list, 1))
+            print('tf', list_to_string(tr_list, 1), end=' ')
+            print('e:', list_to_string(e, 2))
         s=''
         for model in sorted(d1.keys()):
             ss=d1[model]['spike_signal']
             r=ss.cmp('mean_rate', **{'t_start':self.get_start_rec(),
                                        't_stop':self.get_stop_rec()}).y
             s+=model+':'+str(numpy.round(r))+', '
-        print s                    
+        print(s)
         for i, val in zip(idx, vals):
             e[i]+=val
         
@@ -599,7 +599,7 @@ class Network(Network_base):
         '''
         with Stop_stdout(not self.verbose), Stopwatch('Building',
                                                       self.stopwatch):
-            print 'Do build!!! self.local_num_threads', self.local_num_threads
+            print('Do build!!! self.local_num_threads', self.local_num_threads)
             my_nest.ResetKernel(local_num_threads=self.local_num_threads,
 #                                 threads_local=self.threads_local,
                                 print_time=True)

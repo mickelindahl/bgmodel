@@ -25,6 +25,7 @@ set( MODULE_SOURCES
      step_pattern_builder.h step_pattern_builder.cpp
      recording_backend_socket.h recording_backend_socket.cpp
      izhik_cond_exp.cpp izhik_cond_exp.h
+     my_aeif_cond_exp.cpp my_aeif_cond_exp.h
    )
 
 check_have_sfml_audio()

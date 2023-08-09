@@ -104,10 +104,10 @@ class Mixin(object):
             xticks - number of xticks to show
             yticks - number of yticks to show 
         '''
-        if xticks: self.xaxis.set_major_locator( MaxNLocator( xticks ) )  
-        if yticks: self.yaxis.set_major_locator( MaxNLocator( yticks ) )                    
+        if xticks: self.xaxis.set_major_locator( MaxNLocator( xticks ) )
+        if yticks: self.yaxis.set_major_locator( MaxNLocator( yticks ) )
         if hasattr(self ,'zaxis'):
-            if zticks: self.zaxis.set_major_locator( MaxNLocator( zticks ) )  
+            if zticks: self.zaxis.set_major_locator( MaxNLocator( zticks ) )
 
         
     def twinx(self):
@@ -331,8 +331,7 @@ class TestAxes3D(unittest.TestCase):
         self.ax=MyAxes3D(self.fig, [ 0.1,  0.1,  0.5,0.5 ] )
     
     def test_surface(self):
-        
-        from matplotlib import cm
+
         from matplotlib.ticker import LinearLocator, FormatStrFormatter        
 
         surf = self.ax.plot_surface(self.X, self.Y, self.Z, rstride=1, cstride=1, cmap='coolwarm',
@@ -358,9 +357,9 @@ class TestAxes3D(unittest.TestCase):
         
     def test_elev(self):
         # Rotate up
-        for ii in xrange(0,15,5):
+        for ii in range(0,15,5):
             ax=MyAxes3D(pylab.figure( facecolor = 'w' ), [ 0.1,  0.1,  0.5,0.5 ] )
-            print ii
+            print(ii)
             ax.view_init(elev=ii)
         pylab.show()
             

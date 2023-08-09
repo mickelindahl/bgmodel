@@ -773,7 +773,7 @@ def generate_plot_data_raw(d, models, attrs, exclude=[], flag='raw', attr='firin
                     print attr
                     print out.keys()
                     
-                    raise type(e)(e.message), None, sys.exc_info()[2]
+                    raise type(e)(str(e)), None, sys.exc_info()[2]
                 d[dk].append(v[dk])
             d[dk]=numpy.array(d[dk])
             

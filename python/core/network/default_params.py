@@ -117,7 +117,7 @@ class Call(object):
             s = s.format(self, id(self), self.parent)
             s += self.parent_chain('\n\t')
             s += '\nWith object:' + str(obj.__repr__())
-            raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
+            raise type(e)(str(e) + s).with_traceback(sys.exc_info()[2])
 
     def parent_chain(self, t):
         if self.parent:
@@ -170,15 +170,10 @@ class Call(object):
                 s += ' and parent {} (id {})'
                 s = s.format(self.op.__doc__, val, val_parent, self, id(self),
                              self.parent, id(self.parent))
-                raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
+                raise type(e)(str(e) + s).with_traceback(sys.exc_info()[2])
         if self.dtype:
             a = self.dtype(a)
         return a
-
-    # import sys
-    #             print self
-    #             print "Unexpected error:", sys.exc_info()[0]
-    #             raise
 
     def __repr__(self):
         s = [str(a) for a in self.args[1:]]
@@ -202,6 +197,11 @@ class Call(object):
         new.parent = self
         return new
 
+    def min(self, other):
+        new = deepcopy(self)
+        new.op = min
+        return self.add_left(new, other)
+
     def __add__(self, other):
         new = deepcopy(self)
         new.op = operator.__add__
@@ -212,14 +212,14 @@ class Call(object):
         new.op = operator.__add__
         return self.add_right(new, other)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         new = deepcopy(self)
-        new.op = operator.__div__
+        new.op = operator.__truediv__
         return self.add_left(new, other)
 
-    def __rdiv__(self, other):
+    def __rtruediv__(self, other):
         new = deepcopy(self)
-        new.op = operator.__div__
+        new.op = operator.__truediv__
         return self.add_right(new, other)
 
     def __mul__(self, other):
@@ -240,6 +240,12 @@ class Call(object):
     def __rsub__(self, other):
         new = deepcopy(self)
         new.op = operator.__sub__
+        return self.add_right(new, other)
+
+    def __neg__(self):
+        other = 0
+        new = deepcopy(self)
+        new.op = lambda x,y:-x
         return self.add_right(new, other)
 
     def __ne__(self, other):
@@ -439,7 +445,7 @@ class Perturbation_list(object):
                 s = ('\nTrying to apply perturbation {} \n' +
                      'with keys {} with current value\n{}')
                 s = s.format(p, p.keys, misc.dict_recursive_get(dic, p.keys))
-                raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
+                raise type(e)(str(e) + s).with_traceback(sys.exc_info()[2])
 
         if display:
             print('perturbations applied ')
@@ -500,11 +506,12 @@ class Par_base(object):
         self.other = kwargs.get('other', None)
 
         path, sli_path = nest.get_default_module_paths(dr.HOME_MODULE)
-        nest.install_module(path, sli_path, model_to_exist='my_aeif_cond_exp')
+        nest.install_module(path, sli_path, model_to_exist='izhik_cond_exp')
 
         self.rec = {}
-        df = nest.GetDefaults('my_aeif_cond_exp')['receptor_types']
-        self.rec['aeif'] = df  # get receptor types
+        if "my_aeif_cond_exp" in nest.node_models+nest.synapse_models:
+            df = nest.GetDefaults('my_aeif_cond_exp')['receptor_types']
+            self.rec['aeif'] = df  # get receptor types
         df = nest.GetDefaults('izhik_cond_exp')['receptor_types']
         self.rec['izh'] = df  # get receptor types
         self.unittest = kwargs.get('unittest', False)
@@ -671,7 +678,7 @@ class Par_base(object):
                     d = misc.dict_recursive_add(d, k2, val.do(self))
                 except Exception as e:
                     s = '\nTrying to add:{}'
-                    raise type(e)(e.message + s.format(str(k2)))(None).with_traceback(sys.exc_info()[2])
+                    raise type(e)(str(e) + s.format(str(k2)))(None).with_traceback(sys.exc_info()[2])
 
         return d
 
@@ -775,7 +782,7 @@ class Par_base(object):
         except Exception as e:
             s = '\nTrying to do _get for self: {}'
             s = s.format(self)
-            raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
+            raise type(e)(str(e) + s).with_traceback(sys.exc_info()[2])
 
         v = misc.dict_recursive_get(self.dic_con, args)
         while isinstance(v, Call):
@@ -1014,7 +1021,7 @@ class Par_base(object):
                 s = ('\nTrying to set dic_con at key {} with current' +
                      ' value\n{} to {}')
                 s = s.format(keys, misc.dict_recursive_get(dic, keys), val)
-                raise type(e)(e.message + s)(None).with_traceback(sys.exc_info()[2])
+                raise type(e)(str(e) + s).with_traceback(sys.exc_info()[2])
 
         self.apply_pertubations(dic)
         self.dic_con = dic
@@ -2926,7 +2933,7 @@ class InhibitionPar_base(object):
             if k in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba',
                      'M2_M2_gaba']:  # pre[0:2] in ['M1', 'M2'] and post[0:2] in ['M1', 'M2']:
                 e = 2800. / (DepNode('M1', 'calc_n') + DepNode('M2', 'calc_n'))  # None
-                e = min(e, 0.5)
+                e = e.min(0.5) #min(e, 0.5)
             elif k in ['FS_M1', 'FS_M2', 'FS_FS']:  # pre[0:2] =='FS' and post[0:2] in ['M1', 'M2', 'FS']:
                 e = 560. / (DepNode('M1', 'calc_n') + DepNode('M2', 'calc_n'))
                 e = min(e, 0.5)

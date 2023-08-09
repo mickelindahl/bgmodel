@@ -9,6 +9,7 @@ from core.network.default_params import Perturbation_list as pl
 import numpy
 import pprint
 from core import misc
+from functools import reduce
 pp=pprint.pprint
 
 d0=0.8
@@ -382,8 +383,8 @@ def get():
         misc.dict_update(d,dd)
         
         s='CS_{0}_GPST_{1}_STbI_{2}_EAr_{3}'.format(a0,str(a1)[0:4],str(a2)[0:4], int(a4))
-        print s
-        l[-1]+=pl(d, '=', **{'name':s})   
+        print(s)
+        l[-1]+=pl(d, '=', **{'name':s})
                
     return l
 

@@ -191,10 +191,6 @@ public:
      * Import sets of overloaded virtual functions.
      * @see Technical Issues / Virtual Functions: Overriding, Overloading, and Hiding
      */
-//#ifndef IS_BLUEGENE
-//	using nest::Node::check_connection;
-//#endif
-//	using nest::Node::connect_sender;
 	using nest::Node::handle;
     using nest::Node::handles_test_event;
 
@@ -212,16 +208,10 @@ public:
 	void set_status(const DictionaryDatum &)  override;
 
 private:
-//	void init_node_(const Node& proto); // No nest:: here
-//	void init_state_(const Node& proto); // No nest:: here
 	void init_buffers_()  override;
     void pre_run_hook() override;
-//	void calibrate();
 	void update(nest::Time const &, const long, const long) override;
 
-	// END Boilerplate function declarations ----------------------------
-
-	// Enumerations and constants specifying structure and properties ----
 
 	/**
 	 * Minimal spike receptor type.
@@ -233,8 +223,7 @@ private:
 	/**
 	 * Spike receptors (SUP_SPIKE_RECEPTOR=3).
 	 */
-	// Three spike receptors AMPA_1, NMDA_1 and GABAA. OBS AMPA_2 is a dummy. Only not implemented yet.
-	// Necessary to get the count right compared to adex model
+	//  OBS AMPA_2 is a dummy. Only not implemented yet.
 	enum SpikeSynapseTypes { AMPA_1=MIN_SPIKE_RECEPTOR, NMDA_1, GABAA_1, GABAA_2, GABAA_3, AMPA_2,
 		SUP_SPIKE_RECEPTOR };
 
@@ -254,8 +243,6 @@ private:
 
 	static const int NUM_CURR_RECEPTORS = SUP_CURR_RECEPTOR - MIN_CURR_RECEPTOR;
 
-	// Enumerations and constants specifying structure and properties ----
-
 
 	// Friends --------------------------------------------------------
 
@@ -265,7 +252,6 @@ private:
 
 
 	// The next two classes need to be friends to access the State_ class/member
-	// Add nest:: since these are nest classes in namespace nest
 	friend class nest::RecordablesMap<izhik_cond_exp>;
 	friend class nest::UniversalDataLogger<izhik_cond_exp>;
 
@@ -465,29 +451,6 @@ private:
 	 * Variables are re-initialized upon each call to Simulate.
 	 */
 	struct Variables_ {
-		/**
-		 * Impulse to add to DG_AMPA_1 on spike arrival to evoke unit-amplitude
-		 * conductance excursion.
-		 */
-		//double PSConInit_AMPA_1;
-
-		/**
-		 * Impulse to add to DG_NMDA_1 on spike arrival to evoke unit-amplitude
-		 * conductance excursion.
-		 */
-		//double PSConInit_NMDA_1;
-
-		/**
-		 * Impulse to add to DG_GABAA on spike arrival to evoke unit-amplitude
-		 * conductance excursion.
-		 */
-		//double PSConInit_GABAA;
-
-		//! refractory time in steps
-		//unsigned int     RefractoryCounts;
-
-		//! make external input current available to dynamics function
-		//double CURR;
 	};
 
 	// Access functions for UniversalDataLogger -------------------------------
@@ -569,8 +532,8 @@ mynest::izhik_cond_exp::handles_test_event(nest::DataLoggingRequest& dlr,
   return B_.logger_.connect_logging_device(dlr, recordablesMap_);
 }
 
-inline
-void izhik_cond_exp::get_status(DictionaryDatum &d) const
+inline void
+izhik_cond_exp::get_status(DictionaryDatum &d) const
 {
 	P_.get(d);
 	S_.get(d);

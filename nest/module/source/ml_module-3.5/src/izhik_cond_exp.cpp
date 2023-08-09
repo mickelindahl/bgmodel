@@ -61,7 +61,8 @@ namespace nest   // template specialization must be placed in namespace
  * for each quantity to be recorded.
  */
 template <>
-void RecordablesMap<mynest::izhik_cond_exp>::create()
+void
+RecordablesMap<mynest::izhik_cond_exp>::create()
 {
 	// use standard names whereever you can for consistency!
 	// Recording current seems

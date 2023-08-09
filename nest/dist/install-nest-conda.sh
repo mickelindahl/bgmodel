@@ -221,6 +221,8 @@ END=$(date +%s)
 DIFF_TOTAL=$(("$END" - "$START"))
 DIFF_NEST=$(("$DIFF_TOTAL" - "$DIFF_CONDA"))
 
+echo "conda activate $CONDA_ENV_PATH" > "$SCRIPT_DIR/conda-activate.sh"
+chmod +x "$SCRIPT_DIR/conda-activate.sh"
 cd "$SCRIPT_DIR"
 echo "CONDA_INSTALLED: $CONDA_INSTALLED"
 echo ""
@@ -237,7 +239,11 @@ echo ""
 echo "Activate conda environment with command"
 echo "    conda activate $CONDA_ENV_PATH"
 echo ""
-echo " or set your editor python environment to $CONDA_ENV_PATH"
+echo " or"
+echo ""
+echo "Runscript conda-activate.sh with source in root (source ./conda-activate)"
+echo ""
+echo " For your editor set python conda environment to $CONDA_ENV_PATH"
 echo ""
 echo "Conda was created using environment file:"
 echo "   $ENVIRONMENT_FILE."

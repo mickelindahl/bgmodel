@@ -24,7 +24,7 @@ from core.network.data_processing import Data_unit_vm
 # nest.sr('('+MODULE_SLI_PATH+') addpath')
 # nest.Install(MODULE_PATH)
 
-pp(nest.Models())
+pp(nest.node_models+nest.synapse_models)
 
 d0=0.8
 f_beta_rm=lambda f: (1-f)/(d0+f*(1-d0))

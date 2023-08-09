@@ -28,33 +28,34 @@ plot_settings        - contains functions setting nice plot settings
 import os
 import nest
 from os.path import join, dirname
-#from dotenv import load_dotenv
+
+# from dotenv import load_dotenv
 
 
 path = dirname(dirname(dirname(__file__)))
 dotenv_path = join(path, '.env')
 
-f=open(dotenv_path)
+f = open(dotenv_path)
 
 for l in f.readlines():
-    l=l.strip('\n').strip('\r')
-    key, val=l.split('=')
-    os.environ[key]=val
+    l = l.strip('\n').strip('\r')
+    key, val = l.split('=')
+    os.environ[key] = val
 # load_dotenv(dotenv_path)
 
-os.environ['BGMODEL_HOME']=path
-os.environ['BGMODEL_HOME_CODE']=join(path, 'python')
+os.environ['BGMODEL_HOME'] = path
+os.environ['BGMODEL_HOME_CODE'] = join(path, 'python')
 
 # Add library path
-if nest.version()=='NEST 2.2.2':
+if hasattr(nest, "version") and nest.version() == 'NEST 2.2.2':
     os.environ['LD_LIBRARY_PATH'] = (os.environ['LD_LIBRARY_PATH']
-        + os.path.join(path,
-                       'nest',
-                       'dist',
-                       'install',
-                       'nest-2.2.2',
-                       'lib',
-                       'nest'))
+                                     + os.path.join(path,
+                                                    'nest',
+                                                    'dist',
+                                                    'install',
+                                                    'nest-2.2.2',
+                                                    'lib',
+                                                    'nest'))
 
 # import misc
 # import data_to_disk

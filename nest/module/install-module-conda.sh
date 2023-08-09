@@ -190,7 +190,7 @@ echo "It took $DIFF seconds"
 echo ""
 echo "Testing import of module $MODULE_NAME"
 
-MODELS="['pif_psc_alpha', 'izhik_cond_exp']"
+MODELS="['pif_psc_alpha', 'izhik_cond_exp', 'my_aeif_cond_exp']"
 
 if python -c "import nest; nest.Install('$MODULE_NAME');models=nest.node_models;print([m for m in models if m in $MODELS]);"; then
   echo ""

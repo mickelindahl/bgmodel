@@ -1,8 +1,8 @@
-'''
+"""
 Created on Aug 26, 2015
 
 @author: mikael
-'''
+"""
 import fig_01_and_02_pert as op
 
 from core.network import default_params

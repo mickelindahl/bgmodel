@@ -24,7 +24,7 @@ MODULE_SLI_PATH= (HOME+'/opt/NEST/module/'
 nest.sr('('+MODULE_SLI_PATH+') addpath')
 nest.Install(MODULE_PATH)
 
-pp(nest.Models())
+pp(nest.node_models+nest.synapse_models)
 
 
 pp(nest.GetDefaults('poisson_generator_periodic'))

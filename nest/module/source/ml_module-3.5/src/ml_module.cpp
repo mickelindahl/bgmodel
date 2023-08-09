@@ -28,6 +28,7 @@
 // include headers with your own stuff
 #include "drop_odd_spike_connection.h"
 #include "izhik_cond_exp.h"
+#include "my_aeif_cond_exp.h"
 #include "pif_psc_alpha.h"
 #include "step_pattern_builder.h"
 #ifdef HAVE_SFML_AUDIO
@@ -112,6 +113,7 @@ mynest::MLModule::init( SLIInterpreter* i )
   */
   nest::kernel().model_manager.register_node_model< pif_psc_alpha >( "pif_psc_alpha" );
   nest::kernel().model_manager.register_node_model< izhik_cond_exp >( "izhik_cond_exp" );
+  nest::kernel().model_manager.register_node_model< my_aeif_cond_exp >( "my_aeif_cond_exp" );
 
   /* Register a synapse type.
      Give synapse type as template argument and the name as second argument.

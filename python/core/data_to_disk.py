@@ -4,15 +4,17 @@ Created on Jun 18, 2013
 @author: lindahlm
 '''
 
+# Can be 1000 times faster than pickle
+try:
+  import cPickle as pickle
+except:
+  import pickle
 
-import cPickle as pickle # Can be 1000 times faster than pickle
-import numpy
 import os
 import subprocess
 import unittest
 
 import core.misc as misc
-import core.my_nest as my_nest
 from core.misc import Base_dic
 from core.parallelization import comm, Barrier
 from os.path import expanduser
@@ -452,7 +454,7 @@ class Storage_dic(Base_dic):
         d={}  
         if kw.get('keys_iterator'):
             for keys in kw['keys_iterator']:
-                print keys
+                print(keys)
                 storage=misc.dict_recursive_get(self, keys)
                 val=storage.load_data()
                 d=misc.dict_recursive_add(d, keys, val)
@@ -487,7 +489,7 @@ class Storage_dic(Base_dic):
         pickle_save(self, self.file_name)
     
     def save_dic(self, d, **k):
-        print 'Saving '+self.file_name
+        print('Saving ' + self.file_name)
         for keys, data in misc.dict_iter(d):
             
             if not misc.dict_haskey(self.dic, keys):
@@ -712,7 +714,7 @@ def _text_save(data, fileName):
         f=open(fileName, 'wb') #open in binary mode
     except:
         import sys
-        print "Unexpected error:", sys.exc_info()[0], fileName
+        print("Unexpected error:", sys.exc_info()[0], fileName)
         parts=fileName.split('/')
         os.mkdir('/'.join(parts[0:-1]))    
         f=open(fileName, 'wb') 

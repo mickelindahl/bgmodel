@@ -394,7 +394,7 @@ class Data_units_relation(object):
 #             s+='\nargs: {}'.format(args)
 #             s+='\nkwargs: {}'.format(kwargs)
 #  
-#             raise type(e)(e.message + s), None, sys.exc_info()[2]
+#             raise type(e)(str(e) + s), None, sys.exc_info()[2]
          
         return d
     

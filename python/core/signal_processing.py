@@ -11,7 +11,7 @@ from numpy import zeros, ones, diagonal, transpose, matrix
 from numpy import resize, sqrt, divide, array
 from numpy import dot, conjugate, absolute, arange #matrixmultiply, \
 Float=numpy.float64 
-Complex=numpy.complex 
+Complex=numpy.complex64
     
 
 from numpy.fft import fft
@@ -93,7 +93,7 @@ def csd(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
     detrend=kwargs.get('detrend',detrend_mean )
         
     if NFFT % 2:
-        raise ValueError, 'NFFT must be a power of 2'
+        raise ValueError('NFFT must be a power of 2')
 
     # zero pad x and y up to NFFT if they are shorter than NFFT
     if len(x)<NFFT:
@@ -129,7 +129,7 @@ def csd(x, y, NFFT=256, fs=2, noverlap=0, **kwargs):
             try:
                 thisY = windowVals*detrend(thisY)
             except:
-                print 'l'
+                print('l')
             fx = fft(thisX)
             fy = fft(thisY)
             Pxy[:,i] = fy[:numFreqs]*conjugate(fx[:numFreqs])
@@ -214,7 +214,7 @@ def corrcoef(*args):
     elif len(args==1):
         X = args[0]
     else:
-        raise RuntimeError, 'Only expecting 1 or 2 arguments'
+        raise RuntimeError('Only expecting 1 or 2 arguments')
 
     
     C = cov(X)
@@ -246,7 +246,7 @@ def coherences(signals1, signals2, **kwargs):
         s+='\nSignal1: {}'.format(signals1)
         s+='\nSignal2: {}'.format(signals2)
         s+='\nkwargs: {}'.format(kwargs)
-        raise type(e)(e.message + s), None, sys.exc_info()[2]
+        raise type(e)(str(e) + s).with_traceback(sys.exc_info()[2])
         
 #     l=map(cohere, *args)
     try:
@@ -256,7 +256,7 @@ def coherences(signals1, signals2, **kwargs):
         s+='\nl: {}'.format(l)
 #         s+='\nSignal2: {}'.format(signals2)
 #         s+='\nkwargs: {}'.format(kwargs)
-        raise type(e)(e.message + s), None, sys.exc_info()[2]
+        raise type(e)(str(e) + s).with_traceback(sys.exc_info()[2])
         
     Cxy, f=l[:,0,:], l[:,1,:]
 
@@ -565,7 +565,7 @@ def psd(x, NFFT=256, fs=2,  noverlap=0,  **kwargs):
               
         
     if NFFT % 2:
-        raise ValueError, 'NFFT must be a power of 2'
+        raise ValueError('NFFT must be a power of 2')
 
     # zero pad x up to NFFT if it is shorter than NFFT
     if len(x)<NFFT:
@@ -672,7 +672,7 @@ def dummy_data(**kwargs):
         
 def dummy_data_pop(n_pop, **kwargs):
     a=[]
-    for _ in xrange(n_pop):
+    for _ in range(n_pop):
         a.append(dummy_data(**kwargs))
     return numpy.array(a)
 

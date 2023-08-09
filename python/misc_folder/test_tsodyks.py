@@ -21,7 +21,7 @@ if nest.version()=='NEST 2.4.1':
 if nest.version()=='NEST 2.4.2':
     s='nest-2.4.2'   
 
-pp(nest.Models())
+pp(nest.node_models+nest.synapse_models)
 
 HOME = expanduser("~")
 MODULE_PATH= (HOME+'/opt/NEST/module/'
