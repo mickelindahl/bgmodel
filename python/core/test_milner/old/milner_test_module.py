@@ -25,12 +25,12 @@ MODULE_PATH= (HOME+'/opt/NEST/module/'
 MODULE_SLI_PATH= (HOME+'/opt/NEST/module/'
                   +'install-module-130701-'+s+'/share/ml_module/sli')
 
-models=nest.node_models+nest.synapse_models
-if not 'my_aeif_cond_exp' in nest.node_models+nest.synapse_models: 
+models=nest.get_models()
+if not 'my_aeif_cond_exp' in nest.get_models(): 
     nest.sr('('+MODULE_SLI_PATH+') addpath')
     nest.Install(MODULE_PATH)
 
-for model in nest.node_models+nest.synapse_models:
+for model in nest.get_models():
     if model in models :
         pass
     else:

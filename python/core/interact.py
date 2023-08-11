@@ -1,8 +1,8 @@
-'''
+"""
 Created on May 14, 2015
 
 @author: mikael
-'''
+"""
 
 from pyqtgraph.Qt import QtCore, QtGui
 from pyqtgraph.dockarea import DockArea, Dock   

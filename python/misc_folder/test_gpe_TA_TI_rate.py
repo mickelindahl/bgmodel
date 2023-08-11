@@ -56,7 +56,7 @@ mm={'active':True,
               'to_file':False}}
 st=MyNetworkNode('st',model='my_aeif_cond_exp', n=1, params=d_ST, mm=mm)
 
-sd=nest.Create('spike_detector',1)
+sd=nest.Create("spike_recorder",1)
 # sd=nest.Create('spike_de',1)
 
 

@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 # Setting up base directory
-BASE_DIR=$(cd .. "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+BASE_DIR=$(dirname "$SCRIPT_DIR")
 
 #####################
 # Functions Section #
@@ -9,11 +10,10 @@ BASE_DIR=$(cd .. "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 ShowHelp() {
     echo "Usage:"
-    echo "  $0 [-y] <module-source-dir> <nest-version> <nest-install-dir> <path-conda-setup>"
+    echo "  $0 [-y] <module-source-dir> <nest-install-dir> <path-conda-setup>"
     echo
     echo "Arguments:"
     echo "  <module-source-dir>  Source path of module"
-    echo "  <nest-version>      Version of NEST to use"
     echo "  <nest-install-dir>  Installation directory for NEST"
     echo "  <path-conda-setup>  Path to conda setup script. Ensure conda is available in the"
     echo "                      script path. Usually references the conda.sh in .bashrc or .bash_profile."
@@ -43,8 +43,8 @@ fi
 
 # Variables based on arguments
 MODULE_SOURCE_DIR=$1
-NEST_INSTALL_DIR=$3
-PATH_CONDA_SETUP=$4
+NEST_INSTALL_DIR=$2
+PATH_CONDA_SETUP=$3
 
 #########################
 # Main Script Execution #
@@ -60,6 +60,7 @@ if [ ! -d "$MODULE_SOURCE_DIR" ]; then
 fi
 
 MODULE_DIR=$(basename "$MODULE_SOURCE_DIR")
+
 START=$(date +%s)  # Start time watch
 noProcs=$(grep -c 'model name' /proc/cpuinfo)
 
@@ -109,7 +110,7 @@ echo -e "\nInstallation took $DIFF seconds"
 
 # Test the installation
 MODELS="['izhik_cond_exp', 'my_aeif_cond_exp']"
-if python -c "import nest; nest.Install('ml_module');models=nest.node_models;print([m for m in models if m in $MODELS]);"; then
+if python -c "import nest; nest.Install('ml_module');models=nest.node_models;print();[print(m, 'exists') for m in models if m in $MODELS];print()"; then
     echo -e "\nSuccess!"
 else
     echo -e "\nFailed"

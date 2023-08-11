@@ -24,7 +24,7 @@ import mpi4py
 
 from copy import deepcopy
 from functools import reduce
-from core.NeuroTools.stgen import StGen
+from python.core.NeuroTools.stgen import StGen
 from numpy import array, concatenate
 
 

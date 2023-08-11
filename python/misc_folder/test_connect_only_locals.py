@@ -12,7 +12,7 @@ n = my_nest.Create('aeif_cond_exp', 20)
 # n = my_nest.Create('iaf_neuron', 20)
 w=[10. for _ in n]
 d=[1. for _ in n]
-sd = my_nest.Create("spike_detector", params={"to_file": False,
+sd = my_nest.Create("spike_recorder", params={"to_file": False,
                                               "to_memory": True})
 
 post=n

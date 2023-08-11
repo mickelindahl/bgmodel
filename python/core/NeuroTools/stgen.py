@@ -20,8 +20,8 @@ shotnoise_fromspikes - Convolves the provided spike train with shot decaying exp
 gamma_hazard - Compute the hazard function for a gamma process with parameters a,b.
 """
 
-from NeuroTools import check_dependency
-from core.NeuroTools.signals import SpikeTrain, AnalogSignal
+from python.core.NeuroTools import check_dependency
+from  python.core.NeuroTools.signals import SpikeTrain, AnalogSignal
 from numpy import array, log
 import numpy
 

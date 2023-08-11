@@ -84,5 +84,5 @@ dependencies:
     - sphinx-material
     - sphinx-copybutton
     # For bgmodel
-    - cPickle
-    - NeuroTools
+#    - cPickle
+#    - NeuroTools

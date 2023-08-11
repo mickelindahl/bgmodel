@@ -28,16 +28,16 @@ See also NeuroTools.signals.analogs
 import os, re, numpy
 import scipy.signal
 import logging
-from NeuroTools import check_dependency, check_numpy_version
-from NeuroTools import analysis
+from python.core.NeuroTools import check_dependency, check_numpy_version
+from python.core.NeuroTools import analysis
 
-from NeuroTools.io import *
-from NeuroTools.plotting import get_display, set_axis_limits, set_labels, SimpleMultiplot, progress_bar
+from python.core.NeuroTools.io import *
+from python.core.NeuroTools.plotting import get_display, set_axis_limits, set_labels, SimpleMultiplot, progress_bar
 from .pairs import *
 from .intervals import *
 
 
-from NeuroTools import check_dependency
+from python.core.NeuroTools import check_dependency
 HAVE_MATPLOTLIB = check_dependency('matplotlib')
 if HAVE_MATPLOTLIB:
     import matplotlib
@@ -943,7 +943,7 @@ class SpikeList(object):
             break_points = numpy.where(numpy.diff(spikes[:, 0]) > 0)[0] + 1
             break_points = numpy.concatenate(([0], break_points))
             break_points = numpy.concatenate((break_points, [N]))
-            for idx in xrange(len(break_points)-1):
+            for idx in range(len(break_points)-1):
                 id = spikes[break_points[idx], 0]
                 if id in id_list:
                     self.spiketrains[id] = SpikeTrain(spikes[break_points[idx]:break_points[idx+1], 1], self.t_start, self.t_stop)
@@ -969,7 +969,7 @@ class SpikeList(object):
             >> spklist.id_list
                 [0,1,2,3,....,9999]
         """
-        return numpy.array(self.spiketrains.keys(), int)
+        return numpy.array(list(self.spiketrains.keys()), int)
 
     def copy(self):
         """
@@ -2648,8 +2648,8 @@ class SpikeList(object):
         is_times = re.compile("times")
         is_ids   = re.compile("ids")
         if len(self) > 0:
-            times  = numpy.concatenate([st.format(relative, quantized) for st in self.spiketrains.itervalues()])
-            ids    = numpy.concatenate([id*numpy.ones(len(st.spike_times), int) for id,st in self.spiketrains.iteritems()])
+            times  = numpy.concatenate([st.format(relative, quantized) for st in self.spiketrains.values()])
+            ids    = numpy.concatenate([id*numpy.ones(len(st.spike_times), int) for id,st in self.spiketrains.items()])
         else:
             times = []
             ids   = []

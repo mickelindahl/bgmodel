@@ -1,8 +1,8 @@
-'''
+"""
 Created on Jun 18, 2013
 
 @author: lindahlm
-'''
+"""
 
 # Can be 1000 times faster than pickle
 try:
@@ -14,9 +14,9 @@ import os
 import subprocess
 import unittest
 
-import core.misc as misc
-from core.misc import Base_dic
-from core.parallelization import comm, Barrier
+import python.core.misc as misc
+from python.core.misc import Base_dic
+from python.core.parallelization import comm, Barrier
 from os.path import expanduser
 HOME = expanduser("~")
 

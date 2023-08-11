@@ -4,9 +4,9 @@ Created on Aug 12, 2013
 @author: lindahlm
 '''
 
-from core.network.default_params import Perturbation_list as pl
-from core import misc
-from scripts_inhibition.base_perturbations import get_solution
+from python.core.network.default_params import Perturbation_list as pl
+from python.core import misc
+from python.scripts_inhibition.base_perturbations import get_solution
 
 import numpy
 import pprint

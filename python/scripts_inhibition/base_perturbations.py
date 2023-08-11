@@ -5,10 +5,10 @@ Created on Aug 12, 2013
 '''
 
 
-from core.network.default_params import Perturbation_list as pl
+from python.core.network.default_params import Perturbation_list as pl
 import numpy
 import pprint
-from core import misc
+from python.core import misc
 from functools import reduce
 pp=pprint.pprint
 

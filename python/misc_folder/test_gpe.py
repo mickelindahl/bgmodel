@@ -90,7 +90,7 @@ nest.Connect(pgd0*n,pn[0], params=d_CS_ST_ampa)
 nest.Connect(pgd0*n,pn[0], params=d_CS_ST_nmda)
 
 
-sd=nest.Create('spike_detector',2)
+sd=nest.Create("spike_recorder",2)
  
 
 nest.DivergentConnect(pn[0], [sd[0]])

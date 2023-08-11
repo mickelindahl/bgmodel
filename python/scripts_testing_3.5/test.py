@@ -1,7 +1,7 @@
 import nest
 nest.Install('ml_module')
 
-from core.network.default_params import Inhibition
+from python.core.network.default_params import Inhibition
 import fig_01_and_02_pert as op
 import pprint
 

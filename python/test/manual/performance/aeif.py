@@ -64,7 +64,7 @@ pp(nest.GetStatus(m)[0])
 multimeter = nest.Create("multimeter")
 nest.SetStatus(multimeter, {"withtime":True, "record_from":["V_m"]})
 
-spikedetector = nest.Create("spike_detector",
+spikedetector = nest.Create("spike_recorder",
                 params={"withgid": True, "withtime": True})
 
 nest.CopyModel("static_synapse", "excitatory",

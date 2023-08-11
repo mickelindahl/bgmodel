@@ -1,6 +1,7 @@
 #!/bin/bash
 
-BASE_DIR=$(cd .. "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+BASE_DIR=$(dirname "$SCRIPT_DIR")
 
 #####################
 # Functions Section #
@@ -12,7 +13,7 @@ CreateCondaEnv() {
   local INSTALL_DIRECTORY_CONDA_CACHE=$2
   local ENVIRONMENT_FILE="$BASE_DIR/environment.yml"
 
-  echo -e "\033[1mSetting up Conda environment...\033[0m"
+  echo -e "\n\033[1mSetting up Conda environment...\033[0m"
 
   if [ -d "$INSTALL_DIRECTORY_CONDA_CACHE" ]; then
     echo "Conda CACHE env found at $INSTALL_DIRECTORY_CONDA_CACHE."
@@ -33,7 +34,7 @@ DownloadNestToSourceDirectory() {
   local NEST_FOLDER_NAME=$1
   local NEST_TAR=$2
   local SOURCE_DIRECTORY=$3
-
+gnore
   echo -e "\033[1mDownloading NEST source files...\033[0m"
 
   if [ -d "source/$NEST_FOLDER_NAME" ]; then
@@ -124,11 +125,10 @@ if [[ "$CONFIRM" == "true" ]]; then
 fi
 
 if [ -d "$BUILD_DIRECTORY" ]; then
-  echo "Removing $BUILD_DIRECTORY"
+  echo -e "\nRemoving $BUILD_DIRECTORY"
   rm -r "$BUILD_DIRECTORY"
-
 else
-  echo "No previous build dir to remove"
+  echo -e "\nNo previous build dir to remove"
 fi
 
 echo "Creating build dir $BUILD_DIRECTORY"
@@ -139,6 +139,7 @@ if [ -d "$INSTALL_DIRECTORY_CONDA_CACHE" ]; then
    echo "Cache found"
    if [ "$IGNORE_CONDA_CACHE" = "true" ]; then
      echo "Remove both install and cache directory"
+     conda deactivate
       conda env remove -y -p "$INSTALL_DIRECTORY"
       rm -r "$INSTALL_DIRECTORY_CONDA_CACHE"
    elif [ -d "$INSTALL_DIRECTORY"  ];then
@@ -173,7 +174,7 @@ START=$(date +%s)
 CreateCondaEnv "$INSTALL_DIRECTORY" "$INSTALL_DIRECTORY_CONDA_CACHE"
 
 echo ""
-conda activate "$CONDA_ENV_PATH"
+conda activate "$INSTALL_DIRECTORY"
 
 echo ""
 echo "Cmake $SOURCE_DIRECTORY"
@@ -193,7 +194,7 @@ make installcheck 2>&1 | tee "$LOG_DIRECTORY$NEST_FOLDER_NAME-make-installcheck"
 END=$(date +%s)
 DIFF_TOTAL=$(("$END" - "$START"))
 
-echo "conda activate $CONDA_ENV_PATH" > "$BASE_DIR/conda-activate.sh"
+echo "conda activate $INSTALL_DIRECTORY" > "$BASE_DIR/conda-activate.sh"
 chmod +x "$BASE_DIR/conda-activate.sh"
 cd "$BASE_DIR"
 

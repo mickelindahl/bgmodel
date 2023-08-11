@@ -13,7 +13,7 @@ my_nest.Install(MODULE_PATH)
 #ip=my_nest.Create('spike_generator',params={'spike_times':[10.,20.]})
 ip=my_nest.Create('poisson_generator',3, params={'rate':3500.})
 pn=my_nest.Create('parrot_neuron',3)
-sd=my_nest.Create('spike_detector')
+sd=my_nest.Create("spike_recorder")
 n=my_nest.Create('iaf_cond_exp',3, params={ 'C_m':200.0, 'V_th':-50.})
 vt=my_nest.Create('volume_transmitter')
 my_nest.Connect(ip,pn)
@@ -28,7 +28,7 @@ my_nest.SetDefaults('bcpnn_dopamine_synapse', params={'vt':vt[0]})
 my_nest.Connect([n[0]],[n[1]], model='bcpnn_dopamine_synapse')
 
 p_sd={"withgid": True, 'to_file':False,  'to_memory':True }
-sd=my_nest.Create('spike_detector',5, params=p_sd)
+sd=my_nest.Create("spike_recorder",5, params=p_sd)
 pd=my_nest.Create('poisson_generator',5, params={'rate':100.})
 my_nest.Connect(pd, sd)
 

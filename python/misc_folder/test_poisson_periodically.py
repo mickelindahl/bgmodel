@@ -32,7 +32,7 @@ n=nest.Create('poisson_generator_periodic',  params={'rate_first':0.,
                                                'rate_second':1000.
                                                })
 pn=nest.Create('parrot_neuron',2)
-sd=nest.Create('spike_detector',2)
+sd=nest.Create("spike_recorder",2)
 
 nest.Connect(n+n,pn)
 

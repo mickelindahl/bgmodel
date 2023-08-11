@@ -31,9 +31,9 @@ See also NeuroTools.signals.spikes
 """
 
 import os, re, numpy
-from NeuroTools import check_dependency, check_numpy_version
-from NeuroTools.io import *
-from NeuroTools.plotting import get_display, set_axis_limits, set_labels, SimpleMultiplot
+from python.core.NeuroTools import check_dependency, check_numpy_version
+from python.core.NeuroTools.io import *
+from python.core.NeuroTools.plotting import get_display, set_axis_limits, set_labels, SimpleMultiplot
 
 HAVE_MATPLOTLIB = check_dependency('matplotlib')
 if HAVE_MATPLOTLIB:
@@ -550,7 +550,7 @@ class AnalogSignalList(object):
                 self.analog_signals[id] = AnalogSignal(signal, self.dt, self.t_start, self.t_stop)
 
         if id_list:
-            signals = self.analog_signals.values()
+            signals = list(self.analog_signals.values())
             self.signal_length = len(signals[0])
             for signal in signals[1:]:
                 if len(signal) != self.signal_length:
@@ -567,7 +567,7 @@ class AnalogSignalList(object):
         Return the list of all the cells ids contained in the
         SpikeList object
         """
-        return numpy.array(self.analog_signals.keys())
+        return numpy.array(list(self.analog_signals.keys()))
 
     def copy(self):
         """
@@ -869,9 +869,9 @@ class AnalogSignalList(object):
         subplotcount = 1
 
         if events_ids is None:
-            events_ids = eventdict.keys()
+            events_ids = list(eventdict.keys())
         if analogsignal_ids is None:
-            analogsignal_ids = self.analog_signals.keys()
+            analogsignal_ids = list(self.analog_signals.keys())
 
         x = numpy.ceil(numpy.sqrt(len(analogsignal_ids)))
         y = x

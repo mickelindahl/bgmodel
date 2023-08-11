@@ -8,7 +8,7 @@ nest.Install(MODULE_PATH) # Change ml_module to your module name
 model= 'my_aeif_cond_exp'
 n=nest.Create(model)
 mm=nest.Create('multimeter')
-sd=nest.Create('spike_detector')
+sd=nest.Create("spike_recorder")
 nest.SetStatus(mm, {'interval': 0.1, 'record_from': ['V_m']})
                   
 rec={}    

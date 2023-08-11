@@ -27,7 +27,7 @@ save_2D_movie       - saves a list of 2D numpy arrays of gray shades between 0 a
 """
 
 import sys, numpy
-from NeuroTools import check_dependency
+from python.core.NeuroTools import check_dependency
 
 
 # Check availability of pylab (essential!)

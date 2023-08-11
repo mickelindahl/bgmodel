@@ -26,19 +26,18 @@ import numpy
 import os
 import unittest
 import pprint
-from core import my_signals
-from core import my_nest
-from core.my_signals import CondunctanceListMatrix
+import python.core.directories as dr
+from numpy.random import randint as random_integers
+from python.core import my_signals
+from python.core import my_nest
+from python.core.my_signals import CondunctanceListMatrix
+from python.core.my_signals import (MyConductanceList, MyCurrentList,
+                                    MyVmList, MySpikeList, SpikeListMatrix,
+                                    VmListMatrix)
+from python.core import data_to_disk, misc
+from python.core.parallelization import comm, Barrier
 
 pp = pprint.pprint
-
-import core.directories as dr
-from numpy.random import randint as random_integers
-from core.my_signals import (MyConductanceList, MyCurrentList,
-                        MyVmList, MySpikeList, SpikeListMatrix,
-                        VmListMatrix)
-from core import data_to_disk, misc
-from core.parallelization import comm, Barrier
 
 
 # from numpy.random import RandomState
@@ -81,13 +80,16 @@ class MyGroup(object):
         n = kwargs.get('n', 1)
         params = kwargs.get('params', {})
 
-        ids = kwargs.get('ids', my_nest.Create(model, n, params))
+        node_collection = my_nest.Create(model, n, params)
+        ids = kwargs.get('ids', node_collection.tolist())#.get('global_id')
         self._ids = slice(ids[0], ids[-1], 1)
 
         self.local_ids = []
-        for _id in self.ids:
-            if my_nest.GetStatus([_id], 'local'):
-                self.local_ids.append(_id)
+        self.local_ids = my_nest.GetLocalNodeCollection(node_collection).tolist()
+
+        # for _id in self.ids:
+        #     if my_nest.GetStatus([_id], 'local'):
+        #         self.local_ids.append(_id)
 
         self.model = model
         self.name = name
@@ -263,7 +265,7 @@ class MyNetworkNode(MyGroup):
 
     def create_mm(self, name, d_add, **kw):
         model = name + '_multimeter'
-        if model not in my_nest.node_models+nest.synapse_models:
+        if model not in my_nest.get_models():
             my_nest.CopyModel('multimeter', model)
         d = {'active': False,
              'id': [],
@@ -272,8 +274,8 @@ class MyNetworkNode(MyGroup):
                         'start': 0.0,
                         'stop': numpy.inf,
                         'interval': 1.,
-                        'to_file': False,
-                        'to_memory': True}}  # recodring interval (dt)
+                        'record_to': 'memory'
+                        }}  # recodring interval (dt)
         d = misc.dict_update(d, d_add)
         if d['active']:
             _id = my_nest.Create(model, params=d['params'])
@@ -287,15 +289,15 @@ class MyNetworkNode(MyGroup):
 
     def create_sd(self, name, d_add):
         model = name + '_spike_detector'
-        if model not in my_nest.node_models+nest.synapse_models:
-            my_nest.CopyModel('spike_detector', model)
+        if model not in my_nest.get_models():
+            my_nest.CopyModel("spike_recorder", model)
 
         d = {'active': False,
-             'params': {"withgid": True,
-                        'to_file': False,
-                        'start': 0.0,
-                        'stop': numpy.inf,
-                        'to_memory': True}}
+             'params': {
+                 # "withgid": True,
+                 'start': 0.0,
+                 'stop': numpy.inf,
+                 'record_to': 'memory'}}
         d = misc.dict_update(d, d_add)
         if d['active']:
             _id = my_nest.Create(model, params=d['params'])
@@ -308,7 +310,7 @@ class MyNetworkNode(MyGroup):
 
     def create_raw_spike_signal(self, start, stop):
         # signal=load:spikes()
-        if self.sd['params']['to_file']:
+        if self.sd['params']['record_to'] == 'file':
 
             n_vp = my_nest.GetKernelStatus(['total_num_virtual_procs'])[0]
             data_path = my_nest.GetKernelStatus(['data_path'])[0]
@@ -332,7 +334,7 @@ class MyNetworkNode(MyGroup):
         if stop:
             s, t = s[t < stop], t[t < stop]  # Cut out data
             s, t = s[t >= start], t[t >= start]  # Cut out data
-        signal = zip(s, t)
+        signal = list(zip(s, t))
         return signal
 
     def _create_signal_object(self, dataType, recordable='spikes', start=None,
@@ -390,7 +392,7 @@ class MyNetworkNode(MyGroup):
             else:
                 start = t[0]  # start time for NeuroTools
             #             start, stop=t[0]-mm_dt/2, t[-1]+mm_dt/2
-            signal = zip(s, v)  # create signal
+            signal = list(zip(s, v))  # create signal
             # abs(self.t_stop-self.t_start - self.dt * len(self.signal)) > 0.1*self.dt
 
         if dataType in ['s', 'spikes']: signal = MySpikeList(signal, ids, start,
@@ -623,7 +625,7 @@ class MyNetworkNode(MyGroup):
 
         scg = my_nest.Create('step_current_generator')
         rec = my_nest.GetStatus(id)[0]['receptor_types']
-        my_nest.Connect(scg, id, params={'receptor_type': rec['CURR']})
+        my_nest.Connect(scg, my_nest.NodeCollection(id), syn_spec={'receptor_type': rec['CURR']})
 
         ampTimes = []
         ampValues = []
@@ -863,13 +865,16 @@ def default_kwargs_net(n, n_sets):
             'model': 'my_aeif_cond_exp',
             'mm': {'active': True,
                    'params': {'interval': 1.0,
-                              'to_memory': True,
-                              'to_file': False,
+                              'record_to': 'memory',
+                              # 'to_memory': True,
+                              # 'to_file': False,
                               'record_from': ['V_m', 'g_AMPA_1_', 'g_GABAA_1']}},
             'params': d,
             'sd': {'active': True,
-                   'params': {'to_memory': True,
-                              'to_file': False}},
+                   'params': {'record_to': 'memory',
+                              #  'to_memory': True,
+                              # 'to_file': False
+                              }},
             'sets': sets,
             'rate': 10.0}
 
@@ -996,7 +1001,7 @@ class TestModule_functions(unittest.TestCase):
         f.close()
 
 
-from core.data_to_disk import pickle_save, pickle_load
+from python.core.data_to_disk import pickle_save, pickle_load
 
 
 class TestMyNetworkNode(unittest.TestCase):
@@ -1034,8 +1039,11 @@ class TestMyNetworkNode(unittest.TestCase):
 
     def test_22_get_spike_signal_from_file(self):
         d = {'sd': {'active': True,
-                    'params': {'to_memory': False,
-                               'to_file': True}}}
+                    'params': {
+                        'record_to': 'file',
+                        # 'to_memory': False,
+                        # 'to_file': True
+                    }}}
         l = self.sim_group(**d).get_spike_signal()
         self.assertEqual(l.shape[1], self.n_sets)
 
@@ -1065,8 +1073,11 @@ class TestMyNetworkNode(unittest.TestCase):
                                  'data_path': s,
                                  'overwrite_files': True, })
 
-        self.kwargs['sd']['params'].update({'to_memory': False,
-                                            'to_file': True})
+        self.kwargs['sd']['params'].update({
+            'record_to': 'file',
+            # 'to_memory': False,
+            # 'to_file': True
+        })
 
         g = self.sim_group().get_spike_signal()
         g[0].firing_rate(1, display=True)

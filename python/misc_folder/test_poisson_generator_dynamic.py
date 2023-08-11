@@ -34,7 +34,7 @@ pp(nest.GetDefaults('poisson_generator_dynamic'))
 n=nest.Create('poisson_generator_dynamic',  params={'rates':[500.,0.,100.], 
                                                      'timings':[0.,3000., 4000.]})
 pn=nest.Create('parrot_neuron',2)
-sd=nest.Create('spike_detector',2)
+sd=nest.Create("spike_recorder",2)
  
 nest.Connect(n+n,pn)
 

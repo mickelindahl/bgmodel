@@ -67,13 +67,13 @@ network  - define layers and populations
 '''
 
 from copy import deepcopy
-from core import directories as dr
-from core import misc
-from core.misc import my_slice
+from python.core import directories as dr
+from python.core import misc
+from python.core.misc import my_slice
 import sys
 import os
 
-from core import my_nest as nest  # Has to after misc.
+from python.core import my_nest  # Has to after misc.
 
 import numpy
 import operator
@@ -505,14 +505,14 @@ class Par_base(object):
 
         self.other = kwargs.get('other', None)
 
-        path, sli_path = nest.get_default_module_paths(dr.HOME_MODULE)
-        nest.install_module(path, sli_path, model_to_exist='izhik_cond_exp')
+        path, sli_path = my_nest.get_default_module_paths(dr.HOME_MODULE)
+        my_nest.install_module(path, sli_path, model_to_exist='izhik_cond_exp')
 
         self.rec = {}
-        if "my_aeif_cond_exp" in nest.node_models+nest.synapse_models:
-            df = nest.GetDefaults('my_aeif_cond_exp')['receptor_types']
+        if "my_aeif_cond_exp" in my_nest.get_models():
+            df = my_nest.GetDefaults('my_aeif_cond_exp')['receptor_types']
             self.rec['aeif'] = df  # get receptor types
-        df = nest.GetDefaults('izhik_cond_exp')['receptor_types']
+        df = my_nest.GetDefaults('izhik_cond_exp')['receptor_types']
         self.rec['izh'] = df  # get receptor types
         self.unittest = kwargs.get('unittest', False)
 
@@ -5266,7 +5266,7 @@ class TestMixinPar_base(object):
 
         for dn in d_nest.values():
             if 'type_id' in dn.keys():
-                df = nest.GetDefaults(dn['type_id'])
+                df = my_nest.GetDefaults(dn['type_id'])
                 del dn['type_id']
                 for key, val in dn.items():
                     if key not in df.keys():

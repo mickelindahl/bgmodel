@@ -11,9 +11,9 @@ import sys
 import unittest
 
 from copy import deepcopy
-from core import misc
-from core.my_signals import SpikeListMatrix, VmListMatrix 
-from core.my_signals import dummy_data as dd
+from python.core import misc
+from python.core.my_signals import SpikeListMatrix, VmListMatrix
+from python.core.my_signals import dummy_data as dd
 
     
     

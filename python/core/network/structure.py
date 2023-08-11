@@ -14,10 +14,10 @@ import unittest
 import gc
 
 from copy import deepcopy
-from core import data_to_disk, my_nest, my_population, misc, directories
+from python.core import data_to_disk, my_nest, my_population, misc, directories
 
-from core.misc import my_slice, Base_dic
-from core.parallelization import map_parallel, comm, Barrier
+from python.core.misc import my_slice, Base_dic
+from python.core.parallelization import map_parallel, comm, Barrier
 from scipy import sparse
 from functools import reduce
 

@@ -22,22 +22,25 @@ import nest.ll_api as _kernel
 import os
 
 import time
+import python.core.directories as dr
 
 from nest.lib.hl_api_exceptions import NESTError
 from nest.lib.hl_api_helper import broadcast
 from nest.lib.hl_api_parallel_computing import Rank
 from nest.lib.hl_api_simulation import SetKernelStatus
 
-import core.directories as dr
 from copy import deepcopy
-from core.parallelization import comm, Barrier
-from core.misc import Stopwatch
+from python.core.parallelization import comm, Barrier
+from python.core.misc import Stopwatch
 import pprint
 
+GetConnections = nest.GetConnections
 GetDefaults = nest.GetDefaults
+GetLocalNodeCollection = nest.GetLocalNodeCollection
+NodeCollection = nest.NodeCollection
+CopyModel = nest.CopyModel
 Models = nest.Models
-node_models = nest.node_models
-synapse_models = nest.synapse_models
+
 pp = pprint.pprint
 
 kernal_time = None
@@ -58,6 +61,26 @@ else:
     runsli = _kernel.engine.run
 
 sli_run = _kernel.sli_run
+
+
+def GetStatus(ids, *args, **kwargs):
+    node_collection = nest.NodeCollection(ids) if type(ids) is list and str(
+        type(ids[0])) != "<class 'nest.lib.hl_api_types.NodeCollection'>" else ids
+    if type(node_collection) is list:
+        node_collection = node_collection[0]
+    return nest.GetStatus(node_collection, *args, **kwargs)
+
+
+def SetStatus(ids, *args, **kwargs):
+    node_collection = nest.NodeCollection(ids) if type(ids) is list and str(
+        type(ids[0])) != "<class 'nest.lib.hl_api_types.NodeCollection'>" else ids
+    if type(node_collection) is list:
+        node_collection = node_collection[0]
+    nest.SetStatus(node_collection, *args, **kwargs)
+
+
+def get_models():
+    return nest.synapse_models + nest.node_models
 
 
 def _Create_mpi(*args, **kwargs):
@@ -252,8 +275,8 @@ def _Connect(pre, post, *args, **kwargs):
     if hasattr(nest, 'OneToOneConnect'):
         nest.OneToOneConnect(pre, post, *args, **kwargs)
     else:
-        Connect_speed(pre, post, *args, **kwargs)
-        # nest.Connect(pre, post,  *args, **kwargs)
+        # Connect_speed(pre, post, *args, **kwargs)
+        nest.Connect(pre, post,  *args, **kwargs)
 
 
 def fun_pre_post(s, d, m):
@@ -356,7 +379,7 @@ def _Connect_speed(pre, post, *args, **kwargs):
         else:
             slice_list.append(slice(i * step, n))
 
-    from core.misc import Stopwatch
+    from python.core.misc import Stopwatch
     #     print 'hej'
     with Stopwatch('Connecting'):
         map(fun, [pre] * chunks, [post] * chunks, [args] * chunks, [kwargs] * chunks, slice_list)
@@ -418,7 +441,7 @@ def delete_data(path, **kwargs):
 def GetKernelTime():
     global kernal_time
     if kernal_time == None:
-        return nest.GetKernelStatus('time')
+        return nest.GetKernelStatus('biological_time')
     else:
         return kernal_time
 
@@ -501,9 +524,13 @@ def get_default_module_paths(home_module):
     if (hasattr(nest, 'version') and nest.version() in ['NEST 2.2.2', 'NEST 2.12.0']):
         path = 'ml_module'
         sli_path = ''
-    else:
+    elif ver < 3.5:
         path = (home_module + '/lib/nest/ml_module')
         sli_path = (home_module + '/share/ml_module/sli')
+
+    else:
+        path = 'ml_module'
+        sli_path = ''
 
     return path, sli_path
 
@@ -519,7 +546,7 @@ def get_default_module_paths(home_module):
 #         return GetKernelStatus('num_processes') #mpi
 
 def install_module(path, sli_path, model_to_exist='izhik_cond_exp'):
-    if not model_to_exist in nest.node_models+nest.synapse_models:
+    if not model_to_exist in get_models():
 
         if sli_path != '':
             sli_run('(' + sli_path + ') addpath')
@@ -569,7 +596,7 @@ def MyLoadModels(model_setup, models):
     elif type(model_setup) == dict:
         for model in models:
             setup = model_setup[model]
-            if not setup[1] in nest.node_models+nest.synapse_models:
+            if not setup[1] in nest.get_models():
                 nest.CopyModel(setup[0], setup[1], setup[2])  # Create model
 
 
@@ -577,7 +604,7 @@ def MyCopyModel(params, new_name):
     params = deepcopy(params)
     type_id = params['type_id']
     del params['type_id']
-    if not new_name in nest.node_models+nest.synapse_models:
+    if not new_name in nest.get_models():
         nest.CopyModel(type_id, new_name, params)
 
 
@@ -652,7 +679,7 @@ def sim_group(data_path, **kwargs):
 
     pg = Create("poisson_generator", params={"rate": 2000.0})
     n = Create('aeif_cond_exp', 10)
-    sd = Create("spike_detector", params={"to_file": kwargs.get('to_file', True),
+    sd = Create("spike_recorder", params={"to_file": kwargs.get('to_file', True),
                                           "to_memory": kwargs.get('to_memory', False)})
 
     conn_spec_dict = {'rule': 'fixed_indegree', 'indegree': 100}

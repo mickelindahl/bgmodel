@@ -13,7 +13,7 @@ from core.network import default_params
 from core import my_nest, my_population
 from core import misc
 from core.my_population import MyNetworkNode
-from core.my_signals import Data_generic, Data_IF_curve, Data_scatter
+from core.my_signals import DataGeneric, DataIFCurve, DataScatter
 import pprint
 pp=pprint.pprint
 
@@ -88,7 +88,7 @@ def simulate_IV(**kw):
 
     x,y=mnn.run_IV_I_clamp(I_vec)
     print x,y
-    dg=Data_generic(**{'x':x, 'y':y, 'xlabel':'Current (pA)', 'ylabel':'Voltage (mV)'})
+    dg=DataGeneric(**{'x':x, 'y':y, 'xlabel':'Current (pA)', 'ylabel':'Voltage (mV)'})
 
     return {'IV':dg}  
 
@@ -114,7 +114,7 @@ def simulate_IF(**kw):
     
     d={'x':I_vec_out,'first':1000./fIsi,'mean':1000./mIsi,'last':1000./lIsi,}
     
-    return  {'IF':Data_IF_curve(**d)}
+    return  {'IF':DataIFCurve(**d)}
 
 
 def simulate_rebound_spike(**kw):
@@ -152,10 +152,10 @@ def simulate_rebound_spike(**kw):
     for i in range(n):
         voltage=mnn.voltage_signal.analog_signals[i+1].signal
         x=numpy.linspace(0,simTime, len(voltage))
-        dg=Data_generic(**{'x':x, 'y':voltage, 'xlabel':'Time (ms)', 'ylabel':'Voltage (mV)'})
+        dg=DataGeneric(**{'x':x, 'y':voltage, 'xlabel':'Time (ms)', 'ylabel':'Voltage (mV)'})
         misc.dict_update(d, {'rs_voltage_{0}'.format(i):dg})
     rd=mnn.spike_signal.raw_data()
-    dg=Data_scatter(**{'x':rd[:,0], 'y':rd[:,1], 'xlabel':'Time (ms)', 'ylabel':'Voltage (mV)'})
+    dg=DataScatter(**{'x':rd[:,0], 'y':rd[:,1], 'xlabel':'Time (ms)', 'ylabel':'Voltage (mV)'})
     misc.dict_update(d, {'rs_scatter':dg})
     
     return d
@@ -167,7 +167,7 @@ def get_nullcline(**kw):
     p.update({'V':kw.get('nc_V')})
     x,y=my_population.get_nullcline_aeif(**p)
 
-    dg=Data_generic(**{'x':x, 'y':y, 'ylabel':'Current (pA)', 'xlabel':'Voltage (mV)'})
+    dg=DataGeneric(**{'x':x, 'y':y, 'ylabel':'Current (pA)', 'xlabel':'Voltage (mV)'})
 
     return {'nullcline':dg} 
 

@@ -14,45 +14,35 @@ Script used for the paper are located in `python/scripts_inhibition`.
 
 ## Installation
 
-Make sure you have installed all 
-[dependencies](https://github.com/mickelindahl/bgmodel#dependencies)
+This installation depends on that conda (anaconda or miniconda) is installed
 
-clone the repository
+Clone the repository
 
 ```
 git clone https://github.com/mickelindahl/bgmodel.git
 ```
 
-From root run (built for debian. Might need tweeks to account for other distros and OS)
-
-```
-cd nest
-source ./install_3.3_debian.sh
-```
-Then copy `sample.env` to `.env`
+Copy `sample.env` to `.env`
 ```
 cp sample.env .env
 ```
-Open `.env` and set data result path
+
+Open `.env` and set environment variables
+
+Run install 
+
+```
+./install.sh
+```
 
 Done!
 
+## Usage
+
+
 ## Dependencies
-* python: numpy, scipy, mpi4py, NeuroTools (0.2.0), psycopg2
-others: openmpi, libncurses-dev, libreadline-dev, libopenmpi-dev, libgsl, gsl (gnu scitific library, solver, neccesary for module) 
+* conda
 
-Dependencies module
-* autoconf, automake
-
-Dependences python
-* cython
-```
-suod apt-get install cython
-sudo pip install python-dotenv
-sudo pip install NeuroTools
-sudo pip install mpi4py
-sudo pip install psycopg2
-```
 
 
 

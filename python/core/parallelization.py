@@ -21,8 +21,8 @@ import time
 from functools import reduce
 from multiprocessing import Pool, Process, Array
 from os.path import expanduser
-from core import misc
-from core import my_socket
+from python.core import misc
+from python.core import my_socket
 
 
 class comm(object):
@@ -212,7 +212,7 @@ def map_parallel(fun, *args, **kwargs):
         out = map_local_threads(fun, a, kwargs)
         if comm.rank() == 0:
             data = [out] + [comm.recv(source=i, tag=1) for i in range(1, comm.size())]
-            data = reduce(lambda x, y: x + y, data)
+            data = list(reduce(lambda x, y: x + y, data))
             n = len(data)
         else:
             comm.send(out, dest=0, tag=1)

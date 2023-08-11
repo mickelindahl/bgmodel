@@ -3,7 +3,7 @@ Created on Feb 24, 2015
 
 @author: mikael
 '''
-from core import postgresql as psql
+from python.core import postgresql as psql
 
 def create_table_main():
     db=psql.Database('inhibition')

@@ -12,7 +12,7 @@ from scripts_inhibition.base_simulate import (main_loop, show_fr, show_mr, show_
 
 from core import misc, pylab
 from core.data_to_disk import Storage_dic
-from core.my_signals import Data_generic
+from core.my_signals import DataGeneric
 from core.network import manager
 from core.network.manager import (add_perturbations,
                                     get_storage_list)
@@ -47,7 +47,7 @@ def cmp_mean_rate_diff(d, models, parings, x, _set='set_0'):
             'y_std':numpy.array(y_std),
             'x':numpy.array(x)}
         
-        obj=Data_generic(**dd)
+        obj=DataGeneric(**dd)
         
         d=misc.dict_recursive_add(d, ['Difference',
                                   model,

@@ -26,7 +26,7 @@ Functions
 
 import numpy as np
 
-from NeuroTools import check_dependency
+from python.core.NeuroTools import check_dependency
 
 HAVE_MATPLOTLIB = check_dependency('matplotlib')
 if HAVE_MATPLOTLIB:
@@ -104,7 +104,7 @@ def ccf(x, y, axis=None):
                            iFxy[0:len(iFxy) / 2]))
     return iFxy / varxy
 
-from NeuroTools.plotting import get_display, set_labels
+from python.core.NeuroTools.plotting import get_display, set_labels
 
 HAVE_PYLAB = check_dependency('pylab')
 

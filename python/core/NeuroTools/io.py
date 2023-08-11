@@ -26,7 +26,7 @@ All those objects can be used with NeuroTools.signals
 """
 
 
-from NeuroTools import check_dependency
+from python.core.NeuroTools import check_dependency
 
 import os, logging, pickle, numpy
 DEFAULT_BUFFER_SIZE = -1
@@ -51,13 +51,13 @@ class FileHandler(object):
     inherit from this FileHandler class and implement the previous functions. See io.py for more
     details
     """
-    
+
     def __init__(self, filename):
         self.filename = filename
-    
+
     def __str__(self):
         return "%s (%s)" % (self.__class__.__name__, self.filename)
-    
+
     def write(self, object):
         """
         Write the object to the file. 
@@ -67,7 +67,7 @@ class FileHandler(object):
             >> handler.write(VmListObject)
         """
         return _abstract_method(self)
-    
+
     def read_spikes(self, params):
         """
         Read a SpikeList object from a file and return the SpikeList object, created from the File and
@@ -79,7 +79,7 @@ class FileHandler(object):
                 SpikeList Object (with params taken into account)
         """
         return _abstract_method(self)
-    
+
     def read_analogs(self, type, params):
         """
         Read an AnalogSignalList object from a file and return the AnalogSignalList object of type 
@@ -101,7 +101,7 @@ class FileHandler(object):
 
 
 class StandardTextFile(FileHandler):
-    
+
     def __init__(self, filename):
         FileHandler.__init__(self, filename)
         self.metadata = {}
@@ -119,8 +119,8 @@ class StandardTextFile(FileHandler):
             if line[0] == '#':
                 if line[1:].strip().find('variable') != -1:
                   variable = line[1:].strip().split(" = ")
-                elif line[1:].strip().find('label') != -1:  
-                  label = line[1:].strip().split(" = ")                  
+                elif line[1:].strip().find('label') != -1:
+                  label = line[1:].strip().split(" = ")
                 else:
                   cmd += line[1:].strip() + ';'
             else:
@@ -131,7 +131,7 @@ class StandardTextFile(FileHandler):
           self.metadata[variable[0]] = variable[1]
         if not variable is None:
           self.metadata[label[0]] = label[1]
-        
+
 
     def __fill_metadata(self, object):
         """
@@ -143,7 +143,7 @@ class StandardTextFile(FileHandler):
             self.metadata['last_id']  = numpy.max(object.id_list)
         if hasattr(object, "dt"):
             self.metadata['dt']     = object.dt
-        
+
     def __check_params(self, params):
         """
         Establish a control/completion/correction of the params to create an object by 
@@ -193,7 +193,7 @@ class StandardTextFile(FileHandler):
         logging.debug("Loaded %d lines of data from %s" % (len(data), self))
         data = numpy.array(data, numpy.float32)
         return data
-    
+
     def write(self, object):
         # can we write to the file more than once? In this case, should use seek, tell
         # to always put the header information at the top?
@@ -235,7 +235,7 @@ class StandardTextFile(FileHandler):
 class StandardPickleFile(FileHandler):
     # There's something kinda wrong with this right now...
     def __init__(self, filename):
-        FileHandler.__init__(self, filename) 
+        FileHandler.__init__(self, filename)
         self.metadata = {}
 
     def __fill_metadata(self, object):
@@ -268,7 +268,7 @@ class StandardPickleFile(FileHandler):
         if do_slice:
             object = object.time_slice(t_start, t_stop)
         return object
-    
+
     def write(self, object):
         fileobj = file(self.filename,"w")
         return pickle.dump(object, fileobj)
@@ -278,14 +278,14 @@ class StandardPickleFile(FileHandler):
         object  = pickle.load(fileobj)
         object  = self.__reformat(params, object)
         return object
-        
+
     def read_analogs(self, type, params):
         return self.read_spikes(params)
 
 
 
 class NestFile(FileHandler):
-    
+
     def __init__(self, filename, padding=0, with_time=False, with_gid=True):
         self.filename  = filename
         self.metadata  = {}
@@ -293,8 +293,8 @@ class NestFile(FileHandler):
         self.padding   = padding
         self.with_time = with_time
         self.with_gid  = with_gid
-        self.standardtxtfile = StandardTextFile(filename) 
-    
+        self.standardtxtfile = StandardTextFile(filename)
+
     def write(self, object):
         """
         Write the object to the file. 
@@ -304,7 +304,7 @@ class NestFile(FileHandler):
             >> handler.write(VmListObject)
         """
         return self.standardtxtfile.write(object)
-    
+
     def __check_params(self, params):
         """
         Establish a control/completion/correction of the params to create an object by 
@@ -326,7 +326,7 @@ class NestFile(FileHandler):
             else:
                 raise Exception("dims can not be infered while reading %s" %self.filename)
         return params
-    
+
     def get_data(self, sepchar = "\t", skipchar = "#"):
         """
         Load data from a text file and returns a list of data
@@ -374,7 +374,7 @@ class NestFile(FileHandler):
         data      = self.get_data()
         data, p   = self._fix_id_list(data, p)
         return signals.SpikeList(data, p['id_list'], p['t_start'], p['t_stop'], p['dims'])
-    
+
     def read_analogs(self, type, params):
         p       = self.__check_params(params)
         data    = self.get_data()
@@ -394,11 +394,11 @@ class NestFile(FileHandler):
 
 
 class PyNNNumpyBinaryFile(FileHandler):
-    
+
     def __init__(self, filename):
         FileHandler.__init__(self, filename)
         self.fileobj = open(self.filename, 'r')
-        
+
     def read_spikes(self, params):
         from NeuroTools.signals import spikes
         contents = numpy.load(self.fileobj)
@@ -412,11 +412,11 @@ class PyNNNumpyBinaryFile(FileHandler):
         # params for all metadata items
         return spikes.SpikeList(spike_data, id_list, t_start=0.0, t_stop=t_stop,
                                 dims=M['dimensions'])
-        
+
     #def read_analogs(self, type, params):
     #    contents = numpy.load(self.fileobj)
     #    values, ids = contents['data'].T # need to check the shape first
-    
+
 
 
 class DataHandler(object):
@@ -459,7 +459,7 @@ class DataHandler(object):
         See also
             SpikeList, load_analogs
         """
-        
+
         ### Here we should have an automatic selection of the correct manager
         ### acccording to the file format.
         ### For the moment, we try the pickle format, and if not working

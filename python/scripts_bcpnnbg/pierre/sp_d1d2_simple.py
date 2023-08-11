@@ -91,14 +91,14 @@ poisson_first_reward = nest.Create('poisson_generator', poisson_per_neuron_in_mi
 poisson_second_reward = nest.Create('poisson_generator', poisson_per_neuron_in_minic * neurons_per_reinforcement_pool, params = {'rate': active_poisson_rate})
 
 # spike detectors
-first_detect = nest.Create("spike_detector", params = {"withgid":True,"withtime":True})
-second_detect = nest.Create("spike_detector", params = {"withgid":True,"withtime":True})
-detect_a = nest.Create("spike_detector", params = {"withgid":True,"withtime":True})
-detect_b = nest.Create("spike_detector", params = {"withgid":True,"withtime":True})
-detect_c = nest.Create("spike_detector", params = {"withgid":True,"withtime":True})
-detect_d = nest.Create("spike_detector", params = {"withgid":True,"withtime":True})
-detect_e = nest.Create("spike_detector", params = {"withgid":True,"withtime":True})
-detect_f = nest.Create("spike_detector", params = {"withgid":True,"withtime":True})
+first_detect = nest.Create("spike_recorder", params = {"withgid":True,"withtime":True})
+second_detect = nest.Create("spike_recorder", params = {"withgid":True,"withtime":True})
+detect_a = nest.Create("spike_recorder", params = {"withgid":True,"withtime":True})
+detect_b = nest.Create("spike_recorder", params = {"withgid":True,"withtime":True})
+detect_c = nest.Create("spike_recorder", params = {"withgid":True,"withtime":True})
+detect_d = nest.Create("spike_recorder", params = {"withgid":True,"withtime":True})
+detect_e = nest.Create("spike_recorder", params = {"withgid":True,"withtime":True})
+detect_f = nest.Create("spike_recorder", params = {"withgid":True,"withtime":True})
 
 #first_bias = nest.Create("multimeter", params={'record_from': ['bias','p_j'], 'interval' :0.1})
 #nest.ConvergentConnect(A_D1_minicolumn, first_bias)

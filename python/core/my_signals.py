@@ -31,20 +31,20 @@ import unittest
 import subprocess
 import warnings
 from os.path import expanduser
-from core import misc, my_axes
-from core import signal_processing as sp
-from core.parallelization import map_parallel
+from python.core import misc, my_axes
+from python.core import signal_processing as sp
+from python.core.parallelization import map_parallel
 # Import StandardPickleFile for saving of spike object
-from core.NeuroTools.io import StandardPickleFile
+from python.core.NeuroTools.io import StandardPickleFile
 from functools import reduce
 
 # import NeuroTools.signals as signals
-from NeuroTools import signals
-from NeuroTools.signals import ConductanceList
-from NeuroTools.signals import CurrentList
-from NeuroTools.signals import VmList
-from NeuroTools.signals import SpikeList
-from NeuroTools.plotting import get_display, set_labels, set_axis_limits
+
+from python.core.NeuroTools.signals import ConductanceList
+from python.core.NeuroTools.signals import CurrentList
+from python.core.NeuroTools.signals import VmList
+from python.core.NeuroTools.signals import SpikeList
+from python.core.NeuroTools.plotting import get_display, set_labels, set_axis_limits
 
 from scipy.sparse import csc_matrix
 
@@ -297,7 +297,7 @@ class Data_generic_base(object):
                 markersize=k.get('markersize', 10))
 
 
-class Data_generic(Data_element_base, Data_generic_base):
+class DataGeneric(Data_element_base, Data_generic_base):
     pass
 
 
@@ -319,7 +319,7 @@ class Data_scatter_base(object):
         ax.my_set_no_ticks(xticks=6, yticks=6)
 
 
-class Data_scatter(Data_element_base, Data_scatter_base):
+class DataScatter(Data_element_base, Data_scatter_base):
     pass
 
 
@@ -646,7 +646,7 @@ class Data_IF_curve_base(object):
                 markersize=k.get('markersize', 10))
 
 
-class Data_IF_curve(Data_element_base, Data_IF_curve_base):
+class DataIFCurve(Data_element_base, Data_IF_curve_base):
     pass
 
 
@@ -1653,7 +1653,7 @@ class MySpikeList(SpikeList):
         # if not numpy:
         import numpy  # Needed when this method is called by __del__,
         # Some how numpy reference is lost
-        id_list = numpy.array(self.spiketrains.keys(), int)
+        id_list = numpy.array(list(self.spiketrains.keys()), int)
         # id_list=super( MySpikeList, self ).id_list
         id_list = numpy.sort(id_list)
         return id_list
@@ -2415,7 +2415,7 @@ class SpikeListMatrix(BaseListMatrix):
                 a = 1000. / a  # Convert to firing rate
             isi[key] = a
         #         return isi['curr'], isi['first'], isi['mean'], isi['last']
-        return Data_IF_curve(**isi)
+        return DataIFCurve(**isi)
 
     def Factory_mean_rate_parts(self, *args, **kwargs):
         # OBS merge over axis 1
