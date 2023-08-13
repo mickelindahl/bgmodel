@@ -19,8 +19,7 @@ def simulate(nest_model, neuron_type):
     kw={'model':nest_model,
         'n':1,
         'mm':{"withgid": True, 
-                  'to_file':False,  
-                  'to_memory':True,
+                      'record_to': 'memory'
                   'record_from':['V_m']
                   },
         'params':par.dic[neuron_type]}

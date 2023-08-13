@@ -30,12 +30,10 @@ def default_kwargs_net(n, n_sets=1):
              'model':'my_aeif_cond_exp', 
              'mm':{'active':True,
                    'params':{'interval':1.0,
-                             'to_memory':True, 
-                             'to_file':False,
+                             'record_to': 'memory',
                              'record_from':['V_m']}},
              'sd':{'active':True,
-                   'params':{'to_memory':True, 
-                             'to_file':False}},
+                   'params':{'record_to':'memory'}},
              'sets':sets,
              'rate':10.0}
 

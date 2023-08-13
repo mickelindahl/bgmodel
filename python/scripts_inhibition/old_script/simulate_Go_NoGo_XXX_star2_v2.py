@@ -78,8 +78,7 @@ kwargs={
                      ],
         'res':10,
         'rep':80,
-        'to_memory':False,
-        'to_file':True
+    'record_to': 'file'
         }
 
 d_process_and_thread=par_process_and_thread(**kwargs)

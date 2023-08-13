@@ -56,7 +56,7 @@ def main():
     sub_sampling=10.0
     kwargs = {'class_network_construction':Inhibition_base, 
               'kwargs_network':{'save_conn':False, 'verbose':True}, 
-              'par_rep':{'simu':{'threads':6, 'sd_params':{'to_file':True, 'to_memory':False},
+              'par_rep':{'simu':{'threads':6, 'sd_params':{    'record_to': 'file'},
                                  'print_time':True, 'start_rec':1000.0, 
                                  'stop_rec':stop, 'sim_time':stop},
                          'netw':{'size':20000.0/sub_sampling, 'sub_sampling':{'M1':sub_sampling, 'M2':sub_sampling}}}}        

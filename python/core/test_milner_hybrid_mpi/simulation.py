@@ -27,8 +27,7 @@ SetKernelStatus({'data_path':path_nest,
 
 pg = Create("poisson_generator", params={"rate": 50000.0})
 n = Create('aeif_cond_exp', 20000)
-sd = Create("spike_recorder", params={"to_file": True, 
-                                      "to_memory": False})
+sd = Create("spike_recorder", params={'record_to':'file'})
 RandomConvergentConnect(pg, n, 100)
 ConvergentConnect(n, sd)
 Simulate(100.0)

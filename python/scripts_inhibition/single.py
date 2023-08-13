@@ -5,12 +5,12 @@ Created on 21 mar 2014
 '''
 from copy import deepcopy
 
-from core import pylab
-from core import  misc
-from core.data_to_disk import Storage_dic
-from core.network import manager
-from core.network.manager import compute, save, load
-from core.network.optimization import Fmin
+from python.core import pylab
+from python.core import  misc
+from python.core.data_to_disk import Storage_dic
+from python.core.network import manager
+from python.core.network.manager import compute, save, load
+from python.core.network.optimization import Fmin
 
 from os.path import expanduser
 home = expanduser("~")
@@ -214,8 +214,8 @@ def _optimize(flag, net, storage_dic, d, from_disk, **kwargs):
     
     if not from_disk: 
         f=Fmin(net.name, **kwargs_fmin)
-        dd={net.get_name():{model:{attr:f.fmin()}}}    
-        print dd 
+        dd={net.get_name():{model:{attr:f.fmin()}}}
+        print(dd)
         save(storage_dic, dd)
     elif from_disk:
         filt = [net.get_name()] + [model] + [attr]

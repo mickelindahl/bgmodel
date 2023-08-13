@@ -80,8 +80,7 @@ kwargs={
                      ],
         'res':5,
         'rep':40,
-        'to_memory':False,
-        'to_file':True,
+        'record_to': 'file'
         'time_bin':5,
         
 

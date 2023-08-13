@@ -37,6 +37,7 @@ import pprint
 GetConnections = nest.GetConnections
 GetDefaults = nest.GetDefaults
 GetLocalNodeCollection = nest.GetLocalNodeCollection
+GetKernelStatus = nest.GetKernelStatus
 NodeCollection = nest.NodeCollection
 CopyModel = nest.CopyModel
 Models = nest.Models
@@ -604,7 +605,7 @@ def MyCopyModel(params, new_name):
     params = deepcopy(params)
     type_id = params['type_id']
     del params['type_id']
-    if not new_name in nest.get_models():
+    if not new_name in get_models():
         nest.CopyModel(type_id, new_name, params)
 
 
@@ -679,8 +680,7 @@ def sim_group(data_path, **kwargs):
 
     pg = Create("poisson_generator", params={"rate": 2000.0})
     n = Create('aeif_cond_exp', 10)
-    sd = Create("spike_recorder", params={"to_file": kwargs.get('to_file', True),
-                                          "to_memory": kwargs.get('to_memory', False)})
+    sd = Create("spike_recorder", params={"record_to": kwargs.get('record_to', 'file')})
 
     conn_spec_dict = {'rule': 'fixed_indegree', 'indegree': 100}
     nest.Connect(pg, n, conn_spec_dict)

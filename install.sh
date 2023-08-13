@@ -2,6 +2,39 @@
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
+#####################
+# Functions Section #
+#####################
+
+# Function to display script usage
+ShowHelp() {
+    echo -e "\033[1mUsage:\033[0m"
+    echo "  $0 [-y] [--ignore-conda-cache]\n"
+    echo -e "\n\033[1mOptions:\033[0m"
+    echo "  --ignore-conda-cache  Do not use previous install conda environment if exists during installations"
+    echo "  --help                Display this help and exit"
+    exit 1
+}
+
+
+#########################
+# Argument Parsing      #
+#########################
+
+# Parsing command line arguments
+IGNORE_CONDA_CACHE=""
+while true; do
+    case "$1" in
+        --ignore-conda-cache) IGNORE_CONDA_CACHE="--ignore-conda-cache"; shift ;;
+        --help) ShowHelp ;;
+        *) break ;;
+    esac
+done
+
+#########################
+# Main Script Execution #
+#########################
+
 eval $(cat .env)
 
 NEST_VERSION=3.5
@@ -9,7 +42,7 @@ NEST_VERSION=3.5
 #Start time watch
 START=$(date +%s)
 
-./scripts/install-nest-conda.sh -y --ignore-conda-cache "$NEST_VERSION" "$PATH_CONDA_SETUP"
+./scripts/install-nest-conda.sh -y $IGNORE_CONDA_CACHE "$NEST_VERSION" "$PATH_CONDA_SETUP"
 mv ./scripts/conda-activate.sh .
 
 MODULE_SOURCE_DIR=$SCRIPT_DIR/nest/module/source/ml_module-$NEST_VERSION

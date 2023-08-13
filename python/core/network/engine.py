@@ -658,8 +658,8 @@ class Network(Network_base):
              'start': 0.0,
              'stop': numpy.inf,
              'interval': 1.,
-             'to_file': False,
-             'to_memory': True}
+             'record_to': 'memory'
+             }
         models = ['FS', 'GA', 'GI', 'GF', 'M1', 'M2', 'SN', 'ST']
         n = 10
         for model in models:
@@ -1248,7 +1248,8 @@ class TestMixin_2(object):
     #         pylab.show()
 
     def test_91_FF_curve(self):
-        dic_rep = {'simu': {'sd_params': {'to_file': False, 'to_memory': True}},
+        dic_rep = {'simu': {'sd_params': {
+             'record_to': 'memory'}},
                    'netw': {'size': 36.}}
         self.kwargs.update({'dic_rep': dic_rep})
         network = self.class_network(self.name, **self.kwargs)
@@ -1384,8 +1385,8 @@ class TestMixinSetup(object):
         dic_rep = kwargs.get('dic_rep', {})
         d = {'simu': {'sim_stop': 3000.0,
                       'local_num_threads': 4,
-                      'mm_params': {'to_file': False, 'to_memory': True},
-                      'sd_params': {'to_file': False, 'to_memory': True}},
+                      'mm_params': {'record_to': 'memory'},
+                      'sd_params': {'record_to': 'memory'}},
              'netw': {'size': 9.},
              'node': {self.node: {'mm': {'active': True},
                                   'sd': {'active': True}}}}
@@ -1455,8 +1456,8 @@ class TestUnittestBcpnnDopa_base(unittest.TestCase):
         dic_rep.update({'simu': {'sim_stop': 2000.0,
                                  'sim_time': 100.0,
                                  'local_num_threads': 1,
-                                 'mm_params': {'to_file': False, 'to_memory': True},
-                                 'sd_params': {'to_file': False, 'to_memory': True}},
+                                 'mm_params': {'record_to': 'memory'},
+                                 'sd_params': {'record_to': 'memory'}},
                         'netw': {'size': 52,
                                  'n_nuclei': {'m1': 52}},
 
@@ -1493,8 +1494,8 @@ class TestUnittestStdp_base(unittest.TestCase):
         dic_rep.update({'simu': {'sim_stop': 5000.0,
                                  'sim_time': 100.0,
                                  'local_num_threads': 1,
-                                 'mm_params': {'to_file': False, 'to_memory': True},
-                                 'sd_params': {'to_file': False, 'to_memory': True}},
+                                 'mm_params': {'record_to': 'memory'},
+                                 'sd_params': {'record_to': 'memory'}},
                         'netw': {'size': 11},
                         'node': {'n1': {'mm': {'active': True},
                                         'sd': {'active': True}}}})
@@ -1529,8 +1530,8 @@ class TestUnittestBcpnn_base(unittest.TestCase):
         dic_rep.update({'simu': {'sim_stop': 10000.0,
                                  'sim_time': 100.0,
                                  'local_num_threads': 2,
-                                 'mm_params': {'to_file': False, 'to_memory': True},
-                                 'sd_params': {'to_file': False, 'to_memory': True}},
+                                 'mm_params': {'record_to': 'memory'},
+                                 'sd_params': {'record_to': 'memory'}},
                         'netw': {'size': 2},
                         'node': {'n1': {'mm': {'active': True},
                                         'sd': {'active': True}}}})
@@ -1567,8 +1568,8 @@ class TestSinlge_unit_base(unittest.TestCase):
                       'stop_rec': 3000.0,
                       'print_time': False,
                       'local_num_threads': 1,
-                      'mm_params': {'to_file': False, 'to_memory': True},
-                      'sd_params': {'to_file': False, 'to_memory': True},
+                      'mm_params': {'record_to': 'memory'},
+                      'sd_params': {'record_to': 'memory'},
                       },
              'netw': {'size': 9.,
                       'single_unit': self.node},
@@ -1604,8 +1605,8 @@ class TestNetwork_list(unittest.TestCase):
         dic_rep = {}
         dic_rep.update({'simu': {'sim_stop': 1000.0,
                                  'sim_time': 1000.0,
-                                 'mm_params': {'to_file': False, 'to_memory': True},
-                                 'sd_params': {'to_file': False, 'to_memory': True}},
+                                 'mm_params': {'record_to': 'memory'},
+                                 'sd_params': {'record_to': 'memory'}},
                         'netw': {'rand_nodes': {'C_m': False,
                                                 'V_th': False,
                                                 'V_m': False},

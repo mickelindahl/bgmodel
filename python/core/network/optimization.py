@@ -10,9 +10,9 @@ import scipy.optimize as opt
 import unittest
 import time  
 
-from core.my_signals import Data_fmin
-from core.misc import Stop_stdout, Stopwatch
-from core.network.engine import Network_list
+from python.core.my_signals import Data_fmin
+from python.core.misc import Stop_stdout, Stopwatch
+from python.core.network.engine import Network_list
 
 class Fmin(object):
     
@@ -149,33 +149,32 @@ class Fmin(object):
     def print_last(self, t=None):
         s='{0:<10}{1:<30}{2:<10}{3:<10}{4:<10}'
         if len(self.xopt)==1:
-            print ''
-            print s.format('time','xopt', 'xtol', 'fopt', 'ftol')
-            
+            print('')
+            print(s.format('time', 'xopt', 'xtol', 'fopt', 'ftol'))
+
         ind=numpy.argsort(self.fopt)
         xopt=self.xopt[ind[0]]
-        xopt=[round(x,3) for x in xopt]     
-        print s.format(str(numpy.round(t,1))+' sec',str(xopt), str(self.xtol[-1])[0:6], 
-                       str(self.fopt[ind[0]])[0:6], str(self.ftol[-1])[0:6])
-        
+        xopt=[round(x,3) for x in xopt]
+        print(s.format(str(numpy.round(t, 1) + ' sec', str(xopt), str(self.xtol[-1])[0:6],
+                       str(self.fopt[ind[0]])[0:6], str(self.ftol[-1])[0:6])))
+
     def print_summary(self):
-        print ''
+        print('')
         if self.warnflag == 1:
-                print "Warning: Maximum number of function evaluations has "\
-                      "been exceeded."
+            print("Warning: Maximum number of function evaluations has "
+                  "been exceeded.")
         elif self.warnflag == 2:
-                print "Warning: Maximum number of iterations has been exceeded"
+            print("Warning: Maximum number of iterations has been exceeded")
         else:
-                print "Optimization terminated successfully."
-        
+            print("Optimization terminated successfully.")
+
         #print "         time: %s second" % str(self.time)          
-        print "         xopt: %s" % str(self.xopt[-1])     
-        print "         xtol: %s" % str(self.xtol[-1])             
-        print "         fopt: %f" % self.fopt[-1]
-        print "         ftol: %f" % self.ftol[-1]
-        print "         Iterations: %d" % self.iterations
-        print "         Function evaluations: %d" % self.funcalls
-        
+        print("         xopt: %s" % str(self.xopt[-1]))
+        print("         xtol: %s" % str(self.xtol[-1]))
+        print("         fopt: %f" % self.fopt[-1])
+        print("         ftol: %f" % self.ftol[-1])
+        print("         Iterations: %d" % self.iterations)
+        print("         Function evaluations: %d" % self.funcalls)
 
 
 def fmin_error_fun_wrap(self, x, *arg):
@@ -193,7 +192,7 @@ def fmin_error_fun_wrap(self, x, *arg):
     return fopt
 
 
-from core.network.engine import Unittest_net
+from python.core.network.engine import Unittest_net
 class TestFmin(unittest.TestCase):
 
     
@@ -207,8 +206,8 @@ class TestFmin(unittest.TestCase):
         dic_rep={}
         dic_rep.update({'simu':{'sim_time':1000.0,
                                 'sim_stop':1000.0,
-                                'mm_params':{'to_file':False, 'to_memory':True},
-                                'sd_params':{'to_file':False, 'to_memory':True}},
+                                'mm_params':{'record_to':'memory'},
+                                'sd_params':{'record_to':'memory'}},
                                 'netw':{'size':40.,
                                         'optimization':opt}})
 #        p=Perturbation_list('n1_n4', [['node.n1.rate', 3000.0,'='],

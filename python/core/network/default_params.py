@@ -245,7 +245,7 @@ class Call(object):
     def __neg__(self):
         other = 0
         new = deepcopy(self)
-        new.op = lambda x,y:-x
+        new.op = lambda x, y: -x
         return self.add_right(new, other)
 
     def __ne__(self, other):
@@ -371,7 +371,7 @@ class Perturbation_list(object):
 
     @property
     def list(self):
-        return self.dic.values()
+        return list(self.dic.values())
 
     def __eq__(self, other):
         return not set(self.list).isdisjoint(set(other.list))
@@ -930,11 +930,14 @@ class Par_base(object):
 
         return dic
 
-    def get_to_file(self):
-        return self.dic_con['simu']['sd_params']['to_file']
+    def get_record_to(self):
+        return self.dic_con['simu']['sd_params']['record_to']
 
-    def get_to_memory(self):
-        return self.dic_con['simu']['sd_params']['to_memory']
+    # def get_to_file(self):
+    #     return self.dic_con['simu']['sd_params']['to_file']
+    #
+    # def get_to_memory(self):
+    #     return self.dic_con['simu']['sd_params']['to_memory']
 
     def get_unittest(self):
         return self.unittest
@@ -961,7 +964,6 @@ class Par_base(object):
         self.update_perturbations(Perturbation_list(d, '='))
 
     #         self.update_dic_rep( {'simu':{'print_time':val}})
-
 
     def set_sim_time(self, val):
         d = {'simu': {'sim_time': val}}
@@ -1001,7 +1003,6 @@ class Par_base(object):
         self.update_dic()
 
     #         self.update_triggered=True
-
 
     def update_dic(self):
         d = {}
@@ -1055,8 +1056,7 @@ class Par_base_mixin(object):
         mm_p = {'interval': GetSimu('mm_params', 'interval'),
                 'start': Call('get_start_rec'),
                 'stop': Call('get_stop_rec'),
-                'to_file': GetSimu('mm_params', 'to_file'),
-                'to_memory': GetSimu('mm_params', 'to_memory'),
+                'record_to': GetSimu('mm_params', 'record_to'),
                 'record_from': GetSimu('mm_params', 'record_from')}
         return mm_p
 
@@ -1069,14 +1069,14 @@ class Par_base_mixin(object):
                          'gaussian': {'my': GetNest(model, 'C_m'),
                                       'sigma': GetNest(model, 'C_m') * 0.2,
                                       'cut': True,
-                                      'cut_at': 3},}
+                                      'cut_at': 3}, }
 
         if 'I_e' in includes:
             ra['I_e'] = {'active': GetNetw('rand_nodes', 'I_e'),
                          'gaussian': {'my': GetNest(model, 'I_e'),
                                       'sigma': GetNest(model, 'I_e') * 0.5,
                                       'cut': True,
-                                      'cut_at': 3},}
+                                      'cut_at': 3}, }
 
         if 'V_th' in includes:
             ra['V_th'] = {'active': GetNetw('rand_nodes', 'V_th'),
@@ -1094,8 +1094,11 @@ class Par_base_mixin(object):
     def build_setup_sd_params(self):
         sd_p = {'start': Call('get_start_rec'),
                 'stop': Call('get_stop_rec'),
-                'to_file': GetSimu('sd_params', 'to_file'),
-                'to_memory': GetSimu('sd_params', 'to_memory')}
+
+                'record_to': GetSimu('sd_params', 'record_to'),
+                # 'to_file': GetSimu('sd_params', 'to_file'),
+                # 'to_memory': GetSimu('sd_params', 'to_memory')
+                }
         return sd_p
 
     def _get_attr_popu(self):
@@ -1348,8 +1351,9 @@ class Unittest_base(object):
         dic['simu'] = {}
         dic['simu']['do_reset'] = False
         dic['simu']['mm_params'] = {'interval': 0.5,
-                                    'to_file': True,
-                                    'to_memory': False,
+                                    'record_to':'file',
+                                    # 'to_file': True,
+                                    # 'to_memory': False,
                                     'record_from': ['V_m']}
 
         dic['simu']['print_time'] = False
@@ -1360,7 +1364,7 @@ class Unittest_base(object):
         dic['simu']['stop_rec'] = numpy.Inf
         dic['simu']['sim_time'] = stop
         dic['simu']['sim_stop'] = 3 * stop
-        dic['simu']['sd_params'] = {'to_file': True, 'to_memory': False}
+        dic['simu']['sd_params'] = {'record_to':'file'}
 
         dc = dr.HOME + '/results/unittest/conn/'
         dp = dr.HOME + '/results/unittest/' + self.__class__.__name__ + '/'
@@ -1380,7 +1384,7 @@ class Unittest_base(object):
                                    'output': net}
 
         dic['netw']['input'] = {inp: {'type': 'constant', 'params': {}}}
-        dic['netw']['n_nuclei'] = {net: 1000.,}
+        dic['netw']['n_nuclei'] = {net: 1000., }
         dic['netw']['optimization'] = {'f': [net],
                                        'x': ['node.' + inp + '.rate'],
                                        'x0': [3000.0]}
@@ -1398,7 +1402,7 @@ class Unittest_base(object):
         d = {inp + '_nest': {'type_id': 'poisson_generator'},
              net + '_nest': {'type_id': 'iaf_cond_exp',
                              'C_m': 200.0, 'V_th': -50., 'I_e': 0.,
-                             'tau_minus': 20.0,},
+                             'tau_minus': 20.0, },
              inp + '_' + net + '_nest': {'type_id': 'static_synapse',
                                          'delay': 1.0,
                                          'weight': 10.0}}
@@ -1456,7 +1460,6 @@ class Unittest_extend_base(object):
         dic['simu'] = {}
         dic['simu']['local_num_threads'] = 1
         #         dic['simu']['threads_local']=1
-
 
         # ========================
         # Default netw parameters
@@ -2071,8 +2074,7 @@ class InhibitionPar_base(object):
         dic['simu'] = {}
         dic['simu']['do_reset'] = False
         dic['simu']['mm_params'] = {'interval': 0.5,
-                                    'to_file': True,
-                                    'to_memory': False,
+                                    'record_to': 'file',
                                     'record_from': ['V_m']}
 
         dp = dr.HOME_DATA + '/'
@@ -2088,7 +2090,7 @@ class InhibitionPar_base(object):
         dic['simu']['path_nest'] = dn
         dic['simu']['print_time'] = True
         dic['simu']['save_conn'] = {'active': True, 'overwrite': False}
-        dic['simu']['sd_params'] = {'to_file': False, 'to_memory': True}
+        dic['simu']['sd_params'] = {'record_to':'memory'}
         dic['simu']['sim_time'] = 2000.0
         dic['simu']['sim_stop'] = 2000.0
         dic['simu']['stop_rec'] = 2000.0
@@ -2769,14 +2771,14 @@ class InhibitionPar_base(object):
 
         dic['node'] = misc.dict_merge(dic['node'], inputs)
 
-        network = {'M1': {'model': 'M1_low', 'I_vitro': 0.0, 'I_vivo': 0.0,},
-                   'M2': {'model': 'M2_low', 'I_vitro': 0.0, 'I_vivo': 0.0,},
-                   'FS': {'model': 'FS_low', 'I_vitro': 0.0, 'I_vivo': 0.0,},
-                   'ST': {'model': 'ST', 'I_vitro': 6.0, 'I_vivo': 6.0,},
-                   'GA': {'model': 'GA', 'I_vitro': 1.0, 'I_vivo': -3.6,},  # 8 Hz, -8
-                   'GI': {'model': 'GI', 'I_vitro': 12.0, 'I_vivo': 4.5,},  # 18 Hz, 56
-                   'GF': {'model': 'GF', 'I_vitro': 12.0, 'I_vivo': 4.5,},  # 51, 56
-                   'SN': {'model': 'SN', 'I_vitro': 15.0, 'I_vivo': 19.2,}}
+        network = {'M1': {'model': 'M1_low', 'I_vitro': 0.0, 'I_vivo': 0.0, },
+                   'M2': {'model': 'M2_low', 'I_vitro': 0.0, 'I_vivo': 0.0, },
+                   'FS': {'model': 'FS_low', 'I_vitro': 0.0, 'I_vivo': 0.0, },
+                   'ST': {'model': 'ST', 'I_vitro': 6.0, 'I_vivo': 6.0, },
+                   'GA': {'model': 'GA', 'I_vitro': 1.0, 'I_vivo': -3.6, },  # 8 Hz, -8
+                   'GI': {'model': 'GI', 'I_vitro': 12.0, 'I_vivo': 4.5, },  # 18 Hz, 56
+                   'GF': {'model': 'GF', 'I_vitro': 12.0, 'I_vivo': 4.5, },  # 51, 56
+                   'SN': {'model': 'SN', 'I_vitro': 15.0, 'I_vivo': 19.2, }}
 
         GA_prop = GetNetw('GA_prop')
         GP_tr = GetNetw('GP_rate')
@@ -2811,7 +2813,6 @@ class InhibitionPar_base(object):
         # ========================
         # Default conn parameters
         # ========================
-
 
         # Input
         conns = {'C1_M1_ampa': {},
@@ -2933,7 +2934,7 @@ class InhibitionPar_base(object):
             if k in ['M1_M1_gaba', 'M1_M2_gaba', 'M2_M1_gaba',
                      'M2_M2_gaba']:  # pre[0:2] in ['M1', 'M2'] and post[0:2] in ['M1', 'M2']:
                 e = 2800. / (DepNode('M1', 'calc_n') + DepNode('M2', 'calc_n'))  # None
-                e = e.min(0.5) #min(e, 0.5)
+                e = e.min(0.5)  # min(e, 0.5)
             elif k in ['FS_M1', 'FS_M2', 'FS_FS']:  # pre[0:2] =='FS' and post[0:2] in ['M1', 'M2', 'FS']:
                 e = 560. / (DepNode('M1', 'calc_n') + DepNode('M2', 'calc_n'))
                 e = min(e, 0.5)
@@ -3084,7 +3085,6 @@ class Compete_with_oscillations_base(object):
 
         #         dic = misc.dict_update(dic_other, dic)
 
-
         #         dic={'netw':{'input':{}},
         #              'nest':{},
         #              'node':{}}
@@ -3103,7 +3103,6 @@ class Compete_with_oscillations_base(object):
         for key in ['C1', 'C2', 'CF', 'CS']:
             dic['netw']['input'][key]['params'].update(d['params'])
             dic['netw']['input'][key]['type'] = 'burst3_oscillations'
-
 
         #             dic['nest'][new_name]={'type_id':'poisson_generator_dynamic',
         #                                    'rates':[0.],
@@ -3150,7 +3149,6 @@ class Slow_wave_base(object):
         dic_other = self.other.get_par_constant()
 
         # self._dic_con['node']['M1']['n']
-
 
         dic = {'netw': {'input': {}}}
 
@@ -3251,7 +3249,6 @@ class Beta_base(object):
 
         # self._dic_con['node']['M1']['n']
 
-
         dic = {'netw': {'input': {}},
                'nest': {},
                'node': {}}
@@ -3287,7 +3284,6 @@ class Beta_EI_EA_base(object):
 
         # self._dic_con['node']['M1']['n']
 
-
         dic = {'netw': {'input': {}},
                'nest': {},
                'node': {}}
@@ -3322,7 +3318,6 @@ class Beta_striatum_base(object):
         dic_other = self.other.get_par_constant()
 
         # self._dic_con['node']['M1']['n']
-
 
         dic = {'netw': {'input': {}},
                'nest': {},
@@ -3623,7 +3618,6 @@ class Bcpnn_h0_base(object):
         # Input Models
         # ============
 
-
         # EXT-CTX
         dic['nest']['EC'] = {}
         dic['nest']['EC']['type_id'] = 'poisson_generator'
@@ -3665,7 +3659,6 @@ class Bcpnn_h0_base(object):
         # Default node parameters
         # ========================
 
-
         dic['node'] = {}
         inputs = {'EC': {'target': 'CO', 'rate': 300}}
 
@@ -3694,7 +3687,6 @@ class Bcpnn_h0_base(object):
         # ========================
         # Default conn parameters
         # ========================
-
 
         conns = {}
         d = {'EC_CO_ampa': {'fan_in0': 1, 'rule': '1-1'},
@@ -3791,13 +3783,13 @@ class Bcpnn_h1_base(object):
         conns = {}
         u = dic_other['conn']
         d = {'CO_M1_ampa': {'fan_in0': u['CO_M1_ampa']['fan_in0'],
-                            'rule': u['CO_M1_ampa']['rule'],},
+                            'rule': u['CO_M1_ampa']['rule'], },
              'CO_M1_nmda': {'fan_in0': u['CO_M1_nmda']['fan_in0'],
-                            'rule': u['CO_M1_nmda']['rule'],},
+                            'rule': u['CO_M1_nmda']['rule'], },
              'CO_M2_ampa': {'fan_in0': u['CO_M2_ampa']['fan_in0'],
-                            'rule': u['CO_M2_ampa']['rule'],},
+                            'rule': u['CO_M2_ampa']['rule'], },
              'CO_M2_nmda': {'fan_in0': u['CO_M2_nmda']['fan_in0'],
-                            'rule': u['CO_M2_nmda']['rule'],},
+                            'rule': u['CO_M2_nmda']['rule'], },
              'CO_F1_ampa': {'fan_in0': 20,
                             'syn': 'CO_FS_ampa',
                             'rule': 'all_set-all_set'},
@@ -3949,8 +3941,6 @@ class Bcpnn_learning_base(object):
         #        dic['nest']['RM']['NMDA_1_Vact']      = -20.0
         #        dic['nest']['RM']['NMDA_1_Sact']      =  16.0
 
-
-
         # SNc
         # ===
         dic['nest']['SC'] = {}
@@ -3989,11 +3979,9 @@ class Bcpnn_learning_base(object):
         # Dopamine cells to Striatal connections
         dic['nest']['SC']['tata_dop'] = DepNetw('calc_tata_dop')
 
-
         # ========================
         # Default node parameters
         # ========================
-
 
         # ========================
         # Default conn parameters
@@ -4529,7 +4517,7 @@ def dummy_args(flag, **kwargs):
                   'idx_sets': [0, 2],
                   'n_set_pre': 3,
                   'p_amplitude': [2.0, 3.0],
-                  'start': 1000.0,}
+                  'start': 1000.0, }
         args.append([6, params, 25.0, 100.0, 1500.0, 'burst_compete'])
         out.append([{'idx': [0, 3],
                      'rates': [25., 50., 25.],
@@ -4581,13 +4569,12 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
           'mm': {'params': {'interval': 0.5,
                             'start': 0.0,
                             'stop': numpy.Inf,
-                            'to_file': True,
-                            'to_memory': False,
+                            'record_to':'file',
                             'record_from': ['V_m']}},
           'nest_params': {'I_e': 0.0},
           'rand': ra,
           'sd': {'params': {'start': 0.0, 'stop': numpy.Inf,
-                            'to_file': True, 'to_memory': False}},
+                            'record_to': 'file'}},
           'sets': [my_slice(s, n, 3) for s in range(3)],
           }
 
@@ -4596,7 +4583,6 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
     # ========================
     # Default conn parameters
     # ========================
-
 
     k = {
         'beta_fan_in': str(0.0),
@@ -4610,7 +4596,7 @@ def dummy_unittest_small(inp='i1', net='n1', n=10, **kwargs):
         'target': net,
         #            'target_edge_wrap':str(True),
         'target_n': str(n),
-        'target_n_sets': str(3),}
+        'target_n_sets': str(3), }
 
     d1 = {'delay': {'params': 1.0},
           'fan_in': 1.0,
@@ -4982,7 +4968,7 @@ class TestCallSubClassesWithPar_base(unittest.TestCase):
                 'node': {'n1': {'test': 1,
                                 'test2': {'1': GetNetw('test'),
                                           '2': GetNode('n1', 'test'),
-                                          '3': GetNest('n1', 'test')}}},}
+                                          '3': GetNest('n1', 'test')}}}, }
 
     def calc_test2(self, name):
         return int(name == name)

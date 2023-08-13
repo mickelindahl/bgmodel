@@ -268,7 +268,7 @@ class Population_dic(Base_dic):
 
     def add(self, *a, **k):
         class_name = k.get('class', 'MyGroup')  # default is MyGroup
-        the_class = misc.import_class('core.my_population.' + class_name)
+        the_class = misc.import_class('python.core.my_population.' + class_name)
 
         # del k['class']
         self.dic[a[0]] = the_class(*a, **k)
@@ -316,7 +316,7 @@ class Surface_dic(Base_dic):
     def add(self, *a, **k):
 
         class_name = k.get('structure_class', 'Surface')
-        the_class = misc.import_class('core.network.structure.' + class_name)
+        the_class = misc.import_class('python.core.network.structure.' + class_name)
         self.dic[a[0]] = the_class(*a, **k)
 
 
@@ -944,7 +944,7 @@ def create_connections(surfs, params_conn, display_print=False):
 
 def create_surfaces(params_surf):
     surfs = Surface_dic()
-    for k, v in params_surf.iteritems():
+    for k, v in params_surf.items():
         #
         # if k not in ['SN', 'ES']:
         #     continue

@@ -37,10 +37,10 @@ DownloadNestToSourceDirectory() {
 gnore
   echo -e "\033[1mDownloading NEST source files...\033[0m"
 
-  if [ -d "source/$NEST_FOLDER_NAME" ]; then
-    echo "Source files already exist at $BASE_DIR/source/$NEST_FOLDER_NAME"
+  if [ -d "$SOURCE_DIRECTORY" ]; then
+    echo "Source files already exist at $SOURCE_DIRECTORY"
   else
-    mkdir -p source
+    mkdir -p $(dirname SOURCE_DIRECTORY)
     echo "Moving to source directory..."
     cd source
     local URL="https://github.com/nest/nest-simulator/archive/refs/tags/$NEST_TAR"
@@ -63,7 +63,7 @@ ShowHelp() {
     echo "  <path-conda-setup>     Path to conda setup script. (e.g. conda.sh in .bashrc)"
     echo -e "\n\033[1mOptions:\033[0m"
     echo "  -y                    Skip confirmation prompts"
-    echo "  --ignore-conda-cache  Bypass conda cache during installations"
+    echo "  --ignore-conda-cache  Do not use previous install conda environment if exists during installations"
     echo "  --help                Display this help and exit"
     exit 1
 }

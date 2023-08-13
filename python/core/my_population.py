@@ -154,8 +154,8 @@ class MyGroup(object):
         msdrange1 = range(msd, msd + n_vp)
 
         pyrngs = [numpy.random.RandomState(s) for s in msdrange1]
-        msdrange2 = range(msd + n_vp + 1, msd + 1 + 2 * n_vp)
-        my_nest.SetKernelStatus(params={'grng_seed': msd + n_vp, 'rng_seeds': msdrange2})
+        # msdrange2 = range(msd + n_vp + 1, msd + 1 + 2 * n_vp)
+        my_nest.SetKernelStatus(params={'rng_seeds': msd})
         return pyrngs
 
 

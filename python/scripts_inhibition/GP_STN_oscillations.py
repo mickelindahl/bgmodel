@@ -106,8 +106,7 @@ def simulate_network(*args, **kw):
         if 'type_id' in d: del d['type_id']
     
     sd={'active':True,
-        'params':{'to_memory':True,
-                  'to_file':False,
+        'params':{'record_to':"memory",
                   'start':500.0
                   }}
     

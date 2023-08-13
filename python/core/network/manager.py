@@ -1671,13 +1671,11 @@ def firing_rate_set(data, **kwargs):
 
 def get_simu(k):
     d = {
-        'mm_params': {'to_file': False,
-                      'to_memory': True},
+        'mm_params': {'record_to':'memory'},
         'print_time': k.get('print_time', True),
         'save_conn': k.get('save_conn', {'overwrite': False}),
         'start_rec': k.get('start_rec', 1000.0),
-        'sd_params': {'to_file': False,
-                      'to_memory': True},
+        'sd_params': {'record_to':'memory'},
         'sim_stop': k.get('sim_stop', 2000.0),
         'sim_time': k.get('sim_time', 2000.0),
         'stop_rec': k.get('stop_rec', numpy.inf),

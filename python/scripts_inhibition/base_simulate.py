@@ -478,8 +478,7 @@ def pert_add_go_nogo_ss(**kwargs):
     max_size=kwargs.get('max_size')
     p_sizes=kwargs.get('p_sizes')
     p_subsamp=kwargs.get('p_subsamp')
-    to_memory=kwargs.get('to_memory',False)
-    to_file=kwargs.get('to_file',True)
+    record_to=kwargs.get('record_to','file')
     
     
     ll=[]
@@ -497,8 +496,7 @@ def pert_add_go_nogo_ss(**kwargs):
     
             _l+=pl({'simu':{'local_num_threads':local_num_threads,
                             'do_reset':True,
-                            'sd_params':{'to_file':to_file, 
-                                         'to_memory':to_memory}
+                            'sd_params':{'record_to':record_to}
                             }},'=')
             
             if do_not_record:
@@ -548,7 +546,7 @@ def pert_add_single(**kwargs):
     for i in range(len(l)):
         l[i] += pl({'simu':{
                             'do_reset':do_reset,
-                            'sd_params':{'to_file':True, 'to_memory':False},
+                            'sd_params':{'record_to':'file'},
                             'sim_time':sim_time, 
                             'sim_stop':sim_time,
                             'stop_rec':sim_time,
@@ -584,7 +582,7 @@ def pert_add_oscillations(**kwargs):
     for i in range(len(l)):
         l[i] += pl({'simu':{
                             'do_reset':do_reset,
-                            'sd_params':{'to_file':True, 'to_memory':False},
+                            'sd_params':{'record_to':'file'},
                             'sim_time':sim_time, 
                             'sim_stop':sim_time,
                             'local_num_threads':local_num_threads}, 

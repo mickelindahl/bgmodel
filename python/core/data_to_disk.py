@@ -656,11 +656,8 @@ def pickle_load(fileName, file_extension='.pkl', **kwargs):
 
 
 def _txt_save(text, fileName):
-        
-    f=open(fileName, 'wb') #open in binary mode
-     
-    f.write(text)
-    f.close()    
+    with open(fileName, 'wb') as f:  # open in binary mode
+        f.write(text.encode('utf-8'))
 
 def _txt_save_mpi(*args):
     with Barrier():

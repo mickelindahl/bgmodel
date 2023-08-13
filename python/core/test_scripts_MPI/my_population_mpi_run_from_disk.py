@@ -28,8 +28,7 @@ with Barrier():
 out=comm.bcast(out, root=0)
 sim_time, args, kwargs=out
 d={'sd':{'active':True,
-           'params':{'to_memory':False, 
-                     'to_file':True}}}
+           'params':{'record_to':'file'}}}
 
 kwargs=misc.dict_update(kwargs, d)
 

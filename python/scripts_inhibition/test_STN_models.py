@@ -76,9 +76,9 @@ def simulate_IV(**kw):
     my_nest.ResetKernel({'local_num_threads':1})
 
     sd={'active':True,
-        'params':{'to_memory':True,'to_file':False, 'start':500.0 }}
+        'params':{'record_to':"memory", 'start':500.0 }}
     mm={'active':True,
-        'params':{'interval':0.1,'to_memory':True,'to_file':False}}
+        'params':{'interval':0.1,'record_to':"memory"}}
     p=kw.get('iv_params')
     if 'type_id' in p.keys(): del p['type_id']
     mnn=MyNetworkNode('dummy',model=kw.get('model'), n=1, params=p, mm=mm, sd=sd)
@@ -100,9 +100,9 @@ def simulate_IF(**kw):
     my_nest.ResetKernel({'local_num_threads':1})
 
     sd={'active':True,
-        'params':{'to_memory':True,'to_file':False, 'start':500.0 }}
+        'params':{'record_to':"memory", 'start':500.0 }}
 #     mm={'active':True,
-#         'params':{'interval':0.1,'to_memory':True,'to_file':False}}
+#         'params':{'interval':0.1,'record_to':"memory",}}
     p=kw.get('if_params')
     if 'type_id' in p.keys(): del p['type_id']
     mnn=MyNetworkNode('dummy',model=kw.get('model'), n=1, params=p, sd=sd)
@@ -124,9 +124,9 @@ def simulate_rebound_spike(**kw):
     simTime  = 3000.  # ms
     my_nest.ResetKernel({'local_num_threads':1})
 
-    sd={'active':True, 'params':{'to_memory':True,'to_file':False}}
+    sd={'active':True, 'params':{'record_to':"memory",}}
     mm={'active':True,
-        'params':{'interval':0.1,'to_memory':True,'to_file':False}}
+        'params':{'interval':0.1,'record_to':"memory",}}
     p=kw.get('rs_params')
     
     if 'type_id' in p.keys(): del p['type_id']

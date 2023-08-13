@@ -60,8 +60,8 @@ class Setup(object):
         d={'simu':{'print_time':False,
 
     #                         'start_rev'
-             'mm_params':{'to_file':False, 'to_memory':True},
-             'sd_params':{'to_file':False, 'to_memory':True}},
+             'mm_params':{'record_to':'memory'},
+             'sd_params':{'record_to':'memory'}},
         'netw':{'rand_nodes':{'C_m':False, 
                               'V_th':False, 
                               'V_m':False},
